@@ -1,0 +1,103 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Award,
+  BookOpen,
+  BrainCircuit,
+  Briefcase,
+  Calendar,
+  FileCheck,
+  FileText,
+  HeartHandshake,
+  HeartPulse,
+  LayoutDashboard,
+  LogOut,
+  QrCode,
+  Star,
+  UserCircle,
+  LifeBuoy,
+  ChevronRight,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/store/useAuth";
+import { PanelBrandBlock } from "@/components/shared/PanelBrandBlock";
+
+const menuItems = [
+  { icon: LayoutDashboard, label: "Panel Ozet", href: "/student/dashboard" },
+  { icon: Briefcase, label: "Projem", href: "/student/my-project" },
+  { icon: Calendar, label: "Programlarim", href: "/student/programs" },
+  { icon: FileText, label: "Basvurularim", href: "/student/applications" },
+  { icon: FileCheck, label: "Odevlerim", href: "/student/assignments" },
+  { icon: QrCode, label: "QR Yoklama", href: "/student/qr-scan" },
+  { icon: Star, label: "Degerlendirme", href: "/student/evaluate" },
+  { icon: BookOpen, label: "Dijital Bohca", href: "/student/bohca" },
+  { icon: HeartPulse, label: "KPD", href: "/student/kpd" },
+  { icon: Award, label: "Sertifikalarim", href: "/student/certificates" },
+  { icon: HeartHandshake, label: "Gonullu Basvurusu", href: "/student/volunteer" },
+  { icon: BrainCircuit, label: "Kisilik Analizi", href: "/student/personality" },
+  { icon: LifeBuoy, label: "Destek Taleplerim", href: "/student/tickets" },
+  { icon: UserCircle, label: "Profilim", href: "/student/profile" },
+];
+
+const navItemBase = "group flex items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors";
+const navActive = "bg-[#FF6B00] text-white shadow-sm";
+const navIdle = "text-slate-400 hover:bg-white/[0.04] hover:text-white";
+
+export function StudentSidebar() {
+  const pathname = usePathname();
+  const { logout, user } = useAuth();
+
+  return (
+    <aside className="fixed left-0 top-0 z-40 flex h-screen w-72 flex-col border-r border-white/[0.06] bg-[#0a0b14]">
+      <PanelBrandBlock roleLabel="OGRENCI PANELI" />
+
+      <nav className="mt-1 flex-1 space-y-1 overflow-y-auto px-3 py-2">
+        {menuItems.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(navItemBase, isActive ? navActive : navIdle)}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <item.icon
+                  className={cn("h-5 w-5 shrink-0", isActive ? "text-white" : "text-slate-500 group-hover:text-white")}
+                />
+                <span className="truncate">{item.label}</span>
+              </div>
+              {isActive && <ChevronRight className="h-4 w-4 shrink-0 text-white/90" />}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-white/[0.08] p-3">
+        <div className="mb-3 flex items-center gap-3 rounded-lg bg-white/[0.04] p-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/10 text-xs font-bold text-white">
+            {user?.name?.[0]}
+            {user?.surname?.[0]}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-white">
+              {user?.name} {user?.surname}
+            </p>
+            <p className="truncate text-[10px] uppercase text-slate-500">
+              {user?.role}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={logout}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-red-500/10 hover:text-red-300"
+        >
+          <LogOut className="h-4 w-4" />
+          Cikis Yap
+        </button>
+      </div>
+    </aside>
+  );
+}

@@ -1,0 +1,494 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Calendar, CheckCircle2, Loader2, MapPin, Pencil, Play, Search, SquareCheckBig, X } from "lucide-react";
+import { motion } from "framer-motion";
+import api from "@/lib/api/axios";
+import { ExportButtons } from "@/components/shared/ExportButtons";
+import { PermissionGate } from "@/components/shared/PermissionGate";
+
+interface ActivePeriod {
+  id: number;
+  name: string;
+}
+
+interface Project {
+  id: number;
+  name: string;
+  active_period?: ActivePeriod | null;
+}
+
+interface Program {
+  id: number;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  start_at: string;
+  end_at?: string | null;
+  status?: string;
+  radius_meters?: number | null;
+  credit_deduction?: number | null;
+  project_id: number;
+  project?: { id: number; name: string } | null;
+  period?: { id: number; name: string } | null;
+}
+
+interface ProgramFormState {
+  project_id: string;
+  title: string;
+  description: string;
+  location: string;
+  start_at: string;
+  end_at: string;
+  radius_meters: string;
+  credit_deduction: string;
+  status: "scheduled" | "active" | "completed" | "cancelled";
+}
+
+const initialForm: ProgramFormState = {
+  project_id: "",
+  title: "",
+  description: "",
+  location: "",
+  start_at: "",
+  end_at: "",
+  radius_meters: "100",
+  credit_deduction: "10",
+  status: "scheduled",
+};
+
+export default function CoordinatorProgramsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("all");
+  const [showForm, setShowForm] = useState(false);
+  const [editingProgramId, setEditingProgramId] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [form, setForm] = useState<ProgramFormState>(initialForm);
+
+  const loadPrograms = async () => {
+    setRefreshing(true);
+    setErrorMessage(null);
+
+    try {
+      const projectResponse = await api.get<{ projects: Project[] }>("/admin/projects/manageable");
+      const manageableProjects = (projectResponse.data.projects ?? []).filter((project) => project.active_period?.id);
+      setProjects(manageableProjects);
+
+      const responses = await Promise.all(
+        manageableProjects.map(async (project) => {
+          const response = await api.get<{ programs: Program[] }>("/admin/programs", {
+            params: { project_id: project.id },
+          });
+
+          return (response.data.programs ?? []).map((program) => ({
+            ...program,
+            project_id: program.project_id ?? project.id,
+          }));
+        })
+      );
+
+      setPrograms(responses.flat());
+    } catch (error) {
+      console.error("Koordinator programlari yuklenemedi", error);
+      setErrorMessage("Program listesi yuklenemedi.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadPrograms();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const projectNameMap = useMemo(
+    () =>
+      projects.reduce<Record<number, string>>((accumulator, project) => {
+        accumulator[project.id] = project.name;
+        return accumulator;
+      }, {}),
+    [projects]
+  );
+
+  const filteredPrograms = useMemo(() => {
+    return [...programs]
+      .filter((program) => (selectedProjectId === "all" ? true : program.project_id === Number(selectedProjectId)))
+      .filter((program) => {
+        const projectName = program.project?.name ?? projectNameMap[program.project_id] ?? "";
+        return `${program.title} ${projectName} ${program.location ?? ""}`.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+      .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+  }, [programs, projectNameMap, searchTerm, selectedProjectId]);
+
+  const openCreateForm = () => {
+    setEditingProgramId(null);
+    setForm(initialForm);
+    setShowForm(true);
+    setMessage(null);
+    setErrorMessage(null);
+  };
+
+  const openEditForm = (program: Program) => {
+    setEditingProgramId(program.id);
+    setForm({
+      project_id: String(program.project_id),
+      title: program.title,
+      description: program.description ?? "",
+      location: program.location ?? "",
+      start_at: program.start_at ? new Date(program.start_at).toISOString().slice(0, 16) : "",
+      end_at: program.end_at ? new Date(program.end_at).toISOString().slice(0, 16) : "",
+      radius_meters: String(program.radius_meters ?? 100),
+      credit_deduction: String(program.credit_deduction ?? 10),
+      status: (program.status as ProgramFormState["status"]) || "scheduled",
+    });
+    setShowForm(true);
+    setMessage(null);
+    setErrorMessage(null);
+  };
+
+  const handleSaveProgram = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const selectedProject = projects.find((project) => project.id === Number(form.project_id));
+    if (!selectedProject?.active_period?.id) {
+      setErrorMessage("Program kaydi icin aktif donemi olan bir proje secilmelidir.");
+      return;
+    }
+
+    setSubmitting(true);
+    setMessage(null);
+    setErrorMessage(null);
+
+    const payload = {
+      project_id: selectedProject.id,
+      period_id: selectedProject.active_period.id,
+      title: form.title,
+      description: form.description || null,
+      location: form.location || null,
+      radius_meters: Number(form.radius_meters),
+      credit_deduction: Number(form.credit_deduction),
+      start_at: form.start_at,
+      end_at: form.end_at,
+      status: form.status,
+    };
+
+    try {
+      if (editingProgramId) {
+        await api.put(`/admin/programs/${editingProgramId}`, payload);
+        setMessage("Program guncellendi.");
+      } else {
+        await api.post("/admin/programs", payload);
+        setMessage("Yeni program basariyla olusturuldu.");
+      }
+
+      setShowForm(false);
+      setEditingProgramId(null);
+      setForm(initialForm);
+      await loadPrograms();
+    } catch (error) {
+      console.error("Program kaydedilemedi", error);
+      setErrorMessage("Program kaydedilemedi. Alanlari ve yetkileri kontrol edin.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleComplete = async (programId: number) => {
+    try {
+      await api.post(`/admin/programs/${programId}/complete`);
+      setMessage("Program tamamlandi.");
+      await loadPrograms();
+    } catch (error) {
+      console.error("Program tamamlanamadi", error);
+      setErrorMessage("Program tamamlanamadi.");
+    }
+  };
+
+  return (
+    <PermissionGate
+      permission="programs.view"
+      fallback={
+        <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 px-6 py-8 text-center text-sm text-amber-100">
+          Programlari goruntuleme yetkiniz bulunmuyor.
+        </div>
+      }
+    >
+    <div className="space-y-8">
+      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/20 text-accent">
+            <Calendar className="h-7 w-7" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Program Yonetimi</h1>
+            <p className="text-sm text-muted-foreground">
+              Kendi projelerindeki oturumlari planla, guncelle, QR yoklamasi baslat ve tamamla.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 md:flex-row">
+          <PermissionGate
+            permission="programs.export"
+            fallback={<span className="text-sm text-muted-foreground">Disa aktarma yetkiniz yok.</span>}
+          >
+          <ExportButtons
+            endpoint="/admin/programs/export"
+            filename="koordinator_programlar"
+            params={{ project_id: selectedProjectId !== "all" ? selectedProjectId : undefined }}
+            buttonLabel="Programlari Disa Aktar"
+          />
+          </PermissionGate>
+          <button
+            onClick={showForm ? () => setShowForm(false) : openCreateForm}
+            className="rounded-xl bg-accent px-5 py-3 text-sm font-bold text-accent-foreground"
+          >
+            {showForm ? "Formu Kapat" : "Yeni Program"}
+          </button>
+          <button
+            onClick={() => void loadPrograms()}
+            disabled={refreshing}
+            className="rounded-xl border border-border px-5 py-3 text-sm font-semibold transition-colors hover:bg-muted disabled:opacity-60"
+          >
+            {refreshing ? "Yenileniyor..." : "Listeyi Yenile"}
+          </button>
+        </div>
+      </div>
+
+      {showForm && (
+        <form onSubmit={(event) => void handleSaveProgram(event)} className="glass-panel rounded-3xl p-6">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+              {editingProgramId ? <Pencil className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">{editingProgramId ? "Programi Guncelle" : "Yeni Program Olustur"}</h2>
+              <p className="text-sm text-muted-foreground">Secilen projenin aktif donemi otomatik kullanilir.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <select
+              value={form.project_id}
+              onChange={(event) => setForm((prev) => ({ ...prev, project_id: event.target.value }))}
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+              required
+              disabled={!!editingProgramId}
+            >
+              <option value="">Proje secin</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name} {project.active_period ? `- ${project.active_period.name}` : ""}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+              placeholder="Program basligi"
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+              required
+            />
+            <input
+              type="text"
+              value={form.location}
+              onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))}
+              placeholder="Konum"
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+            />
+            <input
+              type="number"
+              min={10}
+              value={form.radius_meters}
+              onChange={(event) => setForm((prev) => ({ ...prev, radius_meters: event.target.value }))}
+              placeholder="Yoklama capi (metre)"
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+              required
+            />
+            <input
+              type="datetime-local"
+              value={form.start_at}
+              onChange={(event) => setForm((prev) => ({ ...prev, start_at: event.target.value }))}
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+              required
+            />
+            <input
+              type="datetime-local"
+              value={form.end_at}
+              onChange={(event) => setForm((prev) => ({ ...prev, end_at: event.target.value }))}
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+              required
+            />
+            <input
+              type="number"
+              min={0}
+              value={form.credit_deduction}
+              onChange={(event) => setForm((prev) => ({ ...prev, credit_deduction: event.target.value }))}
+              placeholder="Kredi dusumu"
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+              required
+            />
+            <select
+              value={form.status}
+              onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as ProgramFormState["status"] }))}
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+            >
+              <option value="scheduled">Planlandi</option>
+              <option value="active">Aktif</option>
+              <option value="completed">Tamamlandi</option>
+              <option value="cancelled">Iptal</option>
+            </select>
+          </div>
+
+          <textarea
+            rows={4}
+            value={form.description}
+            onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+            placeholder="Program aciklamasi"
+            className="mt-4 w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+          />
+
+          <div className="mt-6 flex flex-col gap-3 md:flex-row">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-bold text-accent-foreground disabled:opacity-60"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {editingProgramId ? "Degisiklikleri Kaydet" : "Programi Kaydet"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setEditingProgramId(null);
+                setForm(initialForm);
+              }}
+              className="flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-semibold transition-colors hover:bg-muted"
+            >
+              <X className="h-4 w-4" />
+              Vazgec
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr,240px]">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Program, proje veya konum ara..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="w-full rounded-xl border border-border bg-input py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-accent"
+          />
+        </div>
+        <select
+          value={selectedProjectId}
+          onChange={(event) => setSelectedProjectId(event.target.value)}
+          className="rounded-xl border border-border bg-input px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent"
+        >
+          <option value="all">Tum projeler</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {message && <div className="rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-400">{message}</div>}
+      {errorMessage && <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{errorMessage}</div>}
+
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        </div>
+      ) : filteredPrograms.length === 0 ? (
+        <div className="glass-panel rounded-3xl p-16 text-center text-muted-foreground">
+          Secili filtrelerde program bulunamadi.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredPrograms.map((program, index) => (
+            <motion.div
+              key={program.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.04 }}
+              className="glass-panel rounded-3xl p-6 transition-all hover:border-accent/40"
+            >
+              <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
+                <div className="flex items-start gap-5">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-accent">
+                    <Calendar className="h-7 w-7" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-xl font-bold">{program.title}</h3>
+                      <span className="rounded-full bg-accent/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent">
+                        {program.project?.name ?? projectNameMap[program.project_id] ?? `Proje #${program.project_id}`}
+                      </span>
+                      <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {program.status || "scheduled"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      <div>{new Date(program.start_at).toLocaleString("tr-TR")}</div>
+                      {program.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {program.location}
+                        </div>
+                      )}
+                      {program.period?.name ? <div>{program.period.name}</div> : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row">
+                  <button
+                    onClick={() => openEditForm(program)}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold transition-colors hover:bg-muted"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Duzenle
+                  </button>
+                  <button
+                    onClick={() => void handleComplete(program.id)}
+                    disabled={program.status === "completed"}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-300 disabled:opacity-50"
+                  >
+                    <SquareCheckBig className="h-4 w-4" />
+                    Tamamla
+                  </button>
+                  <Link
+                    href={`/coordinator/programs/${program.id}/qr?title=${encodeURIComponent(program.title)}`}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:scale-[1.02]"
+                  >
+                    <Play className="h-4 w-4 fill-current" />
+                    QR Yoklama Baslat
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+    </PermissionGate>
+  );
+}
