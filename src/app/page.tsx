@@ -64,7 +64,7 @@ export default function HomePage() {
   const [projects, setProjects] = useState<HomeProject[]>([]);
   const [blogs, setBlogs] = useState<HomeBlog[]>([]);
   const [activities, setActivities] = useState<HomeProgram[]>([]);
-  const [siteSettings, setSiteSettings] = useState<SiteSettingsPayload>(defaultSiteSettings);
+  const [siteSettings, setSiteSettings] = useState<SiteSettingsPayload | null>(null);
   const [computedStats, setComputedStats] = useState<Array<{ label: string; value: string; icon: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [newsletterName, setNewsletterName] = useState("");
@@ -79,9 +79,7 @@ export default function HomePage() {
           api.get<{ projects: HomeProject[] }>("/projects").catch(() => ({ data: { projects: [] as HomeProject[] } })),
           api.get<{ blogs: HomeBlog[] | { data?: HomeBlog[] } }>("/blogs").catch(() => ({ data: { blogs: [] as HomeBlog[] } })),
           api.get<{ programs: HomeProgram[] }>("/activities").catch(() => ({ data: { programs: [] as HomeProgram[] } })),
-          api
-            .get<SiteSettingsResponse>("/site-config")
-            .catch(() => ({ data: { settings: defaultSiteSettings, computed_homepage_stats: [] as SiteSettingsResponse["computed_homepage_stats"] } })),
+          api.get<SiteSettingsResponse>("/site-config"),
         ]);
 
         setProjects(projectResponse.data.projects ?? []);
@@ -90,7 +88,7 @@ export default function HomePage() {
         setBlogs(Array.isArray(rawBlogs) ? rawBlogs : rawBlogs?.data ?? []);
 
         setActivities(activitiesResponse.data.programs ?? []);
-        setSiteSettings(configResponse.data.settings ?? defaultSiteSettings);
+        setSiteSettings(configResponse.data.settings ?? null);
         setComputedStats(configResponse.data.computed_homepage_stats ?? []);
       } catch (error) {
         console.error("Anasayfa verileri cekilemedi", error);
@@ -102,13 +100,15 @@ export default function HomePage() {
     void loadData();
   }, []);
 
+  const resolvedSettings = siteSettings ?? defaultSiteSettings;
+
   const stats = useMemo(
     () =>
-      (siteSettings.homepage.stats_mode === "auto" && computedStats.length > 0 ? computedStats : siteSettings.homepage.stats).map((stat) => ({
+      (resolvedSettings.homepage.stats_mode === "auto" && computedStats.length > 0 ? computedStats : resolvedSettings.homepage.stats).map((stat) => ({
         ...stat,
         icon: iconMap[stat.icon as keyof typeof iconMap] || Users,
       })),
-    [computedStats, siteSettings.homepage.stats, siteSettings.homepage.stats_mode],
+    [computedStats, resolvedSettings.homepage.stats, resolvedSettings.homepage.stats_mode],
   );
 
   const dashboardLink =
@@ -124,46 +124,54 @@ export default function HomePage() {
 
   const projectColors = ["from-blue-600 to-cyan-500", "from-orange-500 to-red-600", "from-green-500 to-emerald-600", "from-indigo-500 to-blue-600"];
   const featuredProjects =
-    siteSettings.homepage.featured_project_slugs.length > 0
+    resolvedSettings.homepage.featured_project_slugs.length > 0
       ? projects
-          .filter((project) => siteSettings.homepage.featured_project_slugs.includes(project.slug))
+          .filter((project) => resolvedSettings.homepage.featured_project_slugs.includes(project.slug))
           .sort(
             (left, right) =>
-              siteSettings.homepage.featured_project_slugs.indexOf(left.slug) -
-              siteSettings.homepage.featured_project_slugs.indexOf(right.slug),
+              resolvedSettings.homepage.featured_project_slugs.indexOf(left.slug) -
+              resolvedSettings.homepage.featured_project_slugs.indexOf(right.slug),
           )
           .slice(0, 4)
       : projects.slice(0, 4);
   const featuredActivities =
-    siteSettings.homepage.featured_activity_ids.length > 0
+    resolvedSettings.homepage.featured_activity_ids.length > 0
       ? activities
-          .filter((activity) => siteSettings.homepage.featured_activity_ids.includes(activity.id))
+          .filter((activity) => resolvedSettings.homepage.featured_activity_ids.includes(activity.id))
           .sort(
             (left, right) =>
-              siteSettings.homepage.featured_activity_ids.indexOf(left.id) -
-              siteSettings.homepage.featured_activity_ids.indexOf(right.id),
+              resolvedSettings.homepage.featured_activity_ids.indexOf(left.id) -
+              resolvedSettings.homepage.featured_activity_ids.indexOf(right.id),
           )
           .slice(0, 3)
       : activities.slice(0, 3);
   const featuredBlogs =
-    siteSettings.homepage.featured_blog_slugs.length > 0
+    resolvedSettings.homepage.featured_blog_slugs.length > 0
       ? blogs
-          .filter((blog) => siteSettings.homepage.featured_blog_slugs.includes(blog.slug))
+          .filter((blog) => resolvedSettings.homepage.featured_blog_slugs.includes(blog.slug))
           .sort(
             (left, right) =>
-              siteSettings.homepage.featured_blog_slugs.indexOf(left.slug) -
-              siteSettings.homepage.featured_blog_slugs.indexOf(right.slug),
+              resolvedSettings.homepage.featured_blog_slugs.indexOf(left.slug) -
+              resolvedSettings.homepage.featured_blog_slugs.indexOf(right.slug),
           )
           .slice(0, 3)
       : blogs.slice(0, 3);
   const footerProjectLinks =
-    siteSettings.navigation.footer_project_links.length > 0
-      ? siteSettings.navigation.footer_project_links
+    resolvedSettings.navigation.footer_project_links.length > 0
+      ? resolvedSettings.navigation.footer_project_links
       : featuredProjects.map((project) => ({
           label: project.name,
           href: `/projects/${project.slug}`,
         }));
-  const visibleBlockOrder = siteSettings.homepage.block_order.filter((block) => siteSettings.homepage.block_visibility[block]);
+  const visibleBlockOrder = resolvedSettings.homepage.block_order.filter((block) => resolvedSettings.homepage.block_visibility[block]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const handleNewsletterSubmit = async () => {
     if (!newsletterEmail.trim()) {
@@ -193,10 +201,10 @@ export default function HomePage() {
   const sectionMap: Record<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter", ReactNode> = {
     hero: (
       <section className="relative flex min-h-[90vh] items-center justify-center overflow-hidden pt-20">
-        {siteSettings.homepage.hero_background_image_url ? (
+        {resolvedSettings.homepage.hero_background_image_url ? (
           <Image
-            src={siteSettings.homepage.hero_background_image_url}
-            alt={siteSettings.general.site_name}
+            src={resolvedSettings.homepage.hero_background_image_url}
+            alt={resolvedSettings.general.site_name}
             fill
             priority
             unoptimized
@@ -215,7 +223,7 @@ export default function HomePage() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
             </span>
-            {siteSettings.homepage.hero_badge}
+            {resolvedSettings.homepage.hero_badge}
           </motion.div>
 
           <motion.h1
@@ -224,11 +232,11 @@ export default function HomePage() {
             transition={{ delay: 0.1 }}
             className="mb-8 text-5xl font-black leading-tight tracking-tighter md:text-8xl"
           >
-            {siteSettings.homepage.hero_title_line_1}
+            {resolvedSettings.homepage.hero_title_line_1}
             <br />
-            <span className="text-primary">{siteSettings.homepage.hero_title_line_2}</span>, {siteSettings.homepage.hero_title_line_3}
+            <span className="text-primary">{resolvedSettings.homepage.hero_title_line_2}</span>, {resolvedSettings.homepage.hero_title_line_3}
             <br />
-            {siteSettings.homepage.hero_title_line_4}.
+            {resolvedSettings.homepage.hero_title_line_4}.
           </motion.h1>
 
           <motion.p
@@ -237,7 +245,7 @@ export default function HomePage() {
             transition={{ delay: 0.2 }}
             className="mx-auto mb-12 max-w-2xl text-lg text-muted-foreground md:text-xl"
           >
-            {siteSettings.homepage.hero_description}
+            {resolvedSettings.homepage.hero_description}
           </motion.p>
 
           <motion.div
@@ -257,17 +265,17 @@ export default function HomePage() {
             ) : (
               <>
                 <Link
-                  href={siteSettings.homepage.hero_primary_href}
+                  href={resolvedSettings.homepage.hero_primary_href}
                   className="flex items-center gap-2 rounded-2xl bg-primary px-10 py-4 font-bold text-primary-foreground shadow-md shadow-slate-900/12 transition-all hover:scale-[1.02]"
                 >
-                  {siteSettings.homepage.hero_primary_label}
+                  {resolvedSettings.homepage.hero_primary_label}
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
-                  href={siteSettings.homepage.hero_secondary_href}
+                  href={resolvedSettings.homepage.hero_secondary_href}
                   className="rounded-2xl border border-border/80 bg-card px-10 py-4 font-bold text-foreground shadow-sm transition-all hover:border-primary/30 hover:bg-muted/50"
                 >
-                  {siteSettings.homepage.hero_secondary_label}
+                  {resolvedSettings.homepage.hero_secondary_label}
                 </Link>
               </>
             )}
@@ -279,7 +287,7 @@ export default function HomePage() {
       <section className="py-24">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {siteSettings.homepage.intro_cards.map((card, index) => (
+            {resolvedSettings.homepage.intro_cards.map((card, index) => (
               <motion.div
                 key={`${card.title}-${index}`}
                 initial={{ opacity: 0, y: 20 }}
@@ -332,8 +340,8 @@ export default function HomePage() {
         <div className="container relative mx-auto px-6">
           <div className="mb-20 flex flex-col justify-between gap-8 md:flex-row md:items-end">
             <div className="max-w-2xl">
-              <h2 className="mb-6 text-4xl font-black md:text-6xl">{siteSettings.homepage.projects_title}</h2>
-              <p className="text-lg text-muted-foreground">{siteSettings.homepage.projects_description}</p>
+              <h2 className="mb-6 text-4xl font-black md:text-6xl">{resolvedSettings.homepage.projects_title}</h2>
+              <p className="text-lg text-muted-foreground">{resolvedSettings.homepage.projects_description}</p>
             </div>
             <Link href="/projects" className="flex items-center gap-2 font-bold text-primary hover:underline">
               Tumunu Gor
@@ -379,8 +387,8 @@ export default function HomePage() {
         <div className="container mx-auto px-6">
           <div className="mb-16 flex flex-col justify-between gap-8 md:flex-row md:items-end">
             <div className="max-w-2xl">
-              <h2 className="mb-4 text-4xl font-black">{siteSettings.homepage.activities_title}</h2>
-              <p className="text-muted-foreground">{siteSettings.homepage.activities_description}</p>
+              <h2 className="mb-4 text-4xl font-black">{resolvedSettings.homepage.activities_title}</h2>
+              <p className="text-muted-foreground">{resolvedSettings.homepage.activities_description}</p>
             </div>
             <Link href="/activities" className="flex items-center gap-2 font-bold text-primary hover:underline">
               Tum Faaliyetler
@@ -426,9 +434,9 @@ export default function HomePage() {
         <div className="container mx-auto grid grid-cols-1 gap-10 px-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-6">
             <div className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Hakkimizda</div>
-            <h2 className="text-4xl font-black md:text-6xl">{siteSettings.homepage.about_teaser_title}</h2>
+            <h2 className="text-4xl font-black md:text-6xl">{resolvedSettings.homepage.about_teaser_title}</h2>
             <p className="max-w-3xl text-lg leading-relaxed text-muted-foreground">
-              {siteSettings.homepage.about_teaser_description}
+              {resolvedSettings.homepage.about_teaser_description}
             </p>
             <div className="flex flex-wrap gap-4">
               <Link href="/about" className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground">
@@ -446,10 +454,10 @@ export default function HomePage() {
 
           <div className="glass-panel overflow-hidden rounded-[40px] border border-border/40">
             <div className="relative h-56 w-full bg-muted/30">
-              {siteSettings.homepage.about_teaser_image_url ? (
+              {resolvedSettings.homepage.about_teaser_image_url ? (
                 <Image
-                  src={siteSettings.homepage.about_teaser_image_url}
-                  alt={siteSettings.homepage.about_teaser_title}
+                  src={resolvedSettings.homepage.about_teaser_image_url}
+                  alt={resolvedSettings.homepage.about_teaser_title}
                   fill
                   unoptimized
                   className="object-cover"
@@ -459,8 +467,8 @@ export default function HomePage() {
               )}
             </div>
             <div className="p-8">
-              <h3 className="text-2xl font-black text-foreground">{siteSettings.about.journey_title}</h3>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{siteSettings.about.journey_text}</p>
+              <h3 className="text-2xl font-black text-foreground">{resolvedSettings.about.journey_title}</h3>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{resolvedSettings.about.journey_text}</p>
               <div className="mt-8 grid grid-cols-2 gap-4">
                 <div className="rounded-3xl border border-border/80 bg-muted/40 p-5">
                   <div className="text-2xl font-black text-foreground">{projects.length}</div>
@@ -479,8 +487,8 @@ export default function HomePage() {
     blog: (
       <section className="bg-muted/20 py-32">
         <div className="container mx-auto mb-16 px-6 text-center">
-          <h2 className="mb-4 text-4xl font-black">{siteSettings.homepage.blog_title}</h2>
-          <p className="text-muted-foreground">{siteSettings.homepage.blog_description}</p>
+          <h2 className="mb-4 text-4xl font-black">{resolvedSettings.homepage.blog_title}</h2>
+          <p className="text-muted-foreground">{resolvedSettings.homepage.blog_description}</p>
         </div>
         <div className="container mx-auto px-6">
           {loading ? (
@@ -542,9 +550,9 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_0.9fr] lg:items-center">
               <div>
                 <div className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">E-Bulten</div>
-                <h2 className="text-4xl font-black md:text-5xl">{siteSettings.homepage.newsletter_title}</h2>
+                <h2 className="text-4xl font-black md:text-5xl">{resolvedSettings.homepage.newsletter_title}</h2>
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-                  {siteSettings.homepage.newsletter_description}
+                  {resolvedSettings.homepage.newsletter_description}
                 </p>
               </div>
               <div className="space-y-4 rounded-[32px] border border-border/80 bg-muted/30 p-6">
@@ -599,37 +607,37 @@ export default function HomePage() {
                 width={140}
                 height={40}
               />
-              <span className="text-2xl font-bold tracking-tight text-slate-900">{siteSettings.general.site_name}</span>
+              <span className="text-2xl font-bold tracking-tight text-slate-900">{resolvedSettings.general.site_name}</span>
             </div>
-            <p className="mb-8 text-sm leading-relaxed text-slate-600">{siteSettings.homepage.footer_description}</p>
+            <p className="mb-8 text-sm leading-relaxed text-slate-600">{resolvedSettings.homepage.footer_description}</p>
             <div className="flex gap-4">
-              {siteSettings.social_media.instagram_url ? (
+              {resolvedSettings.social_media.instagram_url ? (
                 <Link
-                  href={siteSettings.social_media.instagram_url}
+                  href={resolvedSettings.social_media.instagram_url}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
                 >
                   <Camera className="h-5 w-5" />
                 </Link>
               ) : null}
-              {siteSettings.social_media.twitter_url ? (
+              {resolvedSettings.social_media.twitter_url ? (
                 <Link
-                  href={siteSettings.social_media.twitter_url}
+                  href={resolvedSettings.social_media.twitter_url}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
                 >
                   <Send className="h-5 w-5" />
                 </Link>
               ) : null}
-              {siteSettings.social_media.youtube_url ? (
+              {resolvedSettings.social_media.youtube_url ? (
                 <Link
-                  href={siteSettings.social_media.youtube_url}
+                  href={resolvedSettings.social_media.youtube_url}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
                 >
                   <PlayCircle className="h-5 w-5" />
                 </Link>
               ) : null}
-              {siteSettings.social_media.linkedin_url ? (
+              {resolvedSettings.social_media.linkedin_url ? (
                 <Link
-                  href={siteSettings.social_media.linkedin_url}
+                  href={resolvedSettings.social_media.linkedin_url}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
                 >
                   <Briefcase className="h-5 w-5" />
@@ -641,7 +649,7 @@ export default function HomePage() {
           <div>
             <h5 className="mb-6 text-xs font-bold uppercase tracking-widest text-primary">KURUMSAL</h5>
             <ul className="space-y-4 text-sm text-slate-600">
-              {siteSettings.navigation.footer_quick_links.map((link) => (
+              {resolvedSettings.navigation.footer_quick_links.map((link) => (
                 <li key={`${link.label}-${link.href}`}>
                   <Link href={link.href} className="transition-colors hover:text-primary">
                     {link.label}
@@ -670,13 +678,13 @@ export default function HomePage() {
 
           <div>
             <h5 className="mb-6 text-xs font-bold uppercase tracking-widest text-primary">ILETISIM</h5>
-            <p className="mb-4 text-sm text-slate-600">{siteSettings.contact.contact_address}</p>
-            <p className="mb-2 text-sm font-bold text-slate-900">{siteSettings.contact.contact_email}</p>
-            <p className="text-sm font-bold text-slate-900">{siteSettings.contact.contact_phone}</p>
+            <p className="mb-4 text-sm text-slate-600">{resolvedSettings.contact.contact_address}</p>
+            <p className="mb-2 text-sm font-bold text-slate-900">{resolvedSettings.contact.contact_email}</p>
+            <p className="text-sm font-bold text-slate-900">{resolvedSettings.contact.contact_phone}</p>
           </div>
         </div>
         <div className="container mx-auto border-t border-slate-200/80 px-6 pt-10 text-center text-xs font-medium uppercase tracking-widest text-slate-500">
-          {siteSettings.homepage.footer_copyright}
+          {resolvedSettings.homepage.footer_copyright}
         </div>
       </footer>
     </div>

@@ -33,7 +33,7 @@ export default function ActivitiesPage() {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [siteSettings, setSiteSettings] = useState<SiteSettingsPayload>(defaultSiteSettings);
+  const [siteSettings, setSiteSettings] = useState<SiteSettingsPayload | null>(null);
 
   useEffect(() => {
     const loadActivities = async () => {
@@ -41,12 +41,12 @@ export default function ActivitiesPage() {
         const [projectsResponse, programsResponse, configResponse] = await Promise.all([
           api.get<{ projects: Project[] }>("/projects").catch(() => ({ data: { projects: [] as Project[] } })),
           api.get<{ programs: Program[] }>("/activities").catch(() => ({ data: { programs: [] as Program[] } })),
-          api.get<SiteSettingsResponse>("/site-config").catch(() => ({ data: { settings: defaultSiteSettings } })),
+          api.get<SiteSettingsResponse>("/site-config"),
         ]);
 
         setProjects(projectsResponse.data.projects ?? []);
         setPrograms(programsResponse.data.programs ?? []);
-        setSiteSettings(configResponse.data.settings ?? defaultSiteSettings);
+        setSiteSettings(configResponse.data.settings ?? null);
       } catch (error) {
         console.error("Faaliyet verileri cekilemedi", error);
         setPrograms([]);
@@ -72,15 +72,17 @@ export default function ActivitiesPage() {
     });
   }, [programs, searchTerm, selectedProject]);
 
+  const pageSettings = siteSettings ?? defaultSiteSettings;
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <section className="relative overflow-hidden border-b border-border/40 py-24">
         <div className="absolute inset-0 bg-primary/5" />
         <div className="container relative z-10 mx-auto px-6 text-center">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 text-4xl font-black md:text-6xl">
-            {siteSettings.homepage.activities_title}
+            {pageSettings.homepage.activities_title}
           </motion.h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">{siteSettings.homepage.activities_description}</p>
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">{pageSettings.homepage.activities_description}</p>
         </div>
       </section>
 

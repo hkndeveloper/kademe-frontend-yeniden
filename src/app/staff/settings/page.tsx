@@ -7,7 +7,7 @@ import api from "@/lib/api/axios";
 import { defaultSiteSettings, type SiteSettingsResponse } from "@/lib/site-config";
 
 export default function StaffSettingsPage() {
-  const [settings, setSettings] = useState(defaultSiteSettings);
+  const [settings, setSettings] = useState<SiteSettingsResponse["settings"] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,19 +64,19 @@ export default function StaffSettingsPage() {
           ) : (
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-                Site Adi: <span className="font-bold text-slate-900">{settings.general.site_name}</span>
+                Site Adi: <span className="font-bold text-slate-900">{settings?.general.site_name || "Veri alinamadi"}</span>
               </div>
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-                Slogan: <span className="font-bold text-slate-900">{settings.general.site_tagline}</span>
+                Slogan: <span className="font-bold text-slate-900">{settings?.general.site_tagline || "-"}</span>
               </div>
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-                Iletisim E-postasi: <span className="font-bold text-slate-900">{settings.contact.contact_email}</span>
+                Iletisim E-postasi: <span className="font-bold text-slate-900">{settings?.contact.contact_email || "-"}</span>
               </div>
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-                Telefon: <span className="font-bold text-slate-900">{settings.contact.contact_phone}</span>
+                Telefon: <span className="font-bold text-slate-900">{settings?.contact.contact_phone || "-"}</span>
               </div>
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-                Adres: <span className="font-bold text-slate-900">{settings.contact.contact_address}</span>
+                Adres: <span className="font-bold text-slate-900">{settings?.contact.contact_address || "-"}</span>
               </div>
             </div>
           )}
@@ -89,20 +89,20 @@ export default function StaffSettingsPage() {
           ) : (
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-                Instagram: <span className="font-bold text-slate-900">{settings.social_media.instagram_url || "-"}</span>
+                Instagram: <span className="font-bold text-slate-900">{settings?.social_media.instagram_url || "-"}</span>
               </div>
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-                X / Twitter: <span className="font-bold text-slate-900">{settings.social_media.twitter_url || "-"}</span>
+                X / Twitter: <span className="font-bold text-slate-900">{settings?.social_media.twitter_url || "-"}</span>
               </div>
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-                YouTube: <span className="font-bold text-slate-900">{settings.social_media.youtube_url || "-"}</span>
+                YouTube: <span className="font-bold text-slate-900">{settings?.social_media.youtube_url || "-"}</span>
               </div>
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-                LinkedIn: <span className="font-bold text-slate-900">{settings.social_media.linkedin_url || "-"}</span>
+                LinkedIn: <span className="font-bold text-slate-900">{settings?.social_media.linkedin_url || "-"}</span>
               </div>
               <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">
                 Header Link Sayisi:{" "}
-                <span className="font-bold text-slate-900">{settings.navigation.header_links.length}</span>
+                <span className="font-bold text-slate-900">{settings?.navigation.header_links.length ?? 0}</span>
               </div>
             </div>
           )}

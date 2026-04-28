@@ -25,7 +25,7 @@ export function Header() {
   const pathname = usePathname() || "";
   const panel = isPanelPath(pathname);
   const { isAuthenticated, user, logout } = useAuth();
-  const [siteSettings, setSiteSettings] = useState<SiteSettingsPayload>(defaultSiteSettings);
+  const [siteSettings, setSiteSettings] = useState<SiteSettingsPayload | null>(null);
   const [projects, setProjects] = useState<HeaderProject[]>([]);
   const [projectsOpen, setProjectsOpen] = useState(false);
 
@@ -33,7 +33,7 @@ export function Header() {
     const loadSiteConfig = async () => {
       try {
         const configResponse = await api.get<SiteSettingsResponse>("/site-config");
-        setSiteSettings(configResponse.data.settings ?? defaultSiteSettings);
+        setSiteSettings(configResponse.data.settings ?? null);
 
         if (isPanelPath(pathname)) {
           return;
@@ -74,11 +74,11 @@ export function Header() {
             width={120}
             height={36}
           />
-          <span className="text-xl font-bold tracking-tight text-slate-800">{siteSettings.general.site_name}</span>
+          <span className="text-xl font-bold tracking-tight text-slate-800">{siteSettings?.general.site_name || "KADEME"}</span>
         </Link>
 
         <nav className="hidden gap-8 text-sm font-medium text-slate-600 md:flex md:items-center">
-          {siteSettings.navigation.header_links.map((item) => (
+          {(siteSettings?.navigation.header_links ?? []).map((item) => (
             <Link key={`${item.label}-${item.href}`} href={item.href} className="transition-colors hover:text-primary">
               {item.label}
             </Link>
@@ -146,13 +146,13 @@ export function Header() {
                 href="/auth/login"
                 className="rounded-full border border-slate-300 px-6 py-2 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-100"
               >
-                {siteSettings.navigation.header_login_label}
+                {siteSettings?.navigation.header_login_label || defaultSiteSettings.navigation.header_login_label}
               </Link>
               <Link
                 href="/auth/register"
                 className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-md shadow-slate-900/10 transition-opacity hover:opacity-90"
               >
-                {siteSettings.navigation.header_register_label}
+                {siteSettings?.navigation.header_register_label || defaultSiteSettings.navigation.header_register_label}
               </Link>
             </>
           )}

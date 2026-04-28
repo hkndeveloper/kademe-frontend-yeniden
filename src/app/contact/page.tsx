@@ -16,7 +16,8 @@ interface ProjectOption {
 export default function ContactPage() {
   const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [siteSettings, setSiteSettings] = useState<SiteSettingsPayload>(defaultSiteSettings);
+  const [siteSettings, setSiteSettings] = useState<SiteSettingsPayload | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -33,14 +34,16 @@ export default function ContactPage() {
     const loadPageData = async () => {
       try {
         const [configResponse, projectsResponse] = await Promise.all([
-          api.get<SiteSettingsResponse>("/site-config").catch(() => ({ data: { settings: defaultSiteSettings } })),
+          api.get<SiteSettingsResponse>("/site-config"),
           api.get<{ projects: ProjectOption[] }>("/projects").catch(() => ({ data: { projects: [] as ProjectOption[] } })),
         ]);
 
-        setSiteSettings(configResponse.data.settings ?? defaultSiteSettings);
+        setSiteSettings(configResponse.data.settings ?? null);
         setProjects(projectsResponse.data.projects ?? []);
       } catch (configError) {
         console.error("Iletisim sayfasi verileri yuklenemedi", configError);
+      } finally {
+        setSettingsLoading(false);
       }
     };
 
@@ -116,7 +119,9 @@ export default function ContactPage() {
               </div>
               <div>
                 <h4 className="mb-2 text-lg font-bold">Adres</h4>
-                <p className="text-sm leading-relaxed text-muted-foreground">{siteSettings.contact.contact_address}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {settingsLoading ? "Yukleniyor..." : siteSettings?.contact.contact_address || defaultSiteSettings.contact.contact_address}
+                </p>
               </div>
             </div>
 
@@ -126,7 +131,9 @@ export default function ContactPage() {
               </div>
               <div>
                 <h4 className="mb-2 text-lg font-bold">Telefon</h4>
-                <p className="text-sm text-muted-foreground">{siteSettings.contact.contact_phone}</p>
+                <p className="text-sm text-muted-foreground">
+                  {settingsLoading ? "Yukleniyor..." : siteSettings?.contact.contact_phone || defaultSiteSettings.contact.contact_phone}
+                </p>
               </div>
             </div>
 
@@ -136,7 +143,9 @@ export default function ContactPage() {
               </div>
               <div>
                 <h4 className="mb-2 text-lg font-bold">E-posta</h4>
-                <p className="text-sm text-muted-foreground">{siteSettings.contact.contact_email}</p>
+                <p className="text-sm text-muted-foreground">
+                  {settingsLoading ? "Yukleniyor..." : siteSettings?.contact.contact_email || defaultSiteSettings.contact.contact_email}
+                </p>
               </div>
             </div>
           </div>
@@ -144,10 +153,10 @@ export default function ContactPage() {
           <div className="glass-panel rounded-3xl p-8">
             <h4 className="mb-6 font-bold">Sosyal Medya</h4>
             <div className="flex gap-4">
-              {siteSettings.social_media.instagram_url ? <Link href={siteSettings.social_media.instagram_url} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><Camera className="h-6 w-6" /></Link> : null}
-              {siteSettings.social_media.twitter_url ? <Link href={siteSettings.social_media.twitter_url} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><Send className="h-6 w-6" /></Link> : null}
-              {siteSettings.social_media.youtube_url ? <Link href={siteSettings.social_media.youtube_url} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><PlayCircle className="h-6 w-6" /></Link> : null}
-              {siteSettings.social_media.linkedin_url ? <Link href={siteSettings.social_media.linkedin_url} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><Briefcase className="h-6 w-6" /></Link> : null}
+              {siteSettings?.social_media.instagram_url ? <Link href={siteSettings.social_media.instagram_url} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><Camera className="h-6 w-6" /></Link> : null}
+              {siteSettings?.social_media.twitter_url ? <Link href={siteSettings.social_media.twitter_url} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><Send className="h-6 w-6" /></Link> : null}
+              {siteSettings?.social_media.youtube_url ? <Link href={siteSettings.social_media.youtube_url} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><PlayCircle className="h-6 w-6" /></Link> : null}
+              {siteSettings?.social_media.linkedin_url ? <Link href={siteSettings.social_media.linkedin_url} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><Briefcase className="h-6 w-6" /></Link> : null}
             </div>
             <p className="mt-4 text-xs text-muted-foreground">Sosyal medya linkleri admin ayarlarindan canli olarak okunuyor.</p>
           </div>

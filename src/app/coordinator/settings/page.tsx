@@ -41,7 +41,7 @@ const initialForm: SettingsForm = {
 export default function CoordinatorSettingsPage() {
   const { fetchProfile } = useAuth();
   const [projects, setProjects] = useState<ManageableProject[]>([]);
-  const [siteSettings, setSiteSettings] = useState(defaultSiteSettings);
+  const [siteSettings, setSiteSettings] = useState<SiteSettingsResponse["settings"] | null>(null);
   const [form, setForm] = useState<SettingsForm>(initialForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,7 +59,7 @@ export default function CoordinatorSettingsPage() {
 
         const nextUser = profileResponse.data.user;
         setProjects(projectResponse.data.projects ?? []);
-        setSiteSettings(siteConfigResponse.data.settings ?? defaultSiteSettings);
+        setSiteSettings(siteConfigResponse.data.settings ?? null);
         setForm({
           phone: nextUser.phone ?? "",
           address: nextUser.address ?? "",
@@ -182,17 +182,17 @@ export default function CoordinatorSettingsPage() {
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="rounded-xl bg-white/5 px-4 py-3">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Site Adi</div>
-                <div className="mt-1 text-slate-900">{siteSettings.general.site_name}</div>
+                <div className="mt-1 text-slate-900">{siteSettings?.general.site_name || "Veri alinamadi"}</div>
               </div>
               <div className="rounded-xl bg-white/5 px-4 py-3">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Iletisim</div>
-                <div className="mt-1 text-slate-900">{siteSettings.contact.contact_email}</div>
-                <div>{siteSettings.contact.contact_phone}</div>
+                <div className="mt-1 text-slate-900">{siteSettings?.contact.contact_email || defaultSiteSettings.contact.contact_email}</div>
+                <div>{siteSettings?.contact.contact_phone || defaultSiteSettings.contact.contact_phone}</div>
               </div>
               <div className="rounded-xl bg-white/5 px-4 py-3">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Sosyal Kanallar</div>
-                <div className="mt-1">{siteSettings.social_media.linkedin_url || "LinkedIn linki tanimli degil"}</div>
-                <div>{siteSettings.social_media.youtube_url || "YouTube linki tanimli degil"}</div>
+                <div className="mt-1">{siteSettings?.social_media.linkedin_url || "LinkedIn linki tanimli degil"}</div>
+                <div>{siteSettings?.social_media.youtube_url || "YouTube linki tanimli degil"}</div>
               </div>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
