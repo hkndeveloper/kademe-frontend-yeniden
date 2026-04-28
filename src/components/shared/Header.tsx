@@ -52,6 +52,8 @@ export function Header() {
   }, [pathname]);
 
   const getDashboardLink = () => homePathForRole(user?.role);
+  const navLinks = (siteSettings?.navigation.header_links ?? []).filter((item) => item.href !== "/projects");
+  const aboutIndex = navLinks.findIndex((item) => item.href === "/about");
 
   if (panel) {
     return null;
@@ -78,13 +80,52 @@ export function Header() {
         </Link>
 
         <nav className="hidden gap-8 text-sm font-medium text-slate-600 md:flex md:items-center">
-          {(siteSettings?.navigation.header_links ?? []).map((item) => (
-            <Link key={`${item.label}-${item.href}`} href={item.href} className="transition-colors hover:text-primary">
-              {item.label}
-            </Link>
+          {navLinks.map((item, index) => (
+            <div key={`${item.label}-${item.href}`} className="contents">
+              <Link href={item.href} className="transition-colors hover:text-primary">
+                {item.label}
+              </Link>
+              {index === aboutIndex ? (
+                <div className="relative group" onMouseEnter={() => setProjectsOpen(true)} onMouseLeave={() => setProjectsOpen(false)}>
+                  <button className="flex items-center gap-1 transition-colors hover:text-primary">
+                    Projelerimiz
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+
+                  {projectsOpen && (
+                    <div className="absolute left-0 top-full pt-4">
+                      <div className="w-56 overflow-hidden rounded-2xl border border-slate-200/90 bg-white text-slate-800 shadow-xl">
+                        {projects.length > 0 ? (
+                          projects.map((p) => (
+                            <Link
+                              key={p.id}
+                              href={`/projects/${p.slug}`}
+                              onClick={() => setProjectsOpen(false)}
+                              className="block px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-primary"
+                            >
+                              {p.name}
+                            </Link>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-slate-500">Proje bulunamadi.</div>
+                        )}
+                        <Link
+                          href="/projects"
+                          onClick={() => setProjectsOpen(false)}
+                          className="block border-t border-slate-200 bg-slate-50/80 px-4 py-3 text-xs font-bold uppercase tracking-widest text-primary hover:bg-slate-100"
+                        >
+                          Tum Projeler
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
           ))}
 
-          <div className="relative group" onMouseEnter={() => setProjectsOpen(true)} onMouseLeave={() => setProjectsOpen(false)}>
+          {aboutIndex === -1 ? (
+            <div className="relative group" onMouseEnter={() => setProjectsOpen(true)} onMouseLeave={() => setProjectsOpen(false)}>
             <button className="flex items-center gap-1 transition-colors hover:text-primary">
               Projelerimiz
               <ChevronDown className="h-4 w-4" />
@@ -118,6 +159,7 @@ export function Header() {
               </div>
             )}
           </div>
+          ) : null}
         </nav>
 
         <div className="flex items-center gap-4">

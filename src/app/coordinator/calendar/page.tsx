@@ -98,6 +98,7 @@ export default function CoordinatorCalendarPage() {
   const [assignees, setAssignees] = useState<CalendarAssignee[]>([]);
   const [selectedProject, setSelectedProject] = useState("all");
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState(() =>
     searchParams.get("google_calendar") === "connected"
@@ -226,31 +227,92 @@ export default function CoordinatorCalendarPage() {
     );
   }, [assignees, assignmentSearch]);
 
-  const filteredPrograms = useMemo(() => {
-    const now = new Date();
-    const limit = new Date(now);
-
-    if (viewMode === "daily") limit.setDate(now.getDate() + 1);
-    if (viewMode === "weekly") limit.setDate(now.getDate() + 7);
-    if (viewMode === "monthly") limit.setDate(now.getDate() + 30);
-
+  const allFilteredPrograms = useMemo(() => {
     return programs
       .filter((program) => (selectedProject === "all" ? true : program.project_id === Number(selectedProject)))
-      .filter((program) => {
-        const start = new Date(program.start_at);
-        return start >= now && start <= limit;
-      })
       .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
-  }, [programs, selectedProject, viewMode]);
+  }, [programs, selectedProject]);
+
+  const dateKey = (value: Date) => value.toISOString().slice(0, 10);
+
+  const rangeStart = useMemo(() => {
+    const base = new Date(currentDate);
+    base.setHours(0, 0, 0, 0);
+    if (viewMode === "monthly") base.setDate(1);
+    if (viewMode === "weekly") {
+      const day = base.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      base.setDate(base.getDate() + diff);
+    }
+    return base;
+  }, [currentDate, viewMode]);
+
+  const rangeEnd = useMemo(() => {
+    const end = new Date(rangeStart);
+    if (viewMode === "daily") end.setDate(end.getDate() + 1);
+    if (viewMode === "weekly") end.setDate(end.getDate() + 7);
+    if (viewMode === "monthly") end.setMonth(end.getMonth() + 1);
+    return end;
+  }, [rangeStart, viewMode]);
+
+  const visiblePrograms = useMemo(() => {
+    return allFilteredPrograms.filter((program) => {
+      const start = new Date(program.start_at);
+      return start >= rangeStart && start < rangeEnd;
+    });
+  }, [allFilteredPrograms, rangeStart, rangeEnd]);
 
   const groupedByDate = useMemo(() => {
-    return filteredPrograms.reduce<Record<string, Program[]>>((accumulator, program) => {
-      const key = new Date(program.start_at).toLocaleDateString("tr-TR");
+    return visiblePrograms.reduce<Record<string, Program[]>>((accumulator, program) => {
+      const key = dateKey(new Date(program.start_at));
       accumulator[key] = accumulator[key] || [];
       accumulator[key].push(program);
       return accumulator;
     }, {});
-  }, [filteredPrograms]);
+  }, [visiblePrograms]);
+
+  const weeklyDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(rangeStart);
+      day.setDate(rangeStart.getDate() + index);
+      return day;
+    });
+  }, [rangeStart]);
+
+  const monthlyDays = useMemo(() => {
+    const monthStart = new Date(rangeStart);
+    const firstGridDay = new Date(monthStart);
+    const weekDay = firstGridDay.getDay();
+    const diff = weekDay === 0 ? -6 : 1 - weekDay;
+    firstGridDay.setDate(firstGridDay.getDate() + diff);
+    return Array.from({ length: 42 }, (_, index) => {
+      const day = new Date(firstGridDay);
+      day.setDate(firstGridDay.getDate() + index);
+      return day;
+    });
+  }, [rangeStart]);
+
+  const currentRangeLabel = useMemo(() => {
+    if (viewMode === "daily") {
+      return currentDate.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+    }
+    if (viewMode === "weekly") {
+      const weekEnd = new Date(rangeStart);
+      weekEnd.setDate(rangeStart.getDate() + 6);
+      return `${rangeStart.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" })} - ${weekEnd.toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" })}`;
+    }
+    return rangeStart.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+  }, [currentDate, rangeStart, viewMode]);
+
+  const shiftRange = (direction: -1 | 1) => {
+    setCurrentDate((current) => {
+      const next = new Date(current);
+      if (viewMode === "daily") next.setDate(next.getDate() + direction);
+      if (viewMode === "weekly") next.setDate(next.getDate() + direction * 7);
+      if (viewMode === "monthly") next.setMonth(next.getMonth() + direction);
+      return next;
+    });
+  };
 
   return (
     <PermissionGate
@@ -356,6 +418,15 @@ export default function CoordinatorCalendarPage() {
             </option>
           ))}
         </select>
+        <div className="flex items-center gap-2 rounded-xl border border-border px-2 py-1">
+          <button type="button" onClick={() => shiftRange(-1)} className="rounded-lg px-3 py-1 text-sm hover:bg-muted">
+            Geri
+          </button>
+          <div className="min-w-[180px] text-center text-sm font-semibold text-slate-900">{currentRangeLabel}</div>
+          <button type="button" onClick={() => shiftRange(1)} className="rounded-lg px-3 py-1 text-sm hover:bg-muted">
+            Ileri
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -376,55 +447,80 @@ export default function CoordinatorCalendarPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {Object.entries(groupedByDate).map(([date, items]) => (
-                  <div key={date}>
-                    <h2 className="mb-3 text-sm font-black uppercase tracking-widest text-slate-900">{date}</h2>
-                    <div className="space-y-3">
-                      {items.map((program) => (
-                        <div key={program.id} className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                            <div>
-                              <div className="text-sm font-bold text-slate-900">{program.title}</div>
-                              <div className="mt-1 flex flex-wrap gap-2 text-xs uppercase tracking-widest text-accent">
-                                <span>{program.project?.name}</span>
-                                {program.period?.name ? <span>{program.period.name}</span> : null}
-                                {program.status ? <span>{program.status}</span> : null}
+                {viewMode === "monthly" ? (
+                  <div className="grid grid-cols-7 gap-3">
+                    {monthlyDays.map((day) => {
+                      const key = dateKey(day);
+                      const items = groupedByDate[key] ?? [];
+                      const isCurrentMonth = day.getMonth() === rangeStart.getMonth();
+                      return (
+                        <div key={key} className={`min-h-28 rounded-xl border p-2 ${isCurrentMonth ? "border-white/10 bg-white/5" : "border-white/5 bg-white/2 opacity-60"}`}>
+                          <div className="mb-2 text-xs font-bold text-slate-900">{day.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" })}</div>
+                          <div className="space-y-1">
+                            {items.slice(0, 3).map((program) => (
+                              <button key={program.id} type="button" onClick={() => openAssignmentModal(program)} className="block w-full truncate rounded bg-accent/10 px-2 py-1 text-left text-[11px] text-accent">
+                                {program.title}
+                              </button>
+                            ))}
+                            {items.length > 3 ? <div className="text-[10px] text-muted-foreground">+{items.length - 3} daha</div> : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : viewMode === "weekly" ? (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-7">
+                    {weeklyDays.map((day) => {
+                      const key = dateKey(day);
+                      const items = groupedByDate[key] ?? [];
+                      return (
+                        <div key={key} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                          <div className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-900">
+                            {day.toLocaleDateString("tr-TR", { weekday: "short", day: "2-digit", month: "2-digit" })}
+                          </div>
+                          <div className="space-y-2">
+                            {items.length === 0 ? (
+                              <div className="text-xs text-muted-foreground">Program yok</div>
+                            ) : (
+                              items.map((program) => (
+                                <button key={program.id} type="button" onClick={() => openAssignmentModal(program)} className="w-full rounded-lg bg-accent/10 px-2 py-2 text-left text-xs text-accent">
+                                  <div className="truncate font-semibold">{program.title}</div>
+                                  <div className="text-[10px]">{new Date(program.start_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  Object.entries(groupedByDate).map(([date, items]) => (
+                    <div key={date}>
+                      <h2 className="mb-3 text-sm font-black uppercase tracking-widest text-slate-900">{new Date(date).toLocaleDateString("tr-TR")}</h2>
+                      <div className="space-y-3">
+                        {items.map((program) => (
+                          <div key={program.id} className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                              <div>
+                                <div className="text-sm font-bold text-slate-900">{program.title}</div>
+                                <div className="mt-1 flex flex-wrap gap-2 text-xs uppercase tracking-widest text-accent">
+                                  <span>{program.project?.name}</span>
+                                  {program.period?.name ? <span>{program.period.name}</span> : null}
+                                  {program.status ? <span>{program.status}</span> : null}
+                                </div>
+                              </div>
+                              <div className="text-right text-sm text-muted-foreground">
+                                {new Date(program.start_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                                {program.end_at ? ` - ${new Date(program.end_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}` : ""}
                               </div>
                             </div>
-                            <div className="text-right text-sm text-muted-foreground">
-                              {new Date(program.start_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
-                              {program.end_at ? ` - ${new Date(program.end_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}` : ""}
-                            <div className="mt-1 text-xs text-accent">
-                              {program.calendar_event?.google_event_id ? "Google ile senkronlu" : "Yerel kayit"}
-                            </div>
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              Gorevli: {program.calendar_event?.assigned_count ?? 0}
-                            </div>
                           </div>
-                        </div>
-                        {(program.calendar_event?.assigned_users?.length ?? 0) > 0 ? (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {program.calendar_event?.assigned_users?.map((assignee) => (
-                              <span key={assignee.id} className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                                {assignee.name}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                        <div className="mt-4 flex justify-end">
-                          <button
-                            onClick={() => openAssignmentModal(program)}
-                            className="inline-flex items-center gap-2 rounded-xl border border-accent/20 bg-accent/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-accent transition hover:bg-accent hover:text-accent-foreground"
-                          >
-                            <BadgeCheck className="h-4 w-4" />
-                            Gorev Ata
-                          </button>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  </div>
-                ))}
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
