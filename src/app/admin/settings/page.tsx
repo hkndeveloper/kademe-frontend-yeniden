@@ -352,7 +352,7 @@ export default function AdminSettingsPage() {
       {feedback ? <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-sm text-emerald-200">{feedback}</div> : null}
       {errorMessage ? <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-200">{errorMessage}</div> : null}
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8">
         <div className="glass-panel rounded-3xl p-8">
           <button
             type="button"
