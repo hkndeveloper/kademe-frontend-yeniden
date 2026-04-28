@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Save, Settings, Trash2 } from "lucide-react";
+import { ChevronDown, Loader2, Plus, Save, Settings, Trash2 } from "lucide-react";
 import api from "@/lib/api/axios";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -41,6 +41,17 @@ export default function AdminSettingsPage() {
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [blogOptions, setBlogOptions] = useState<BlogOption[]>([]);
   const [activityOptions, setActivityOptions] = useState<ActivityOption[]>([]);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    generalContact: true,
+    social: false,
+    navLinks: true,
+    homepageBlocks: false,
+    homepageContent: false,
+    introCards: false,
+    featured: false,
+    stats: false,
+    about: false,
+  });
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -309,6 +320,13 @@ export default function AdminSettingsPage() {
     }));
   };
 
+  const toggleSection = (key: string) => {
+    setExpandedSections((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -335,26 +353,56 @@ export default function AdminSettingsPage() {
       {errorMessage ? <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-200">{errorMessage}</div> : null}
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-        <div className="glass-panel space-y-4 rounded-3xl p-8">
-          <h2 className="text-lg font-bold text-slate-900">Genel ve Iletisim</h2>
-          <input value={settings.general.site_name} onChange={(event) => setSettings((current) => ({ ...current, general: { ...current.general, site_name: event.target.value } }))} placeholder="Site adi" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
-          <input value={settings.general.site_tagline} onChange={(event) => setSettings((current) => ({ ...current, general: { ...current.general, site_tagline: event.target.value } }))} placeholder="Site slogani" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
-          <input value={settings.contact.contact_email} onChange={(event) => setSettings((current) => ({ ...current, contact: { ...current.contact, contact_email: event.target.value } }))} placeholder="Iletisim e-postasi" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
-          <input value={settings.contact.contact_phone} onChange={(event) => setSettings((current) => ({ ...current, contact: { ...current.contact, contact_phone: event.target.value } }))} placeholder="Telefon" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
-          <textarea value={settings.contact.contact_address} onChange={(event) => setSettings((current) => ({ ...current, contact: { ...current.contact, contact_address: event.target.value } }))} rows={4} placeholder="Adres" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+        <div className="glass-panel rounded-3xl p-8">
+          <button
+            type="button"
+            onClick={() => toggleSection("generalContact")}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-bold text-slate-900">Genel ve Iletisim</h2>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedSections.generalContact ? "rotate-180" : ""}`} />
+          </button>
+          {expandedSections.generalContact ? (
+            <div className="mt-4 space-y-4">
+              <input value={settings.general.site_name} onChange={(event) => setSettings((current) => ({ ...current, general: { ...current.general, site_name: event.target.value } }))} placeholder="Site adi" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+              <input value={settings.general.site_tagline} onChange={(event) => setSettings((current) => ({ ...current, general: { ...current.general, site_tagline: event.target.value } }))} placeholder="Site slogani" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+              <input value={settings.contact.contact_email} onChange={(event) => setSettings((current) => ({ ...current, contact: { ...current.contact, contact_email: event.target.value } }))} placeholder="Iletisim e-postasi" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+              <input value={settings.contact.contact_phone} onChange={(event) => setSettings((current) => ({ ...current, contact: { ...current.contact, contact_phone: event.target.value } }))} placeholder="Telefon" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+              <textarea value={settings.contact.contact_address} onChange={(event) => setSettings((current) => ({ ...current, contact: { ...current.contact, contact_address: event.target.value } }))} rows={4} placeholder="Adres" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+            </div>
+          ) : null}
         </div>
 
-        <div className="glass-panel space-y-4 rounded-3xl p-8">
-          <h2 className="text-lg font-bold text-slate-900">Sosyal Medya</h2>
-          <input value={settings.social_media.instagram_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, instagram_url: event.target.value } }))} placeholder="Instagram URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
-          <input value={settings.social_media.twitter_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, twitter_url: event.target.value } }))} placeholder="X / Twitter URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
-          <input value={settings.social_media.youtube_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, youtube_url: event.target.value } }))} placeholder="YouTube URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
-          <input value={settings.social_media.linkedin_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, linkedin_url: event.target.value } }))} placeholder="LinkedIn URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+        <div className="glass-panel rounded-3xl p-8">
+          <button
+            type="button"
+            onClick={() => toggleSection("social")}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-bold text-slate-900">Sosyal Medya</h2>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedSections.social ? "rotate-180" : ""}`} />
+          </button>
+          {expandedSections.social ? (
+            <div className="mt-4 space-y-4">
+              <input value={settings.social_media.instagram_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, instagram_url: event.target.value } }))} placeholder="Instagram URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+              <input value={settings.social_media.twitter_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, twitter_url: event.target.value } }))} placeholder="X / Twitter URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+              <input value={settings.social_media.youtube_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, youtube_url: event.target.value } }))} placeholder="YouTube URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+              <input value={settings.social_media.linkedin_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, linkedin_url: event.target.value } }))} placeholder="LinkedIn URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+            </div>
+          ) : null}
         </div>
 
-        <div className="glass-panel space-y-4 rounded-3xl p-8 xl:col-span-2">
-          <h2 className="text-lg font-bold text-slate-900">Header ve Footer Linkleri</h2>
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="glass-panel rounded-3xl p-8 xl:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("navLinks")}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-bold text-slate-900">Header ve Footer Linkleri</h2>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedSections.navLinks ? "rotate-180" : ""}`} />
+          </button>
+          {expandedSections.navLinks ? (
+          <div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-2">
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <input value={settings.navigation.header_login_label} onChange={(event) => setSettings((current) => ({ ...current, navigation: { ...current.navigation, header_login_label: event.target.value } }))} placeholder="Header login buton metni" className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
@@ -414,14 +462,24 @@ export default function AdminSettingsPage() {
               ))}
             </div>
           </div>
+          ) : null}
         </div>
 
-        <div className="glass-panel space-y-4 rounded-3xl p-8 xl:col-span-2">
-          <h2 className="text-lg font-bold text-slate-900">Anasayfa Blok Yonetimi</h2>
-          <p className="text-sm text-muted-foreground">
-            Anasayfadaki bolumleri acip kapatabilir ve gosterim sirasini degistirebilirsin.
-          </p>
-          <div className="space-y-3">
+        <div className="glass-panel rounded-3xl p-8 xl:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("homepageBlocks")}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-bold text-slate-900">Anasayfa Blok Yonetimi</h2>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedSections.homepageBlocks ? "rotate-180" : ""}`} />
+          </button>
+          {expandedSections.homepageBlocks ? (
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Anasayfadaki bolumleri acip kapatabilir ve gosterim sirasini degistirebilirsin.
+            </p>
+            <div className="space-y-3">
             {settings.homepage.block_order.map((block, index) => (
               <div key={block} className="grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:grid-cols-[1.3fr_auto_auto_auto] md:items-center">
                 <div>
@@ -455,11 +513,22 @@ export default function AdminSettingsPage() {
                 </button>
               </div>
             ))}
+            </div>
           </div>
+          ) : null}
         </div>
 
-        <div className="glass-panel space-y-4 rounded-3xl p-8 xl:col-span-2">
-          <h2 className="text-lg font-bold text-slate-900">Anasayfa Icerigi</h2>
+        <div className="glass-panel rounded-3xl p-8 xl:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("homepageContent")}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-bold text-slate-900">Anasayfa Icerigi</h2>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedSections.homepageContent ? "rotate-180" : ""}`} />
+          </button>
+          {expandedSections.homepageContent ? (
+          <div className="mt-4 space-y-4">
           <input value={settings.homepage.hero_badge} onChange={(event) => setSettings((current) => ({ ...current, homepage: { ...current.homepage, hero_badge: event.target.value } }))} placeholder="Hero badge" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <input value={settings.homepage.hero_title_line_1} onChange={(event) => setSettings((current) => ({ ...current, homepage: { ...current.homepage, hero_title_line_1: event.target.value } }))} placeholder="Hero satir 1" className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
@@ -538,14 +607,25 @@ export default function AdminSettingsPage() {
           <textarea value={settings.homepage.newsletter_description} onChange={(event) => setSettings((current) => ({ ...current, homepage: { ...current.homepage, newsletter_description: event.target.value } }))} rows={3} placeholder="E-bulten aciklama" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
           <textarea value={settings.homepage.footer_description} onChange={(event) => setSettings((current) => ({ ...current, homepage: { ...current.homepage, footer_description: event.target.value } }))} rows={3} placeholder="Footer aciklama" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
           <textarea value={settings.homepage.footer_copyright} onChange={(event) => setSettings((current) => ({ ...current, homepage: { ...current.homepage, footer_copyright: event.target.value } }))} rows={2} placeholder="Footer telif metni" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+          </div>
+          ) : null}
         </div>
 
-        <div className="glass-panel space-y-4 rounded-3xl p-8 xl:col-span-2">
-          <h2 className="text-lg font-bold text-slate-900">Kisa Tanitim Kartlari</h2>
-          <p className="text-sm text-muted-foreground">
-            Anasayfada hero sonrasinda gosterilecek kisa tanitim yazilari ve gorsellerini buradan yonetebilirsin.
-          </p>
-          <div className="space-y-4">
+        <div className="glass-panel rounded-3xl p-8 xl:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("introCards")}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-bold text-slate-900">Kisa Tanitim Kartlari</h2>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedSections.introCards ? "rotate-180" : ""}`} />
+          </button>
+          {expandedSections.introCards ? (
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Anasayfada hero sonrasinda gosterilecek kisa tanitim yazilari ve gorsellerini buradan yonetebilirsin.
+            </p>
+            <div className="space-y-4">
             {settings.homepage.intro_cards.map((card, index) => (
               <div key={`intro-card-${index}`} className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-5">
                 <div className="text-xs font-bold uppercase tracking-widest text-primary">Kart {index + 1}</div>
@@ -573,12 +653,22 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
+          ) : null}
         </div>
 
-        <div className="glass-panel space-y-4 rounded-3xl p-8 xl:col-span-2">
-          <h2 className="text-lg font-bold text-slate-900">Anasayfa One Cikan Icerikler</h2>
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="glass-panel rounded-3xl p-8 xl:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("featured")}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-bold text-slate-900">Anasayfa One Cikan Icerikler</h2>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedSections.featured ? "rotate-180" : ""}`} />
+          </button>
+          {expandedSections.featured ? (
+          <div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div>
               <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">One Cikan Projeler</h3>
               <div className="grid grid-cols-1 gap-3">
@@ -644,12 +734,24 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           </div>
+          ) : null}
         </div>
 
-        <div className="glass-panel space-y-4 rounded-3xl p-8 xl:col-span-2">
-          <div className="flex items-center justify-between gap-4">
+        <div className="glass-panel rounded-3xl p-8 xl:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("stats")}
+            className="flex w-full items-center justify-between text-left"
+          >
             <h2 className="text-lg font-bold text-slate-900">Sayilarla Veriler</h2>
-            <div className="flex items-center gap-3">
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedSections.stats ? "rotate-180" : ""}`} />
+          </button>
+
+          {expandedSections.stats ? (
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div />
+              <div className="flex items-center gap-3">
               <select
                 value={settings.homepage.stats_mode}
                 onChange={(event) =>
@@ -670,8 +772,8 @@ export default function AdminSettingsPage() {
                 <Plus className="h-4 w-4" />
                 Alan Ekle
               </button>
+              </div>
             </div>
-          </div>
 
           {settings.homepage.stats_mode === "auto" ? (
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5">
@@ -708,10 +810,21 @@ export default function AdminSettingsPage() {
               ))}
             </div>
           ) : null}
+          </div>
+          ) : null}
         </div>
 
-        <div className="glass-panel space-y-4 rounded-3xl p-8 xl:col-span-2">
-          <h2 className="text-lg font-bold text-slate-900">Hakkimizda Icerigi</h2>
+        <div className="glass-panel rounded-3xl p-8 xl:col-span-2">
+          <button
+            type="button"
+            onClick={() => toggleSection("about")}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-bold text-slate-900">Hakkimizda Icerigi</h2>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedSections.about ? "rotate-180" : ""}`} />
+          </button>
+          {expandedSections.about ? (
+          <div className="mt-4 space-y-4">
           <input value={settings.about.hero_title} onChange={(event) => setSettings((current) => ({ ...current, about: { ...current.about, hero_title: event.target.value } }))} placeholder="Hero baslik" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
           <textarea value={settings.about.hero_description} onChange={(event) => setSettings((current) => ({ ...current, about: { ...current.about, hero_description: event.target.value } }))} rows={3} placeholder="Hero aciklama" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -732,6 +845,8 @@ export default function AdminSettingsPage() {
           <textarea value={settings.about.activities_teaser_text} onChange={(event) => setSettings((current) => ({ ...current, about: { ...current.about, activities_teaser_text: event.target.value } }))} rows={2} placeholder="Faaliyet teaser metni" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
           <input value={settings.about.journey_title} onChange={(event) => setSettings((current) => ({ ...current, about: { ...current.about, journey_title: event.target.value } }))} placeholder="Yolculuk basligi" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
           <textarea value={settings.about.journey_text} onChange={(event) => setSettings((current) => ({ ...current, about: { ...current.about, journey_text: event.target.value } }))} rows={2} placeholder="Yolculuk metni" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+          </div>
+          ) : null}
         </div>
       </div>
 

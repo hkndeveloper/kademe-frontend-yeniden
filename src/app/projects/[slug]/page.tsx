@@ -88,6 +88,7 @@ export default function ProjectDetailPage() {
   const [formValues, setFormValues] = useState<Record<string, string | string[]>>({});
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -131,6 +132,12 @@ export default function ProjectDetailPage() {
 
     if (!project.active_period) {
       setErrorMessage("Bu proje icin aktif donem bulunmuyor.");
+      return;
+    }
+
+    // Dinamik alanlar varsa ilk tikta formu ac, ikinci adimda gonder.
+    if (!showApplicationForm && (applicationForm?.fields?.length ?? 0) > 0) {
+      setShowApplicationForm(true);
       return;
     }
 
@@ -452,7 +459,7 @@ export default function ProjectDetailPage() {
 
             {project.is_application_open ? (
               <div className="space-y-5">
-                {applicationForm && applicationForm.fields.length > 0 ? (
+                {showApplicationForm && applicationForm && applicationForm.fields.length > 0 ? (
                   <div className="space-y-5">
                     <div className="flex items-center gap-2 text-sm font-bold text-foreground">
                       <FileText className="h-4 w-4 text-primary" />
@@ -470,11 +477,26 @@ export default function ProjectDetailPage() {
                         </div>
                       );
                     })}
+                    <button
+                      type="button"
+                      onClick={() => setShowApplicationForm(false)}
+                      className="w-full rounded-xl border border-border bg-muted/50 py-3 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted"
+                    >
+                      Formu Kapat
+                    </button>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                    Bu proje icin ozel form tanimi bulunmuyor. Varsayilan basvuru akisi kullanilacak.
-                  </div>
+                  <>
+                    {applicationForm && applicationForm.fields.length > 0 ? (
+                      <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        Dinamik sorular basvuru adiminda acilacaktir.
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        Bu proje icin ozel form tanimi bulunmuyor. Varsayilan basvuru akisi kullanilacak.
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <button
@@ -482,7 +504,14 @@ export default function ProjectDetailPage() {
                   disabled={applying}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-primary-foreground shadow-lg transition-all hover:shadow-primary/50 disabled:opacity-70"
                 >
-                  {applying ? <Loader2 className="h-5 w-5 animate-spin" /> : <><MessageSquareText className="h-5 w-5" />Hemen Basvur</>}
+                  {applying ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <MessageSquareText className="h-5 w-5" />
+                      {showApplicationForm || (applicationForm?.fields?.length ?? 0) === 0 ? "Basvuruyu Gonder" : "Hemen Basvur"}
+                    </>
+                  )}
                 </button>
               </div>
             ) : (
