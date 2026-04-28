@@ -31,7 +31,7 @@ export default function AdminSettingsPage() {
   const { hasPermission } = usePermissions();
   const canUpdateSettings = hasPermission("settings.update") || hasPermission("content.site_settings.update");
 
-  const [settings, setSettings] = useState<SiteSettingsPayload | null>(null);
+  const [settings, setSettings] = useState<SiteSettingsPayload>(defaultSiteSettings);
   const [computedStats, setComputedStats] = useState<Array<{ label: string; value: string; icon: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,7 +52,7 @@ export default function AdminSettingsPage() {
           api.get<{ programs: ActivityOption[] }>("/activities").catch(() => ({ data: { programs: [] as ActivityOption[] } })),
         ]);
 
-        setSettings(settingsResponse.data.settings ?? null);
+        setSettings(settingsResponse.data.settings ?? defaultSiteSettings);
         setComputedStats(settingsResponse.data.computed_homepage_stats ?? []);
         setProjectOptions(projectsResponse.data.projects ?? []);
 
@@ -88,7 +88,7 @@ export default function AdminSettingsPage() {
       }>("/admin/site-settings", {
         settings,
       });
-      setSettings(response.data.settings ?? null);
+      setSettings(response.data.settings ?? defaultSiteSettings);
       setComputedStats(response.data.computed_homepage_stats ?? []);
       setFeedback(response.data.message);
     } catch (error) {
@@ -313,14 +313,6 @@ export default function AdminSettingsPage() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-indigo-400" />
-      </div>
-    );
-  }
-
-  if (!settings) {
-    return (
-      <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-200">
-        Site ayarlari su anda alinamiyor. Lutfen baglantiyi kontrol edip tekrar deneyin.
       </div>
     );
   }
