@@ -33,15 +33,10 @@ export default function AdminLayout({
         return;
       }
 
-      if (u.role === "coordinator") {
-        router.replace("/coordinator/dashboard");
-        return;
-      }
-
-      if (u.role === "staff") {
+      if (u.role === "coordinator" || u.role === "staff") {
         const keys = getAdminShellPermissionKeys();
         if (!useAuth.getState().hasAnyPermission(keys)) {
-          router.replace("/staff/dashboard");
+          router.replace(u.role === "coordinator" ? "/coordinator/dashboard" : "/staff/dashboard");
           return;
         }
         setLoading(false);
