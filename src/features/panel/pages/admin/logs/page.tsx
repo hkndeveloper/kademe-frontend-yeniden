@@ -59,6 +59,7 @@ export default function AdminLogsPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [warningMessage, setWarningMessage] = useState("");
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [logNameFilter, setLogNameFilter] = useState<"" | "permissions">("");
@@ -71,12 +72,16 @@ export default function AdminLogsPage() {
     }
     setLoading(true);
     setErrorMessage("");
+    setWarningMessage("");
     try {
       const res = await api.get("/panel/dashboard/activity-logs", {
         params: logNameFilter ? { log_name: logNameFilter } : undefined,
       });
       const raw = Array.isArray(res.data?.logs) ? res.data.logs : [];
       setLogs(raw.map((item: Record<string, unknown>) => normalizeActivityRow(item)));
+      if (typeof res.data?.warning === "string") {
+        setWarningMessage(res.data.warning);
+      }
     } catch (error) {
       console.error("Loglar yuklenemedi", error);
       setErrorMessage("Loglar yuklenirken bir hata olustu.");
@@ -145,6 +150,11 @@ export default function AdminLogsPage() {
       {errorMessage && (
         <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {errorMessage}
+        </div>
+      )}
+      {warningMessage && !errorMessage && (
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          {warningMessage}
         </div>
       )}
 
