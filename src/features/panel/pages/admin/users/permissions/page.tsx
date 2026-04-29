@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, History, Loader2, Plus, Save, Shield, ShieldAlert, Trash2, UserCog, X } from "lucide-react";
 import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
@@ -31,9 +31,12 @@ interface PermissionMatrixResponse {
   permission_groups: Record<string, PermissionItem[]>;
   granular_matrix_groups: Record<string, PermissionItem[]>;
   granular_permission_groups: Record<string, string[]>;
+  role_permission_scopes?: Record<string, Record<string, { scope_type: ScopeType; scope_payload: Record<string, unknown> }>>;
 }
 
 type MatrixState = Record<string, Set<string>>;
+type ScopeType = "all" | "own_projects" | "assigned_projects" | "own_unit" | "selected_projects" | "self" | "none";
+type RoleScopeState = Record<string, Record<string, { scope_type: ScopeType; scope_payload: Record<string, unknown> }>>;
 
 interface ManagedUser {
   id: number;
@@ -114,6 +117,10 @@ export default function PermissionsPage() {
   const [deletingRoleId, setDeletingRoleId] = useState<number | null>(null);
   const [roleAssignments, setRoleAssignments] = useState<string[]>([]);
   const [savingRoleAssignment, setSavingRoleAssignment] = useState(false);
+  const [permissionSearch, setPermissionSearch] = useState("");
+  const [changedOnly, setChangedOnly] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [rolePermissionScopes, setRolePermissionScopes] = useState<RoleScopeState>({});
 
   const loadAudit = useCallback(async () => {
     setAuditLoading(true);
@@ -141,6 +148,7 @@ export default function PermissionsPage() {
       setRoles(nextRoles);
       setGranularMatrixGroups(nextGranularMatrixGroups);
       setGranularPermissionGroups(nextGranularGroups);
+      setRolePermissionScopes(response.data.role_permission_scopes ?? {});
       setManagedUsers(userResponse.data.users ?? []);
       setRoleCatalog(roleResponse.data.roles ?? []);
       setGranularMatrix(
@@ -150,6 +158,13 @@ export default function PermissionsPage() {
           return accumulator;
         }, {})
       );
+      setExpandedGroups((current) => {
+        if (Object.keys(current).length > 0) return current;
+        return Object.keys(nextGranularMatrixGroups).reduce<Record<string, boolean>>((acc, group) => {
+          acc[group] = true;
+          return acc;
+        }, {});
+      });
     } catch (error) {
       console.error("Yetki matrisi yuklenemedi", error);
       if (isAxiosError(error) && error.response?.status === 403) {
@@ -243,6 +258,32 @@ export default function PermissionsPage() {
     });
   };
 
+  const updateRoleScopeType = (roleName: string, permissionName: string, scopeType: ScopeType) => {
+    setRolePermissionScopes((current) => ({
+      ...current,
+      [roleName]: {
+        ...(current[roleName] ?? {}),
+        [permissionName]: {
+          scope_type: scopeType,
+          scope_payload: current[roleName]?.[permissionName]?.scope_payload ?? {},
+        },
+      },
+    }));
+  };
+
+  const updateRoleScopePayload = (roleName: string, permissionName: string, scopePayload: Record<string, unknown>) => {
+    setRolePermissionScopes((current) => ({
+      ...current,
+      [roleName]: {
+        ...(current[roleName] ?? {}),
+        [permissionName]: {
+          scope_type: current[roleName]?.[permissionName]?.scope_type ?? "all",
+          scope_payload: scopePayload,
+        },
+      },
+    }));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSuccessMessage(null);
@@ -253,6 +294,14 @@ export default function PermissionsPage() {
         granular_matrix: roles.map((role) => ({
           role: role.name,
           permissions: Array.from(granularMatrix[role.name] ?? []),
+        })),
+        granular_scopes: roles.map((role) => ({
+          role: role.name,
+          scopes: Object.entries(rolePermissionScopes[role.name] ?? {}).map(([permission_name, scope]) => ({
+            permission_name,
+            scope_type: scope.scope_type,
+            scope_payload: scope.scope_payload ?? {},
+          })),
         })),
       });
 
@@ -403,6 +452,30 @@ export default function PermissionsPage() {
     }
   };
 
+  const filteredGroups = useMemo(() => {
+    const q = permissionSearch.trim().toLowerCase();
+    return Object.entries(granularMatrixGroups).reduce<Record<string, PermissionItem[]>>((acc, [group, permissions]) => {
+      const inGroup = permissions.filter((permission) => {
+        const changed = roles.some((role) => {
+          const baseline = role.granular_effective ?? role.permissions ?? [];
+          const currentAllowed = granularMatrix[role.name]?.has(permission.name) ?? false;
+          return currentAllowed !== baseline.includes(permission.name);
+        });
+        if (changedOnly && !changed) return false;
+        if (!q) return true;
+        return (
+          group.toLowerCase().includes(q) ||
+          permission.name.toLowerCase().includes(q) ||
+          (permission.description ?? "").toLowerCase().includes(q)
+        );
+      });
+      if (inGroup.length > 0) {
+        acc[group] = inGroup;
+      }
+      return acc;
+    }, {});
+  }, [permissionSearch, changedOnly, granularMatrixGroups, roles, granularMatrix]);
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -527,60 +600,116 @@ export default function PermissionsPage() {
         </div>
       </div>
 
-      <div className="glass-panel overflow-hidden rounded-[40px] border border-white/5">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr className="bg-white/5">
-                <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted-foreground">Modul / Yetki</th>
-                {roles.map((role) => (
-                  <th key={role.name} className="min-w-[160px] p-6 text-center">
-                    <div className="text-xs font-bold uppercase tracking-widest text-slate-900">{role.label}</div>
-                    <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">{role.user_count} kullanici</div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(granularMatrixGroups).map(([group, permissions]) => (
-                <Fragment key={group}>
-                  <tr>
-                    <td colSpan={roles.length + 1} className="bg-black/20 px-6 py-3 text-xs font-bold uppercase tracking-[0.3em] text-indigo-400">
-                      {group}
-                    </td>
-                  </tr>
-                  {permissions.map((permission) => (
-                    <tr key={permission.name} className="border-b border-white/5 hover:bg-white/5">
-                      <td className="p-6 align-top">
-                        <div className="font-mono text-xs font-bold text-slate-900">{permission.name}</div>
-                        {permission.description ? (
-                          <div className="mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">{permission.description}</div>
-                        ) : null}
-                      </td>
+      <div className="glass-panel space-y-4 overflow-hidden rounded-[40px] border border-white/5 p-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h3 className="text-lg font-black text-slate-900">Rol Yetki Matrisi (Moduler)</h3>
+            <p className="text-xs text-muted-foreground">Grup bazli ac/kapa, arama ve scope atama ile yonetin.</p>
+          </div>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <input
+              value={permissionSearch}
+              onChange={(event) => setPermissionSearch(event.target.value)}
+              placeholder="Yetki ara (orn: financial.view)"
+              className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-900"
+            />
+            <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <input type="checkbox" checked={changedOnly} onChange={(event) => setChangedOnly(event.target.checked)} />
+              Sadece degisenler
+            </label>
+          </div>
+        </div>
+
+        {Object.entries(filteredGroups).map(([group, permissions]) => (
+          <div key={group} className="rounded-2xl border border-white/10 bg-white/5">
+            <button
+              type="button"
+              onClick={() => setExpandedGroups((current) => ({ ...current, [group]: !current[group] }))}
+              className="flex w-full items-center justify-between px-4 py-3 text-left"
+            >
+              <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">
+                {group} ({permissions.length})
+              </span>
+              <span className="text-xs text-muted-foreground">{expandedGroups[group] ? "Daralt" : "Genislet"}</span>
+            </button>
+
+            {expandedGroups[group] ? (
+              <div className="space-y-3 border-t border-white/10 p-4">
+                {permissions.map((permission) => (
+                  <div key={permission.name} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                    <div className="mb-3">
+                      <div className="font-mono text-xs font-bold text-slate-900">{permission.name}</div>
+                      {permission.description ? <p className="mt-1 text-xs text-muted-foreground">{permission.description}</p> : null}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                       {roles.map((role) => {
                         const checked = role.name === "super_admin" || (granularMatrix[role.name]?.has(permission.name) ?? false);
+                        const scope = rolePermissionScopes[role.name]?.[permission.name];
+                        const scopeType: ScopeType = scope?.scope_type ?? "all";
+                        const projectPayload = String((scope?.scope_payload?.project_ids as number[] | undefined)?.join(",") ?? "");
+                        const unitPayload = String((scope?.scope_payload?.unit as string | undefined) ?? "");
 
                         return (
-                          <td key={`${permission.name}-${role.name}`} className="p-6 text-center">
-                            <label className="inline-flex cursor-pointer items-center justify-center">
+                          <div key={`${permission.name}-${role.name}`} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                            <div className="mb-2 flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-900">{role.label}</span>
                               <input
                                 type="checkbox"
                                 checked={checked}
                                 onChange={() => toggleGranularPermission(role.name, permission.name)}
                                 disabled={role.name === "super_admin" || saving}
-                                className="h-5 w-5 rounded border-slate-200 bg-white text-indigo-600 focus:ring-0 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="h-4 w-4 rounded border-slate-200 bg-white text-indigo-600 focus:ring-0 focus:ring-offset-0"
                               />
-                            </label>
-                          </td>
+                            </div>
+                            <select
+                              value={scopeType}
+                              onChange={(event) => updateRoleScopeType(role.name, permission.name, event.target.value as ScopeType)}
+                              disabled={!checked || saving}
+                              className="w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-slate-900"
+                            >
+                              <option value="all">all</option>
+                              <option value="own_projects">own_projects</option>
+                              <option value="assigned_projects">assigned_projects</option>
+                              <option value="selected_projects">selected_projects</option>
+                              <option value="own_unit">own_unit</option>
+                              <option value="self">self</option>
+                              <option value="none">none</option>
+                            </select>
+                            {scopeType === "selected_projects" ? (
+                              <input
+                                value={projectPayload}
+                                onChange={(event) => {
+                                  const projectIds = event.target.value
+                                    .split(",")
+                                    .map((item) => Number(item.trim()))
+                                    .filter((item) => Number.isFinite(item) && item > 0);
+                                  updateRoleScopePayload(role.name, permission.name, { project_ids: projectIds });
+                                }}
+                                disabled={!checked || saving}
+                                placeholder="1,2,3"
+                                className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-slate-900"
+                              />
+                            ) : null}
+                            {scopeType === "own_unit" ? (
+                              <input
+                                value={unitPayload}
+                                onChange={(event) => updateRoleScopePayload(role.name, permission.name, { unit: event.target.value })}
+                                disabled={!checked || saving}
+                                placeholder="Birim"
+                                className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-slate-900"
+                              />
+                            ) : null}
+                          </div>
                         );
                       })}
-                    </tr>
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ))}
       </div>
 
       <div className="glass-panel space-y-6 rounded-[40px] border border-white/5 p-8">
