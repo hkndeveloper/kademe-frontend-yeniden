@@ -38,6 +38,15 @@ interface PermissionMatrixResponse {
 type MatrixState = Record<string, Set<string>>;
 type ScopeType = "all" | "own_projects" | "assigned_projects" | "own_unit" | "selected_projects" | "self" | "none";
 type RoleScopeState = Record<string, Record<string, { scope_type: ScopeType; scope_payload: Record<string, unknown> }>>;
+const VALID_SCOPE_TYPES: ScopeType[] = [
+  "all",
+  "own_projects",
+  "assigned_projects",
+  "own_unit",
+  "selected_projects",
+  "self",
+  "none",
+];
 
 interface ManagedUser {
   id: number;
@@ -353,13 +362,36 @@ export default function PermissionsPage() {
     setErrorMessage(null);
 
     try {
+      const normalizedOverrides = userOverrides
+        .map((override) => {
+          const permissionName = String(override.permission_name ?? "").trim();
+          const effect = override.effect === "deny" ? "deny" : "allow";
+          const rawScopeType = (override.scope_type ?? "") as ScopeType | "";
+          const scopeType = VALID_SCOPE_TYPES.includes(rawScopeType as ScopeType) ? rawScopeType : null;
+
+          let scopePayload: Record<string, unknown> = {};
+          if (scopeType === "selected_projects") {
+            const projectIds = Array.isArray(override.scope_payload?.project_ids)
+              ? (override.scope_payload?.project_ids as unknown[])
+                  .map((item) => Number(item))
+                  .filter((item) => Number.isFinite(item) && item > 0)
+              : [];
+            scopePayload = { project_ids: projectIds };
+          } else if (scopeType === "own_unit") {
+            scopePayload = { unit: String(override.scope_payload?.unit ?? "").trim() };
+          }
+
+          return {
+            permission_name: permissionName,
+            effect,
+            scope_type: scopeType,
+            scope_payload: scopePayload,
+          };
+        })
+        .filter((override) => override.permission_name.length > 0);
+
       await api.put(`/panel/permissions-matrix/users/${selectedUserId}`, {
-        overrides: userOverrides.map((override) => ({
-          permission_name: override.permission_name,
-          effect: override.effect,
-          scope_type: override.scope_type || null,
-          scope_payload: override.scope_payload ?? {},
-        })),
+        overrides: normalizedOverrides,
       });
 
       setSuccessMessage("Kullaniciya ozel yetkiler guncellendi.");
@@ -372,8 +404,14 @@ export default function PermissionsPage() {
       console.error("Kullanici override kaydedilemedi", error);
       const fallbackMessage = "Kullaniciya ozel yetkiler kaydedilemedi.";
       if (isAxiosError(error)) {
-        const responseMessage =
-          (error.response?.data as { message?: string } | undefined)?.message ?? fallbackMessage;
+        const payload = error.response?.data as
+          | { message?: string; errors?: Record<string, string[] | string> }
+          | undefined;
+        const validationMessages = Object.values(payload?.errors ?? {})
+          .flatMap((value) => (Array.isArray(value) ? value : [value]))
+          .filter(Boolean)
+          .join(" | ");
+        const responseMessage = validationMessages || payload?.message || fallbackMessage;
         setErrorMessage(responseMessage);
       } else {
         setErrorMessage(fallbackMessage);
