@@ -2,11 +2,11 @@
 export function homePathForRole(role: string | undefined): string {
   switch (role) {
     case "super_admin":
-      return "/admin/dashboard";
+      return "/panel/dashboard";
     case "coordinator":
-      return "/coordinator/dashboard";
+      return "/panel/dashboard";
     case "staff":
-      return "/staff/dashboard";
+      return "/panel/dashboard";
     case "alumni":
       return "/alumni/dashboard";
     case "student":

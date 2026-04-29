@@ -112,15 +112,11 @@ export default function HomePage() {
   );
 
   const dashboardLink =
-    user?.role === "super_admin"
-      ? "/admin/dashboard"
-      : user?.role === "coordinator"
-        ? "/coordinator/dashboard"
-        : user?.role === "staff"
-          ? "/staff/dashboard"
-          : user?.role === "alumni"
-            ? "/alumni/dashboard"
-            : "/student/dashboard";
+    user?.role === "super_admin" || user?.role === "coordinator" || user?.role === "staff"
+      ? "/panel/dashboard"
+      : user?.role === "alumni"
+        ? "/alumni/dashboard"
+        : "/student/dashboard";
 
   const projectColors = ["from-blue-600 to-cyan-500", "from-orange-500 to-red-600", "from-green-500 to-emerald-600", "from-indigo-500 to-blue-600"];
   const featuredProjects =

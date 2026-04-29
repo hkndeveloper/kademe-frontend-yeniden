@@ -33,9 +33,21 @@ interface ProjectContentResponse {
   editable: EditableProjectContent;
 }
 
+type PanelContentBasePath = "/admin" | "/coordinator" | "/panel";
+
+function panelContentApiRoot(base: PanelContentBasePath): "/admin" | "/panel" {
+  return base === "/panel" ? "/panel" : "/admin";
+}
+
+function projectListHref(base: PanelContentBasePath): string {
+  if (base === "/panel") return "/panel/projects";
+  if (base === "/admin") return "/admin/projects";
+  return "/coordinator/projects";
+}
+
 interface ProjectContentEditorProps {
   projectId: string;
-  panelBasePath: "/admin" | "/coordinator";
+  panelBasePath: PanelContentBasePath;
   /** When true, form is view-only (no save, uploads, or field edits). */
   readOnly?: boolean;
 }
@@ -66,7 +78,8 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
   useEffect(() => {
     const loadProject = async () => {
       try {
-        const response = await api.get<ProjectContentResponse>(`/admin/projects/${projectId}/content`);
+        const root = panelContentApiRoot(panelBasePath);
+        const response = await api.get<ProjectContentResponse>(`${root}/projects/${projectId}/content`);
         setProject(response.data.project);
         setForm({
           ...response.data.editable,
@@ -89,7 +102,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
     };
 
     void loadProject();
-  }, [projectId]);
+  }, [projectId, panelBasePath]);
 
   const updateGalleryItem = (index: number, value: string) => {
     if (readOnly) return;
@@ -130,7 +143,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
       formData.append("file", file);
       formData.append("folder", folder);
 
-      const response = await api.post<{ url: string }>("/admin/media/upload", formData, {
+      const response = await api.post<{ url: string }>(`${panelContentApiRoot(panelBasePath)}/media/upload`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -152,7 +165,8 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
     setErrorMessage(null);
 
     try {
-      const response = await api.put<ProjectContentResponse & { message: string }>(`/admin/projects/${projectId}/content`, {
+      const root = panelContentApiRoot(panelBasePath);
+      const response = await api.put<ProjectContentResponse & { message: string }>(`${root}/projects/${projectId}/content`, {
         ...form,
         quota: form.quota === "" ? null : Number(form.quota),
         gallery_paths: form.gallery_paths.filter(Boolean),
@@ -187,7 +201,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <Link href={panelBasePath === "/admin" ? "/admin/projects" : "/coordinator/projects"} className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-white">
+          <Link href={projectListHref(panelBasePath)} className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-white">
             <ArrowLeft className="h-4 w-4" />
             Proje listesine don
           </Link>
