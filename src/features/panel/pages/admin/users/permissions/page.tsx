@@ -32,6 +32,7 @@ interface PermissionMatrixResponse {
   granular_matrix_groups: Record<string, PermissionItem[]>;
   granular_permission_groups: Record<string, string[]>;
   role_permission_scopes?: Record<string, Record<string, { scope_type: ScopeType; scope_payload: Record<string, unknown> }>>;
+  role_scope_storage_ready?: boolean;
 }
 
 type MatrixState = Record<string, Set<string>>;
@@ -121,6 +122,7 @@ export default function PermissionsPage() {
   const [changedOnly, setChangedOnly] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [rolePermissionScopes, setRolePermissionScopes] = useState<RoleScopeState>({});
+  const [roleScopeStorageReady, setRoleScopeStorageReady] = useState(true);
 
   const loadAudit = useCallback(async () => {
     setAuditLoading(true);
@@ -149,6 +151,7 @@ export default function PermissionsPage() {
       setGranularMatrixGroups(nextGranularMatrixGroups);
       setGranularPermissionGroups(nextGranularGroups);
       setRolePermissionScopes(response.data.role_permission_scopes ?? {});
+      setRoleScopeStorageReady(response.data.role_scope_storage_ready ?? true);
       setManagedUsers(userResponse.data.users ?? []);
       setRoleCatalog(roleResponse.data.roles ?? []);
       setGranularMatrix(
@@ -513,6 +516,12 @@ export default function PermissionsPage() {
           {successMessage || errorMessage}
         </div>
       )}
+
+      {!roleScopeStorageReady ? (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
+          Role-scope depolama tablosu hazir degil. Scope secimleri kalici uygulanmayabilir (backend migration gerekli).
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="glass-panel rounded-3xl p-6">
