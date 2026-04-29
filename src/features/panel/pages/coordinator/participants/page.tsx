@@ -71,7 +71,7 @@ export default function CoordinatorParticipantsPage() {
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
-        const response = await api.get<ParticipantsResponse>("/panel/coordinator/participants");
+        const response = await api.get<ParticipantsResponse>("/panel/participants");
         setProjects(response.data.projects ?? []);
         setParticipants(response.data.participants ?? []);
         setSummary(response.data.summary);
@@ -129,7 +129,7 @@ export default function CoordinatorParticipantsPage() {
           fallback={<span className="text-sm text-muted-foreground">Disa aktarma yetkiniz yok.</span>}
         >
         <ExportButtons
-          endpoint="/panel/coordinator/participants/export"
+          endpoint="/panel/participants/export"
           filename="koordinator_katilimcilar"
           params={{
             project_id: projectFilter !== "all" ? projectFilter : undefined,

@@ -35,7 +35,7 @@ export default function StaffMembersPage() {
   useEffect(() => {
     const loadMembers = async () => {
       try {
-        const response = await api.get<{ members: PaginatedMembers; unit?: string | null; message?: string }>("/panel/staff/members");
+        const response = await api.get<{ members: PaginatedMembers; unit?: string | null; message?: string }>("/panel/members");
         setMembers(response.data.members?.data ?? []);
         setUnit(response.data.unit ?? "");
         if (response.data.message) {
@@ -70,7 +70,7 @@ export default function StaffMembersPage() {
           </div>
         </div>
         <PermissionGate permission="staff.export">
-          <ExportButtons endpoint="/panel/staff/members/export" filename="birim_uyeleri" params={{ search: search || undefined }} buttonLabel="Uyeleri Disa Aktar" />
+          <ExportButtons endpoint="/panel/members/export" filename="birim_uyeleri" params={{ search: search || undefined }} buttonLabel="Uyeleri Disa Aktar" />
         </PermissionGate>
       </div>
 
