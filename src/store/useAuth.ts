@@ -114,7 +114,13 @@ export const useAuth = create<AuthState>()(
         }
 
         try {
-          const response = await api.get("/auth/me");
+          const response = await api.get("/auth/me", {
+            params: { t: Date.now() },
+            headers: {
+              "Cache-Control": "no-cache",
+              Pragma: "no-cache",
+            },
+          });
           set({
             user: response.data.user,
             isAuthenticated: true,

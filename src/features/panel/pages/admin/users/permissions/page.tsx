@@ -2,7 +2,10 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, History, Loader2, Plus, Save, Shield, ShieldAlert, Trash2, UserCog, X } from "lucide-react";
+import { isAxiosError } from "axios";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api/axios";
+import { homePathForRole } from "@/lib/role-home";
 import { useAuth } from "@/store/useAuth";
 
 interface RoleItem {
@@ -83,6 +86,8 @@ interface RoleCatalogItem {
 }
 
 export default function PermissionsPage() {
+  const router = useRouter();
+  const authRole = useAuth((state) => state.user?.role);
   const authUserId = useAuth((state) => state.user?.id);
   const refreshAuthProfile = useAuth((state) => state.fetchProfile);
   const [roles, setRoles] = useState<RoleItem[]>([]);
@@ -147,6 +152,12 @@ export default function PermissionsPage() {
       );
     } catch (error) {
       console.error("Yetki matrisi yuklenemedi", error);
+      if (isAxiosError(error) && error.response?.status === 403) {
+        setErrorMessage("Bu ekrani goruntuleme yetkiniz artik yok. Panele yonlendiriliyorsunuz.");
+        await refreshAuthProfile();
+        router.replace(homePathForRole(authRole ?? "staff"));
+        return;
+      }
       setErrorMessage("Yetki matrisi yuklenemedi.");
     } finally {
       setLoading(false);

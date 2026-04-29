@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/store/useAuth";
@@ -20,9 +20,10 @@ export default function UnifiedPanelLayout({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const checkAuth = async () => {
+  const runAuthCheck = useCallback(
+    async (showLoading = false) => {
       if (!_hasHydrated) return;
+      if (showLoading) setLoading(true);
       if (!isAuthenticated) {
         router.replace("/auth/login");
         return;
@@ -57,10 +58,33 @@ export default function UnifiedPanelLayout({
       } finally {
         setLoading(false);
       }
+    },
+    [_hasHydrated, isAuthenticated, fetchProfile, pathname, router]
+  );
+
+  useEffect(() => {
+    void runAuthCheck(true);
+  }, [runAuthCheck]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      void runAuthCheck(false);
     };
 
-    void checkAuth();
-  }, [isAuthenticated, fetchProfile, router, _hasHydrated, pathname]);
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        void runAuthCheck(false);
+      }
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [runAuthCheck]);
 
   if (loading) {
     return (
