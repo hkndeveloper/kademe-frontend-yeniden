@@ -119,7 +119,7 @@ export default function CoordinatorFinancialsPage() {
       setErrorMessage("");
       try {
         const [projectResponse] = await Promise.all([
-          api.get<{ projects: Project[] }>("/projects"),
+          api.get<{ projects: Project[] }>("/panel/projects/manageable"),
           loadTransactions(),
         ]);
         setProjects(projectResponse.data.projects ?? []);
