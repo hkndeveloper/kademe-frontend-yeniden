@@ -370,7 +370,14 @@ export default function PermissionsPage() {
       }
     } catch (error) {
       console.error("Kullanici override kaydedilemedi", error);
-      setErrorMessage("Kullaniciya ozel yetkiler kaydedilemedi.");
+      const fallbackMessage = "Kullaniciya ozel yetkiler kaydedilemedi.";
+      if (isAxiosError(error)) {
+        const responseMessage =
+          (error.response?.data as { message?: string } | undefined)?.message ?? fallbackMessage;
+        setErrorMessage(responseMessage);
+      } else {
+        setErrorMessage(fallbackMessage);
+      }
     } finally {
       setSaving(false);
     }
@@ -478,6 +485,11 @@ export default function PermissionsPage() {
       return acc;
     }, {});
   }, [permissionSearch, changedOnly, granularMatrixGroups, roles, granularMatrix]);
+
+  const selectablePermissionNames = useMemo(
+    () => new Set(Object.values(granularPermissionGroups).flat()),
+    [granularPermissionGroups]
+  );
 
   if (loading) {
     return (
@@ -860,6 +872,11 @@ export default function PermissionsPage() {
                       onChange={(event) => updateOverride(index, { permission_name: event.target.value })}
                       className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-900 outline-none"
                     >
+                      {!selectablePermissionNames.has(override.permission_name) ? (
+                        <option value={override.permission_name}>
+                          {override.permission_name} (legacy)
+                        </option>
+                      ) : null}
                       {Object.entries(granularPermissionGroups).map(([group, permissions]) => (
                         <optgroup key={group} label={group}>
                           {permissions.map((permission) => (
