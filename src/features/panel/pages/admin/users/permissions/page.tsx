@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, History, Loader2, Plus, Save, Shield, ShieldAlert, Trash2, UserCog, X } from "lucide-react";
 import api from "@/lib/api/axios";
+import { useAuth } from "@/store/useAuth";
 
 interface RoleItem {
   id: number;
@@ -82,6 +83,8 @@ interface RoleCatalogItem {
 }
 
 export default function PermissionsPage() {
+  const authUserId = useAuth((state) => state.user?.id);
+  const refreshAuthProfile = useAuth((state) => state.fetchProfile);
   const [roles, setRoles] = useState<RoleItem[]>([]);
   const [granularMatrixGroups, setGranularMatrixGroups] = useState<Record<string, PermissionItem[]>>({});
   const [granularPermissionGroups, setGranularPermissionGroups] = useState<Record<string, string[]>>({});
@@ -245,6 +248,7 @@ export default function PermissionsPage() {
       setSuccessMessage("Granular yetki matrisi guncellendi.");
       await loadData();
       await loadAudit();
+      await refreshAuthProfile();
     } catch (error) {
       console.error("Yetki matrisi kaydedilemedi", error);
       setErrorMessage("Yetki matrisi kaydedilemedi.");
@@ -298,6 +302,9 @@ export default function PermissionsPage() {
       setSuccessMessage("Kullaniciya ozel yetkiler guncellendi.");
       await loadUserOverrides(selectedUserId);
       await loadAudit();
+      if (Number(selectedUserId) === authUserId) {
+        await refreshAuthProfile();
+      }
     } catch (error) {
       console.error("Kullanici override kaydedilemedi", error);
       setErrorMessage("Kullaniciya ozel yetkiler kaydedilemedi.");
@@ -374,6 +381,9 @@ export default function PermissionsPage() {
       await loadUserOverrides(selectedUserId);
       await loadData();
       await loadAudit();
+      if (Number(selectedUserId) === authUserId) {
+        await refreshAuthProfile();
+      }
     } catch (error) {
       console.error("Kullanici rolleri kaydedilemedi", error);
       setErrorMessage("Kullanici rolleri kaydedilemedi.");
