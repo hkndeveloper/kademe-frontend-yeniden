@@ -85,9 +85,21 @@ export default function CoordinatorDashboardPage() {
       setErrorMessage("");
 
       try {
+        const projectPermissionForDashboard = hasPermission("projects.view")
+          ? "projects.view"
+          : hasPermission("programs.view")
+          ? "programs.view"
+          : hasPermission("applications.view")
+          ? "applications.view"
+          : hasPermission("announcements.create")
+          ? "announcements.create"
+          : null;
+
         const [manageableProjectsResponse, financialsResponse] = await Promise.all([
-          hasPermission("projects.view")
-            ? api.get<{ projects?: Project[] }>("/panel/projects/manageable")
+          projectPermissionForDashboard
+            ? api.get<{ projects?: Project[] }>("/panel/projects/manageable", {
+                params: { permission: projectPermissionForDashboard },
+              })
             : Promise.resolve({ data: { projects: [] as Project[] } }),
           hasPermission("financial.view")
             ? api.get<CoordinatorFinancialResponse>("/panel/coordinator/financials")

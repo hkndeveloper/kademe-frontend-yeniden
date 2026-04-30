@@ -90,7 +90,9 @@ export default function CoordinatorApplicationsPage() {
   useEffect(() => {
     const loadApplications = async () => {
       try {
-        const projectResponse = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
+        const projectResponse = await api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+          params: { permission: "applications.view" },
+        });
         const projectItems = (projectResponse.data.projects ?? []).filter((project) =>
           canAccessProject("applications.view", project.id)
         );

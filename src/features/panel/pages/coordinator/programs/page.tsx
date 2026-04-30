@@ -102,12 +102,19 @@ export default function CoordinatorProgramsPage() {
     setErrorMessage(null);
 
     try {
-      const projectResponse = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
-      const allManageableProjects = projectResponse.data.projects ?? [];
-      const manageableProjects = allManageableProjects.filter(
+      const [viewableProjectResponse, creatableProjectResponse] = await Promise.all([
+        api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+          params: { permission: "programs.view" },
+        }),
+        api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+          params: { permission: "programs.create" },
+        }),
+      ]);
+
+      const manageableProjects = (viewableProjectResponse.data.projects ?? []).filter(
         (project) => canAccessProject("programs.view", project.id)
       );
-      const allowedCreateProjects = allManageableProjects.filter(
+      const allowedCreateProjects = (creatableProjectResponse.data.projects ?? []).filter(
         (project) => project.active_period?.id && canAccessProject("programs.create", project.id)
       );
       setProjects(manageableProjects);
