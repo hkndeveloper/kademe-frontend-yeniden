@@ -37,6 +37,21 @@ interface Program {
   feedback_count?: number;
 }
 
+interface AttendanceRecord {
+  id: number;
+  student: string;
+  email?: string | null;
+  method: string;
+  is_valid: boolean;
+  feedback_submitted: boolean;
+  recorded_at?: string | null;
+}
+
+interface AttendanceSummary {
+  attendance_count: number;
+  feedback_count: number;
+}
+
 interface ProgramFormState {
   project_id: string;
   title: string;
@@ -71,10 +86,14 @@ export default function CoordinatorProgramsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProgramId, setEditingProgramId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [form, setForm] = useState<ProgramFormState>(initialForm);
+  const [attendanceModalProgram, setAttendanceModalProgram] = useState<Program | null>(null);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
   const canViewAttendanceStats = hasPermission("programs.attendance.view");
 
   const loadPrograms = async () => {
@@ -217,6 +236,26 @@ export default function CoordinatorProgramsPage() {
     } catch (error) {
       console.error("Program tamamlanamadi", error);
       setErrorMessage("Program tamamlanamadi.");
+    }
+  };
+
+  const openAttendanceModal = async (program: Program) => {
+    setAttendanceModalProgram(program);
+    setAttendanceLoading(true);
+    setAttendanceRecords([]);
+    setAttendanceSummary(null);
+    try {
+      const response = await api.get<{
+        summary?: AttendanceSummary;
+        records?: AttendanceRecord[];
+      }>(`/panel/programs/${program.id}/attendances`);
+      setAttendanceSummary(response.data.summary ?? null);
+      setAttendanceRecords(response.data.records ?? []);
+    } catch (error) {
+      console.error("Yoklama detaylari yuklenemedi", error);
+      setErrorMessage("Yoklama detaylari yuklenemedi.");
+    } finally {
+      setAttendanceLoading(false);
     }
   };
 
@@ -467,6 +506,14 @@ export default function CoordinatorProgramsPage() {
                 </div>
 
                 <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row">
+                  {canViewAttendanceStats ? (
+                    <button
+                      onClick={() => void openAttendanceModal(program)}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold transition-colors hover:bg-muted"
+                    >
+                      Yoklama Detayi
+                    </button>
+                  ) : null}
                   <button
                     onClick={() => openEditForm(program)}
                     className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold transition-colors hover:bg-muted"
@@ -495,6 +542,80 @@ export default function CoordinatorProgramsPage() {
           ))}
         </div>
       )}
+      {attendanceModalProgram ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-black text-slate-900">Yoklama Detaylari</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{attendanceModalProgram.title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAttendanceModalProgram(null)}
+                className="rounded-full p-2 text-muted-foreground transition hover:bg-white/10 hover:text-slate-900"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="text-xs text-muted-foreground">
+                Toplam yoklama: {attendanceSummary?.attendance_count ?? 0} - Geri bildirim: {attendanceSummary?.feedback_count ?? 0}
+              </div>
+              <PermissionGate permission="programs.attendance.export">
+                <ExportButtons
+                  endpoint={`/panel/programs/${attendanceModalProgram.id}/attendances/export`}
+                  filename={`program_${attendanceModalProgram.id}_yoklama`}
+                  buttonLabel="Yoklamayi Disa Aktar"
+                />
+              </PermissionGate>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto rounded-2xl border border-white/10">
+              <table className="w-full text-left text-sm text-muted-foreground">
+                <thead className="border-b border-white/10 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
+                  <tr>
+                    <th className="px-4 py-3">Ogrenci</th>
+                    <th className="px-4 py-3">Yontem</th>
+                    <th className="px-4 py-3">Konum</th>
+                    <th className="px-4 py-3">Geri Bildirim</th>
+                    <th className="px-4 py-3">Zaman</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {attendanceLoading ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-10 text-center">
+                        <Loader2 className="mx-auto h-6 w-6 animate-spin text-accent" />
+                      </td>
+                    </tr>
+                  ) : attendanceRecords.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                        Kayit bulunamadi.
+                      </td>
+                    </tr>
+                  ) : (
+                    attendanceRecords.map((record) => (
+                      <tr key={record.id}>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-slate-900">{record.student}</div>
+                          <div className="text-xs text-muted-foreground">{record.email ?? "-"}</div>
+                        </td>
+                        <td className="px-4 py-3">{record.method}</td>
+                        <td className="px-4 py-3">{record.is_valid ? "Dogrulandi" : "Alan disi"}</td>
+                        <td className="px-4 py-3">{record.feedback_submitted ? "Gonderdi" : "Bekliyor"}</td>
+                        <td className="px-4 py-3">{record.recorded_at ? new Date(record.recorded_at).toLocaleString("tr-TR") : "-"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
     </PermissionGate>
   );
