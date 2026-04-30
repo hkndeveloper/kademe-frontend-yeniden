@@ -173,7 +173,7 @@ export default function PermissionsPage() {
       setExpandedGroups((current) => {
         if (Object.keys(current).length > 0) return current;
         return Object.keys(nextGranularMatrixGroups).reduce<Record<string, boolean>>((acc, group) => {
-          acc[group] = true;
+          acc[group] = false;
           return acc;
         }, {});
       });
