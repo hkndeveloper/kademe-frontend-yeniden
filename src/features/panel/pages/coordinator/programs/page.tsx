@@ -8,6 +8,7 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
+import type { AxiosError } from "axios";
 
 interface ActivePeriod {
   id: number;
@@ -97,24 +98,36 @@ export default function CoordinatorProgramsPage() {
   const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
   const canViewAttendanceStats = hasPermission("programs.attendance.view");
 
+  const loadProjectsByPermission = async (permission: "programs.view" | "programs.create") => {
+    try {
+      const response = await api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+        params: { permission },
+      });
+      return response.data.projects ?? [];
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      if (axiosError.response?.status === 422) {
+        const fallback = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
+        return (fallback.data.projects ?? []).filter((project) => canAccessProject(permission, project.id));
+      }
+      throw error;
+    }
+  };
+
   const loadPrograms = async () => {
     setRefreshing(true);
     setErrorMessage(null);
 
     try {
-      const [viewableProjectResponse, creatableProjectResponse] = await Promise.all([
-        api.get<{ projects: Project[] }>("/panel/projects/manageable", {
-          params: { permission: "programs.view" },
-        }),
-        api.get<{ projects: Project[] }>("/panel/projects/manageable", {
-          params: { permission: "programs.create" },
-        }),
+      const [viewableProjects, creatableProjectsRaw] = await Promise.all([
+        loadProjectsByPermission("programs.view"),
+        loadProjectsByPermission("programs.create"),
       ]);
 
-      const manageableProjects = (viewableProjectResponse.data.projects ?? []).filter(
+      const manageableProjects = viewableProjects.filter(
         (project) => canAccessProject("programs.view", project.id)
       );
-      const allowedCreateProjects = (creatableProjectResponse.data.projects ?? []).filter(
+      const allowedCreateProjects = creatableProjectsRaw.filter(
         (project) => project.active_period?.id && canAccessProject("programs.create", project.id)
       );
       setProjects(manageableProjects);
