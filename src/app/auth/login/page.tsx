@@ -7,7 +7,7 @@ import { isAxiosError } from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api, { getCsrfCookie } from "@/lib/api/axios";
-import { homePathForRole } from "@/lib/role-home";
+import { homePathForUser } from "@/lib/role-home";
 import { useAuth } from "@/store/useAuth";
 
 export default function LoginPage() {
@@ -30,7 +30,7 @@ export default function LoginPage() {
 
       setAuth(response.data.user, response.data.access_token);
 
-      router.replace(homePathForRole(response.data.user.role));
+      router.replace(homePathForUser(response.data.user));
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         console.error("Giriş Hatası Detayı:", err.response?.data);

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/store/useAuth";
-import { homePathForRole } from "@/lib/role-home";
+import { homePathForUser } from "@/lib/role-home";
 import { canAccessPanelPath } from "@/lib/panel-permissions";
 import { shouldShowMyProjectNav } from "@/lib/panel-scope";
 import { UnifiedPanelSidebar } from "@/components/shared/UnifiedPanelSidebar";
@@ -49,7 +49,7 @@ export default function UnifiedPanelLayout({
             router.replace("/panel/my-project");
             return;
           }
-          router.replace(homePathForRole(user.role));
+          router.replace(homePathForUser(user));
           return;
         }
       } catch (error) {
@@ -63,6 +63,7 @@ export default function UnifiedPanelLayout({
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void runAuthCheck(true);
   }, [runAuthCheck]);
 

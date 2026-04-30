@@ -77,7 +77,7 @@ const initialForm: ProgramFormState = {
   status: "scheduled",
 };
 
-export default function CoordinatorProgramsPage() {
+export default function PanelProgramsPage() {
   const { hasPermission, canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [creatableProjects, setCreatableProjects] = useState<Project[]>([]);
@@ -148,7 +148,7 @@ export default function CoordinatorProgramsPage() {
 
       setPrograms(responses.flat());
     } catch (error) {
-      console.error("Koordinator programlari yuklenemedi", error);
+      console.error("Panel programlari yuklenemedi", error);
       setErrorMessage("Program listesi yuklenemedi.");
     } finally {
       setLoading(false);
@@ -317,7 +317,7 @@ export default function CoordinatorProgramsPage() {
           >
           <ExportButtons
             endpoint="/panel/programs/export"
-            filename="koordinator_programlar"
+            filename="panel_programlar"
             params={{ project_id: selectedProjectId !== "all" ? selectedProjectId : undefined }}
             buttonLabel="Programlari Disa Aktar"
           />

@@ -8,11 +8,11 @@ import AdminPeriodsPage from "@/features/panel/pages/admin/periods/page";
 import AdminNewsletterPage from "@/features/panel/pages/admin/newsletter/page";
 import AdminLogsPage from "@/features/panel/pages/admin/logs/page";
 import AdminCertificatesPage from "@/features/panel/pages/admin/certificates/page";
-import CoordinatorProgramsPage from "@/features/panel/pages/coordinator/programs/page";
-import CoordinatorParticipantsPage from "@/features/panel/pages/coordinator/participants/page";
-import CoordinatorProgramQrPage from "@/features/panel/pages/coordinator/programs/qr-page";
-import StaffMyProjectPage from "@/features/panel/pages/staff/my-project/page";
-import StaffMembersPage from "@/features/panel/pages/staff/members/page";
+import PanelProgramsPage from "@/features/panel/pages/panel/programs/page";
+import PanelParticipantsPage from "@/features/panel/pages/panel/participants/page";
+import PanelProgramQrPage from "@/features/panel/pages/panel/programs/[id]/qr/page";
+import PanelMyProjectPage from "@/features/panel/pages/panel/my-project/page";
+import PanelMembersPage from "@/features/panel/pages/panel/members/page";
 import PanelSharedRequestsPage from "@/features/panel/pages/panel/requests/page";
 import PanelUnifiedProjectDetailPage from "@/features/panel/pages/panel/projects/[id]/page";
 import PanelUnifiedProjectContentPage from "@/features/panel/pages/panel/projects/[id]/content/page";
@@ -40,10 +40,10 @@ function NotFoundPanelPage() {
 const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   dashboard: PanelDashboardPage,
   applications: PanelApplicationsPage,
-  programs: CoordinatorProgramsPage,
+  programs: PanelProgramsPage,
   projects: PanelProjectsPage,
-  participants: CoordinatorParticipantsPage,
-  "my-project": StaffMyProjectPage,
+  participants: PanelParticipantsPage,
+  "my-project": PanelMyProjectPage,
   calendar: PanelCalendarPage,
   financials: PanelFinancialsPage,
   requests: PanelSharedRequestsPage,
@@ -51,7 +51,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   users: AdminUsersPage,
   "users/permissions": PermissionsPage,
   staff: AdminStaffPage,
-  members: StaffMembersPage,
+  members: PanelMembersPage,
   certificates: AdminCertificatesPage,
   periods: AdminPeriodsPage,
   "periods/form-builder": AdminPeriodFormBuilderPage,
@@ -64,7 +64,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   settings: PanelSettingsPage,
   "projects/[id]": PanelUnifiedProjectDetailPage,
   "projects/[id]/content": PanelUnifiedProjectContentPage,
-  "programs/[id]/qr": CoordinatorProgramQrPage,
+  "programs/[id]/qr": PanelProgramQrPage,
 };
 
 export function PanelRouteContent({ routeKey }: { routeKey: string }) {

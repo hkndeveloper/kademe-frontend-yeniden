@@ -31,9 +31,6 @@ export function usePermissions() {
       if (!user) {
         return false;
       }
-      if (user.role === "super_admin") {
-        return true;
-      }
       const effective = user.effective_permissions ?? [];
       if (effective.includes("*")) {
         return true;

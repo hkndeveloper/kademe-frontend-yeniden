@@ -27,6 +27,7 @@ interface Transaction {
   status: "pending" | "approved" | "rejected" | "paid";
   invoice_path?: string | null;
   created_at: string;
+  submitted_at?: string | null;
   project?: { id: number; name: string } | null;
   period?: { id: number; name: string } | null;
 }
@@ -73,7 +74,7 @@ const categoryLabels: Record<string, string> = {
   konaklama: "Konaklama",
 };
 
-export default function CoordinatorFinancialsPage() {
+export default function ContributorFinancialsPage() {
   const { hasPermission } = useAuth();
   const { canAccessProject } = usePermissions();
   const [activeTab, setActiveTab] = useState<"list" | "new">("list");
@@ -104,7 +105,7 @@ export default function CoordinatorFinancialsPage() {
       const params: Record<string, string> = {};
       if (statusFilter) params.status = statusFilter;
 
-      const response = await api.get("/panel/coordinator/financials", { params });
+      const response = await api.get("/panel/financials", { params });
       const items = Array.isArray(response.data?.transactions?.data) ? response.data.transactions.data : [];
       setTransactions(items);
     } catch (error) {
@@ -268,8 +269,8 @@ export default function CoordinatorFinancialsPage() {
         </div>
         <PermissionGate permission="financial.export">
           <ExportButtons
-            endpoint="/panel/coordinator/financials/export"
-            filename="koordinator_finans"
+            endpoint="/panel/financials/export"
+            filename="panel_finans"
             params={{ project_id: projectFilter || undefined, status: statusFilter || undefined }}
             buttonLabel="Finans Verisini Disa Aktar"
           />
@@ -431,7 +432,7 @@ export default function CoordinatorFinancialsPage() {
                     filteredTransactions.map((transaction) => (
                       <tr key={transaction.id} className="transition-colors hover:bg-white/5">
                         <td className="px-6 py-4">
-                          {new Date(transaction.created_at).toLocaleDateString("tr-TR")}
+                          {new Date(transaction.submitted_at ?? transaction.created_at).toLocaleDateString("tr-TR")}
                         </td>
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-900">{transaction.project?.name || "-"}</div>

@@ -5,7 +5,6 @@ import { ArrowRight, Download, FileText, Loader2, Send, Upload } from "lucide-re
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import AdminRequestsPage from "@/features/panel/pages/admin/requests/page";
 import { useAuth } from "@/store/useAuth";
 
 interface Project {
@@ -56,11 +55,6 @@ const typeLabels: Record<string, string> = {
 
 export default function PanelSharedRequestsPage() {
   const { hasPermission } = useAuth();
-  const role = useAuth((s) => s.user?.role);
-  if (role === "super_admin") {
-    return <AdminRequestsPage />;
-  }
-  const isStaff = role === "staff";
 
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -82,11 +76,12 @@ export default function PanelSharedRequestsPage() {
 
   const canUpdateRequestStatus = hasPermission("requests.update_status");
   const canUploadRequestResponse = hasPermission("requests.upload_response");
+  const isResponder = canUpdateRequestStatus || canUploadRequestResponse;
 
   useEffect(() => {
     const loadRequests = async () => {
       try {
-        const response = await api.get<RequestsResponse>("/requests");
+        const response = await api.get<RequestsResponse>("/panel/requests");
         setRequests(response.data.requests ?? []);
         setProjects(response.data.projects ?? []);
         setTargetUsers(response.data.target_users ?? []);
@@ -103,11 +98,11 @@ export default function PanelSharedRequestsPage() {
   }, []);
 
   const highlighted = useMemo(() => {
-    if (isStaff) {
+    if (isResponder) {
       return requests.filter((request) => request.target_user !== null);
     }
     return requests.filter((request) => request.status === "pending" || request.status === "in_progress");
-  }, [isStaff, requests]);
+  }, [isResponder, requests]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -116,7 +111,7 @@ export default function PanelSharedRequestsPage() {
     setErrorMessage(null);
 
     try {
-      const response = await api.post<{ message: string; request_item: RequestItem }>("/requests", {
+      const response = await api.post<{ message: string; request_item: RequestItem }>("/panel/requests", {
         type: form.type,
         target_unit: form.target_unit || null,
         target_user_id: form.target_user_id ? Number(form.target_user_id) : null,
@@ -140,7 +135,7 @@ export default function PanelSharedRequestsPage() {
     setFeedback(null);
     setErrorMessage(null);
     try {
-      const response = await api.put<{ message: string; request_item: RequestItem }>(`/requests/${requestId}/status`, { status });
+      const response = await api.put<{ message: string; request_item: RequestItem }>(`/panel/requests/${requestId}/status`, { status });
       setRequests((current) => current.map((req) => (req.id === requestId ? response.data.request_item : req)));
       setFeedback(response.data.message);
     } catch (error) {
@@ -160,7 +155,7 @@ export default function PanelSharedRequestsPage() {
     formData.append("response_file", file);
     try {
       const response = await api.post<{ message: string; request_item: RequestItem }>(
-        `/requests/${requestId}/upload-response`,
+        `/panel/requests/${requestId}/upload-response`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -174,9 +169,9 @@ export default function PanelSharedRequestsPage() {
     }
   };
 
-  const accent = isStaff ? "bg-amber-500 text-black" : "bg-accent text-accent-foreground";
-  const accentSoft = isStaff ? "bg-amber-500/20 text-amber-500" : "bg-accent/20 text-accent-foreground";
-  const exportName = isStaff ? "personel_talepler" : "koordinator_talepleri";
+  const accent = "bg-accent text-accent-foreground";
+  const accentSoft = "bg-accent/20 text-accent-foreground";
+  const exportName = "panel_talepler";
 
   return (
     <div className="space-y-8">
@@ -191,7 +186,7 @@ export default function PanelSharedRequestsPage() {
           </div>
         </div>
         <PermissionGate permission="requests.export">
-          <ExportButtons endpoint="/requests/export" filename={exportName} buttonLabel="Talepleri Disa Aktar" />
+          <ExportButtons endpoint="/panel/requests/export" filename={exportName} buttonLabel="Talepleri Disa Aktar" />
         </PermissionGate>
       </div>
 
@@ -203,10 +198,10 @@ export default function PanelSharedRequestsPage() {
         require="any"
         fallback={<div className="glass-panel rounded-3xl p-10 text-center text-sm text-muted-foreground">Bu modulu goruntulemek icin yetkiniz bulunmuyor.</div>}
       >
-        <div className={`grid grid-cols-1 gap-8 ${isStaff ? "lg:grid-cols-[1fr_1fr]" : "lg:grid-cols-[1.05fr_0.95fr]"}`}>
+        <div className={`grid grid-cols-1 gap-8 ${isResponder ? "lg:grid-cols-[1fr_1fr]" : "lg:grid-cols-[1.05fr_0.95fr]"}`}>
           <PermissionGate permission="requests.create" fallback={<div className="glass-panel rounded-3xl p-8 text-sm text-muted-foreground">Yeni talep olusturma yetkiniz bulunmuyor.</div>}>
             <form className="glass-panel rounded-3xl p-8" onSubmit={handleSubmit}>
-              <h2 className="mb-4 text-lg font-bold text-slate-900">{isStaff ? "Yeni Talep" : "Yeni Talep Olustur"}</h2>
+              <h2 className="mb-4 text-lg font-bold text-slate-900">Yeni Talep Olustur</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <select value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))} required className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900">
                   <option value="">Talep tipi sec</option>
@@ -245,14 +240,20 @@ export default function PanelSharedRequestsPage() {
 
           <PermissionGate permission="requests.view">
             <div className="glass-panel rounded-3xl p-8">
-              <h2 className="mb-4 text-lg font-bold text-slate-900">{isStaff ? "Bana Atanan veya Sectigim Talepler" : "Acilik Durumu Yuksek Talepler"}</h2>
+              <h2 className="mb-4 text-lg font-bold text-slate-900">
+                {isResponder ? "Bana Atanan veya Sectigim Talepler" : "Acik Talepler"}
+              </h2>
               {loading ? (
-                <div className="flex min-h-32 items-center justify-center"><Loader2 className={`h-6 w-6 animate-spin ${isStaff ? "text-amber-500" : "text-accent"}`} /></div>
+                <div className="flex min-h-32 items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-accent" />
+                </div>
               ) : highlighted.length === 0 ? (
-                <div className="text-sm text-muted-foreground">{isStaff ? "Hedef kullanicisi olan talep kaydi yok." : "Acik talep bulunmuyor."}</div>
+                <div className="text-sm text-muted-foreground">
+                  {isResponder ? "Hedef kullanicisi olan talep kaydi yok." : "Acik talep bulunmuyor."}
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {highlighted.slice(0, isStaff ? 8 : 6).map((request) => (
+                  {highlighted.slice(0, isResponder ? 8 : 6).map((request) => (
                     <div key={request.id} className="rounded-2xl border border-white/5 bg-white/5 p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="text-sm font-bold text-slate-900">{typeLabels[request.type] || request.type}</div>
@@ -273,12 +274,12 @@ export default function PanelSharedRequestsPage() {
                         )}
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground">
-                        {isStaff
+                        {isResponder
                           ? (request.target_user ? `${request.target_user.name} ${request.target_user.surname}` : "Hedef kisi yok")
                           : `${request.project?.name || "Genel"}${request.target_user ? ` -> ${request.target_user.name} ${request.target_user.surname}` : ""}`}
                       </div>
                       <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
-                        <ArrowRight className={`mt-0.5 h-4 w-4 shrink-0 ${isStaff ? "text-amber-500" : "text-accent"}`} />
+                        <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                         {request.description}
                       </div>
                       <div className="mt-4 border-t border-white/5 pt-3">
@@ -287,7 +288,7 @@ export default function PanelSharedRequestsPage() {
                             href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/storage"}/${request.response_file_path.replace("public/", "")}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${isStaff ? "bg-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-black" : "bg-accent/20 text-accent-foreground hover:bg-accent hover:text-primary-foreground"}`}
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent/20 px-3 py-2 text-xs font-bold text-accent-foreground transition-colors hover:bg-accent hover:text-primary-foreground"
                           >
                             <Download className="h-3 w-3" />
                             Yanit belgesini indir

@@ -54,7 +54,7 @@ interface ParticipantsResponse {
   participants: ParticipantItem[];
 }
 
-export default function CoordinatorParticipantsPage() {
+export default function PanelParticipantsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [participants, setParticipants] = useState<ParticipantItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +130,7 @@ export default function CoordinatorParticipantsPage() {
         >
         <ExportButtons
           endpoint="/panel/participants/export"
-          filename="koordinator_katilimcilar"
+          filename="panel_katilimcilar"
           params={{
             project_id: projectFilter !== "all" ? projectFilter : undefined,
             status: statusFilter !== "all" ? statusFilter : undefined,

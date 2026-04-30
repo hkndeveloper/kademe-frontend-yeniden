@@ -78,10 +78,6 @@ export const useAuth = create<AuthState>()(
 
       hasPermission: (permission) => {
         const currentUser = get().user;
-        if (currentUser?.role === "super_admin") {
-          return true;
-        }
-
         const permissions = currentUser?.effective_permissions ?? [];
         return permissions.includes("*") || permissions.includes(permission);
       },
@@ -90,9 +86,6 @@ export const useAuth = create<AuthState>()(
         const currentUser = get().user;
         if (!currentUser) {
           return false;
-        }
-        if (currentUser.role === "super_admin") {
-          return true;
         }
         const effective = currentUser.effective_permissions ?? [];
         if (effective.includes("*")) {

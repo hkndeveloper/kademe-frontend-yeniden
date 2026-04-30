@@ -18,16 +18,16 @@ export function shouldShowProjectsListNav(
   hasPermission: (p: string) => boolean
 ): boolean {
   if (!hasPermission("projects.view")) return false;
-  if (user?.role === "super_admin") return true;
 
   const scope = user?.permission_scopes?.["projects.view"];
   if (scope?.scope_type === "self") return false;
+  if (scope?.scope_type === "all") return true;
 
-  if (user?.role === "staff") {
-    if (manageableProjectCount(user) <= 1) return false;
+  if (["own_projects", "assigned_projects", "selected_projects"].includes(scope?.scope_type ?? "")) {
+    return manageableProjectCount(user) > 1;
   }
 
-  return true;
+  return manageableProjectCount(user) > 1;
 }
 
 /** Personel + tek/ sifir proje baglami: "Projem" kisayolu */
@@ -36,6 +36,8 @@ export function shouldShowMyProjectNav(
   hasPermission: (p: string) => boolean
 ): boolean {
   if (!hasPermission("projects.view")) return false;
-  if (user?.role !== "staff") return false;
+  const scope = user?.permission_scopes?.["projects.view"];
+  if (scope?.scope_type === "all") return false;
+  if (scope?.scope_type === "self") return true;
   return manageableProjectCount(user) <= 1;
 }

@@ -73,7 +73,7 @@ export function AdminChatbotPanel() {
         table: ChatTable | null;
         export_token: string | null;
         export_available: boolean;
-      }>("/admin/chatbot/query", { message: trimmed });
+      }>("/panel/chatbot/query", { message: trimmed });
 
       setMessages((prev) => [
         ...prev,
@@ -108,7 +108,7 @@ export function AdminChatbotPanel() {
   const handleExport = async (token: string, messageId: string) => {
     setExportingId(messageId);
     try {
-      const response = await api.get(`/admin/chatbot/export/${encodeURIComponent(token)}`, {
+      const response = await api.get(`/panel/chatbot/export/${encodeURIComponent(token)}`, {
         responseType: "blob",
       });
       const disposition = response.headers["content-disposition"] as string | undefined;

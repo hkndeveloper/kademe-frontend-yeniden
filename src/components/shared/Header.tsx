@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/store/useAuth";
 import api from "@/lib/api/axios";
-import { homePathForRole } from "@/lib/role-home";
+import { homePathForUser } from "@/lib/role-home";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,7 @@ export function Header() {
     void loadSiteConfig();
   }, [pathname]);
 
-  const getDashboardLink = () => homePathForRole(user?.role);
+  const getDashboardLink = () => homePathForUser(user);
   const navLinks = (siteSettings?.navigation.header_links ?? []).filter((item) => item.href !== "/projects");
   const aboutIndex = navLinks.findIndex((item) => item.href === "/about");
 

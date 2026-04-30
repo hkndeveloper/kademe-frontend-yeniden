@@ -33,16 +33,14 @@ interface ProjectContentResponse {
   editable: EditableProjectContent;
 }
 
-type PanelContentBasePath = "/admin" | "/coordinator" | "/panel";
+type PanelContentBasePath = "/panel";
 
-function panelContentApiRoot(base: PanelContentBasePath): "/admin" | "/panel" {
-  return base === "/panel" ? "/panel" : "/admin";
+function panelContentApiRoot(): "/panel" {
+  return "/panel";
 }
 
 function projectListHref(base: PanelContentBasePath): string {
-  if (base === "/panel") return "/panel/projects";
-  if (base === "/admin") return "/admin/projects";
-  return "/coordinator/projects";
+  return `${base}/projects`;
 }
 
 interface ProjectContentEditorProps {
@@ -78,7 +76,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
   useEffect(() => {
     const loadProject = async () => {
       try {
-        const root = panelContentApiRoot(panelBasePath);
+        const root = panelContentApiRoot();
         const response = await api.get<ProjectContentResponse>(`${root}/projects/${projectId}/content`);
         setProject(response.data.project);
         setForm({
@@ -143,7 +141,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
       formData.append("file", file);
       formData.append("folder", folder);
 
-      const response = await api.post<{ url: string }>(`${panelContentApiRoot(panelBasePath)}/media/upload`, formData, {
+      const response = await api.post<{ url: string }>(`${panelContentApiRoot()}/media/upload`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -165,7 +163,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
     setErrorMessage(null);
 
     try {
-      const root = panelContentApiRoot(panelBasePath);
+      const root = panelContentApiRoot();
       const response = await api.put<ProjectContentResponse & { message: string }>(`${root}/projects/${projectId}/content`, {
         ...form,
         quota: form.quota === "" ? null : Number(form.quota),

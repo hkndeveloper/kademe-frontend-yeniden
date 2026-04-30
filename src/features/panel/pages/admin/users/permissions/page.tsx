@@ -5,7 +5,7 @@ import { CheckCircle2, History, Loader2, Plus, Save, Shield, ShieldAlert, Trash2
 import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api/axios";
-import { homePathForRole } from "@/lib/role-home";
+import { homePathForUser } from "@/lib/role-home";
 import { useAuth } from "@/store/useAuth";
 
 interface RoleItem {
@@ -100,7 +100,7 @@ interface RoleCatalogItem {
 
 export default function PermissionsPage() {
   const router = useRouter();
-  const authRole = useAuth((state) => state.user?.role);
+  const authUser = useAuth((state) => state.user);
   const authUserId = useAuth((state) => state.user?.id);
   const refreshAuthProfile = useAuth((state) => state.fetchProfile);
   const [roles, setRoles] = useState<RoleItem[]>([]);
@@ -182,7 +182,7 @@ export default function PermissionsPage() {
       if (isAxiosError(error) && error.response?.status === 403) {
         setErrorMessage("Bu ekrani goruntuleme yetkiniz artik yok. Panele yonlendiriliyorsunuz.");
         await refreshAuthProfile();
-        router.replace(homePathForRole(authRole ?? "staff"));
+        router.replace(homePathForUser(useAuth.getState().user ?? authUser));
         return;
       }
       setErrorMessage("Yetki matrisi yuklenemedi.");

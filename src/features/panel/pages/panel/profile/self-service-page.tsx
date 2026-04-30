@@ -45,7 +45,7 @@ const emptyPassword: PasswordForm = {
   password_confirmation: "",
 };
 
-export default function StaffProfilePage() {
+export default function ProfileSelfServicePage() {
   const { user, fetchProfile, hasPermission } = useAuth();
   const [form, setForm] = useState<ProfileForm>(emptyProfile);
   const [passwordForm, setPasswordForm] = useState<PasswordForm>(emptyPassword);
@@ -83,7 +83,7 @@ export default function StaffProfilePage() {
           department: nextUser.department ?? "",
         });
       } catch (error) {
-        console.error("Staff profile yuklenemedi", error);
+        console.error("Profil yuklenemedi", error);
         setMessage("Profil bilgileri yuklenemedi.");
       } finally {
         setLoading(false);
@@ -113,7 +113,7 @@ export default function StaffProfilePage() {
       await fetchProfile();
       setMessage("Profil bilgileri guncellendi.");
     } catch (error) {
-      console.error("Staff profile kaydedilemedi", error);
+      console.error("Profil kaydedilemedi", error);
       setMessage("Profil bilgileri kaydedilemedi.");
     } finally {
       setSavingProfile(false);
@@ -130,7 +130,7 @@ export default function StaffProfilePage() {
       setPasswordForm(emptyPassword);
       setPasswordMessage("Sifre guncellendi.");
     } catch (error) {
-      console.error("Staff sifre guncellenemedi", error);
+      console.error("Sifre guncellenemedi", error);
       setPasswordMessage("Sifre guncellenemedi.");
     } finally {
       setSavingPassword(false);
@@ -172,7 +172,7 @@ export default function StaffProfilePage() {
         <div>
           <h1 className="text-3xl font-black text-slate-900">Profilim</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Staff rolu icin mevcut backend yuzeyine bagli profil ve sifre yonetimi
+            Profil, sifre ve yetkiniz varsa izin talebi yonetimi
           </p>
         </div>
       </div>

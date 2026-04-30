@@ -19,6 +19,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import api from "@/lib/api/axios";
+import { homePathForUser } from "@/lib/role-home";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
 import { useAuth } from "@/store/useAuth";
 
@@ -111,12 +112,7 @@ export default function HomePage() {
     [computedStats, resolvedSettings.homepage.stats, resolvedSettings.homepage.stats_mode],
   );
 
-  const dashboardLink =
-    user?.role === "super_admin" || user?.role === "coordinator" || user?.role === "staff"
-      ? "/panel/dashboard"
-      : user?.role === "alumni"
-        ? "/alumni/dashboard"
-        : "/student/dashboard";
+  const dashboardLink = homePathForUser(user);
 
   const projectColors = ["from-blue-600 to-cyan-500", "from-orange-500 to-red-600", "from-green-500 to-emerald-600", "from-indigo-500 to-blue-600"];
   const featuredProjects =

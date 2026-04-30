@@ -491,7 +491,7 @@ export default function ProjectDetailPage() {
               <div className="space-y-5">
                 {hasDynamicForm ? (
                   <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                    Basvuru formu "Basvuruyu Gonder" butonuna tikladiginizda popup olarak acilacaktir.
+                    Basvuru formu &quot;Basvuruyu Gonder&quot; butonuna tikladiginizda popup olarak acilacaktir.
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import api from "@/lib/api/axios";
 
-export default function CoordinatorProgramQrPage() {
+export default function PanelProgramQrPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const rawId = params?.id;
@@ -42,6 +42,7 @@ export default function CoordinatorProgramQrPage() {
   }, [programId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 

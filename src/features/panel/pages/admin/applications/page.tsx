@@ -93,8 +93,10 @@ export default function AdminApplicationsPage() {
   useEffect(() => {
     const fetchAllApplications = async () => {
       try {
-        const projectResponse = hasPermission("projects.view")
-          ? await api.get<{ projects: Project[] }>("/panel/projects/manageable")
+        const projectResponse = hasPermission("applications.view")
+          ? await api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+              params: { permission: "applications.view" },
+            })
           : { data: { projects: [] as Project[] } };
         const projectItems = (projectResponse.data.projects ?? []).filter((p) =>
           canAccessProject("applications.view", p.id)

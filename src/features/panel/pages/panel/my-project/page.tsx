@@ -7,7 +7,7 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 
-interface StaffProject {
+interface PanelProject {
   id: number;
   name: string;
   slug?: string;
@@ -30,14 +30,14 @@ interface StaffProject {
   } | null;
 }
 
-interface StaffProjectsResponse {
+interface PanelProjectsResponse {
   scope: string;
   message?: string;
-  projects: StaffProject[];
+  projects: PanelProject[];
 }
 
-export default function StaffMyProjectPage() {
-  const [projects, setProjects] = useState<StaffProject[]>([]);
+export default function PanelMyProjectPage() {
+  const [projects, setProjects] = useState<PanelProject[]>([]);
   const [scope, setScope] = useState<string>("assignment");
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -46,12 +46,12 @@ export default function StaffMyProjectPage() {
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        const response = await api.get<StaffProjectsResponse>("/panel/staff/projects");
+        const response = await api.get<PanelProjectsResponse>("/panel/my-projects");
         setProjects(response.data.projects ?? []);
         setScope(response.data.scope ?? "assignment");
         setInfoMessage(response.data.message ?? null);
       } catch (error) {
-        console.error("Staff proje kapsami yuklenemedi", error);
+        console.error("Panel proje kapsami yuklenemedi", error);
         setErrorMessage("Proje kapsami yuklenemedi.");
       } finally {
         setLoading(false);
@@ -79,12 +79,12 @@ export default function StaffMyProjectPage() {
           <div>
             <h1 className="text-3xl font-black text-slate-900">Projem</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Personel proje kapsami artik gercek backend verisinden geliyor
+              Yetkili proje kapsami backend verisinden geliyor
             </p>
           </div>
         </div>
         <PermissionGate permission="projects.export">
-          <ExportButtons endpoint="/panel/staff/projects/export" filename="personel_projeleri" buttonLabel="Projeleri Disa Aktar" />
+          <ExportButtons endpoint="/panel/my-projects/export" filename="personel_projeleri" buttonLabel="Projeleri Disa Aktar" />
         </PermissionGate>
       </div>
 

@@ -15,15 +15,14 @@ export default function PanelUnifiedProjectDetailPage() {
   const params = useParams();
   const rawId = params?.id;
   const projectId = typeof rawId === "string" ? Number(rawId) : Number(Array.isArray(rawId) ? rawId[0] : NaN);
+  const invalidProjectId = !Number.isFinite(projectId) || projectId <= 0;
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!invalidProjectId);
   const [preview, setPreview] = useState<ContentPreview["project"] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!Number.isFinite(projectId) || projectId <= 0) {
-      setLoading(false);
-      setError("Gecersiz proje.");
+    if (invalidProjectId) {
       return;
     }
 
@@ -42,7 +41,7 @@ export default function PanelUnifiedProjectDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [invalidProjectId, projectId]);
 
   if (loading) {
     return (
@@ -52,9 +51,11 @@ export default function PanelUnifiedProjectDetailPage() {
     );
   }
 
-  if (error || !preview) {
+  if (invalidProjectId || error || !preview) {
     return (
-      <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-8 text-red-100">{error ?? "Proje bulunamadi."}</div>
+      <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-8 text-red-100">
+        {invalidProjectId ? "Gecersiz proje." : error ?? "Proje bulunamadi."}
+      </div>
     );
   }
 
