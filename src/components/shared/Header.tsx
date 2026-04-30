@@ -17,8 +17,9 @@ interface HeaderProject {
   slug: string;
 }
 
+/** Panel workspace routes: unified `/panel/*` and legacy role-prefixed paths. */
 export function isPanelPath(path: string) {
-  return /^\/(admin|coordinator|staff|student|alumni)(\/|$)/.test(path);
+  return /^\/panel(\/|$)/.test(path) || /^\/(admin|coordinator|staff|student|alumni)(\/|$)/.test(path);
 }
 
 export function Header() {
