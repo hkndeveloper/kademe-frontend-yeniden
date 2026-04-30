@@ -77,7 +77,7 @@ const initialForm: ProgramFormState = {
 };
 
 export default function CoordinatorProgramsPage() {
-  const { hasPermission } = usePermissions();
+  const { hasPermission, canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +102,9 @@ export default function CoordinatorProgramsPage() {
 
     try {
       const projectResponse = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
-      const manageableProjects = (projectResponse.data.projects ?? []).filter((project) => project.active_period?.id);
+      const manageableProjects = (projectResponse.data.projects ?? []).filter(
+        (project) => project.active_period?.id && canAccessProject("programs.view", project.id)
+      );
       setProjects(manageableProjects);
 
       const responses = await Promise.all(
@@ -134,7 +136,7 @@ export default function CoordinatorProgramsPage() {
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [canAccessProject]);
 
   const projectNameMap = useMemo(
     () =>
