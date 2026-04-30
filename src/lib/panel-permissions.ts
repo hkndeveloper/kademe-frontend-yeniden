@@ -34,6 +34,9 @@ export function canAccessPanelPath(
   if (/^\/panel\/projects\/[^/]+$/.test(normalized)) return hasPermission("projects.view");
   if (/^\/panel\/projects\/[^/]+\/content$/.test(normalized)) return hasPermission("projects.view");
   if (/^\/panel\/programs\/[^/]+\/qr$/.test(normalized)) return hasPermission("programs.view");
+  if (normalized === "/panel/periods/form-builder") {
+    return hasPermission("projects.application_form.update") || hasPermission("periods.view");
+  }
   if (normalized === "/panel/members") return hasPermission("staff.view");
 
   return false;
