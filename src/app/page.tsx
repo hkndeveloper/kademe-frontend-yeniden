@@ -196,7 +196,7 @@ export default function HomePage() {
 
   const sectionMap: Record<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter", ReactNode> = {
     hero: (
-      <section className="relative flex min-h-[90vh] items-center justify-center overflow-hidden pt-20">
+      <section className="relative flex min-h-[92vh] items-center justify-center overflow-hidden pt-20">
         {resolvedSettings.homepage.hero_background_image_url ? (
           <Image
             src={resolvedSettings.homepage.hero_background_image_url}
@@ -207,8 +207,8 @@ export default function HomePage() {
             className="object-cover opacity-20"
           />
         ) : null}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,oklch(0.5_0.08_250/0.12),transparent_55%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/80 to-background" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_28%,oklch(0.74_0.18_45/0.16),transparent_42%),radial-gradient(circle_at_80%_76%,oklch(0.56_0.12_255/0.12),transparent_48%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/78 to-background" />
         <div className="container relative z-10 mx-auto px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -226,7 +226,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-8 text-5xl font-black leading-tight tracking-tighter md:text-8xl"
+            className="mb-8 text-5xl font-black leading-[1.03] tracking-[-0.03em] md:text-8xl"
           >
             {resolvedSettings.homepage.hero_title_line_1}
             <br />
@@ -239,7 +239,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mx-auto mb-12 max-w-2xl text-lg text-muted-foreground md:text-xl"
+            className="mx-auto mb-12 max-w-3xl text-lg leading-relaxed text-muted-foreground md:text-xl"
           >
             {resolvedSettings.homepage.hero_description}
           </motion.p>
@@ -253,23 +253,23 @@ export default function HomePage() {
             {isAuthenticated ? (
               <Link
                 href={dashboardLink}
-                className="flex items-center gap-2 rounded-2xl bg-primary px-10 py-4 font-bold text-primary-foreground shadow-md shadow-slate-900/15 transition-all hover:scale-[1.02]"
+                className="group flex items-center gap-2 rounded-2xl bg-primary px-10 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30"
               >
                 Panelime Git
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
             ) : (
               <>
                 <Link
                   href={resolvedSettings.homepage.hero_primary_href}
-                  className="flex items-center gap-2 rounded-2xl bg-primary px-10 py-4 font-bold text-primary-foreground shadow-md shadow-slate-900/12 transition-all hover:scale-[1.02]"
+                  className="group flex items-center gap-2 rounded-2xl bg-primary px-10 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30"
                 >
                   {resolvedSettings.homepage.hero_primary_label}
-                  <ArrowRight className="h-5 w-5" />
+                  <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
                 <Link
                   href={resolvedSettings.homepage.hero_secondary_href}
-                  className="rounded-2xl border border-border/80 bg-card px-10 py-4 font-bold text-foreground shadow-sm transition-all hover:border-primary/30 hover:bg-muted/50"
+                  className="rounded-2xl border border-border/80 bg-card px-10 py-4 font-bold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/50 hover:shadow-md"
                 >
                   {resolvedSettings.homepage.hero_secondary_label}
                 </Link>
@@ -290,11 +290,11 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="glass-panel overflow-hidden rounded-[32px] border border-border/80 shadow-sm"
+                className="glass-panel group overflow-hidden rounded-[32px] border border-border/80 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5"
               >
                 <div className="relative h-52 w-full bg-muted/30">
                   {card.image_url ? (
-                    <Image src={card.image_url} alt={card.title} fill unoptimized className="object-cover" />
+                    <Image src={card.image_url} alt={card.title} fill unoptimized className="object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/15 to-accent/15" />
                   )}
@@ -302,9 +302,9 @@ export default function HomePage() {
                 <div className="space-y-4 p-8">
                   <h3 className="text-2xl font-black text-foreground">{card.title}</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">{card.description}</p>
-                  <Link href={card.cta_href} className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground">
+                  <Link href={card.cta_href} className="group/cta inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/30">
                     {card.cta_label}
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/cta:translate-x-1" />
                   </Link>
                 </div>
               </motion.div>
@@ -318,8 +318,8 @@ export default function HomePage() {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-2 gap-12 lg:grid-cols-4">
             {stats.map((stat) => (
-              <motion.div key={stat.label} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="group text-center">
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
+              <motion.div key={stat.label} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="group rounded-3xl border border-border/60 bg-card/60 px-4 py-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg hover:shadow-slate-900/5">
+                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
                   <stat.icon className="h-8 w-8" />
                 </div>
                 <h3 className="mb-2 text-4xl font-black">{stat.value}</h3>
@@ -360,15 +360,15 @@ export default function HomePage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: index * 0.1 }}
-                    className="glass-panel group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[32px] p-8 transition-all hover:-translate-y-2"
+                    className="glass-panel group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[32px] border border-border/70 p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-900/10"
                   >
                     <div className={`absolute right-0 top-0 h-32 w-32 bg-gradient-to-br ${projectColors[index % projectColors.length]} opacity-0 blur-3xl transition-opacity group-hover:opacity-10`} />
                     <h3 className="mb-4 text-2xl font-bold">{project.name}</h3>
                     <p className="mb-8 flex-1 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
                       {project.short_description || "Proje tanitimi yakinda eklenecek."}
                     </p>
-                    <div className="mt-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                      <ArrowRight className="h-5 w-5" />
+                    <div className="mt-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
+                      <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5" />
                     </div>
                   </motion.div>
                 </Link>
@@ -403,11 +403,11 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               {featuredActivities.map((activity) => (
-                <Link key={activity.id} href={`/activities/${activity.id}`} className="glass-panel rounded-3xl p-6 shadow-sm transition-transform hover:-translate-y-1">
+                <Link key={activity.id} href={`/activities/${activity.id}`} className="glass-panel group rounded-3xl border border-border/70 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-900/10">
                   <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-primary">
                     {activity.project?.name || "Program"}
                   </div>
-                  <h3 className="text-2xl font-bold text-foreground">{activity.title}</h3>
+                  <h3 className="text-2xl font-bold text-foreground transition-colors duration-300 group-hover:text-primary">{activity.title}</h3>
                   <div className="mt-4 space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
@@ -435,13 +435,13 @@ export default function HomePage() {
               {resolvedSettings.homepage.about_teaser_description}
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/about" className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground">
+              <Link href="/about" className="group flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-primary/30">
                 Bizi Taniyin
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
               <Link
                 href="/contact"
-                className="rounded-2xl border border-border/80 bg-card px-8 py-4 font-bold text-foreground shadow-sm transition-colors hover:border-primary/25"
+                className="rounded-2xl border border-border/80 bg-card px-8 py-4 font-bold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md"
               >
                 Iletisime Gecin
               </Link>
@@ -494,7 +494,7 @@ export default function HomePage() {
           ) : featuredBlogs.length === 0 ? (
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
               {[1, 2, 3].map((card) => (
-                <div key={card} className="glass-panel group cursor-pointer overflow-hidden rounded-3xl opacity-50 grayscale">
+                <div key={card} className="glass-panel group cursor-pointer overflow-hidden rounded-3xl border border-border/70 opacity-50 grayscale transition-all duration-300 hover:-translate-y-1">
                   <div className="relative h-48 bg-muted">
                     <div className="absolute inset-0 bg-primary/5" />
                     <div className="absolute bottom-4 left-4 rounded bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
@@ -514,7 +514,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
               {featuredBlogs.map((blog) => (
                 <Link href={`/blog/${blog.slug}`} key={blog.id}>
-                  <div className="glass-panel group cursor-pointer overflow-hidden rounded-3xl transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5">
+                  <div className="glass-panel group cursor-pointer overflow-hidden rounded-3xl border border-border/70 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/10">
                     <div className="relative h-48 bg-muted">
                       {blog.cover_image ? (
                         <Image src={blog.cover_image} alt={blog.title} fill className="object-cover transition-transform group-hover:scale-105" />
@@ -568,7 +568,7 @@ export default function HomePage() {
                   type="button"
                   onClick={() => void handleNewsletterSubmit()}
                   disabled={newsletterSubmitting}
-                  className="inline-flex w-full items-center justify-center rounded-2xl bg-primary px-6 py-4 font-bold text-primary-foreground disabled:opacity-60"
+                  className="inline-flex w-full items-center justify-center rounded-2xl bg-primary px-6 py-4 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-60"
                 >
                   {newsletterSubmitting ? "Kaydediliyor..." : "E-Bultene Katil"}
                 </button>
@@ -591,7 +591,7 @@ export default function HomePage() {
         <div key={block}>{sectionMap[block]}</div>
       ))}
 
-      <footer className="border-t border-slate-200/90 bg-slate-50/90 py-20 text-slate-800">
+      <footer className="border-t border-slate-200/90 bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(241,245,249,0.95))] py-20 text-slate-800">
         <div className="container mx-auto mb-20 grid grid-cols-1 gap-12 px-6 md:grid-cols-4">
           <div>
             <div className="mb-6 flex items-center gap-3">
@@ -610,7 +610,7 @@ export default function HomePage() {
               {resolvedSettings.social_media.instagram_url ? (
                 <Link
                   href={resolvedSettings.social_media.instagram_url}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-md"
                 >
                   <Camera className="h-5 w-5" />
                 </Link>
@@ -618,7 +618,7 @@ export default function HomePage() {
               {resolvedSettings.social_media.twitter_url ? (
                 <Link
                   href={resolvedSettings.social_media.twitter_url}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-md"
                 >
                   <Send className="h-5 w-5" />
                 </Link>
@@ -626,7 +626,7 @@ export default function HomePage() {
               {resolvedSettings.social_media.youtube_url ? (
                 <Link
                   href={resolvedSettings.social_media.youtube_url}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-md"
                 >
                   <PlayCircle className="h-5 w-5" />
                 </Link>
@@ -634,7 +634,7 @@ export default function HomePage() {
               {resolvedSettings.social_media.linkedin_url ? (
                 <Link
                   href={resolvedSettings.social_media.linkedin_url}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-md"
                 >
                   <Briefcase className="h-5 w-5" />
                 </Link>
