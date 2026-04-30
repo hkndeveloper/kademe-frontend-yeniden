@@ -27,7 +27,7 @@ interface Application {
   project?: {
     name: string;
   } | null;
-  status: "pending" | "approved" | "rejected" | "waitlist" | "interview_scheduled";
+  status: "pending" | "accepted" | "rejected" | "waitlisted" | "interview_planned" | "interview_passed" | "interview_failed";
   answers?: Record<string, unknown>;
   submitted_at: string;
 }
@@ -43,14 +43,20 @@ export default function StaffApplicationsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [appRes, projRes] = await Promise.all([
-          api.get<{ applications: { data: Application[] } }>("/panel/staff/applications"), // Backend filters by staff-visible projects
-          api.get<{ projects: Project[] }>("/projects")
-        ]);
-        setApplications(appRes.data.applications?.data ?? []);
-        setProjects(projRes.data.projects ?? []);
+        const appRes = await api.get<{ applications: { data: Application[] } }>("/panel/staff/applications");
+        const appItems = appRes.data.applications?.data ?? [];
+        const scopedProjects = Array.from(
+          new Map(
+            appItems
+              .filter((app) => app.projectId && app.project?.name)
+              .map((app) => [app.projectId, { id: app.projectId, name: app.project?.name ?? "Bilinmeyen Proje" }])
+          ).values()
+        );
+
+        setApplications(appItems);
+        setProjects(scopedProjects);
       } catch (error) {
-        console.error("Başvurular yüklenemedi", error);
+        console.error("Basvurular yuklenemedi", error);
       } finally {
         setLoading(false);
       }
@@ -79,13 +85,13 @@ export default function StaffApplicationsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "approved":
-        return <span className="flex items-center gap-1 rounded bg-green-500/20 px-2 py-1 text-[10px] font-bold text-green-500"><Check className="h-3 w-3" /> ONAYLANDI</span>;
+      case "accepted":
+        return <span className="flex items-center gap-1 rounded bg-green-500/20 px-2 py-1 text-[10px] font-bold text-green-500"><Check className="h-3 w-3" /> KABUL</span>;
       case "rejected":
         return <span className="flex items-center gap-1 rounded bg-red-500/20 px-2 py-1 text-[10px] font-bold text-red-500"><X className="h-3 w-3" /> REDDEDILDI</span>;
-      case "waitlist":
+      case "waitlisted":
         return <span className="flex items-center gap-1 rounded bg-amber-500/20 px-2 py-1 text-[10px] font-bold text-amber-500"><Clock className="h-3 w-3" /> YEDEK</span>;
-      case "interview_scheduled":
+      case "interview_planned":
         return <span className="flex items-center gap-1 rounded bg-blue-500/20 px-2 py-1 text-[10px] font-bold text-blue-500"><MessageSquareText className="h-3 w-3" /> MULAKAT</span>;
       default:
         return <span className="flex items-center gap-1 rounded bg-white/10 px-2 py-1 text-[10px] font-bold text-muted-foreground"><Clock className="h-3 w-3" /> BEKLIYOR</span>;
@@ -157,10 +163,10 @@ export default function StaffApplicationsPage() {
         >
           <option value="all">Tüm Durumlar</option>
           <option value="pending">Bekleyenler</option>
-          <option value="approved">Onaylananlar</option>
+          <option value="accepted">Kabul Edilenler</option>
           <option value="rejected">Reddedilenler</option>
-          <option value="waitlist">Yedekler</option>
-          <option value="interview_scheduled">Mülakat Planlananlar</option>
+          <option value="waitlisted">Yedekler</option>
+          <option value="interview_planned">Mulakat Planlananlar</option>
         </select>
       </div>
 
@@ -211,10 +217,10 @@ export default function StaffApplicationsPage() {
                   className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none"
                 >
                   <option value="pending">Bekliyor</option>
-                  <option value="approved">Onayla</option>
+                  <option value="accepted">Kabul Et</option>
                   <option value="rejected">Reddet</option>
-                  <option value="waitlist">Yedeğe Al</option>
-                  <option value="interview_scheduled">Mülakata Çağır</option>
+                  <option value="waitlisted">Yedege Al</option>
+                  <option value="interview_planned">Mulakat Planla</option>
                 </select>
                 <button className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/20">
                   Form Yanıtları

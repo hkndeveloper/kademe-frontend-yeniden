@@ -12,7 +12,7 @@ interface ExportButtonsProps {
   buttonLabel?: string;
 }
 
-type ExportFormat = "xlsx" | "pdf" | "csv";
+type ExportFormat = "xlsx" | "pdf" | "csv" | "docx";
 
 export function ExportButtons({
   endpoint,
@@ -26,6 +26,7 @@ export function ExportButtons({
   const exportTypes = useMemo(
     () => [
       { format: "xlsx" as const, label: "Excel (.xlsx)", icon: FileSpreadsheet, color: "text-green-500", bg: "bg-green-500/10" },
+      { format: "docx" as const, label: "Word (.docx)", icon: FileText, color: "text-indigo-500", bg: "bg-indigo-500/10" },
       { format: "pdf" as const, label: "PDF Belgesi", icon: FileText, color: "text-red-500", bg: "bg-red-500/10" },
       { format: "csv" as const, label: "CSV Metni", icon: FileBox, color: "text-blue-500", bg: "bg-blue-500/10" },
     ],

@@ -33,6 +33,7 @@ interface Application {
 
 interface ApplicationApiItem {
   id: number;
+  project_id?: number;
   user: {
     name: string;
     surname: string;
@@ -87,27 +88,22 @@ export default function CoordinatorApplicationsPage() {
   useEffect(() => {
     const loadApplications = async () => {
       try {
-        const projectResponse = await api.get<{ projects: Project[] }>("/projects");
+        const projectResponse = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
         const projectItems = projectResponse.data.projects ?? [];
         setProjects(projectItems);
 
-        const applicationResponses = await Promise.all(
-          projectItems.map(async (project) => {
-            const response = await api.get<{ applications: ApplicationPagination }>("/panel/applications", {
-              params: {
-                project_id: project.id,
-              },
-            });
+        const response = await api.get<{ applications: ApplicationPagination }>("/panel/applications");
+        const projectNameById = new Map(projectItems.map((project) => [project.id, project.name]));
+        const merged = (response.data.applications?.data ?? []).map((item) => {
+          const projectId = item.project_id ?? 0;
+          return {
+            ...item,
+            projectId,
+            projectName: projectNameById.get(projectId) ?? "Bilinmeyen Proje",
+          };
+        });
 
-            return (response.data.applications?.data ?? []).map((item) => ({
-              ...item,
-              projectId: project.id,
-              projectName: project.name,
-            }));
-          })
-        );
-
-        setApplications(applicationResponses.flat());
+        setApplications(merged);
       } catch (error) {
         console.error("Basvurular yuklenemedi", error);
         setErrorMessage("Basvuru listesi yuklenemedi. Proje bazli admin route baglantisini kontrol edin.");

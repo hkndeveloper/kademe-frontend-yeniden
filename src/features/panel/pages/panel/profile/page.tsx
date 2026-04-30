@@ -6,6 +6,6 @@ import { useAuth } from "@/store/useAuth";
 
 export default function PanelProfilePage() {
   const role = useAuth((s) => s.user?.role);
-  if (role === "coordinator") return <CoordinatorProfilePage />;
+  if (role === "coordinator" || role === "super_admin") return <CoordinatorProfilePage />;
   return <StaffProfilePage />;
 }

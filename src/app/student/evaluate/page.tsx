@@ -21,6 +21,7 @@ interface FeedbackProgram {
   credit_deduction: number;
   feedback_submitted: boolean;
   submitted_at?: string | null;
+  anonymous_feedback_id?: string | null;
   credit_restored: boolean;
   project?: {
     id: number;
@@ -141,7 +142,7 @@ export default function EvaluatePage() {
     setErrorMessage(null);
 
     try {
-      const response = await api.post<{ message: string; current_credit: number }>("/feedbacks", {
+      const response = await api.post<{ message: string; current_credit: number; anonymous_feedback_id?: string }>("/feedbacks", {
         program_id: selectedProgramId,
         responses: {
           content_quality: Number(form.content_quality),
@@ -159,6 +160,7 @@ export default function EvaluatePage() {
                 feedback_submitted: true,
                 credit_restored: true,
                 submitted_at: new Date().toISOString(),
+                anonymous_feedback_id: response.data.anonymous_feedback_id ?? program.anonymous_feedback_id,
               }
             : program,
         ),
@@ -261,6 +263,11 @@ export default function EvaluatePage() {
                         ) : (
                           <span className="text-xs text-amber-300">Kredi iadesi bekliyor</span>
                         )}
+                        {program.anonymous_feedback_id ? (
+                          <span className="text-[10px] text-muted-foreground">
+                            Anonim ID: {program.anonymous_feedback_id.slice(0, 8).toUpperCase()}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </button>
@@ -278,6 +285,7 @@ export default function EvaluatePage() {
             ) : selectedProgram.feedback_submitted ? (
               <div className="rounded-2xl border border-primary/20 bg-primary/10 p-6 text-sm text-muted-foreground">
                 Bu oturum icin degerlendirme zaten gonderildi. {selectedProgram.submitted_at ? `Gonderim zamani: ${new Date(selectedProgram.submitted_at).toLocaleString("tr-TR")}` : ""}
+                {selectedProgram.anonymous_feedback_id ? ` Anonim takip ID: ${selectedProgram.anonymous_feedback_id.slice(0, 8).toUpperCase()}` : ""}
               </div>
             ) : (
               <form className="space-y-6" onSubmit={handleSubmit}>
