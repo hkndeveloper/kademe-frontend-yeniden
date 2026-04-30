@@ -104,18 +104,23 @@ export default function CoordinatorDashboardPage() {
 
         const projectResults = await Promise.all(
           manageableProjects.map(async (project) => {
+            const canViewProgramsForProject =
+              hasPermission("programs.view") && canAccessProject("programs.view", project.id);
+            const canViewApplicationsForProject =
+              hasPermission("applications.view") && canAccessProject("applications.view", project.id);
+
             const [programsResponse, pendingAppsResponse, acceptedAppsResponse] = await Promise.all([
-              hasPermission("programs.view")
+              canViewProgramsForProject
                 ? api.get<{ programs?: Program[] }>("/panel/programs", {
                     params: { project_id: project.id },
                   })
                 : Promise.resolve({ data: { programs: [] as Program[] } }),
-              hasPermission("applications.view")
+              canViewApplicationsForProject
                 ? api.get<ApplicationListResponse>("/panel/applications", {
                     params: { project_id: project.id, status: "pending" },
                   })
                 : Promise.resolve({ data: { applications: { total: 0, data: [] } } }),
-              hasPermission("applications.view")
+              canViewApplicationsForProject
                 ? api.get<ApplicationListResponse>("/panel/applications", {
                     params: { project_id: project.id, status: "accepted" },
                   })

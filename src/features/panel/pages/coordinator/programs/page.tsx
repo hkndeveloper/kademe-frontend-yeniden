@@ -103,11 +103,9 @@ export default function CoordinatorProgramsPage() {
 
     try {
       const projectResponse = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
-      const allManageableProjects = (projectResponse.data.projects ?? []).filter(
-        (project) => project.active_period?.id
-      );
+      const allManageableProjects = projectResponse.data.projects ?? [];
       const manageableProjects = allManageableProjects.filter(
-        (project) => project.active_period?.id && canAccessProject("programs.view", project.id)
+        (project) => canAccessProject("programs.view", project.id)
       );
       const allowedCreateProjects = allManageableProjects.filter(
         (project) => project.active_period?.id && canAccessProject("programs.create", project.id)
