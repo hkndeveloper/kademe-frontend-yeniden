@@ -201,11 +201,11 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <Link href={projectListHref(panelBasePath)} className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-white">
+          <Link href={projectListHref(panelBasePath)} className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-slate-900">
             <ArrowLeft className="h-4 w-4" />
             Proje listesine don
           </Link>
-          <h1 className="text-3xl font-black text-white">{project?.name || "Proje Icerigi"}</h1>
+          <h1 className="text-3xl font-black text-slate-900">{project?.name || "Proje Icerigi"}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Bu ekran proje detay sayfasinda ve anasayfa baglantilarinda gorunen alanlari duzenler.</p>
         </div>
         <button
@@ -220,24 +220,24 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
       </div>
 
       {readOnly ? (
-        <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <div className="rounded-3xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           Bu proje icin icerik guncelleme yetkiniz yok; alanlar salt okunurdur.
         </div>
       ) : null}
 
-      {message ? <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-sm text-emerald-200">{message}</div> : null}
-      {errorMessage ? <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-200">{errorMessage}</div> : null}
+      {message ? <div className="rounded-3xl border border-emerald-300 bg-emerald-50 p-5 text-sm text-emerald-900">{message}</div> : null}
+      {errorMessage ? <div className="rounded-3xl border border-red-300 bg-red-50 p-5 text-sm text-red-900">{errorMessage}</div> : null}
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.3fr_0.7fr]">
         <div className="space-y-8">
           <div className="glass-panel space-y-4 rounded-3xl p-8">
-            <h2 className="text-lg font-bold text-white">Temel Bilgiler</h2>
+            <h2 className="text-lg font-bold text-slate-900">Temel Bilgiler</h2>
             <input
               readOnly={readOnly}
               value={form.name}
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
               placeholder="Proje adi"
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white read-only:cursor-default read-only:opacity-90"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
             />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <input
@@ -245,14 +245,14 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
                 value={form.slug}
                 onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
                 placeholder="Slug"
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white read-only:cursor-default read-only:opacity-90"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
               />
               <input
                 readOnly={readOnly}
                 value={form.type}
                 onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
                 placeholder="Proje tipi"
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white read-only:cursor-default read-only:opacity-90"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
               />
             </div>
             <textarea
@@ -261,7 +261,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
               onChange={(event) => setForm((current) => ({ ...current, short_description: event.target.value }))}
               rows={3}
               placeholder="Kisa tanitim yazisi"
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white read-only:cursor-default read-only:opacity-90"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
             />
             <textarea
               readOnly={readOnly}
@@ -269,20 +269,20 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
               rows={8}
               placeholder="Detayli proje aciklamasi"
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white read-only:cursor-default read-only:opacity-90"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
             />
           </div>
 
           <div className="glass-panel space-y-4 rounded-3xl p-8">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-lg font-bold text-white">Galeri ve Gorseller</h2>
+              <h2 className="text-lg font-bold text-slate-900">Galeri ve Gorseller</h2>
               <div className="flex items-center gap-3">
-                <button onClick={addGalleryItem} type="button" disabled={readOnly} className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">
+                <button onClick={addGalleryItem} type="button" disabled={readOnly} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-900 disabled:opacity-40">
                   <Plus className="h-4 w-4" />
                   Alan Ekle
                 </button>
                 <label
-                  className={`inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+                  className={`inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-900 ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
                 >
                   {uploadingField === "gallery-new" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   Galeri Yukle
@@ -315,10 +315,10 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
               value={form.cover_image_path}
               onChange={(event) => setForm((current) => ({ ...current, cover_image_path: event.target.value }))}
               placeholder="Kapak gorsel URL"
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white read-only:cursor-default read-only:opacity-90"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
             />
             <label
-              className={`inline-flex w-fit items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+              className={`inline-flex w-fit items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
             >
               {uploadingField === "cover_image_path" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Kapak gorseli yukle
@@ -348,10 +348,10 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
                     value={item}
                     onChange={(event) => updateGalleryItem(index, event.target.value)}
                     placeholder={`Galeri gorsel URL ${index + 1}`}
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white read-only:cursor-default read-only:opacity-90"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
                   />
                   <label
-                    className={`inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+                    className={`inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
                   >
                     {uploadingField === `gallery-${index}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     <input
@@ -381,13 +381,13 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
           </div>
 
           <div className="glass-panel space-y-4 rounded-3xl p-8">
-            <h2 className="text-lg font-bold text-white">Basvuru Bilgileri</h2>
+            <h2 className="text-lg font-bold text-slate-900">Basvuru Bilgileri</h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <label className={`flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white ${readOnly ? "opacity-70" : ""}`}>
+              <label className={`flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 ${readOnly ? "opacity-70" : ""}`}>
                 <input type="checkbox" disabled={readOnly} checked={form.application_open} onChange={(event) => setForm((current) => ({ ...current, application_open: event.target.checked }))} />
                 Basvuru acik
               </label>
-              <label className={`flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white ${readOnly ? "opacity-70" : ""}`}>
+              <label className={`flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 ${readOnly ? "opacity-70" : ""}`}>
                 <input type="checkbox" disabled={readOnly} checked={form.has_interview} onChange={(event) => setForm((current) => ({ ...current, has_interview: event.target.checked }))} />
                 Mulakatli
               </label>
@@ -397,7 +397,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
                 value={form.quota}
                 onChange={(event) => setForm((current) => ({ ...current, quota: event.target.value === "" ? "" : Number(event.target.value) }))}
                 placeholder="Kontenjan"
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white read-only:cursor-default read-only:opacity-90"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
               />
             </div>
             <input
@@ -405,13 +405,13 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
               readOnly={readOnly}
               value={form.next_application_date}
               onChange={(event) => setForm((current) => ({ ...current, next_application_date: event.target.value }))}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white read-only:cursor-default read-only:opacity-90"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
             />
           </div>
         </div>
 
         <div className="glass-panel space-y-6 rounded-3xl p-8">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-white">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <ImageIcon className="h-5 w-5 text-primary" />
             Canli Onizleme
           </h2>
@@ -422,7 +422,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
           </div>
           <div>
             <div className="text-xs font-bold uppercase tracking-widest text-primary">{form.type || "Proje"}</div>
-            <h3 className="mt-2 text-2xl font-black text-white">{form.name || "Proje adi"}</h3>
+            <h3 className="mt-2 text-2xl font-black text-slate-900">{form.name || "Proje adi"}</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{form.short_description || "Kisa tanitim burada gorunecek."}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
