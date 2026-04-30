@@ -79,6 +79,7 @@ const initialForm: ProgramFormState = {
 export default function CoordinatorProgramsPage() {
   const { hasPermission, canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [creatableProjects, setCreatableProjects] = useState<Project[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,10 +103,17 @@ export default function CoordinatorProgramsPage() {
 
     try {
       const projectResponse = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
-      const manageableProjects = (projectResponse.data.projects ?? []).filter(
+      const allManageableProjects = (projectResponse.data.projects ?? []).filter(
+        (project) => project.active_period?.id
+      );
+      const manageableProjects = allManageableProjects.filter(
         (project) => project.active_period?.id && canAccessProject("programs.view", project.id)
       );
+      const allowedCreateProjects = allManageableProjects.filter(
+        (project) => project.active_period?.id && canAccessProject("programs.create", project.id)
+      );
       setProjects(manageableProjects);
+      setCreatableProjects(allowedCreateProjects);
 
       const responses = await Promise.all(
         manageableProjects.map(async (project) => {
@@ -186,7 +194,7 @@ export default function CoordinatorProgramsPage() {
   const handleSaveProgram = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const selectedProject = projects.find((project) => project.id === Number(form.project_id));
+    const selectedProject = creatableProjects.find((project) => project.id === Number(form.project_id));
     if (!selectedProject?.active_period?.id) {
       setErrorMessage("Program kaydi icin aktif donemi olan bir proje secilmelidir.");
       return;
@@ -296,12 +304,14 @@ export default function CoordinatorProgramsPage() {
             buttonLabel="Programlari Disa Aktar"
           />
           </PermissionGate>
-          <button
-            onClick={showForm ? () => setShowForm(false) : openCreateForm}
-            className="rounded-xl bg-accent px-5 py-3 text-sm font-bold text-accent-foreground"
-          >
-            {showForm ? "Formu Kapat" : "Yeni Program"}
-          </button>
+          <PermissionGate permission="programs.create">
+            <button
+              onClick={showForm ? () => setShowForm(false) : openCreateForm}
+              className="rounded-xl bg-accent px-5 py-3 text-sm font-bold text-accent-foreground"
+            >
+              {showForm ? "Formu Kapat" : "Yeni Program"}
+            </button>
+          </PermissionGate>
           <button
             onClick={() => void loadPrograms()}
             disabled={refreshing}
@@ -333,7 +343,7 @@ export default function CoordinatorProgramsPage() {
               disabled={!!editingProgramId}
             >
               <option value="">Proje secin</option>
-              {projects.map((project) => (
+              {creatableProjects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name} {project.active_period ? `- ${project.active_period.name}` : ""}
                 </option>
