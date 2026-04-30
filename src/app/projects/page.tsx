@@ -39,7 +39,8 @@ export default function ProjectsPage() {
 
   return (
     <div className="relative min-h-[calc(100vh-80px)] overflow-hidden bg-background pt-12 pb-24">
-      <div className="absolute right-0 top-0 -z-10 h-[600px] w-[600px] rounded-full bg-primary/5 blur-[150px]" />
+      <div className="absolute right-0 top-0 -z-10 h-[600px] w-[600px] rounded-full bg-primary/10 blur-[150px]" />
+      <div className="absolute left-[-120px] top-[180px] -z-10 h-[420px] w-[420px] rounded-full bg-accent/10 blur-[140px]" />
 
       <div className="container mx-auto px-6">
         <div className="mb-16 text-center md:text-left">
@@ -67,7 +68,7 @@ export default function ProjectsPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="glass-panel group flex h-full flex-col overflow-hidden rounded-3xl border border-border/50 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-md"
+                className="glass-panel group flex h-full flex-col overflow-hidden rounded-3xl border border-border/60 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-900/10"
               >
                 <div className="relative h-48 overflow-hidden bg-muted">
                   {project.cover_image ? (
@@ -95,7 +96,7 @@ export default function ProjectsPage() {
 
                   <div className="mt-auto flex items-center justify-between border-t border-border pt-4">
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{project.type || "Proje"}</span>
-                    <Link href={`/projects/${project.slug}`} className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+                    <Link href={`/projects/${project.slug}`} className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all duration-300 hover:gap-2">
                       Detaylari Gor
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>

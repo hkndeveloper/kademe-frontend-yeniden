@@ -77,7 +77,7 @@ export default function ActivitiesPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <section className="relative overflow-hidden border-b border-border/40 py-24">
-        <div className="absolute inset-0 bg-primary/5" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,oklch(0.74_0.18_45/0.13),transparent_42%),radial-gradient(circle_at_80%_80%,oklch(0.56_0.12_255/0.1),transparent_45%)]" />
         <div className="container relative z-10 mx-auto px-6 text-center">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 text-4xl font-black md:text-6xl">
             {pageSettings.homepage.activities_title}
@@ -95,13 +95,13 @@ export default function ActivitiesPage() {
               placeholder="Faaliyet ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-2xl border border-border bg-input py-4 pl-12 pr-6 outline-none transition-all focus:ring-2 focus:ring-primary"
+              className="w-full rounded-2xl border border-border bg-input py-4 pl-12 pr-6 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md"
             />
           </div>
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
-            className="rounded-2xl border border-border bg-input px-6 py-4 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary"
+            className="rounded-2xl border border-border bg-input px-6 py-4 text-sm font-bold outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md"
           >
             <option value="all">Tum Projeler</option>
             {projects.map((project) => (
@@ -132,7 +132,7 @@ export default function ActivitiesPage() {
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                className="glass-panel rounded-3xl p-6 transition-transform hover:-translate-y-1 md:p-8"
+                className="glass-panel group rounded-3xl border border-border/70 p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-900/10 md:p-8"
               >
                 <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                   <div className="flex flex-1 items-center gap-6">
@@ -143,7 +143,7 @@ export default function ActivitiesPage() {
                       <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                         {program.project?.name || "Program"}
                       </span>
-                      <h3 className="text-2xl font-bold text-foreground">{program.title}</h3>
+                      <h3 className="text-2xl font-bold text-foreground transition-colors duration-300 group-hover:text-primary">{program.title}</h3>
                       <div className="mt-2 flex flex-wrap gap-6 text-sm font-medium text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />

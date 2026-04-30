@@ -38,7 +38,7 @@ export default function FaqPage() {
     <div className="min-h-screen bg-background pt-12 pb-24">
       <div className="container mx-auto max-w-4xl px-6">
         <div className="mb-16 text-center">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
             <HelpCircle className="h-8 w-8" />
           </motion.div>
           <h1 className="mb-4 text-4xl font-black text-foreground md:text-5xl">Sik Sorulan Sorular</h1>
@@ -64,7 +64,7 @@ export default function FaqPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className={`glass-panel overflow-hidden rounded-2xl border border-border/50 transition-all duration-300 ${isOpen ? "border-primary/40 bg-muted/30" : "hover:border-primary/25"}`}
+                        className={`glass-panel overflow-hidden rounded-2xl border border-border/50 transition-all duration-300 ${isOpen ? "border-primary/40 bg-muted/30 shadow-md shadow-primary/10" : "hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md"}`}
                       >
                         <button onClick={() => setOpenIndex(isOpen ? null : uniqueId)} className="flex w-full items-center justify-between gap-4 p-6 text-left">
                           <span className="font-bold text-foreground md:text-lg">{faq.question}</span>
@@ -83,10 +83,10 @@ export default function FaqPage() {
           </div>
         )}
 
-        <div className="mt-20 rounded-3xl border border-primary/25 bg-primary/5 p-8 text-center">
+        <div className="mt-20 rounded-3xl border border-primary/25 bg-primary/5 p-8 text-center shadow-sm">
           <h3 className="mb-2 text-xl font-bold text-foreground">Baska bir sorunuz mu var?</h3>
           <p className="mb-6 text-sm text-muted-foreground">Aradiginiz cevabi bulamadiysaniz iletisim veya destek kanalina gecebilirsiniz.</p>
-          <Link href="/contact" className="mx-auto inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground transition-all hover:shadow-md">
+          <Link href="/contact" className="mx-auto inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30">
             <MessageCircle className="h-5 w-5" />
             Iletisime Gec
           </Link>

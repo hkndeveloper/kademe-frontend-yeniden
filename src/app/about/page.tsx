@@ -78,7 +78,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <section className="relative overflow-hidden border-b border-border/40 py-24">
-        <div className="absolute inset-0 bg-primary/5" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_25%,oklch(0.74_0.18_45/0.14),transparent_42%),radial-gradient(circle_at_85%_75%,oklch(0.56_0.12_255/0.1),transparent_45%)]" />
         <div className="container relative z-10 mx-auto px-6 text-center">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 text-4xl font-black md:text-6xl">
             {pageSettings.about.hero_title}
@@ -89,7 +89,7 @@ export default function AboutPage() {
 
       <div className="container mx-auto mt-20 space-y-24 px-6">
         <section className="grid grid-cols-1 gap-12 md:grid-cols-2">
-          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="glass-panel rounded-[40px] p-10">
+          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="glass-panel rounded-[40px] border border-border/70 p-10 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10">
             <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Target className="h-8 w-8" />
             </div>
@@ -97,7 +97,7 @@ export default function AboutPage() {
             <p className="leading-relaxed text-muted-foreground">{pageSettings.about.mission_text}</p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="glass-panel rounded-[40px] border-accent/20 p-10">
+          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="glass-panel rounded-[40px] border border-accent/20 p-10 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10">
             <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 text-accent">
               <Eye className="h-8 w-8" />
             </div>
@@ -115,7 +115,7 @@ export default function AboutPage() {
             </h2>
             <p className="text-lg leading-relaxed text-muted-foreground">{pageSettings.about.ecosystem_description}</p>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-3xl border border-border/80 bg-muted/30 p-6">
+              <div className="rounded-3xl border border-border/80 bg-muted/30 p-6 shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md">
                 <h3 className="mb-2 font-bold text-foreground">{pageSettings.about.faq_teaser_title}</h3>
                 <p className="mb-4 text-sm text-muted-foreground">{pageSettings.about.faq_teaser_text}</p>
                 <div className="space-y-2">
@@ -123,14 +123,14 @@ export default function AboutPage() {
                     <Link
                       key={faq.id}
                       href="/faq"
-                      className="block rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+                      className="block rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-foreground"
                     >
                       {faq.question}
                     </Link>
                   ))}
                 </div>
               </div>
-              <div className="rounded-3xl border border-border/80 bg-muted/30 p-6">
+              <div className="rounded-3xl border border-border/80 bg-muted/30 p-6 shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md">
                 <h3 className="mb-2 font-bold text-foreground">{pageSettings.about.blog_teaser_title}</h3>
                 <p className="mb-4 text-sm text-muted-foreground">{pageSettings.about.blog_teaser_text}</p>
                 <div className="space-y-2">
@@ -138,7 +138,7 @@ export default function AboutPage() {
                     <Link
                       key={blog.id}
                       href={`/blog/${blog.slug}`}
-                      className="block rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+                      className="block rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-foreground"
                     >
                       {blog.title}
                     </Link>
@@ -147,20 +147,20 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-4">
-              <Link href="/projects" className="flex items-center gap-2 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground transition-all hover:shadow-md">
+              <Link href="/projects" className="group flex items-center gap-2 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30">
                 Projeleri Incele
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
-              <Link href="/activities" className="glass-panel rounded-xl px-8 py-3 font-bold">
+              <Link href="/activities" className="glass-panel rounded-xl px-8 py-3 font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
                 Faaliyetlere Git
               </Link>
-              <Link href="/contact" className="glass-panel rounded-xl px-8 py-3 font-bold">
+              <Link href="/contact" className="glass-panel rounded-xl px-8 py-3 font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
                 Iletisim
               </Link>
             </div>
           </div>
 
-          <div className="glass-panel flex min-h-[320px] flex-col justify-center rounded-[40px] border border-border/40 bg-muted/30 p-10">
+          <div className="glass-panel flex min-h-[320px] flex-col justify-center rounded-[40px] border border-border/50 bg-muted/30 p-10 shadow-sm">
             <BookOpen className="mb-4 h-16 w-16 text-primary/40" />
             <h3 className="text-2xl font-black text-foreground">{pageSettings.about.journey_title}</h3>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">{pageSettings.about.journey_text}</p>
