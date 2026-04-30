@@ -9,15 +9,6 @@ type ScopePayload = {
   user_id?: number;
 };
 
-/** Sunucudaki `PermissionResolver::permissionHasOrganizationWideViewScope` ile aynı liste. */
-const GLOBAL_VIEW_PERMISSIONS = new Set([
-  "calendar.view",
-  "programs.view",
-  "applications.view",
-  "projects.view",
-  "periods.view",
-]);
-
 /**
  * Sunucudaki PermissionResolver ile uyumlu: effective_permissions + permission_scopes + authorization_context.
  */
@@ -49,14 +40,6 @@ export function usePermissions() {
       }
       if (!hasPermission(permission)) {
         return false;
-      }
-
-      if (
-        user.role !== "student" &&
-        user.role !== "alumni" &&
-        GLOBAL_VIEW_PERMISSIONS.has(permission)
-      ) {
-        return true;
       }
 
       const scope = user.permission_scopes?.[permission];

@@ -6,6 +6,7 @@ import { ClipboardCheck, Check, X, User, Calendar, Loader2, Search, Clock, ListF
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Project {
   id: number;
@@ -74,6 +75,7 @@ const quickActions: Array<{ label: string; status: ActionStatus; tone: string }>
 ];
 
 export default function CoordinatorApplicationsPage() {
+  const { canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,19 +91,30 @@ export default function CoordinatorApplicationsPage() {
     const loadApplications = async () => {
       try {
         const projectResponse = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
-        const projectItems = projectResponse.data.projects ?? [];
+        const projectItems = (projectResponse.data.projects ?? []).filter((project) =>
+          canAccessProject("applications.view", project.id)
+        );
         setProjects(projectItems);
-
-        const response = await api.get<{ applications: ApplicationPagination }>("/panel/applications");
         const projectNameById = new Map(projectItems.map((project) => [project.id, project.name]));
-        const merged = (response.data.applications?.data ?? []).map((item) => {
-          const projectId = item.project_id ?? 0;
-          return {
-            ...item,
-            projectId,
-            projectName: projectNameById.get(projectId) ?? "Bilinmeyen Proje",
-          };
-        });
+
+        const responses = await Promise.all(
+          projectItems.map((project) =>
+            api.get<{ applications: ApplicationPagination }>("/panel/applications", {
+              params: { project_id: project.id },
+            })
+          )
+        );
+
+        const merged = responses
+          .flatMap((response) => response.data.applications?.data ?? [])
+          .map((item) => {
+            const projectId = item.project_id ?? 0;
+            return {
+              ...item,
+              projectId,
+              projectName: projectNameById.get(projectId) ?? "Bilinmeyen Proje",
+            };
+          });
 
         setApplications(merged);
       } catch (error) {
@@ -113,7 +126,7 @@ export default function CoordinatorApplicationsPage() {
     };
 
     void loadApplications();
-  }, []);
+  }, [canAccessProject]);
 
   const filteredApplications = useMemo(() => {
     return applications.filter((application) => {
