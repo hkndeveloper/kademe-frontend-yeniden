@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
+  X,
   FileText,
   Image as ImageIcon,
   Loader2,
@@ -135,7 +136,7 @@ export default function ProjectDetailPage() {
       return;
     }
 
-    // Dinamik alanlar varsa ilk tikta formu ac, ikinci adimda gonder.
+    // Dinamik alanlar modal icinde acilir.
     if (!showApplicationForm && (applicationForm?.fields?.length ?? 0) > 0) {
       setShowApplicationForm(true);
       return;
@@ -289,18 +290,23 @@ export default function ProjectDetailPage() {
 
   if (!project) return null;
 
+  const hasDynamicForm = (applicationForm?.fields?.length ?? 0) > 0;
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="relative flex h-[400px] w-full items-end overflow-hidden bg-muted md:h-[500px]">
         {project.cover_image ? (
-          <Image src={project.cover_image} alt={project.name} fill unoptimized className="object-cover" />
+          <Image src={project.cover_image} alt={project.name} fill unoptimized className="object-cover transition-transform duration-700 hover:scale-[1.02]" />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
 
         <div className="container relative z-10 mx-auto px-6 pb-12">
-          <button onClick={() => router.back()} className="mb-6 inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground">
+          <button
+            onClick={() => router.back()}
+            className="mb-6 inline-flex items-center gap-2 text-muted-foreground transition-all duration-300 hover:gap-3 hover:text-foreground"
+          >
             <ArrowLeft className="h-4 w-4" />
             Tum Projelere Don
           </button>
@@ -314,7 +320,7 @@ export default function ProjectDetailPage() {
 
       <div className="container mx-auto mt-12 grid grid-cols-1 gap-12 px-6 lg:grid-cols-3">
         <div className="space-y-10 lg:col-span-2">
-          <section className="glass-panel rounded-3xl p-8">
+          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
               <Sparkles className="h-6 w-6 text-primary" />
               Proje Hakkinda
@@ -324,32 +330,32 @@ export default function ProjectDetailPage() {
             </div>
           </section>
 
-          <section className="glass-panel rounded-3xl p-8">
+          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
               <CheckCircle2 className="h-6 w-6 text-primary" />
               Proje Durumu
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div className="rounded-2xl bg-muted/30 p-4">
+              <div className="rounded-2xl bg-muted/30 p-4 transition-colors duration-300 hover:bg-muted/50">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Durum</p>
                 <p className="mt-2 text-sm font-bold text-foreground">{project.status || "Belirtilmedi"}</p>
               </div>
-              <div className="rounded-2xl bg-muted/30 p-4">
+              <div className="rounded-2xl bg-muted/30 p-4 transition-colors duration-300 hover:bg-muted/50">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif Donem</p>
                 <p className="mt-2 text-sm font-bold text-foreground">{project.active_period?.name || "Yok"}</p>
               </div>
-              <div className="rounded-2xl bg-muted/30 p-4">
+              <div className="rounded-2xl bg-muted/30 p-4 transition-colors duration-300 hover:bg-muted/50">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Basvuru</p>
                 <p className="mt-2 text-sm font-bold text-foreground">{project.is_application_open ? "Acik" : "Kapali"}</p>
               </div>
-              <div className="rounded-2xl bg-muted/30 p-4">
+              <div className="rounded-2xl bg-muted/30 p-4 transition-colors duration-300 hover:bg-muted/50">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Akis</p>
                 <p className="mt-2 text-sm font-bold text-foreground">{project.has_interview ? "Mulakatli" : "Mulakatsiz"}</p>
               </div>
             </div>
           </section>
 
-          <section className="glass-panel rounded-3xl p-8">
+          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
               <ImageIcon className="h-6 w-6 text-primary" />
               Galeri
@@ -369,7 +375,7 @@ export default function ProjectDetailPage() {
             )}
           </section>
 
-          <section className="glass-panel rounded-3xl p-8">
+          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
               <Users className="h-6 w-6 text-primary" />
               Aktif Ogrenciler
@@ -377,7 +383,7 @@ export default function ProjectDetailPage() {
             {activeStudents.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {activeStudents.map((student) => (
-                  <div key={student.id} className="flex items-center gap-4 rounded-2xl bg-muted/30 p-4">
+                  <div key={student.id} className="flex items-center gap-4 rounded-2xl bg-muted/30 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/50">
                     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
                       {student.image ? <Image src={student.image} alt={student.name} fill unoptimized className="object-cover" /> : null}
                     </div>
@@ -398,7 +404,7 @@ export default function ProjectDetailPage() {
             )}
           </section>
 
-          <section className="glass-panel rounded-3xl p-8">
+          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
               <Users className="h-6 w-6 text-primary" />
               Mezunlar
@@ -412,7 +418,7 @@ export default function ProjectDetailPage() {
                       <h3 className="mb-4 border-b border-border pb-2 text-lg font-bold">{year}</h3>
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {students.map((student) => (
-                          <div key={student.id} className="flex items-center gap-4 rounded-2xl bg-muted/30 p-4">
+                          <div key={student.id} className="flex items-center gap-4 rounded-2xl bg-muted/30 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/50">
                             <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
                               {student.image ? <Image src={student.image} alt={student.name} fill unoptimized className="object-cover" /> : null}
                             </div>
@@ -436,7 +442,7 @@ export default function ProjectDetailPage() {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="glass-panel sticky top-28 rounded-3xl border border-primary/20 p-8 shadow-[0_0_40px_rgba(var(--primary),0.1)]">
+          <div className="glass-panel sticky top-28 rounded-3xl border border-primary/20 p-8 shadow-sm">
             <h3 className="mb-6 text-xl font-bold">Basvuru Bilgileri</h3>
 
             <div className="mb-8 space-y-4">
@@ -459,57 +465,27 @@ export default function ProjectDetailPage() {
 
             {project.is_application_open ? (
               <div className="space-y-5">
-                {showApplicationForm && applicationForm && applicationForm.fields.length > 0 ? (
-                  <div className="space-y-5">
-                    <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                      <FileText className="h-4 w-4 text-primary" />
-                      Dinamik Basvuru Formu
-                    </div>
-                    {applicationForm.fields.map((field) => {
-                      const fieldId = field.id ?? field.key;
-                      return (
-                        <div key={fieldId} className="space-y-2">
-                          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                            {field.label}
-                            {field.required ? <span className="text-red-400">*</span> : null}
-                          </label>
-                          {renderField(field)}
-                        </div>
-                      );
-                    })}
-                    <button
-                      type="button"
-                      onClick={() => setShowApplicationForm(false)}
-                      className="w-full rounded-xl border border-border bg-muted/50 py-3 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted"
-                    >
-                      Formu Kapat
-                    </button>
+                {hasDynamicForm ? (
+                  <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                    Basvuru formu "Basvuruyu Gonder" butonuna tikladiginizda popup olarak acilacaktir.
                   </div>
                 ) : (
-                  <>
-                    {applicationForm && applicationForm.fields.length > 0 ? (
-                      <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                        Dinamik sorular basvuru adiminda acilacaktir.
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                        Bu proje icin ozel form tanimi bulunmuyor. Varsayilan basvuru akisi kullanilacak.
-                      </div>
-                    )}
-                  </>
+                  <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                    Bu proje icin ozel form tanimi bulunmuyor. Varsayilan basvuru akisi kullanilacak.
+                  </div>
                 )}
 
                 <button
                   onClick={handleApply}
                   disabled={applying}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-primary-foreground shadow-lg transition-all hover:shadow-primary/50 disabled:opacity-70"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70"
                 >
                   {applying ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
                       <MessageSquareText className="h-5 w-5" />
-                      {showApplicationForm || (applicationForm?.fields?.length ?? 0) === 0 ? "Basvuruyu Gonder" : "Hemen Basvur"}
+                      {hasDynamicForm ? "Basvuruyu Gonder" : "Hemen Basvur"}
                     </>
                   )}
                 </button>
@@ -537,6 +513,61 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
+
+      {showApplicationForm && hasDynamicForm ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="glass-panel max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border/70 p-6 shadow-2xl md:p-8">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <FileText className="h-4 w-4 text-primary" />
+                Dinamik Basvuru Formu
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowApplicationForm(false)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all duration-300 hover:bg-muted hover:text-foreground"
+                aria-label="Basvuru formunu kapat"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              {applicationForm?.fields.map((field) => {
+                const fieldId = field.id ?? field.key;
+                return (
+                  <div key={fieldId} className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      {field.label}
+                      {field.required ? <span className="text-red-400">*</span> : null}
+                    </label>
+                    {renderField(field)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {errorMessage ? <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{errorMessage}</div> : null}
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setShowApplicationForm(false)}
+                className="w-full rounded-xl border border-border bg-muted/60 py-3 text-sm font-bold text-muted-foreground transition-all duration-300 hover:bg-muted"
+              >
+                Vazgec
+              </button>
+              <button
+                onClick={handleApply}
+                disabled={applying}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70"
+              >
+                {applying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Basvuruyu Gonder"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

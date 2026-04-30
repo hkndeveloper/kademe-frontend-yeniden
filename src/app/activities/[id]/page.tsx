@@ -68,7 +68,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
   return (
     <div className="min-h-screen bg-background pb-24">
       <section className="relative overflow-hidden border-b border-border/40 py-24">
-        <div className="absolute inset-0 bg-primary/5" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,oklch(0.74_0.18_45/0.13),transparent_44%),radial-gradient(circle_at_85%_72%,oklch(0.56_0.12_255/0.11),transparent_46%)]" />
         <div className="container relative z-10 mx-auto px-6">
           <div className="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-primary">
             {program.project?.name || "Faaliyet"}
@@ -83,7 +83,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
               <MapPin className="h-4 w-4" />
               {program.location || "Konum bilgisi yok"}
             </div>
-            <div className="rounded-xl border border-border bg-muted/40 px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <div className="rounded-xl border border-border bg-muted/40 px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground shadow-sm">
               {program.status}
             </div>
           </div>
@@ -91,7 +91,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
       </section>
 
       <div className="container mx-auto mt-16 grid grid-cols-1 gap-10 px-6 lg:grid-cols-[1.3fr_0.7fr]">
-        <div className="glass-panel rounded-[32px] p-8">
+        <div className="glass-panel rounded-[32px] border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
           <h2 className="text-2xl font-black text-foreground">Faaliyet Hakkinda</h2>
           <p className="mt-6 whitespace-pre-line leading-relaxed text-muted-foreground">
             {program.description || "Bu faaliyet icin henuz detayli aciklama eklenmedi."}
@@ -99,10 +99,10 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
         </div>
 
         <div className="space-y-6">
-          <div className="glass-panel rounded-[32px] p-8">
+          <div className="glass-panel rounded-[32px] border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
             <h3 className="text-lg font-black text-foreground">Proje Baglantisi</h3>
             {program.project ? (
-              <Link href={`/projects/${program.project.slug}`} className="mt-4 inline-flex rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground">
+              <Link href={`/projects/${program.project.slug}`} className="mt-4 inline-flex rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30">
                 {program.project.name} detayina git
               </Link>
             ) : (
@@ -110,12 +110,12 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
             )}
           </div>
 
-          <div className="glass-panel rounded-[32px] p-8">
+          <div className="glass-panel rounded-[32px] border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
             <h3 className="text-lg font-black text-foreground">Konuk ve Program Notlari</h3>
             {Array.isArray(program.guest_info) && program.guest_info.length > 0 ? (
               <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
                 {program.guest_info.map((item, index) => (
-                  <li key={`${item}-${index}`} className="rounded-2xl border border-border bg-muted/30 px-4 py-3">
+                  <li key={`${item}-${index}`} className="rounded-2xl border border-border bg-muted/30 px-4 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/50">
                     {item}
                   </li>
                 ))}

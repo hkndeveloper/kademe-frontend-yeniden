@@ -52,12 +52,12 @@ export default function BlogDetailPage() {
   return (
     <div className="min-h-screen bg-background pb-24 pt-12">
       <div className="container mx-auto max-w-4xl px-6">
-        <Link href="/blog" className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary">
+        <Link href="/blog" className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-all duration-300 hover:gap-3 hover:text-primary">
           <ArrowLeft className="h-4 w-4" />
           Tüm blog yazılarına dön
         </Link>
 
-        <div className="rounded-[32px] border border-border/40 p-8 glass-panel md:p-12">
+        <div className="glass-panel rounded-[32px] border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10 md:p-12">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary">
             <BookOpen className="h-4 w-4" />
             Blog Detayı
@@ -71,7 +71,7 @@ export default function BlogDetailPage() {
           </div>
 
           {blog.summary && (
-            <p className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-5 text-base leading-relaxed text-muted-foreground">
+            <p className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-5 text-base leading-relaxed text-muted-foreground shadow-sm">
               {blog.summary}
             </p>
           )}
