@@ -6,6 +6,7 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { useAuth } from "@/store/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Project {
   id: number;
@@ -74,6 +75,7 @@ const categoryLabels: Record<string, string> = {
 
 export default function CoordinatorFinancialsPage() {
   const { hasPermission } = useAuth();
+  const { canAccessProject } = usePermissions();
   const [activeTab, setActiveTab] = useState<"list" | "new">("list");
   const [projects, setProjects] = useState<Project[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -122,7 +124,11 @@ export default function CoordinatorFinancialsPage() {
           api.get<{ projects: Project[] }>("/panel/projects/manageable"),
           loadTransactions(),
         ]);
-        setProjects(projectResponse.data.projects ?? []);
+        const permittedProjects = (projectResponse.data.projects ?? []).filter((project) =>
+          canAccessProject("financial.create", project.id)
+          || canAccessProject("financial.view", project.id)
+        );
+        setProjects(permittedProjects);
       } catch (error) {
         console.error("Sayfa verileri yuklenemedi", error);
         setErrorMessage("Sayfa verileri yuklenirken bir hata olustu.");
@@ -132,7 +138,7 @@ export default function CoordinatorFinancialsPage() {
     };
 
     void initData();
-  }, [loadTransactions]);
+  }, [loadTransactions, canAccessProject]);
 
   const filteredTransactions = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("tr-TR");
@@ -222,7 +228,7 @@ export default function CoordinatorFinancialsPage() {
       formData.append("amount", formAmount);
       formData.append("invoice", formFile);
 
-      await api.post("/panel/coordinator/financials", formData, {
+      await api.post("/panel/financials", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

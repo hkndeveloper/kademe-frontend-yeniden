@@ -18,6 +18,7 @@ export default function CoordinatorProgramQrPage() {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [refreshIn, setRefreshIn] = useState(30);
+  const [scanUrl, setScanUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!Number.isFinite(programId) || programId <= 0) {
@@ -30,6 +31,7 @@ export default function CoordinatorProgramQrPage() {
     try {
       const res = await api.post<{ qr_token: string; refresh_in_seconds?: number }>(`/panel/programs/${programId}/generate-qr`);
       setToken(res.data.qr_token);
+      setScanUrl(`${window.location.origin}/student/qr-scan?token=${encodeURIComponent(res.data.qr_token)}`);
       setRefreshIn(res.data.refresh_in_seconds ?? 30);
     } catch {
       setError("QR uretilemedi. Yetki ve proje kapsamini kontrol edin (programs.qr.manage).");
@@ -65,10 +67,13 @@ export default function CoordinatorProgramQrPage() {
 
       {token && !loading ? (
         <div className="flex max-w-lg flex-col items-center gap-6 rounded-3xl border border-white/10 bg-white/[0.04] p-8">
-          <QRCodeSVG value={token} size={280} className="rounded-2xl bg-white p-3" />
+          <QRCodeSVG value={scanUrl ?? token} size={280} className="rounded-2xl bg-white p-3" />
           <p className="text-center text-xs text-muted-foreground">
-            Ogrenci yoklama ekrani bu metni okutur. Sunucu rotasyonu: {refreshIn} sn; gerekirse yenileyin.
+            QR artik dogrudan ogrencinin kamera acilan sayfasina gider. Sunucu rotasyonu: {refreshIn} sn; gerekirse yenileyin.
           </p>
+          <div className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-[10px] text-muted-foreground break-all">
+            Token: {token}
+          </div>
           <button
             type="button"
             onClick={() => void load()}

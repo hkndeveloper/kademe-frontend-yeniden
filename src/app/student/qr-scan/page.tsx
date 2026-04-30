@@ -1,57 +1,85 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { CheckCircle2, Loader2, MapPin, QrCode, ShieldAlert, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 
 export default function QrScanPage() {
+  const searchParams = useSearchParams();
   const [isScanning, setIsScanning] = useState(true);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [manualCode, setManualCode] = useState("");
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const locationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const submittedRef = useRef(false);
+
+  const extractToken = (raw: string): string => {
+    const value = raw.trim();
+    if (!value) return "";
+    try {
+      const url = new URL(value);
+      const token = url.searchParams.get("token");
+      return token?.trim() || value;
+    } catch {
+      return value;
+    }
+  };
 
   useEffect(() => {
     locationRef.current = location;
   }, [location]);
 
+  const submitAttendance = async (rawToken: string) => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const qrToken = extractToken(rawToken);
+    const currentLocation = locationRef.current;
+
+    if (!qrToken) {
+      setStatus("error");
+      setMessage("QR kod gecersiz. Lutfen tekrar okutun.");
+      submittedRef.current = false;
+      return;
+    }
+
+    if (!currentLocation) {
+      setStatus("error");
+      setMessage("Konum verisi alınamadı. Lütfen sayfayı yenileyip konum izni verin.");
+      submittedRef.current = false;
+      return;
+    }
+
+    setStatus("loading");
+    try {
+      const response = await api.post("/attendances/qr", {
+        qr_token: qrToken,
+        latitude: currentLocation.lat,
+        longitude: currentLocation.lng,
+      });
+
+      setStatus("success");
+      setMessage(response.data.message || "Yoklamanız başarıyla alındı!");
+    } catch (error: unknown) {
+      const nextMessage =
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : "Yoklama işlemi başarısız oldu.";
+
+      setStatus("error");
+      setMessage(nextMessage ?? "Yoklama işlemi başarısız oldu.");
+      submittedRef.current = false;
+    }
+  };
+
   useEffect(() => {
-    const submitAttendance = async (qrToken: string) => {
-      const currentLocation = locationRef.current;
-
-      if (!currentLocation) {
-        setStatus("error");
-        setMessage("Konum verisi alınamadı. Lütfen sayfayı yenileyip konum izni verin.");
-        return;
-      }
-
-      setStatus("loading");
-      try {
-        const response = await api.post("/attendances/qr", {
-          qr_token: qrToken,
-          latitude: currentLocation.lat,
-          longitude: currentLocation.lng,
-        });
-
-        setStatus("success");
-        setMessage(response.data.message || "Yoklamanız başarıyla alındı!");
-      } catch (error: unknown) {
-        const nextMessage =
-          typeof error === "object" &&
-          error !== null &&
-          "response" in error &&
-          typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
-            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-            : "Yoklama işlemi başarısız oldu.";
-
-        setStatus("error");
-        setMessage(nextMessage ?? "Yoklama işlemi başarısız oldu.");
-      }
-    };
-
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -60,7 +88,7 @@ export default function QrScanPage() {
       );
     }
 
-    const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+    const scanner = new Html5QrcodeScanner("reader", { fps: 12, qrbox: { width: 260, height: 260 } }, false);
 
     scanner.render(
       (decodedText) => {
@@ -73,12 +101,18 @@ export default function QrScanPage() {
 
     scannerRef.current = scanner;
 
+    const queryToken = extractToken(searchParams.get("token") ?? "");
+    if (queryToken) {
+      setIsScanning(false);
+      void submitAttendance(queryToken);
+    }
+
     return () => {
       if (scannerRef.current) {
         void scannerRef.current.clear();
       }
     };
-  }, []);
+  }, [searchParams]);
 
   return (
     <div className="mx-auto max-w-3xl py-10">
@@ -109,6 +143,27 @@ export default function QrScanPage() {
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <div className="h-2 w-2 rounded-full bg-primary" />
                 Kamera taranıyor...
+              </div>
+              <div className="mt-6 flex flex-col gap-2 rounded-xl border border-border/40 bg-black/30 p-4 text-left">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kod elle gir</label>
+                <div className="flex gap-2">
+                  <input
+                    value={manualCode}
+                    onChange={(event) => setManualCode(event.target.value)}
+                    className="w-full rounded-lg border border-border bg-black/20 px-3 py-2 text-xs text-white outline-none"
+                    placeholder="QR token veya link"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsScanning(false);
+                      void submitAttendance(manualCode);
+                    }}
+                    className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
+                  >
+                    Gonder
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
