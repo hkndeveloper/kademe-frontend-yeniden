@@ -90,6 +90,12 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [guestApplicant, setGuestApplicant] = useState({
+    name: "",
+    surname: "",
+    email: "",
+    phone: "",
+  });
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -126,11 +132,6 @@ export default function ProjectDetailPage() {
     setMessage(null);
     setErrorMessage(null);
 
-    if (!isAuthenticated) {
-      router.push(`/auth/login?redirect=/projects/${params.slug}`);
-      return;
-    }
-
     if (!project.active_period) {
       setErrorMessage("Bu proje icin aktif donem bulunmuyor.");
       return;
@@ -144,13 +145,36 @@ export default function ProjectDetailPage() {
 
     setApplying(true);
     try {
-      await api.post("/applications", {
-        project_id: project.id,
-        period_id: project.active_period.id,
-        form_data: formValues,
-      });
+      if (isAuthenticated) {
+        await api.post("/applications", {
+          project_id: project.id,
+          period_id: project.active_period.id,
+          form_data: formValues,
+        });
+      } else {
+        if (!guestApplicant.name.trim() || !guestApplicant.surname.trim() || !guestApplicant.email.trim()) {
+          setErrorMessage("Lutfen ad, soyad ve e-posta bilgilerinizi doldurun.");
+          return;
+        }
+
+        await api.post("/applications/public", {
+          project_id: project.id,
+          period_id: project.active_period.id,
+          form_data: formValues,
+          applicant: {
+            name: guestApplicant.name.trim(),
+            surname: guestApplicant.surname.trim(),
+            email: guestApplicant.email.trim(),
+            phone: guestApplicant.phone.trim() || null,
+          },
+        });
+      }
       setMessage("Basvurunuz alindi. Durumu ogrenci panelinizde gorebilirsiniz.");
-      router.push("/student/applications");
+      if (isAuthenticated) {
+        router.push("/student/applications");
+      } else {
+        setShowApplicationForm(false);
+      }
     } catch (error: unknown) {
       if (isAxiosError(error)) {
         const responseMessage =
@@ -508,7 +532,7 @@ export default function ProjectDetailPage() {
             )}
 
             {!isAuthenticated && project.is_application_open ? (
-              <p className="mt-4 text-center text-xs text-muted-foreground">Basvuru yapabilmek icin sisteme giris yapmaniz gerekir.</p>
+              <p className="mt-4 text-center text-xs text-muted-foreground">Uyelik zorunlu degil; ad, soyad ve e-posta bilgisiyle basvuru yapabilirsiniz.</p>
             ) : null}
           </div>
         </div>
@@ -533,6 +557,35 @@ export default function ProjectDetailPage() {
             </div>
 
             <div className="space-y-5">
+              {!isAuthenticated ? (
+                <div className="grid grid-cols-1 gap-3 rounded-2xl border border-border/70 bg-muted/40 p-4 md:grid-cols-2">
+                  <input
+                    value={guestApplicant.name}
+                    onChange={(event) => setGuestApplicant((current) => ({ ...current, name: event.target.value }))}
+                    placeholder="Ad"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
+                  />
+                  <input
+                    value={guestApplicant.surname}
+                    onChange={(event) => setGuestApplicant((current) => ({ ...current, surname: event.target.value }))}
+                    placeholder="Soyad"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
+                  />
+                  <input
+                    value={guestApplicant.email}
+                    onChange={(event) => setGuestApplicant((current) => ({ ...current, email: event.target.value }))}
+                    placeholder="E-posta"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground md:col-span-2"
+                  />
+                  <input
+                    value={guestApplicant.phone}
+                    onChange={(event) => setGuestApplicant((current) => ({ ...current, phone: event.target.value }))}
+                    placeholder="Telefon (opsiyonel)"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground md:col-span-2"
+                  />
+                </div>
+              ) : null}
+
               {applicationForm?.fields.map((field) => {
                 const fieldId = field.id ?? field.key;
                 return (
