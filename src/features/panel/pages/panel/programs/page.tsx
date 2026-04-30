@@ -21,6 +21,8 @@ interface Project {
   active_period?: ActivePeriod | null;
 }
 
+type ProjectsPayload = Project[] | { data?: Project[] };
+
 interface Program {
   id: number;
   title: string;
@@ -81,6 +83,7 @@ export default function PanelProgramsPage() {
   const { hasPermission, canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [creatableProjects, setCreatableProjects] = useState<Project[]>([]);
+  const [updatableProjects, setUpdatableProjects] = useState<Project[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,18 +100,32 @@ export default function PanelProgramsPage() {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
   const canViewAttendanceStats = hasPermission("programs.attendance.view");
+  const canUpdatePrograms = hasPermission("programs.update");
+  const canCompletePrograms = hasPermission("programs.complete");
+  const canManageQr = hasPermission("programs.qr.manage");
 
-  const loadProjectsByPermission = async (permission: "programs.view" | "programs.create") => {
+  const normalizeProjectsPayload = (payload: ProjectsPayload | undefined): Project[] => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+  };
+
+  const loadProjectsByPermission = async (
+    permission: "programs.view" | "programs.create" | "programs.update"
+  ) => {
     try {
-      const response = await api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+      const response = await api.get<{ projects: ProjectsPayload }>("/panel/projects/manageable", {
         params: { permission },
       });
-      return response.data.projects ?? [];
+      return normalizeProjectsPayload(response.data.projects);
     } catch (error) {
       const axiosError = error as AxiosError;
+      if (axiosError.response?.status === 403) {
+        return [];
+      }
       if (axiosError.response?.status === 422) {
-        const fallback = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
-        return (fallback.data.projects ?? []).filter((project) => canAccessProject(permission, project.id));
+        const fallback = await api.get<{ projects: ProjectsPayload }>("/panel/projects/manageable");
+        return normalizeProjectsPayload(fallback.data.projects).filter((project) => canAccessProject(permission, project.id));
       }
       throw error;
     }
@@ -119,9 +136,10 @@ export default function PanelProgramsPage() {
     setErrorMessage(null);
 
     try {
-      const [viewableProjects, creatableProjectsRaw] = await Promise.all([
+      const [viewableProjects, creatableProjectsRaw, updatableProjectsRaw] = await Promise.all([
         loadProjectsByPermission("programs.view"),
         loadProjectsByPermission("programs.create"),
+        loadProjectsByPermission("programs.update"),
       ]);
 
       const manageableProjects = viewableProjects.filter(
@@ -130,19 +148,28 @@ export default function PanelProgramsPage() {
       const allowedCreateProjects = creatableProjectsRaw.filter(
         (project) => project.active_period?.id && canAccessProject("programs.create", project.id)
       );
+      const allowedUpdateProjects = updatableProjectsRaw.filter(
+        (project) => canAccessProject("programs.update", project.id)
+      );
       setProjects(manageableProjects);
       setCreatableProjects(allowedCreateProjects);
+      setUpdatableProjects(allowedUpdateProjects);
 
       const responses = await Promise.all(
         manageableProjects.map(async (project) => {
-          const response = await api.get<{ programs: Program[] }>("/panel/programs", {
-            params: { project_id: project.id },
-          });
+          try {
+            const response = await api.get<{ programs: Program[] }>("/panel/programs", {
+              params: { project_id: project.id },
+            });
 
-          return (response.data.programs ?? []).map((program) => ({
-            ...program,
-            project_id: program.project_id ?? project.id,
-          }));
+            return (response.data.programs ?? []).map((program) => ({
+              ...program,
+              project_id: program.project_id ?? project.id,
+            }));
+          } catch (error) {
+            console.error(`Proje #${project.id} programlari yuklenemedi`, error);
+            return [];
+          }
         })
       );
 
@@ -212,7 +239,8 @@ export default function PanelProgramsPage() {
   const handleSaveProgram = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const selectedProject = creatableProjects.find((project) => project.id === Number(form.project_id));
+    const projectPool = editingProgramId ? updatableProjects : creatableProjects;
+    const selectedProject = projectPool.find((project) => project.id === Number(form.project_id));
     if (!selectedProject?.active_period?.id) {
       setErrorMessage("Program kaydi icin aktif donemi olan bir proje secilmelidir.");
       return;
@@ -536,7 +564,7 @@ export default function PanelProgramsPage() {
                 </div>
 
                 <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row">
-                  {canViewAttendanceStats ? (
+                  {canViewAttendanceStats && canAccessProject("programs.attendance.view", program.project_id) ? (
                     <button
                       onClick={() => void openAttendanceModal(program)}
                       className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold transition-colors hover:bg-muted"
@@ -544,28 +572,34 @@ export default function PanelProgramsPage() {
                       Yoklama Detayi
                     </button>
                   ) : null}
-                  <button
-                    onClick={() => openEditForm(program)}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold transition-colors hover:bg-muted"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Duzenle
-                  </button>
-                  <button
-                    onClick={() => void handleComplete(program.id)}
-                    disabled={program.status === "completed"}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-300 disabled:opacity-50"
-                  >
-                    <SquareCheckBig className="h-4 w-4" />
-                    Tamamla
-                  </button>
-                  <Link
-                    href={`/panel/programs/${program.id}/qr?title=${encodeURIComponent(program.title)}`}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:scale-[1.02]"
-                  >
-                    <Play className="h-4 w-4 fill-current" />
-                    QR Yoklama Baslat
-                  </Link>
+                  {canUpdatePrograms && canAccessProject("programs.update", program.project_id) ? (
+                    <button
+                      onClick={() => openEditForm(program)}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold transition-colors hover:bg-muted"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Duzenle
+                    </button>
+                  ) : null}
+                  {canCompletePrograms && canAccessProject("programs.complete", program.project_id) ? (
+                    <button
+                      onClick={() => void handleComplete(program.id)}
+                      disabled={program.status === "completed"}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-300 disabled:opacity-50"
+                    >
+                      <SquareCheckBig className="h-4 w-4" />
+                      Tamamla
+                    </button>
+                  ) : null}
+                  {canManageQr && canAccessProject("programs.qr.manage", program.project_id) ? (
+                    <Link
+                      href={`/panel/programs/${program.id}/qr?title=${encodeURIComponent(program.title)}`}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:scale-[1.02]"
+                    >
+                      <Play className="h-4 w-4 fill-current" />
+                      QR Yoklama Baslat
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             </motion.div>

@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Briefcase, CalendarDays, Loader2, Users } from "lucide-react";
+import { ArrowRight, Briefcase, CalendarDays, FilePenLine, Loader2, Settings2, Users } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface PanelProject {
   id: number;
@@ -37,6 +38,7 @@ interface PanelProjectsResponse {
 }
 
 export default function PanelMyProjectPage() {
+  const { hasPermission, canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<PanelProject[]>([]);
   const [scope, setScope] = useState<string>("assignment");
   const [loading, setLoading] = useState(true);
@@ -178,15 +180,35 @@ export default function PanelMyProjectPage() {
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">
                   Sonraki basvuru tarihi: {project.next_application_date || "Belirtilmedi"}
                 </div>
-                {project.slug ? (
-                  <Link
-                    href={`/projects/${project.slug}`}
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
-                  >
-                    Public proje sayfasi
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                ) : null}
+                <div className="flex flex-wrap items-center gap-3">
+                  {hasPermission("projects.content.update") && canAccessProject("projects.content.update", project.id) ? (
+                    <Link
+                      href={`/panel/projects/${project.id}/content`}
+                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-accent-foreground transition hover:opacity-90"
+                    >
+                      <FilePenLine className="h-4 w-4" />
+                      Icerigi Duzenle
+                    </Link>
+                  ) : null}
+                  {hasPermission("projects.application_form.update") && canAccessProject("projects.application_form.update", project.id) ? (
+                    <Link
+                      href={`/panel/periods/form-builder?project_id=${project.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                    >
+                      <Settings2 className="h-4 w-4" />
+                      Basvuru Formu
+                    </Link>
+                  ) : null}
+                  {project.slug ? (
+                    <Link
+                      href={`/projects/${project.slug}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                    >
+                      Public proje sayfasi
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  ) : null}
+                </div>
               </div>
             </div>
           ))

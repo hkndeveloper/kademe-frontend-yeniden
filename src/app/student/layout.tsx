@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { StudentSidebar } from "@/components/student/sidebar";
-import { homePathForRole } from "@/lib/role-home";
+import { homePathForUser } from "@/lib/role-home";
 import { useAuth } from "@/store/useAuth";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -26,13 +26,13 @@ export default function StudentLayout({
       }
 
       await fetchProfile();
-      const role = useAuth.getState().user?.role;
-      if (!role) {
+      const user = useAuth.getState().user;
+      if (!user) {
         router.replace("/auth/login");
         return;
       }
-      if (role !== "student") {
-        router.replace(homePathForRole(role));
+      if (user.role !== "student") {
+        router.replace(homePathForUser(user));
         return;
       }
       setLoading(false);
