@@ -5,7 +5,7 @@ export function PanelBrandBlock({ roleLabel }: { roleLabel: string }) {
     <div className="border-b border-white/[0.08] px-4 py-4">
       <Link
         href="/"
-        className="inline-flex outline-none ring-offset-[#0a0b14] focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+        className="inline-flex outline-none transition-opacity duration-300 hover:opacity-90 active:scale-95 ring-offset-slate-900 focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
         title="Ana sayfaya don"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -141,3 +141,26 @@
     @apply text-slate-400 hover:bg-white/5 hover:text-white;
   }
 }
+
+/* Panel sidebar: hafif aktif ok animasyonu (sadece utility) */
+@layer utilities {
+  @keyframes panel-sidebar-chevron {
+    0%,
+    100% {
+      transform: translateX(0);
+      opacity: 0.88;
+    }
+    50% {
+      transform: translateX(3px);
+      opacity: 1;
+    }
+  }
+  .animate-panel-sidebar-chevron {
+    animation: panel-sidebar-chevron 2.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-panel-sidebar-chevron {
+      animation: none;
+    }
+  }
+}
