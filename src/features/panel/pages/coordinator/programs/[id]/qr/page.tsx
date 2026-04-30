@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Link from "next/link";
-import { ChevronLeft, Loader2, RefreshCw } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import api from "@/lib/api/axios";
 
 export default function CoordinatorProgramQrPage() {
@@ -45,6 +45,15 @@ export default function CoordinatorProgramQrPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!token || refreshIn <= 0) return;
+    const interval = window.setInterval(() => {
+      void load();
+    }, refreshIn * 1000);
+
+    return () => window.clearInterval(interval);
+  }, [token, refreshIn, load]);
+
   return (
     <div className="space-y-8">
       <Link href="/panel/programs" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-white">
@@ -69,19 +78,8 @@ export default function CoordinatorProgramQrPage() {
         <div className="flex max-w-lg flex-col items-center gap-6 rounded-3xl border border-white/10 bg-white/[0.04] p-8">
           <QRCodeSVG value={scanUrl ?? token} size={280} className="rounded-2xl bg-white p-3" />
           <p className="text-center text-xs text-muted-foreground">
-            QR artik dogrudan ogrencinin kamera acilan sayfasina gider. Sunucu rotasyonu: {refreshIn} sn; gerekirse yenileyin.
+            QR kodu ogrenci sadece kamera ile okutur. Ekran acik kaldikca kod her {refreshIn} saniyede otomatik yenilenir.
           </p>
-          <div className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-[10px] text-muted-foreground break-all">
-            Token: {token}
-          </div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Kodu yenile
-          </button>
         </div>
       ) : null}
     </div>

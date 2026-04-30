@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface ActivePeriod {
   id: number;
@@ -32,6 +33,8 @@ interface Program {
   project_id: number;
   project?: { id: number; name: string } | null;
   period?: { id: number; name: string } | null;
+  attendance_count?: number;
+  feedback_count?: number;
 }
 
 interface ProgramFormState {
@@ -59,6 +62,7 @@ const initialForm: ProgramFormState = {
 };
 
 export default function CoordinatorProgramsPage() {
+  const { hasPermission } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +75,7 @@ export default function CoordinatorProgramsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [form, setForm] = useState<ProgramFormState>(initialForm);
+  const canViewAttendanceStats = hasPermission("programs.attendance.view");
 
   const loadPrograms = async () => {
     setRefreshing(true);
@@ -455,6 +460,8 @@ export default function CoordinatorProgramsPage() {
                         </div>
                       )}
                       {program.period?.name ? <div>{program.period.name}</div> : null}
+                      {canViewAttendanceStats ? <div>Yoklama: {program.attendance_count ?? 0}</div> : null}
+                      {canViewAttendanceStats ? <div>Degerlendirme: {program.feedback_count ?? 0}</div> : null}
                     </div>
                   </div>
                 </div>
