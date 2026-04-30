@@ -138,6 +138,17 @@ export default function AdminCalendarPage() {
   const canConnectGoogle = hasPermission("calendar.google.connect");
   const canSyncGoogle = hasPermission("calendar.google.sync");
 
+  const loadAssignees = useCallback(async (projectId?: number) => {
+    try {
+      const response = await api.get<{ users: CalendarAssignee[] }>("/calendar/assignees", {
+        params: projectId ? { project_id: projectId } : {},
+      });
+      setAssignees(response.data.users ?? []);
+    } catch (error) {
+      console.error("Takvim atama listesi yuklenemedi", error);
+    }
+  }, []);
+
   const loadCalendar = useCallback(async () => {
     setLoading(true);
     setErrorMessage("");
@@ -171,16 +182,11 @@ export default function AdminCalendarPage() {
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
-      try {
-        const response = await api.get<{ users: CalendarAssignee[] }>("/calendar/assignees");
-        setAssignees(response.data.users ?? []);
-      } catch (error) {
-        console.error("Takvim atama listesi yuklenemedi", error);
-      }
+      await loadAssignees();
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [loadAssignees]);
 
   const handleCreateEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -266,6 +272,7 @@ export default function AdminCalendarPage() {
     setSelectedAssigneeIds(program.calendar_event?.assigned_user_ids ?? []);
     setAssignmentSearch("");
     setIsAssignmentModalOpen(true);
+    void loadAssignees(program.project_id);
   };
 
   const handleToggleAssignee = (assigneeId: number) => {

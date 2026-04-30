@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -105,6 +105,17 @@ export default function CoordinatorCalendarPage() {
       : ""
   );
 
+  const loadAssignees = useCallback(async (projectId?: number) => {
+    try {
+      const response = await api.get<{ users: CalendarAssignee[] }>("/calendar/assignees", {
+        params: projectId ? { project_id: projectId } : {},
+      });
+      setAssignees(response.data.users ?? []);
+    } catch (error) {
+      console.error("Atanabilir kullanici listesi yuklenemedi", error);
+    }
+  }, []);
+
   const loadCalendar = async () => {
     try {
       const response = await api.get<CalendarPayload>("/calendar/overview");
@@ -127,16 +138,11 @@ export default function CoordinatorCalendarPage() {
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [loadAssignees]);
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
-      try {
-        const response = await api.get<{ users: CalendarAssignee[] }>("/calendar/assignees");
-        setAssignees(response.data.users ?? []);
-      } catch (error) {
-        console.error("Atanabilir kullanici listesi yuklenemedi", error);
-      }
+      await loadAssignees();
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -182,6 +188,7 @@ export default function CoordinatorCalendarPage() {
     setSelectedAssigneeIds(program.calendar_event?.assigned_user_ids ?? []);
     setAssignmentSearch("");
     setIsAssignmentModalOpen(true);
+    void loadAssignees(program.project_id);
   };
 
   const handleToggleAssignee = (assigneeId: number) => {
