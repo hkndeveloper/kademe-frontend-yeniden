@@ -182,6 +182,14 @@ export default function AdminProjectsPage() {
                   <Link href={`/panel/projects/${project.id}`} className="inline-flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-900 transition-colors hover:bg-white/10">
                     Detay
                   </Link>
+                  <PermissionGate permission="projects.application_form.update" requireProjectAccess={{ permission: "projects.application_form.update", projectId: project.id }}>
+                    <Link
+                      href={`/panel/periods/form-builder?project_id=${project.id}`}
+                      className="inline-flex items-center gap-1 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-indigo-300 transition-colors hover:bg-indigo-500/20 hover:text-indigo-200"
+                    >
+                      Form
+                    </Link>
+                  </PermissionGate>
                   <PermissionGate permission="projects.content.update">
                     <Link href={`/panel/projects/${project.id}/content`} className="inline-flex items-center gap-1 rounded-xl border border-white/10 bg-indigo-600/20 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-indigo-300 transition-colors hover:bg-indigo-600/40 hover:text-white">
                       <PencilLine className="h-3 w-3" />

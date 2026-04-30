@@ -74,10 +74,20 @@ export default function CoordinatorProjectsPage() {
             <h2 className="text-2xl font-black text-slate-900">{project.name}</h2>
             <p className="mt-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">{project.type}</p>
             <p className="mt-4 line-clamp-3 text-sm text-muted-foreground">{project.short_description || "Kisa tanitim henuz eklenmedi."}</p>
-            <Link href={`/panel/projects/${project.id}/content`} className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-accent px-5 py-3 text-sm font-bold text-accent-foreground">
-              <PencilLine className="h-4 w-4" />
-              Duzenle
-            </Link>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <PermissionGate permission="projects.application_form.update" requireProjectAccess={{ permission: "projects.application_form.update", projectId: project.id }}>
+                <Link
+                  href={`/panel/periods/form-builder?project_id=${project.id}`}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3 text-xs font-bold uppercase tracking-widest text-accent transition-colors hover:bg-accent/20"
+                >
+                  Basvuru Formu
+                </Link>
+              </PermissionGate>
+              <Link href={`/panel/projects/${project.id}/content`} className="inline-flex items-center gap-2 rounded-2xl bg-accent px-5 py-3 text-sm font-bold text-accent-foreground">
+                <PencilLine className="h-4 w-4" />
+                Duzenle
+              </Link>
+            </div>
           </div>
         ))}
       </div>
