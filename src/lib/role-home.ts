@@ -76,9 +76,7 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
   if (has("chatbot.view")) return "/panel/chatbot";
   if (has("settings.view") && hasGlobal("settings.view")) return "/panel/settings";
 
-  if (user?.role === "alumni") return "/alumni/dashboard";
-  if (user?.role === "student") return "/student/dashboard";
-  return "/";
+  return homePathForRole(user?.role);
 }
 
 /** Geriye uyumluluk: kullanici objesi olmayan eski cagri noktalarinda rol fallback'i. */
