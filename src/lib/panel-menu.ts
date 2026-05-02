@@ -88,6 +88,15 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     order: 10,
   },
   {
+    id: "volunteer",
+    label: "Gonullu Basvurulari",
+    href: "/panel/volunteer",
+    icon: UserCog,
+    permission: "volunteer.view",
+    sectionId: "operations",
+    order: 15,
+  },
+  {
     id: "programs",
     label: "Programlar",
     href: "/panel/programs",
@@ -113,6 +122,24 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     permission: "projects.participants.view",
     sectionId: "operations",
     order: 40,
+  },
+  {
+    id: "digital-bohca",
+    label: "Dijital Bohca",
+    href: "/panel/digital-bohca",
+    icon: Database,
+    permission: "digital_bohca.view",
+    sectionId: "operations",
+    order: 45,
+  },
+  {
+    id: "assignments",
+    label: "Odevler",
+    href: "/panel/assignments",
+    icon: FileStack,
+    permission: "assignments.view",
+    sectionId: "operations",
+    order: 46,
   },
   {
     id: "my-project",
@@ -295,6 +322,10 @@ function itemIsVisible(
   if (!allowed) return false;
   if (item.id === "projects") return shouldShowProjectsListNav(user, hasPermission);
   if (item.id === "my-project") return shouldShowMyProjectNav(user, hasPermission);
+  if (item.id === "staff") return user?.permission_scopes?.["staff.view"]?.scope_type === "all";
+  if (item.id === "members") return user?.permission_scopes?.["staff.view"]?.scope_type !== "all";
+  if (item.id === "content") return user?.permission_scopes?.["content.view"]?.scope_type === "all";
+  if (item.id === "settings") return user?.permission_scopes?.["settings.view"]?.scope_type === "all";
   return true;
 }
 

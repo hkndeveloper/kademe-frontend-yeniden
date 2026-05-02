@@ -11,7 +11,10 @@ const panelHomePermissions = [
   "dashboard.staff.view",
   "programs.view",
   "applications.view",
+  "volunteer.view",
   "financial.view",
+  "digital_bohca.view",
+  "assignments.view",
   "support.view",
   "certificates.view",
   "projects.view",
@@ -28,17 +31,25 @@ const panelHomePermissions = [
 
 export function hasPanelHomeAccess(user: HomePathUser | null | undefined): boolean {
   const permissions = user?.effective_permissions ?? [];
-  return permissions.includes("*") || panelHomePermissions.some((permission) => permissions.includes(permission));
+  if (permissions.includes("*")) return true;
+  return panelHomePermissions.some((permission) => {
+    if (!permissions.includes(permission)) return false;
+    if (permission === "content.view" || permission === "settings.view") {
+      return user?.permission_scopes?.[permission]?.scope_type === "all";
+    }
+    return true;
+  });
 }
 
 export function homePathForUser(user: HomePathUser | null | undefined): string {
   const permissions = user?.effective_permissions ?? [];
   const has = (permission: string) => permissions.includes("*") || permissions.includes(permission);
   const hasAny = (items: string[]) => permissions.includes("*") || items.some((permission) => permissions.includes(permission));
+  const hasGlobal = (permission: string) => permissions.includes("*") || user?.permission_scopes?.[permission]?.scope_type === "all";
 
   if (permissions.includes("*")) return "/panel/dashboard";
   if (hasAny(["dashboard.admin.view", "dashboard.coordinator.view", "dashboard.staff.view"])) return "/panel/dashboard";
-  if (hasAny(["programs.view", "applications.view", "financial.view", "support.view", "certificates.view"])) {
+  if (hasAny(["programs.view", "applications.view", "volunteer.view", "financial.view", "support.view", "certificates.view"])) {
     return "/panel/dashboard";
   }
   if (has("projects.view")) {
@@ -49,17 +60,21 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
       : "/panel/projects";
   }
   if (has("calendar.view")) return "/panel/calendar";
+  if (has("digital_bohca.view")) return "/panel/digital-bohca";
+  if (has("assignments.view")) return "/panel/assignments";
   if (has("requests.view")) return "/panel/requests";
   if (has("users.view")) return "/panel/users";
   if (has("permissions.matrix.view")) return "/panel/users/permissions";
-  if (has("staff.view")) return "/panel/staff";
+  if (has("staff.view")) {
+    return user?.permission_scopes?.["staff.view"]?.scope_type === "all" ? "/panel/staff" : "/panel/members";
+  }
   if (has("periods.view")) return "/panel/periods";
   if (has("announcements.view")) return "/panel/announcements";
-  if (has("content.view")) return "/panel/content";
+  if (has("content.view") && hasGlobal("content.view")) return "/panel/content";
   if (has("newsletter.view")) return "/panel/newsletter";
   if (has("logs.view")) return "/panel/logs";
   if (has("chatbot.view")) return "/panel/chatbot";
-  if (has("settings.view")) return "/panel/settings";
+  if (has("settings.view") && hasGlobal("settings.view")) return "/panel/settings";
 
   if (user?.role === "alumni") return "/alumni/dashboard";
   if (user?.role === "student") return "/student/dashboard";

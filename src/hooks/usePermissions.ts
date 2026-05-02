@@ -4,7 +4,7 @@ import { useCallback, useMemo } from "react";
 import { useAuth } from "@/store/useAuth";
 
 type ScopePayload = {
-  project_ids?: number[];
+  project_ids?: Array<number | string>;
   unit?: string;
   user_id?: number;
 };
@@ -48,23 +48,64 @@ export function usePermissions() {
         scope?.scope_type === "assigned_projects" ||
         scope?.scope_type === "selected_projects"
       ) {
-        const ids = (scope.scope_payload as ScopePayload | undefined)?.project_ids ?? [];
+        const ids = ((scope.scope_payload as ScopePayload | undefined)?.project_ids ?? [])
+          .map((id) => Number(id))
+          .filter((id) => Number.isFinite(id));
         return ids.includes(pid);
-      }
-
-      if (manageableProjectIds.length > 0) {
-        return manageableProjectIds.includes(pid);
       }
 
       return false;
     },
-    [user, hasPermission, manageableProjectIds]
+    [user, hasPermission]
+  );
+
+  const canAccessUnit = useCallback(
+    (permission: string, unit: string | null | undefined): boolean => {
+      if (!user || !unit) {
+        return false;
+      }
+      const effective = user.effective_permissions ?? [];
+      if (effective.includes("*")) {
+        return true;
+      }
+      if (!hasPermission(permission)) {
+        return false;
+      }
+
+      const scope = user.permission_scopes?.[permission];
+      if (scope?.scope_type === "all") {
+        return true;
+      }
+      if (scope?.scope_type === "own_unit") {
+        const allowedUnit = (scope.scope_payload as ScopePayload | undefined)?.unit;
+        return allowedUnit?.trim().toLocaleLowerCase("tr-TR") === unit.trim().toLocaleLowerCase("tr-TR");
+      }
+
+      return false;
+    },
+    [user, hasPermission]
+  );
+
+  const hasGlobalScope = useCallback(
+    (permission: string): boolean => {
+      const effective = user?.effective_permissions ?? [];
+      if (effective.includes("*")) {
+        return true;
+      }
+      if (!hasPermission(permission)) {
+        return false;
+      }
+      return user?.permission_scopes?.[permission]?.scope_type === "all";
+    },
+    [user, hasPermission]
   );
 
   return {
     hasPermission,
     hasAnyPermission,
     canAccessProject,
+    canAccessUnit,
+    hasGlobalScope,
     manageableProjectIds,
   };
 }

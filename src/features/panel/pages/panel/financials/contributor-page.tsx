@@ -122,7 +122,7 @@ export default function ContributorFinancialsPage() {
       setErrorMessage("");
       try {
         const [projectResponse] = await Promise.all([
-          api.get<{ projects: Project[] }>("/panel/projects/manageable"),
+          api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "financial.view" } }),
           loadTransactions(),
         ]);
         const permittedProjects = (projectResponse.data.projects ?? []).filter((project) =>
@@ -212,6 +212,10 @@ export default function ContributorFinancialsPage() {
     }
 
     const selectedProject = projects.find((project) => String(project.id) === formProjectId);
+    if (!selectedProject || !canAccessProject("financial.create", selectedProject.id)) {
+      setErrorMessage("Bu proje icin fatura olusturma yetkiniz bulunmuyor.");
+      return;
+    }
 
     setSubmitting(true);
     setSuccessMessage("");
@@ -460,7 +464,10 @@ export default function ContributorFinancialsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <PermissionGate permission="financial.invoice.download">
+                          <PermissionGate
+                            permission="financial.invoice.download"
+                            requireProjectAccess={{ permission: "financial.invoice.download", projectId: transaction.project_id }}
+                          >
                           {transaction.invoice_path ? (
                             <button
                               onClick={() => handleDownload(transaction.id)}

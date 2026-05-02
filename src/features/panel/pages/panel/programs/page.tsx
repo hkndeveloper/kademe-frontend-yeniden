@@ -87,7 +87,10 @@ export default function PanelProgramsPage() {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProjectId, setSelectedProjectId] = useState("all");
+  const [selectedProjectId, setSelectedProjectId] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("project_id") ?? "all";
+  });
   const [showForm, setShowForm] = useState(false);
   const [editingProgramId, setEditingProgramId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -389,7 +392,7 @@ export default function PanelProgramsPage() {
               disabled={!!editingProgramId}
             >
               <option value="">Proje secin</option>
-              {creatableProjects.map((project) => (
+              {(editingProgramId ? updatableProjects : creatableProjects).map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name} {project.active_period ? `- ${project.active_period.name}` : ""}
                 </option>

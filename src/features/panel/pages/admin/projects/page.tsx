@@ -190,7 +190,7 @@ export default function AdminProjectsPage() {
                       Form
                     </Link>
                   </PermissionGate>
-                  <PermissionGate permission="projects.content.update">
+                  <PermissionGate permission="projects.content.update" requireProjectAccess={{ permission: "projects.content.update", projectId: project.id }}>
                     <Link href={`/panel/projects/${project.id}/content`} className="inline-flex items-center gap-1 rounded-xl border border-white/10 bg-indigo-600/20 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-indigo-300 transition-colors hover:bg-indigo-600/40 hover:text-white">
                       <PencilLine className="h-3 w-3" />
                       Duzenle

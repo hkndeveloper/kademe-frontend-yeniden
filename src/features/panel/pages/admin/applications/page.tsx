@@ -47,6 +47,10 @@ interface ApplicationApiItem {
   created_at: string;
   evaluation_note?: string | null;
   rejection_reason?: string | null;
+  project?: {
+    id: number;
+    name: string;
+  } | null;
 }
 
 interface ApplicationPagination {
@@ -84,7 +88,10 @@ export default function AdminApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [projectFilter, setProjectFilter] = useState("all");
+  const [projectFilter, setProjectFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("project_id") ?? "all";
+  });
   const [statusFilter, setStatusFilter] = useState("pending");
   const [evaluationNote, setEvaluationNote] = useState<Record<number, string>>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -93,6 +100,7 @@ export default function AdminApplicationsPage() {
   useEffect(() => {
     const fetchAllApplications = async () => {
       try {
+        const initialProjectId = new URLSearchParams(window.location.search).get("project_id") ?? "all";
         const projectResponse = hasPermission("applications.view")
           ? await api.get<{ projects: Project[] }>("/panel/projects/manageable", {
               params: { permission: "applications.view" },
@@ -103,23 +111,19 @@ export default function AdminApplicationsPage() {
         );
         setProjects(projectItems);
 
-        const applicationResponses = await Promise.all(
-          projectItems.map(async (project) => {
-            const response = await api.get<{ applications: ApplicationPagination }>("/panel/applications", {
-              params: {
-                project_id: project.id,
-              },
-            });
+        const response = await api.get<{ applications: ApplicationPagination }>("/panel/applications", {
+          params: {
+            project_id: initialProjectId !== "all" ? initialProjectId : undefined,
+          },
+        });
 
-            return (response.data.applications?.data ?? []).map((item) => ({
-              ...item,
-              projectId: project.id,
-              projectName: project.name,
-            }));
-          })
+        setApplications(
+          (response.data.applications?.data ?? []).map((item) => ({
+            ...item,
+            projectId: item.project?.id ?? 0,
+            projectName: item.project?.name ?? "-",
+          }))
         );
-
-        setApplications(applicationResponses.flat());
       } catch (error) {
         console.error("Başvurular yüklenemedi", error);
         setErrorMessage("Başvuru listesi yüklenemedi. Sistemsel bir hata oluştu.");

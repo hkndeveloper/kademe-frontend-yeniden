@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, PencilLine } from "lucide-react";
+import { ArrowLeft, CalendarDays, ClipboardCheck, Database, FileStack, Loader2, PencilLine, UserCog, Users } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 
@@ -74,20 +74,83 @@ export default function PanelUnifiedProjectDetailPage() {
         <p className="mt-2 text-sm text-muted-foreground">Ozet ve hizli baglantilar.</p>
       </div>
 
-      <div className="flex flex-wrap gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <PermissionGate requireProjectAccess={{ permission: "projects.view", projectId }}>
           <Link
             href={`/panel/projects/${projectId}/content`}
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 font-bold text-white"
+            className="inline-flex items-center gap-3 rounded-2xl bg-primary px-6 py-4 font-bold text-white"
           >
             <PencilLine className="h-5 w-5" />
             Icerigi duzenle
           </Link>
         </PermissionGate>
+        <PermissionGate requireProjectAccess={{ permission: "programs.view", projectId }}>
+          <Link
+            href={`/panel/programs?project_id=${projectId}`}
+            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-6 py-4 font-semibold text-white/90"
+          >
+            <CalendarDays className="h-5 w-5" />
+            Program ve yoklama
+          </Link>
+        </PermissionGate>
+        <PermissionGate requireProjectAccess={{ permission: "projects.participants.view", projectId }}>
+          <Link
+            href={`/panel/participants?project_id=${projectId}`}
+            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-6 py-4 font-semibold text-white/90"
+          >
+            <Users className="h-5 w-5" />
+            Katilimci, mezun ve CV
+          </Link>
+        </PermissionGate>
+        <PermissionGate requireProjectAccess={{ permission: "applications.view", projectId }}>
+          <Link
+            href={`/panel/applications?project_id=${projectId}`}
+            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-6 py-4 font-semibold text-white/90"
+          >
+            <ClipboardCheck className="h-5 w-5" />
+            Basvurular
+          </Link>
+        </PermissionGate>
+        <PermissionGate requireProjectAccess={{ permission: "volunteer.view", projectId }}>
+          <Link
+            href={`/panel/volunteer?project_id=${projectId}`}
+            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-6 py-4 font-semibold text-white/90"
+          >
+            <UserCog className="h-5 w-5" />
+            Gonullu basvurulari
+          </Link>
+        </PermissionGate>
+        <PermissionGate requireProjectAccess={{ permission: "digital_bohca.view", projectId }}>
+          <Link
+            href={`/panel/digital-bohca?project_id=${projectId}`}
+            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-6 py-4 font-semibold text-white/90"
+          >
+            <Database className="h-5 w-5" />
+            Dijital Bohca
+          </Link>
+        </PermissionGate>
+        <PermissionGate requireProjectAccess={{ permission: "assignments.view", projectId }}>
+          <Link
+            href={`/panel/assignments?project_id=${projectId}`}
+            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-6 py-4 font-semibold text-white/90"
+          >
+            <FileStack className="h-5 w-5" />
+            Odevler
+          </Link>
+        </PermissionGate>
+        <PermissionGate requireProjectAccess={{ permission: "certificates.view", projectId }}>
+          <Link
+            href={`/panel/certificates?project_id=${projectId}`}
+            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-6 py-4 font-semibold text-white/90"
+          >
+            <FileStack className="h-5 w-5" />
+            Sertifikalar
+          </Link>
+        </PermissionGate>
         {preview.slug ? (
           <Link
             href={`/projects/${preview.slug}`}
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 px-6 py-3 font-semibold text-white/90"
+            className="inline-flex items-center gap-3 rounded-2xl border border-white/10 px-6 py-4 font-semibold text-white/90"
             target="_blank"
             rel="noreferrer"
           >

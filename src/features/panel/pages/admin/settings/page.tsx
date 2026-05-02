@@ -28,8 +28,13 @@ interface ActivityOption {
 }
 
 export default function AdminSettingsPage() {
-  const { hasPermission } = usePermissions();
-  const canUpdateSettings = hasPermission("settings.update") || hasPermission("content.site_settings.update");
+  const { hasPermission, hasGlobalScope } = usePermissions();
+  const canViewSettings =
+    (hasPermission("settings.view") && hasGlobalScope("settings.view")) ||
+    (hasPermission("content.site_settings.update") && hasGlobalScope("content.site_settings.update"));
+  const canUpdateSettings =
+    (hasPermission("settings.update") && hasGlobalScope("settings.update")) ||
+    (hasPermission("content.site_settings.update") && hasGlobalScope("content.site_settings.update"));
 
   const [settings, setSettings] = useState<SiteSettingsPayload>(defaultSiteSettings);
   const [computedStats, setComputedStats] = useState<Array<{ label: string; value: string; icon: string }>>([]);
@@ -54,6 +59,10 @@ export default function AdminSettingsPage() {
   });
 
   useEffect(() => {
+    if (!canViewSettings) {
+      return;
+    }
+
     const loadSettings = async () => {
       try {
         const [settingsResponse, projectsResponse, blogsResponse, activitiesResponse] = await Promise.all([
@@ -79,7 +88,7 @@ export default function AdminSettingsPage() {
     };
 
     void loadSettings();
-  }, []);
+  }, [canViewSettings]);
 
   const handleSave = async () => {
     if (!canUpdateSettings) {
@@ -236,6 +245,11 @@ export default function AdminSettingsPage() {
     onSuccess: (url: string) => void,
     fieldKey: string,
   ) => {
+    if (!canUpdateSettings) {
+      setErrorMessage("Gorsel yuklemek icin global site ayari guncelleme yetkisi gerekir.");
+      return;
+    }
+
     setUploadingField(fieldKey);
     setErrorMessage(null);
 
@@ -326,6 +340,14 @@ export default function AdminSettingsPage() {
       [key]: !current[key],
     }));
   };
+
+  if (!canViewSettings) {
+    return (
+      <div className="glass-panel rounded-3xl p-10 text-center text-sm text-muted-foreground">
+        Site ayarlarini goruntulemek icin settings.view veya content.site_settings.update izninin tum sistem kapsaminda verilmesi gerekir.
+      </div>
+    );
+  }
 
   if (loading) {
     return (

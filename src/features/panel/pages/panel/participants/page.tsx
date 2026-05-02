@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { GraduationCap, Loader2, Mail, Phone, Search, Star, Users } from "lucide-react";
+import { FileText, GraduationCap, Loader2, Mail, Phone, Search, Star, Users, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Project {
   id: number;
@@ -40,6 +41,11 @@ interface ParticipantItem {
     hometown?: string | null;
     status?: string | null;
     profile_photo?: string | null;
+    cv?: {
+      digital_cv_data?: Record<string, unknown> | null;
+      linkedin_url?: string | null;
+      github_url?: string | null;
+    } | null;
   };
 }
 
@@ -55,12 +61,17 @@ interface ParticipantsResponse {
 }
 
 export default function PanelParticipantsPage() {
+  const { canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [participants, setParticipants] = useState<ParticipantItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [projectFilter, setProjectFilter] = useState("all");
+  const [projectFilter, setProjectFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("project_id") ?? "all";
+  });
   const [statusFilter, setStatusFilter] = useState("all");
+  const [cvParticipant, setCvParticipant] = useState<ParticipantItem | null>(null);
   const [summary, setSummary] = useState({
     total: 0,
     active: 0,
@@ -69,9 +80,15 @@ export default function PanelParticipantsPage() {
   });
 
   useEffect(() => {
+    const initialProjectId = new URLSearchParams(window.location.search).get("project_id") ?? "all";
+
     const fetchParticipants = async () => {
       try {
-        const response = await api.get<ParticipantsResponse>("/panel/participants");
+        const response = await api.get<ParticipantsResponse>("/panel/participants", {
+          params: {
+            project_id: initialProjectId !== "all" ? initialProjectId : undefined,
+          },
+        });
         setProjects(response.data.projects ?? []);
         setParticipants(response.data.participants ?? []);
         setSummary(response.data.summary);
@@ -88,6 +105,19 @@ export default function PanelParticipantsPage() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  const selectedProjectName = useMemo(
+    () => projects.find((project) => String(project.id) === projectFilter)?.name,
+    [projectFilter, projects]
+  );
+
+  const cvEntries = useMemo(() => {
+    const data = cvParticipant?.user.cv?.digital_cv_data ?? {};
+    return Object.entries(data).filter(([, value]) => {
+      if (Array.isArray(value)) return value.length > 0;
+      return value !== null && value !== undefined && value !== "";
+    });
+  }, [cvParticipant]);
 
   const filteredParticipants = useMemo(() => {
     return participants.filter((participant) => {
@@ -122,6 +152,7 @@ export default function PanelParticipantsPage() {
         <div>
             <h1 className="text-2xl font-bold">Katilimcilar</h1>
             <p className="text-sm text-muted-foreground">Kendi projelerinizdeki aktif ogrencileri, mezunlari ve kredi durumlarini canli olarak takip edin.</p>
+            {selectedProjectName ? <p className="mt-1 text-xs font-bold uppercase tracking-widest text-accent">Filtre: {selectedProjectName}</p> : null}
           </div>
         </div>
         <PermissionGate
@@ -241,6 +272,19 @@ export default function PanelParticipantsPage() {
                 </div>
               </div>
 
+              {participant.user.cv && canAccessProject("projects.student_cv.view", participant.project.id) ? (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setCvParticipant(participant)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-muted"
+                  >
+                    <FileText className="h-4 w-4" />
+                    CV Bilgilerini Gor
+                  </button>
+                </div>
+              ) : null}
+
               <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div className="rounded-2xl bg-white/5 p-4 text-sm text-muted-foreground">
                   <div className="font-bold text-slate-900">{participant.user.university || "Universite yok"}</div>
@@ -274,6 +318,55 @@ export default function PanelParticipantsPage() {
           ))}
         </div>
       )}
+      {cvParticipant ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-3xl rounded-3xl border border-border bg-white p-6 shadow-2xl">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-slate-900">
+                  {cvParticipant.user.name} {cvParticipant.user.surname}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">Dijital CV ve profil baglantilari</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCvParticipant(null)}
+                className="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-slate-900"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="rounded-2xl bg-muted p-4 text-sm">
+                <div className="font-bold text-slate-900">LinkedIn</div>
+                <div className="mt-1 break-all text-muted-foreground">{cvParticipant.user.cv?.linkedin_url ?? "-"}</div>
+              </div>
+              <div className="rounded-2xl bg-muted p-4 text-sm">
+                <div className="font-bold text-slate-900">GitHub</div>
+                <div className="mt-1 break-all text-muted-foreground">{cvParticipant.user.cv?.github_url ?? "-"}</div>
+              </div>
+            </div>
+
+            <div className="mt-4 max-h-[50vh] overflow-y-auto rounded-2xl border border-border">
+              {cvEntries.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">Kayitli CV verisi bulunamadi.</div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {cvEntries.map(([key, value]) => (
+                    <div key={key} className="grid grid-cols-1 gap-2 p-4 text-sm md:grid-cols-[180px_1fr]">
+                      <div className="font-bold text-slate-900">{key}</div>
+                      <pre className="whitespace-pre-wrap break-words rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+                        {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
     </PermissionGate>
   );

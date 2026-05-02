@@ -21,12 +21,15 @@ import PanelSupportPage from "@/features/panel/pages/panel/support/page";
 import PanelContentPage from "@/features/panel/pages/panel/content/page";
 import PanelSettingsPage from "@/features/panel/pages/panel/settings/page";
 import PanelApplicationsPage from "@/features/panel/pages/panel/applications/page";
+import PanelVolunteerPage from "@/features/panel/pages/panel/volunteer/page";
 import PanelCalendarPage from "@/features/panel/pages/panel/calendar/page";
 import PanelDashboardPage from "@/features/panel/pages/panel/dashboard/page";
 import PanelChatbotPage from "@/features/panel/pages/panel/chatbot/page";
 import PanelProfilePage from "@/features/panel/pages/panel/profile/page";
 import PanelFinancialsPage from "@/features/panel/pages/panel/financials/page";
 import PanelProjectsPage from "@/features/panel/pages/panel/projects/page";
+import PanelDigitalBohcaPage from "@/features/panel/pages/panel/digital-bohca/page";
+import PanelAssignmentsPage from "@/features/panel/pages/panel/assignments/page";
 import AdminPeriodFormBuilderPage from "@/features/panel/pages/admin/periods/form-builder/page";
 
 function NotFoundPanelPage() {
@@ -40,12 +43,15 @@ function NotFoundPanelPage() {
 const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   dashboard: PanelDashboardPage,
   applications: PanelApplicationsPage,
+  volunteer: PanelVolunteerPage,
   programs: PanelProgramsPage,
   projects: PanelProjectsPage,
   participants: PanelParticipantsPage,
   "my-project": PanelMyProjectPage,
   calendar: PanelCalendarPage,
   financials: PanelFinancialsPage,
+  "digital-bohca": PanelDigitalBohcaPage,
+  assignments: PanelAssignmentsPage,
   requests: PanelSharedRequestsPage,
   support: PanelSupportPage,
   users: AdminUsersPage,

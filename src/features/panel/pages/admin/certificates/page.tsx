@@ -42,7 +42,10 @@ export default function AdminCertificatesPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("project_id") ?? "";
+  });
   
   // Create Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,8 +57,8 @@ export default function AdminCertificatesPage() {
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const projReq = hasPermission("projects.view")
-          ? api.get<{ projects?: Project[] }>("/panel/projects/manageable")
+        const projReq = hasPermission("certificates.view")
+          ? api.get<{ projects?: Project[] }>("/panel/projects/manageable", { params: { permission: "certificates.view" } })
           : Promise.resolve({ data: { projects: [] as Project[] } });
 
         const usersReq =

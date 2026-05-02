@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Briefcase, CalendarDays, FilePenLine, Loader2, Settings2, Users } from "lucide-react";
+import { ArrowRight, Briefcase, CalendarDays, ClipboardCheck, Database, FilePenLine, FileStack, Loader2, Settings2, UserCog, Users } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -197,6 +197,69 @@ export default function PanelMyProjectPage() {
                     >
                       <Settings2 className="h-4 w-4" />
                       Basvuru Formu
+                    </Link>
+                  ) : null}
+                  {hasPermission("programs.view") && canAccessProject("programs.view", project.id) ? (
+                    <Link
+                      href={`/panel/programs?project_id=${project.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                    >
+                      <CalendarDays className="h-4 w-4" />
+                      Programlar
+                    </Link>
+                  ) : null}
+                  {hasPermission("projects.participants.view") && canAccessProject("projects.participants.view", project.id) ? (
+                    <Link
+                      href={`/panel/participants?project_id=${project.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                    >
+                      <Users className="h-4 w-4" />
+                      Katilimcilar
+                    </Link>
+                  ) : null}
+                  {hasPermission("applications.view") && canAccessProject("applications.view", project.id) ? (
+                    <Link
+                      href={`/panel/applications?project_id=${project.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                    >
+                      <ClipboardCheck className="h-4 w-4" />
+                      Basvurular
+                    </Link>
+                  ) : null}
+                  {hasPermission("volunteer.view") && canAccessProject("volunteer.view", project.id) ? (
+                    <Link
+                      href={`/panel/volunteer?project_id=${project.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                    >
+                      <UserCog className="h-4 w-4" />
+                      Gonullu
+                    </Link>
+                  ) : null}
+                  {hasPermission("digital_bohca.view") && canAccessProject("digital_bohca.view", project.id) ? (
+                    <Link
+                      href={`/panel/digital-bohca?project_id=${project.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                    >
+                      <Database className="h-4 w-4" />
+                      Bohca
+                    </Link>
+                  ) : null}
+                  {hasPermission("assignments.view") && canAccessProject("assignments.view", project.id) ? (
+                    <Link
+                      href={`/panel/assignments?project_id=${project.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                    >
+                      <FileStack className="h-4 w-4" />
+                      Odevler
+                    </Link>
+                  ) : null}
+                  {hasPermission("certificates.view") && canAccessProject("certificates.view", project.id) ? (
+                    <Link
+                      href={`/panel/certificates?project_id=${project.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                    >
+                      <FileStack className="h-4 w-4" />
+                      Sertifikalar
                     </Link>
                   ) : null}
                   {project.slug ? (

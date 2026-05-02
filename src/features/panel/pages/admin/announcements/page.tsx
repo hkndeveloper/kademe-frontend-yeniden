@@ -34,7 +34,8 @@ const roleLabels: Record<string, string> = {
 
 export default function AdminAnnouncementsPage() {
   const { hasPermission } = useAuth();
-  const { canAccessProject } = usePermissions();
+  const user = useAuth((state) => state.user);
+  const { canAccessProject, hasGlobalScope } = usePermissions();
   const [activeTab, setActiveTab] = useState<"list" | "new">("list");
   const [projects, setProjects] = useState<Project[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -79,8 +80,8 @@ export default function AdminAnnouncementsPage() {
       setErrorMessage("");
       try {
         const [projectRes] = await Promise.all([
-          hasPermission("projects.view")
-            ? api.get<{ projects: Project[] }>("/panel/projects/manageable")
+          hasPermission("announcements.view")
+            ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "announcements.view" } })
             : Promise.resolve({ data: { projects: [] as Project[] } }),
           loadAnnouncements(),
         ]);
@@ -98,6 +99,12 @@ export default function AdminAnnouncementsPage() {
 
     void initData();
   }, [loadAnnouncements, hasPermission, canAccessProject]);
+
+  const canDeleteAnnouncement = (announcement: Announcement): boolean => {
+    if (!canDeleteAnnouncements) return false;
+    if (announcement.project?.id) return canAccessProject("announcements.delete", announcement.project.id);
+    return hasGlobalScope("announcements.delete") || announcement.creator?.id === user?.id;
+  };
 
   const resetForm = () => {
     setTitle("");
@@ -322,9 +329,7 @@ export default function AdminAnnouncementsPage() {
                           : "-"}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {canDeleteAnnouncements &&
-                          (!announcement.project?.id ||
-                            canAccessProject("announcements.delete", announcement.project.id)) && (
+                        {canDeleteAnnouncement(announcement) && (
                           <button
                             type="button"
                             onClick={() => handleDelete(announcement.id)}
@@ -396,7 +401,7 @@ export default function AdminAnnouncementsPage() {
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
                 >
                   <option value="">Tum Projeler</option>
-                  {projects.map((project) => (
+                  {projects.filter((project) => canAccessProject("announcements.create", project.id)).map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}
                     </option>

@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { FileText, HelpCircle, Loader2, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
-import { PermissionGate } from "@/components/shared/PermissionGate";
 import { useAuth } from "@/store/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface BlogCategory {
   id: number;
@@ -59,6 +59,8 @@ const emptyFaq = {
 
 export default function AdminContentPage() {
   const { hasPermission } = useAuth();
+  const { hasGlobalScope } = usePermissions();
+  const canViewContent = hasPermission("content.view") && hasGlobalScope("content.view");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -72,6 +74,10 @@ export default function AdminContentPage() {
   const [editingFaqId, setEditingFaqId] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!canViewContent) {
+      return;
+    }
+
     const loadContent = async () => {
       try {
         const response = await api.get<ContentResponse>("/panel/content");
@@ -91,7 +97,7 @@ export default function AdminContentPage() {
       setErrorMessage("Icerik verileri yuklenemedi.");
       setLoading(false);
     });
-  }, []);
+  }, [canViewContent]);
 
   const loadContent = async () => {
     try {
@@ -115,6 +121,12 @@ export default function AdminContentPage() {
   }, [faqs]);
 
   const handleBlogSave = async () => {
+    const permission = editingBlogId ? "content.blog.update" : "content.blog.create";
+    if (!hasPermission(permission) || !hasGlobalScope(permission)) {
+      setErrorMessage("Bu global icerik islemi icin tum sistem kapsami gerekir.");
+      return;
+    }
+
     setSaving(true);
     setMessage(null);
     setErrorMessage(null);
@@ -148,6 +160,12 @@ export default function AdminContentPage() {
   };
 
   const handleFaqSave = async () => {
+    const permission = editingFaqId ? "content.faq.update" : "content.faq.create";
+    if (!hasPermission(permission) || !hasGlobalScope(permission)) {
+      setErrorMessage("Bu global icerik islemi icin tum sistem kapsami gerekir.");
+      return;
+    }
+
     setSaving(true);
     setMessage(null);
     setErrorMessage(null);
@@ -218,6 +236,14 @@ export default function AdminContentPage() {
     }
   };
 
+  if (!canViewContent) {
+    return (
+      <div className="glass-panel rounded-3xl p-10 text-center text-sm text-muted-foreground">
+        Global icerik yonetimi icin content.view izninin tum sistem kapsaminda verilmesi gerekir.
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -234,12 +260,12 @@ export default function AdminContentPage() {
           <p className="mt-2 text-sm text-muted-foreground">Homepage ve public sayfalarda gorunen blog ve SSS iceriklerini buradan yonetebilirsin.</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <PermissionGate permission="content.blog.export">
+          {hasPermission("content.blog.export") && hasGlobalScope("content.blog.export") ? (
             <ExportButtons endpoint="/panel/content/blogs/export" filename="blog_yazilari" buttonLabel="Bloglari Disa Aktar" />
-          </PermissionGate>
-          <PermissionGate permission="content.faq.export">
+          ) : null}
+          {hasPermission("content.faq.export") && hasGlobalScope("content.faq.export") ? (
             <ExportButtons endpoint="/panel/content/faqs/export" filename="sss_listesi" buttonLabel="SSSleri Disa Aktar" />
-          </PermissionGate>
+          ) : null}
         </div>
       </div>
 
@@ -279,6 +305,7 @@ export default function AdminContentPage() {
               disabled={
                 saving ||
                 !(editingBlogId ? hasPermission("content.blog.update") : hasPermission("content.blog.create"))
+                || !(editingBlogId ? hasGlobalScope("content.blog.update") : hasGlobalScope("content.blog.create"))
               }
               className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 font-bold text-white disabled:opacity-60"
             >
@@ -309,6 +336,7 @@ export default function AdminContentPage() {
               disabled={
                 saving ||
                 !(editingFaqId ? hasPermission("content.faq.update") : hasPermission("content.faq.create"))
+                || !(editingFaqId ? hasGlobalScope("content.faq.update") : hasGlobalScope("content.faq.create"))
               }
               className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 font-bold text-white disabled:opacity-60"
             >
@@ -336,16 +364,16 @@ export default function AdminContentPage() {
                     <div className="mt-1 text-xs text-muted-foreground">{blog.category?.name || "Kategori yok"} • {blog.status}</div>
                   </div>
                   <div className="flex gap-2">
-                    <PermissionGate permission="content.blog.update">
+                    {hasPermission("content.blog.update") && hasGlobalScope("content.blog.update") ? (
                       <button type="button" onClick={() => editBlog(blog)} className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-900">
                         <Pencil className="h-4 w-4" />
                       </button>
-                    </PermissionGate>
-                    <PermissionGate permission="content.blog.delete">
+                    ) : null}
+                    {hasPermission("content.blog.delete") && hasGlobalScope("content.blog.delete") ? (
                       <button type="button" onClick={() => void deleteBlog(blog.id)} className="rounded-xl border border-red-500/20 bg-red-500/10 p-2 text-red-200">
                         <Trash2 className="h-4 w-4" />
                       </button>
-                    </PermissionGate>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -368,16 +396,16 @@ export default function AdminContentPage() {
                           <div className="mt-1 text-xs text-muted-foreground">Sira: {faq.order}</div>
                         </div>
                         <div className="flex gap-2">
-                          <PermissionGate permission="content.faq.update">
+                          {hasPermission("content.faq.update") && hasGlobalScope("content.faq.update") ? (
                             <button type="button" onClick={() => editFaq(faq)} className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-900">
                               <Pencil className="h-4 w-4" />
                             </button>
-                          </PermissionGate>
-                          <PermissionGate permission="content.faq.delete">
+                          ) : null}
+                          {hasPermission("content.faq.delete") && hasGlobalScope("content.faq.delete") ? (
                             <button type="button" onClick={() => void deleteFaq(faq.id)} className="rounded-xl border border-red-500/20 bg-red-500/10 p-2 text-red-200">
                               <Trash2 className="h-4 w-4" />
                             </button>
-                          </PermissionGate>
+                          ) : null}
                         </div>
                       </div>
                     </div>
