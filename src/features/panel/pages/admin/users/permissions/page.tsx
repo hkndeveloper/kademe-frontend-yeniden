@@ -469,7 +469,19 @@ export default function PermissionsPage() {
   const handleCreateRole = async () => {
     if (!canUpdateMatrix) return;
 
-    const name = newRoleName.trim().toLowerCase();
+    const name = newRoleName
+      .trim()
+      .toLocaleLowerCase("tr-TR")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/ı/g, "i")
+      .replace(/ğ/g, "g")
+      .replace(/ü/g, "u")
+      .replace(/ş/g, "s")
+      .replace(/ö/g, "o")
+      .replace(/ç/g, "c")
+      .replace(/[^a-z0-9_-]+/g, "_")
+      .replace(/^_+|_+$/g, "");
     if (!name) return;
 
     setCreatingRole(true);
@@ -510,11 +522,16 @@ export default function PermissionsPage() {
     if (!canUpdateMatrix) return;
 
     const permissions = Array.from(granularMatrix[role.name] ?? []);
+    const scopes = Object.entries(rolePermissionScopes[role.name] ?? {}).map(([permission_name, scope]) => ({
+      permission_name,
+      scope_type: scope.scope_type,
+      scope_payload: scope.scope_payload ?? {},
+    }));
     setUpdatingRoleId(role.id);
     setErrorMessage(null);
     setSuccessMessage(null);
     try {
-      await api.put(`/panel/permissions-matrix/roles/${role.id}`, { permissions });
+      await api.put(`/panel/permissions-matrix/roles/${role.id}`, { permissions, scopes });
       setSuccessMessage(`${role.label} rol izinleri guncellendi.`);
       await loadData();
     } catch (error) {

@@ -51,7 +51,7 @@ export default function AdminCertificatesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [form, setForm] = useState({ user_id: "", project_id: "", type: "Katılım" });
+  const [form, setForm] = useState({ user_id: "", project_id: "", type: "participation" });
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -119,7 +119,7 @@ export default function AdminCertificatesPage() {
     try {
       await api.post("/panel/certificates", form);
       setIsModalOpen(false);
-      setForm({ user_id: "", project_id: "", type: "Katılım" });
+      setForm({ user_id: "", project_id: "", type: "participation" });
       applyFilters();
     } catch (error: unknown) {
       const msg = isAxiosError(error)
@@ -355,10 +355,9 @@ export default function AdminCertificatesPage() {
                   onChange={(e) => setForm(f => ({ ...f, type: e.target.value }))}
                   className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-amber-500"
                 >
-                  <option value="Katılım">Katılım Belgesi</option>
-                  <option value="Başarı">Başarı Sertifikası</option>
-                  <option value="Onur">Onur Belgesi</option>
-                  <option value="Mezuniyet">Mezuniyet Belgesi</option>
+                  <option value="participation">Katilim Belgesi</option>
+                  <option value="achievement">Basari / Onur Belgesi</option>
+                  <option value="graduation">Mezuniyet Belgesi</option>
                 </select>
               </div>
             </div>
@@ -385,3 +384,4 @@ export default function AdminCertificatesPage() {
     </div>
   );
 }
+
