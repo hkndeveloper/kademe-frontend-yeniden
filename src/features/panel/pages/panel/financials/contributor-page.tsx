@@ -188,6 +188,14 @@ export default function ContributorFinancialsPage() {
   const handleDownload = async (id: number) => {
     try {
       const res = await api.get(`/panel/financials/${id}/invoice`, { responseType: "blob" });
+      const contentType = String(res.headers["content-type"] ?? "");
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await res.data.text()) as { download_url?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+      }
       const blob = new Blob([res.data]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");

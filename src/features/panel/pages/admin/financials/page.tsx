@@ -162,6 +162,14 @@ export default function AdminFinancialsPage() {
       const response = await api.get(`/panel/financials/${id}/invoice`, {
         responseType: "blob",
       });
+      const contentType = String(response.headers["content-type"] ?? "");
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+      }
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;

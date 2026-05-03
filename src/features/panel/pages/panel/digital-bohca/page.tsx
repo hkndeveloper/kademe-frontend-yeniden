@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Database, Loader2, Trash2, Upload } from "lucide-react";
+import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -92,6 +93,11 @@ export default function PanelDigitalBohcaPage() {
       setFeedback(response.data.message);
       setForm({ project_id: "", title: "", description: "", visible_to_student: true });
       setFile(null);
+    } catch (error) {
+      const message = isAxiosError(error)
+        ? String((error.response?.data as { message?: string })?.message ?? "Materyal yuklenemedi.")
+        : "Materyal yuklenemedi.";
+      setFeedback(message);
     } finally {
       setSaving(false);
     }
