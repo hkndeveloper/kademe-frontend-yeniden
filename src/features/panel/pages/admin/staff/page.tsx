@@ -24,7 +24,7 @@ interface StaffProfile {
   unit: string | null;
   contract_type: string | null;
   start_date: string | null;
-  personal_documents?: Array<{ path: string; label: string; uploaded_at: string }> | null;
+  personal_documents?: Array<{ path: string; url?: string | null; label: string; uploaded_at: string }> | null;
 }
 
 interface StaffUser {
@@ -645,7 +645,7 @@ export default function AdminStaffPage() {
                               </div>
                             </div>
                             <a
-                              href={`${process.env.NEXT_PUBLIC_STORAGE_URL || "http://localhost:8000/storage"}/${document.path.replace(/^public\//, "")}`}
+                              href={document.url ?? `${process.env.NEXT_PUBLIC_STORAGE_URL || "http://localhost:8000/storage"}/${document.path.replace(/^public\//, "")}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="rounded-lg bg-white/5 p-2 text-muted-foreground hover:bg-white/10 hover:text-slate-900"

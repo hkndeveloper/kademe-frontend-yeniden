@@ -18,6 +18,7 @@ interface RequestItem {
   target_unit?: string | null;
   description: string;
   response_file_path?: string | null;
+  response_file_url?: string | null;
   status: "pending" | "in_progress" | "completed" | "rejected";
   requester?: {
     id: number;
@@ -280,7 +281,7 @@ export default function AdminRequestsPage() {
                     <div className="mt-4 border-t border-white/5 pt-4">
                       {request.response_file_path ? (
                         <a
-                          href={`${process.env.NEXT_PUBLIC_STORAGE_URL || "http://localhost:8000/storage"}/${request.response_file_path.replace(/^public\//, "")}`}
+                          href={request.response_file_url ?? `${process.env.NEXT_PUBLIC_STORAGE_URL || "http://localhost:8000/storage"}/${request.response_file_path.replace(/^public\//, "")}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600/20 px-4 py-3 text-sm font-bold text-indigo-400 transition-colors hover:bg-indigo-600 hover:text-white"

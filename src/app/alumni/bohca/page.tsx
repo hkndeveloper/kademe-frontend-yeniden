@@ -10,6 +10,7 @@ interface BohcaItem {
   title: string;
   file_path?: string | null;
   file_url?: string | null;
+  download_url?: string | null;
   file_type?: string | null;
   created_at: string;
   uploader?: {
@@ -45,6 +46,32 @@ export default function AlumniBohcaPage() {
   };
 
   const filteredItems = items.filter((item) => item.title.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const downloadItem = async (item: BohcaItem) => {
+    if (item.file_url) {
+      window.open(item.file_url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const endpoint = item.download_url ?? `/digital-bohca/${item.id}/download`;
+    const response = await api.get(endpoint, { responseType: "blob" });
+    const contentType = String(response.headers["content-type"] ?? "");
+
+    if (contentType.includes("application/json")) {
+      const payload = JSON.parse(await response.data.text()) as { download_url?: string };
+      if (payload.download_url) window.open(payload.download_url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const blobUrl = window.URL.createObjectURL(response.data);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = item.title.replace(/\s+/g, "_");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  };
 
   return (
     <div className="space-y-8">
@@ -107,16 +134,14 @@ export default function AlumniBohcaPage() {
                     Yükleyen: {item.uploader ? `${item.uploader.name} ${item.uploader.surname}` : "Sistem"}
                   </p>
                 </div>
-                {item.file_url || item.file_path ? (
-                  <a
-                    href={item.file_url || item.file_path || "#"}
-                    target="_blank"
-                    rel="noreferrer"
+                {item.file_url || item.download_url || item.file_path ? (
+                  <button
+                    onClick={() => void downloadItem(item)}
                     className="flex items-center justify-center gap-2 rounded-xl bg-white/5 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-primary"
                   >
                     <Download className="h-4 w-4" />
                     İndir
-                  </a>
+                  </button>
                 ) : (
                   <button disabled className="flex items-center justify-center gap-2 rounded-xl bg-white/5 py-3 text-sm font-bold text-muted-foreground opacity-50 cursor-not-allowed">
                     Dosya Yok

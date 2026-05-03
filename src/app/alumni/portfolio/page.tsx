@@ -9,6 +9,7 @@ interface BohcaItem {
   title: string;
   file_path?: string | null;
   file_url?: string | null;
+  download_url?: string | null;
   file_type?: string | null;
   created_at: string;
   uploader?: {
@@ -47,6 +48,32 @@ export default function AlumniPortfolioPage() {
   };
 
   const filteredItems = items.filter((item) => item.title.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const downloadItem = async (item: BohcaItem) => {
+    if (item.file_url) {
+      window.open(item.file_url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const endpoint = item.download_url ?? `/digital-bohca/${item.id}/download`;
+    const response = await api.get(endpoint, { responseType: "blob" });
+    const contentType = String(response.headers["content-type"] ?? "");
+
+    if (contentType.includes("application/json")) {
+      const payload = JSON.parse(await response.data.text()) as { download_url?: string };
+      if (payload.download_url) window.open(payload.download_url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const blobUrl = window.URL.createObjectURL(response.data);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = item.title.replace(/\s+/g, "_");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  };
 
   if (loading) {
     return (
@@ -110,9 +137,9 @@ export default function AlumniPortfolioPage() {
                 </p>
 
                 <div className="mt-auto">
-                  {item.file_url || item.file_path ? (
+                  {item.file_url || item.download_url || item.file_path ? (
                     <button
-                      onClick={() => window.open(item.file_url || item.file_path || "", "_blank")}
+                      onClick={() => void downloadItem(item)}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-3 text-sm font-bold text-white transition-colors hover:bg-purple-500"
                     >
                       <Download className="h-4 w-4" />

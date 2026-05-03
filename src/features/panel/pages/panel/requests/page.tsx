@@ -25,6 +25,7 @@ interface RequestItem {
   target_unit?: string | null;
   description: string;
   response_file_path?: string | null;
+  response_file_url?: string | null;
   status: "pending" | "in_progress" | "completed" | "rejected";
   target_user?: {
     id: number;
@@ -285,7 +286,7 @@ export default function PanelSharedRequestsPage() {
                       <div className="mt-4 border-t border-white/5 pt-3">
                         {request.response_file_path ? (
                           <a
-                            href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/storage"}/${request.response_file_path.replace("public/", "")}`}
+                            href={request.response_file_url ?? `${process.env.NEXT_PUBLIC_STORAGE_URL || "http://localhost:8000/storage"}/${request.response_file_path.replace(/^public\//, "")}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent/20 px-3 py-2 text-xs font-bold text-accent-foreground transition-colors hover:bg-accent hover:text-primary-foreground"
