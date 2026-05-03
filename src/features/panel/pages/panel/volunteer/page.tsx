@@ -51,7 +51,7 @@ const emptyForm = {
 };
 
 export default function PanelVolunteerPage() {
-  const { canAccessProject } = usePermissions();
+  const { canAccessProject, hasPermission } = usePermissions();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,11 +73,18 @@ export default function PanelVolunteerPage() {
         params: { project_id: initialProjectId ?? undefined },
       }),
       api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "volunteer.view" } }),
+      hasPermission("volunteer.manage")
+        ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "volunteer.manage" } })
+        : Promise.resolve({ data: { projects: [] as Project[] } }),
     ])
-      .then(([opportunityResponse, projectResponse]) => {
+      .then(([opportunityResponse, viewProjectResponse, manageProjectResponse]) => {
         if (!active) return;
+        const mergedProjects = new Map<number, Project>();
+        [...(viewProjectResponse.data.projects ?? []), ...(manageProjectResponse.data.projects ?? [])].forEach((project) => {
+          mergedProjects.set(project.id, project);
+        });
         setOpportunities(opportunityResponse.data.opportunities?.data ?? []);
-        setProjects(projectResponse.data.projects ?? []);
+        setProjects(Array.from(mergedProjects.values()));
         if (initialProjectId) setForm((current) => ({ ...current, project_id: initialProjectId }));
       })
       .finally(() => {
@@ -87,7 +94,7 @@ export default function PanelVolunteerPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [hasPermission]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

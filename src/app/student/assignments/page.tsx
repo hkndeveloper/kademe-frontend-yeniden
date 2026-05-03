@@ -12,6 +12,13 @@ interface AssignmentSubmission {
   file_path?: string | null;
 }
 
+interface AssignmentFormState {
+  title: string;
+  description: string;
+  file_path: string;
+  file: File | null;
+}
+
 interface Assignment {
   id: number;
   title: string;
@@ -25,7 +32,7 @@ export default function StudentAssignmentsPage() {
   const [loading, setLoading] = useState(true);
   const [activeAssignmentId, setActiveAssignmentId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState<number | null>(null);
-  const [form, setForm] = useState<Record<number, { title: string; description: string; file_path: string }>>({});
+  const [form, setForm] = useState<Record<number, AssignmentFormState>>({});
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -42,13 +49,18 @@ export default function StudentAssignmentsPage() {
     void fetchAssignments();
   }, []);
 
-  const updateForm = (assignmentId: number, field: "title" | "description" | "file_path", value: string) => {
+  const emptyForm = (current?: AssignmentFormState): AssignmentFormState => ({
+    title: current?.title || "",
+    description: current?.description || "",
+    file_path: current?.file_path || "",
+    file: current?.file || null,
+  });
+
+  const updateForm = (assignmentId: number, field: keyof AssignmentFormState, value: string | File | null) => {
     setForm((prev) => ({
       ...prev,
       [assignmentId]: {
-        title: prev[assignmentId]?.title || "",
-        description: prev[assignmentId]?.description || "",
-        file_path: prev[assignmentId]?.file_path || "",
+        ...emptyForm(prev[assignmentId]),
         [field]: value,
       },
     }));
@@ -58,9 +70,17 @@ export default function StudentAssignmentsPage() {
     const payload = form[assignmentId];
     if (!payload?.description) return;
 
+    const formData = new FormData();
+    formData.append("title", payload.title);
+    formData.append("description", payload.description);
+    if (payload.file_path) formData.append("file_path", payload.file_path);
+    if (payload.file) formData.append("file", payload.file);
+
     setSubmitting(assignmentId);
     try {
-      await api.post(`/assignments/${assignmentId}/submit`, payload);
+      await api.post(`/assignments/${assignmentId}/submit`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       const refreshed = await api.get<{ assignments: Assignment[] }>("/assignments");
       setAssignments(refreshed.data.assignments ?? []);
       setActiveAssignmentId(null);
@@ -153,8 +173,13 @@ export default function StudentAssignmentsPage() {
                       className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
                     />
                     <input
+                      type="file"
+                      onChange={(e) => updateForm(assignment.id, "file", e.target.files?.[0] ?? null)}
+                      className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <input
                       type="text"
-                      placeholder="Dosya bağlantısı (opsiyonel)"
+                      placeholder="Dosya baglantisi (opsiyonel)"
                       value={form[assignment.id]?.file_path || ""}
                       onChange={(e) => updateForm(assignment.id, "file_path", e.target.value)}
                       className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"

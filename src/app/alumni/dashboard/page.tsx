@@ -17,6 +17,18 @@ interface TicketItem {
   status?: string | null;
 }
 
+interface CertificateItem {
+  id: number;
+}
+
+interface AlumniProject {
+  id: number;
+  name: string;
+  type?: string | null;
+  graduation_status?: string | null;
+  graduated_at?: string | null;
+}
+
 interface Announcement {
   id: number;
   title: string;
@@ -30,19 +42,25 @@ export default function AlumniDashboardPage() {
   const [materials, setMaterials] = useState<BohcaMaterial[]>([]);
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [certificates, setCertificates] = useState<CertificateItem[]>([]);
+  const [projects, setProjects] = useState<AlumniProject[]>([]);
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [bohcaResponse, ticketsResponse, annResponse] = await Promise.all([
+        const [bohcaResponse, ticketsResponse, annResponse, certResponse, projectResponse] = await Promise.all([
           api.get<{ materials: BohcaMaterial[] }>("/digital-bohca").catch(() => ({ data: { materials: [] } })),
           api.get<{ tickets: TicketItem[] }>("/tickets").catch(() => ({ data: { tickets: [] } })),
           api.get<{ announcements: Announcement[] }>("/announcements").catch(() => ({ data: { announcements: [] } })),
+          api.get<{ certificates: CertificateItem[] }>("/certificates").catch(() => ({ data: { certificates: [] } })),
+          api.get<{ projects: AlumniProject[] }>("/dashboard/projects").catch(() => ({ data: { projects: [] } })),
         ]);
 
         setMaterials(bohcaResponse.data.materials ?? []);
         setTickets(ticketsResponse.data.tickets ?? []);
         setAnnouncements(annResponse.data.announcements ?? []);
+        setCertificates(certResponse.data.certificates ?? []);
+        setProjects(projectResponse.data.projects ?? []);
       } catch (error) {
         console.error("Mezun dashboard verileri cekilemedi", error);
       } finally {
@@ -111,7 +129,7 @@ export default function AlumniDashboardPage() {
         <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
           <div>
             <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Sertifikalarım</p>
-            <h3 className="text-3xl font-black text-slate-900">0</h3>
+            <h3 className="text-3xl font-black text-slate-900">{certificates.length}</h3>
           </div>
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
             <Award className="h-7 w-7" />
@@ -165,6 +183,40 @@ export default function AlumniDashboardPage() {
                 Gönüllülük sayfasına git
               </Link>
             </div>
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-3xl p-8 flex flex-col">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-lg font-bold">
+              <Award className="h-5 w-5 text-primary" />
+              Mezun Oldugum Projeler
+            </h3>
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{projects.length}</span>
+          </div>
+
+          <div className="space-y-4 flex-1">
+            {projects.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-center text-muted-foreground h-full flex flex-col items-center justify-center min-h-[200px]">
+                Mezuniyet projesi kaydi gorunmuyor.
+              </div>
+            ) : (
+              projects.map((project) => (
+                <div key={project.id} className="rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition">
+                  <div className="flex justify-between items-start gap-4">
+                    <h4 className="text-sm font-bold text-slate-900">{project.name}</h4>
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      {project.type || "Proje"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {project.graduated_at
+                      ? `Mezuniyet: ${new Date(project.graduated_at).toLocaleDateString("tr-TR")}`
+                      : project.graduation_status || "Mezuniyet kaydi"}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

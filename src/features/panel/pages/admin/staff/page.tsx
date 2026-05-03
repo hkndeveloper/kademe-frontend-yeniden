@@ -603,7 +603,13 @@ export default function AdminStaffPage() {
                   <div>
                     <h3 className="mb-4 flex items-center justify-between text-sm font-bold uppercase tracking-widest text-slate-900">
                       Ozluk Belgeleri
-                      <PermissionGate permission="staff.documents.upload">
+                      <PermissionGate
+                        permission="staff.documents.upload"
+                        requireUnitAccess={{
+                          permission: "staff.documents.upload",
+                          unit: selectedStaff.staff_profile?.unit,
+                        }}
+                      >
                         <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600/20 px-4 py-2 text-xs font-bold text-indigo-400 transition-colors hover:bg-indigo-600 hover:text-white">
                           {uploadingDoc ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                           Yeni Belge Yukle

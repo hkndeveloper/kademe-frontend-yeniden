@@ -17,6 +17,7 @@ import {
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface User {
   id: number;
@@ -58,6 +59,7 @@ const roleLabels: Record<string, string> = {
 };
 
 export default function AdminUsersPage() {
+  const { hasPermission, hasGlobalScope } = usePermissions();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -293,14 +295,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4">{new Date(user.created_at).toLocaleDateString("tr-TR")}</td>
                     <td className="px-6 py-4">
-                      <PermissionGate
-                        permission="users.assign_role"
-                        fallback={
-                          <span className="inline-flex rounded border border-slate-200 bg-white px-2 py-1 text-xs font-bold uppercase text-indigo-400">
-                            {roleLabels[user.role] || user.role}
-                          </span>
-                        }
-                      >
+                      {hasPermission("users.assign_role") && hasGlobalScope("users.assign_role") ? (
                         <select
                           value={user.role}
                           onChange={(e) => void handleUpdateRole(user.id, e.target.value)}
@@ -311,9 +306,13 @@ export default function AdminUsersPage() {
                             <option key={key} value={key}>
                             {value}
                           </option>
-                        ))}
+                          ))}
                       </select>
-                      </PermissionGate>
+                      ) : (
+                        <span className="inline-flex rounded border border-slate-200 bg-white px-2 py-1 text-xs font-bold uppercase text-indigo-400">
+                          {roleLabels[user.role] || user.role}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span

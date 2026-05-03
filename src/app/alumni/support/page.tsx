@@ -53,6 +53,8 @@ export default function AlumniSupportPage() {
   const [applications, setApplications] = useState<VolunteerApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [form, setForm] = useState<TicketFormState>(initialForm);
@@ -61,7 +63,7 @@ export default function AlumniSupportPage() {
     try {
       const [ticketResponse, projectResponse, volunteerResponse] = await Promise.all([
         api.get<{ tickets: Ticket[] }>("/tickets"),
-        api.get<{ projects: Project[] }>("/projects"),
+        api.get<{ projects: Project[] }>("/dashboard/projects"),
         api.get<{ my_applications: VolunteerApplication[] }>("/volunteer/opportunities"),
       ]);
 
@@ -106,6 +108,26 @@ export default function AlumniSupportPage() {
       setErrorMessage("Destek talebi olusturulamadi.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleReply = async (ticketId: number) => {
+    if (!replyMessage.trim()) return;
+
+    setReplyingTo(ticketId);
+    setMessage(null);
+    setErrorMessage(null);
+
+    try {
+      await api.post(`/tickets/${ticketId}/reply`, { message: replyMessage });
+      setReplyMessage("");
+      setMessage("Takip mesaji eklendi.");
+      await loadData();
+    } catch (error) {
+      console.error("Alumni takip mesaji gonderilemedi", error);
+      setErrorMessage("Takip mesaji gonderilemedi.");
+    } finally {
+      setReplyingTo(null);
     }
   };
 
@@ -231,17 +253,46 @@ export default function AlumniSupportPage() {
         ) : (
           tickets.map((ticket) => (
             <div key={ticket.id} className="glass-panel rounded-3xl p-6">
-              <div className="flex flex-wrap items-center gap-3">
-                <h3 className="text-lg font-bold text-slate-900">{ticket.subject}</h3>
-                <span className="rounded-full bg-purple-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-purple-300">
-                  {ticket.category}
-                </span>
-                <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  {ticket.status}
-                </span>
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr,420px]">
+                <div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h3 className="text-lg font-bold text-slate-900">{ticket.subject}</h3>
+                    <span className="rounded-full bg-purple-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-purple-300">
+                      {ticket.category}
+                    </span>
+                    <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      {ticket.status}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">{ticket.message}</p>
+                  <p className="mt-2 text-xs uppercase tracking-widest text-muted-foreground">{new Date(ticket.created_at).toLocaleString("tr-TR")}</p>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                    Takip Mesaji
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={replyingTo === ticket.id ? replyMessage : ""}
+                    onChange={(event) => {
+                      setReplyingTo(ticket.id);
+                      setReplyMessage(event.target.value);
+                    }}
+                    placeholder="Talebinize ek not yazin"
+                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleReply(ticket.id)}
+                    disabled={replyingTo === ticket.id && !replyMessage.trim()}
+                    className="flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {replyingTo === ticket.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Takip Mesaji Gonder
+                  </button>
+                </div>
               </div>
-              <p className="mt-3 text-sm text-muted-foreground">{ticket.message}</p>
-              <p className="mt-2 text-xs uppercase tracking-widest text-muted-foreground">{new Date(ticket.created_at).toLocaleString("tr-TR")}</p>
             </div>
           ))
         )}

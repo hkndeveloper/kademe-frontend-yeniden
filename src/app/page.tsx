@@ -79,7 +79,7 @@ export default function HomePage() {
         const [projectResponse, blogResponse, activitiesResponse, configResponse] = await Promise.all([
           api.get<{ projects: HomeProject[] }>("/projects").catch(() => ({ data: { projects: [] as HomeProject[] } })),
           api.get<{ blogs: HomeBlog[] | { data?: HomeBlog[] } }>("/blogs").catch(() => ({ data: { blogs: [] as HomeBlog[] } })),
-          api.get<{ programs: HomeProgram[] }>("/activities").catch(() => ({ data: { programs: [] as HomeProgram[] } })),
+          api.get<{ programs: HomeProgram[] | { data?: HomeProgram[] } }>("/activities", { params: { per_page: 6 } }).catch(() => ({ data: { programs: [] as HomeProgram[] } })),
           api.get<SiteSettingsResponse>("/site-config"),
         ]);
 
@@ -88,7 +88,8 @@ export default function HomePage() {
         const rawBlogs = blogResponse.data.blogs;
         setBlogs(Array.isArray(rawBlogs) ? rawBlogs : rawBlogs?.data ?? []);
 
-        setActivities(activitiesResponse.data.programs ?? []);
+        const rawActivities = activitiesResponse.data.programs;
+        setActivities(Array.isArray(rawActivities) ? rawActivities : rawActivities?.data ?? []);
         setSiteSettings(configResponse.data.settings ?? null);
         setComputedStats(configResponse.data.computed_homepage_stats ?? []);
       } catch (error) {

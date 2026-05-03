@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Html5QrcodeScanType, Html5QrcodeScanner } from "html5-qrcode";
 import { CheckCircle2, Loader2, MapPin, QrCode, ShieldAlert, XCircle } from "lucide-react";
@@ -15,7 +15,7 @@ export default function QrScanPage() {
   const locationRef = useRef<{ lat: number; lng: number } | null>(null);
   const submittedRef = useRef(false);
 
-  const extractToken = (raw: string): string => {
+  const extractToken = useCallback((raw: string): string => {
     const value = raw.trim();
     if (!value) return "";
     try {
@@ -25,13 +25,13 @@ export default function QrScanPage() {
     } catch {
       return value;
     }
-  };
+  }, []);
 
   useEffect(() => {
     locationRef.current = location;
   }, [location]);
 
-  const submitAttendance = async (rawToken: string) => {
+  const submitAttendance = useCallback(async (rawToken: string) => {
     if (submittedRef.current) return;
     submittedRef.current = true;
     const qrToken = extractToken(rawToken);
@@ -74,7 +74,7 @@ export default function QrScanPage() {
       setMessage(nextMessage ?? "Yoklama işlemi başarısız oldu.");
       submittedRef.current = false;
     }
-  };
+  }, [extractToken]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -112,7 +112,7 @@ export default function QrScanPage() {
         void scannerRef.current.clear();
       }
     };
-  }, []);
+  }, [submitAttendance]);
 
   return (
     <div className="mx-auto max-w-3xl py-10">

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Search } from "lucide-react";
 import api from "@/lib/api/axios";
 
 interface Project {
@@ -21,21 +21,30 @@ interface Project {
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchProjects = async () => {
+      setLoading(true);
       try {
-        const response = await api.get<{ projects: Project[] }>("/projects");
+        const response = await api.get<{ projects: Project[] }>("/projects", {
+          params: { search: searchTerm.trim() || undefined },
+        });
         setProjects(response.data.projects ?? []);
       } catch (error) {
         console.error("Projeler yuklenemedi", error);
+        setProjects([]);
       } finally {
         setLoading(false);
       }
     };
 
-    void fetchProjects();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void fetchProjects();
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [searchTerm]);
 
   return (
     <div className="relative min-h-[calc(100vh-80px)] overflow-hidden bg-background pt-12 pb-24">
@@ -50,6 +59,19 @@ export default function ProjectsPage() {
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }} className="max-w-2xl text-lg text-muted-foreground">
             KADEME altindaki gelisim, mentorluk, diplomasi ve destek odakli proje akislari burada listelenir.
           </motion.p>
+        </div>
+
+        <div className="mb-10 max-w-2xl">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Proje ara..."
+              className="w-full rounded-2xl border border-border bg-input py-4 pl-12 pr-6 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary"
+            />
+          </div>
         </div>
 
         {loading ? (

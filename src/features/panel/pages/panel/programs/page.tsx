@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Calendar, CheckCircle2, Loader2, MapPin, Pencil, Play, Search, SquareCheckBig, X } from "lucide-react";
 import { motion } from "framer-motion";
@@ -107,13 +107,13 @@ export default function PanelProgramsPage() {
   const canCompletePrograms = hasPermission("programs.complete");
   const canManageQr = hasPermission("programs.qr.manage");
 
-  const normalizeProjectsPayload = (payload: ProjectsPayload | undefined): Project[] => {
+  const normalizeProjectsPayload = useCallback((payload: ProjectsPayload | undefined): Project[] => {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload?.data)) return payload.data;
     return [];
-  };
+  }, []);
 
-  const loadProjectsByPermission = async (
+  const loadProjectsByPermission = useCallback(async (
     permission: "programs.view" | "programs.create" | "programs.update"
   ) => {
     try {
@@ -132,9 +132,9 @@ export default function PanelProgramsPage() {
       }
       throw error;
     }
-  };
+  }, [canAccessProject, normalizeProjectsPayload]);
 
-  const loadPrograms = async () => {
+  const loadPrograms = useCallback(async () => {
     setRefreshing(true);
     setErrorMessage(null);
 
@@ -184,7 +184,7 @@ export default function PanelProgramsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [canAccessProject, loadProjectsByPermission]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -192,7 +192,7 @@ export default function PanelProgramsPage() {
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [canAccessProject]);
+  }, [loadPrograms]);
 
   const projectNameMap = useMemo(
     () =>

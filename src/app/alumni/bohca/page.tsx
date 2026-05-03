@@ -9,6 +9,7 @@ interface BohcaItem {
   id: number;
   title: string;
   file_path?: string | null;
+  file_url?: string | null;
   file_type?: string | null;
   created_at: string;
   uploader?: {
@@ -106,9 +107,9 @@ export default function AlumniBohcaPage() {
                     Yükleyen: {item.uploader ? `${item.uploader.name} ${item.uploader.surname}` : "Sistem"}
                   </p>
                 </div>
-                {item.file_path ? (
+                {item.file_url || item.file_path ? (
                   <a
-                    href={item.file_path}
+                    href={item.file_url || item.file_path || "#"}
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center justify-center gap-2 rounded-xl bg-white/5 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-primary"

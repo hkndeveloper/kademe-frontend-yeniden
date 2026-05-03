@@ -6,10 +6,13 @@ import {
   Award,
   BookOpen,
   ChevronRight,
+  FileCheck,
   FileSpreadsheet,
+  HeartHandshake,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
+  Megaphone,
   UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,10 +21,13 @@ import { PanelBrandBlock } from "@/components/shared/PanelBrandBlock";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Panel Ozet", href: "/alumni/dashboard" },
+  { icon: Megaphone, label: "Duyurular", href: "/alumni/announcements" },
   { icon: FileSpreadsheet, label: "Ozgecmis Havuzu", href: "/alumni/resume" },
-  { icon: BookOpen, label: "Dijital Bohca", href: "/alumni/portfolio" },
+  { icon: BookOpen, label: "Dijital Bohca", href: "/alumni/bohca" },
+  { icon: FileCheck, label: "Odevlerim", href: "/alumni/assignments" },
   { icon: Award, label: "Sertifikalarim", href: "/alumni/certificates" },
-  { icon: LifeBuoy, label: "Destek ve Gonulluluk", href: "/alumni/support" },
+  { icon: HeartHandshake, label: "Gonullu Basvurusu", href: "/alumni/volunteer" },
+  { icon: LifeBuoy, label: "Destek Talebi", href: "/alumni/support" },
   { icon: UserCircle, label: "Profilim", href: "/alumni/profile" },
 ];
 

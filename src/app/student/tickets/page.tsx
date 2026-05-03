@@ -49,7 +49,7 @@ export default function StudentTicketsPage() {
     try {
       const [ticketResponse, projectResponse] = await Promise.all([
         api.get<{ tickets: Ticket[] }>("/tickets"),
-        api.get<{ projects: Project[] }>("/projects"),
+        api.get<{ projects: Project[] }>("/dashboard/projects"),
       ]);
 
       setTickets(ticketResponse.data.tickets ?? []);

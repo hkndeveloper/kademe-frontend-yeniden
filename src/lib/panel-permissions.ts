@@ -44,12 +44,24 @@ export function canAccessPanelPath(
   if (normalized === "/panel/members") {
     return hasPermission("staff.view") && user?.permission_scopes?.["staff.view"]?.scope_type !== "all";
   }
+  if (normalized === "/panel/users/permissions") {
+    return hasPermission("permissions.matrix.view") && hasGlobalScopeFromUser(user, "permissions.matrix.view");
+  }
+  if (normalized === "/panel/newsletter") {
+    return hasPermission("newsletter.view") && hasGlobalScopeFromUser(user, "newsletter.view");
+  }
+  if (normalized === "/panel/chatbot") {
+    return (
+      (hasPermission("chatbot.view") && hasGlobalScopeFromUser(user, "chatbot.view")) ||
+      (hasPermission("chatbot.manage") && hasGlobalScopeFromUser(user, "chatbot.manage"))
+    );
+  }
 
   const menuMatch = unifiedPanelMenu.find((item) => item.href === normalized);
   if (menuMatch) {
     if (menuMatch.anyPermissions?.length) return hasAnyPermission(menuMatch.anyPermissions);
     if (!menuMatch.permission) return true;
-    if (["content.view", "settings.view"].includes(menuMatch.permission)) {
+    if (["content.view", "settings.view", "permissions.matrix.view", "newsletter.view", "chatbot.view"].includes(menuMatch.permission)) {
       return hasPermission(menuMatch.permission) && hasGlobalScopeFromUser(user, menuMatch.permission);
     }
     return hasPermission(menuMatch.permission);

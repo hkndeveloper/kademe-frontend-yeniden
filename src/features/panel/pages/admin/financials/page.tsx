@@ -100,8 +100,10 @@ export default function AdminFinancialsPage() {
             date_to: dateTo || undefined,
           },
         }),
-        hasPermission("projects.view")
-          ? api.get<{ projects: Array<{ id: number; name: string }> }>("/panel/projects/manageable")
+        hasPermission("financial.view")
+          ? api.get<{ projects: Array<{ id: number; name: string }> }>("/panel/projects/manageable", {
+              params: { permission: "financial.view" },
+            })
           : Promise.resolve({ data: { projects: [] } }),
       ]);
 

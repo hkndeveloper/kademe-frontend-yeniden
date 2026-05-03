@@ -140,7 +140,7 @@ export default function AdminCalendarPage() {
 
   const loadAssignees = useCallback(async (projectId?: number) => {
     try {
-      const response = await api.get<{ users: CalendarAssignee[] }>("/calendar/assignees", {
+      const response = await api.get<{ users: CalendarAssignee[] }>("/panel/calendar/assignees", {
         params: projectId ? { project_id: projectId } : {},
       });
       setAssignees(response.data.users ?? []);
@@ -155,7 +155,7 @@ export default function AdminCalendarPage() {
 
     try {
       const [overviewResponse, periodResponse] = await Promise.all([
-        api.get<CalendarOverviewResponse>("/calendar/overview"),
+        api.get<CalendarOverviewResponse>("/panel/calendar/overview"),
         api.get<{ periods?: Period[] }>("/panel/periods"),
       ]);
 
@@ -233,7 +233,7 @@ export default function AdminCalendarPage() {
     setErrorMessage("");
 
     try {
-      const response = await api.get<{ authorization_url: string }>("/calendar/google/connect", {
+      const response = await api.get<{ authorization_url: string }>("/panel/calendar/google/connect", {
         params: { panel: "admin" },
       });
 
@@ -254,7 +254,7 @@ export default function AdminCalendarPage() {
       const response = await api.post<{
         message: string;
         google_calendar: GoogleCalendarStatus;
-      }>("/calendar/google/sync");
+      }>("/panel/calendar/google/sync");
 
       setGoogleStatus(response.data.google_calendar);
       setSuccessMessage(response.data.message);
@@ -301,7 +301,7 @@ export default function AdminCalendarPage() {
     setSuccessMessage("");
 
     try {
-      await api.put(`/calendar/programs/${selectedProgram.id}/assignments`, {
+      await api.put(`/panel/calendar/programs/${selectedProgram.id}/assignments`, {
         assigned_user_ids: selectedAssigneeIds,
       });
 

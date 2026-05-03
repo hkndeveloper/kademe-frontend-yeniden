@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Calendar, FileStack, Loader2, PencilLine, Plus, Save } from "lucide-react";
 import api from "@/lib/api/axios";
@@ -49,7 +49,7 @@ const initialForm: PeriodFormState = {
 };
 
 export default function AdminPeriodsPage() {
-  const { canAccessProject } = usePermissions();
+  const { canAccessProject, hasPermission } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [periods, setPeriods] = useState<PeriodItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,14 +60,28 @@ export default function AdminPeriodsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [projectResponse, periodResponse] = await Promise.all([
-        api.get<{ projects: Project[] }>("/panel/projects/manageable"),
+        Promise.all([
+          hasPermission("periods.view")
+            ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "periods.view" } })
+            : Promise.resolve({ data: { projects: [] as Project[] } }),
+          hasPermission("periods.create")
+            ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "periods.create" } })
+            : Promise.resolve({ data: { projects: [] as Project[] } }),
+          hasPermission("periods.update")
+            ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "periods.update" } })
+            : Promise.resolve({ data: { projects: [] as Project[] } }),
+        ]),
         api.get<{ periods: PeriodItem[] }>("/panel/periods"),
       ]);
 
-      setProjects(projectResponse.data.projects ?? []);
+      const mergedProjects = new Map<number, Project>();
+      projectResponse.forEach((response) => {
+        (response.data.projects ?? []).forEach((project) => mergedProjects.set(project.id, project));
+      });
+      setProjects(Array.from(mergedProjects.values()));
       setPeriods(periodResponse.data.periods ?? []);
     } catch (error) {
       console.error("Donem verileri yuklenemedi", error);
@@ -75,7 +89,7 @@ export default function AdminPeriodsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [hasPermission]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -83,11 +97,16 @@ export default function AdminPeriodsPage() {
     }, 0);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [loadData]);
 
   const projectsInScope = useMemo(
     () => projects.filter((project) => canAccessProject("periods.view", project.id)),
     [projects, canAccessProject]
+  );
+
+  const formProjectsInScope = useMemo(
+    () => projects.filter((project) => canAccessProject(editingPeriodId ? "periods.update" : "periods.create", project.id)),
+    [projects, canAccessProject, editingPeriodId]
   );
 
   const canSubmitPeriod = () => {
@@ -204,7 +223,7 @@ export default function AdminPeriodsPage() {
               required
             >
               <option value="">Proje secin</option>
-              {projectsInScope.map((project) => (
+              {formProjectsInScope.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
                 </option>

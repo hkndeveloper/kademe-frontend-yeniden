@@ -69,7 +69,9 @@ export default function FormBuilderPage() {
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        const response = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
+        const response = await api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+          params: { permission: "projects.application_form.update" },
+        });
         const nextProjects = response.data.projects ?? [];
         setProjects(nextProjects);
 

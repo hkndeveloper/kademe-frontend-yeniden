@@ -8,6 +8,7 @@ interface BohcaItem {
   id: number;
   title: string;
   file_path?: string | null;
+  file_url?: string | null;
   file_type?: string | null;
   created_at: string;
   uploader?: {
@@ -109,9 +110,9 @@ export default function AlumniPortfolioPage() {
                 </p>
 
                 <div className="mt-auto">
-                  {item.file_path ? (
+                  {item.file_url || item.file_path ? (
                     <button
-                      onClick={() => window.open(item.file_path || "", "_blank")}
+                      onClick={() => window.open(item.file_url || item.file_path || "", "_blank")}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-3 text-sm font-bold text-white transition-colors hover:bg-purple-500"
                     >
                       <Download className="h-4 w-4" />

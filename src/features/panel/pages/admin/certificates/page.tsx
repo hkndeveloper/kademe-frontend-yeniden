@@ -57,8 +57,11 @@ export default function AdminCertificatesPage() {
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const projReq = hasPermission("certificates.view")
+        const viewProjectsReq = hasPermission("certificates.view")
           ? api.get<{ projects?: Project[] }>("/panel/projects/manageable", { params: { permission: "certificates.view" } })
+          : Promise.resolve({ data: { projects: [] as Project[] } });
+        const createProjectsReq = hasPermission("certificates.create")
+          ? api.get<{ projects?: Project[] }>("/panel/projects/manageable", { params: { permission: "certificates.create" } })
           : Promise.resolve({ data: { projects: [] as Project[] } });
 
         const usersReq =
@@ -66,8 +69,12 @@ export default function AdminCertificatesPage() {
             ? api.get<{ users?: { data?: User[] } }>("/panel/users", { params: { per_page: 500 } })
             : Promise.resolve({ data: { users: { data: [] as User[] } } });
 
-        const [projRes, usersRes] = await Promise.all([projReq, usersReq]);
-        const raw = projRes.data.projects ?? [];
+        const [viewProjectsRes, createProjectsRes, usersRes] = await Promise.all([viewProjectsReq, createProjectsReq, usersReq]);
+        const merged = new Map<number, Project>();
+        [...(viewProjectsRes.data.projects ?? []), ...(createProjectsRes.data.projects ?? [])].forEach((project) => {
+          merged.set(project.id, { id: project.id, name: project.name });
+        });
+        const raw = Array.from(merged.values());
         setProjects(raw.map((p) => ({ id: p.id, name: p.name })));
         setUsers(usersRes.data.users?.data ?? []);
       } catch (error) {

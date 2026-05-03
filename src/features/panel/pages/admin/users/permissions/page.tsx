@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api/axios";
 import { homePathForUser } from "@/lib/role-home";
 import { useAuth } from "@/store/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface RoleItem {
   id: number;
@@ -103,6 +104,12 @@ export default function PermissionsPage() {
   const authUser = useAuth((state) => state.user);
   const authUserId = useAuth((state) => state.user?.id);
   const refreshAuthProfile = useAuth((state) => state.fetchProfile);
+  const { hasGlobalScope } = usePermissions();
+  const canViewMatrix = hasGlobalScope("permissions.matrix.view");
+  const canUpdateMatrix = hasGlobalScope("permissions.matrix.update");
+  const canViewUserOverrides = hasGlobalScope("permissions.user_override.view");
+  const canUpdateUserOverrides = hasGlobalScope("permissions.user_override.update");
+  const canViewAudit = canViewMatrix || hasGlobalScope("logs.view");
   const [roles, setRoles] = useState<RoleItem[]>([]);
   const [granularMatrixGroups, setGranularMatrixGroups] = useState<Record<string, PermissionItem[]>>({});
   const [granularPermissionGroups, setGranularPermissionGroups] = useState<Record<string, string[]>>({});
@@ -134,6 +141,11 @@ export default function PermissionsPage() {
   const [roleScopeStorageReady, setRoleScopeStorageReady] = useState(true);
 
   const loadAudit = useCallback(async () => {
+    if (!canViewAudit) {
+      setAuditLogs([]);
+      return;
+    }
+
     setAuditLoading(true);
     try {
       const response = await api.get<{ logs: PermissionAuditLog[]; warning?: string }>("/panel/permissions-matrix/audit");
@@ -143,13 +155,21 @@ export default function PermissionsPage() {
     } finally {
       setAuditLoading(false);
     }
-  }, []);
+  }, [canViewAudit]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    if (!canViewMatrix) {
+      setErrorMessage("Yetki matrisini goruntulemek icin tum sistem kapsami gerekir.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const [response, userResponse, roleResponse] = await Promise.all([
         api.get<PermissionMatrixResponse>("/panel/permissions-matrix"),
-        api.get<{ users: ManagedUser[] }>("/panel/permissions-matrix/users"),
+        canViewUserOverrides
+          ? api.get<{ users: ManagedUser[] }>("/panel/permissions-matrix/users")
+          : Promise.resolve({ data: { users: [] } }),
         api.get<{ roles: RoleCatalogItem[] }>("/panel/permissions-matrix/roles"),
       ]);
       const nextRoles = response.data.roles ?? [];
@@ -189,7 +209,7 @@ export default function PermissionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authUser, canViewMatrix, canViewUserOverrides, refreshAuthProfile, router]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -198,7 +218,7 @@ export default function PermissionsPage() {
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [loadAudit]);
+  }, [loadAudit, loadData]);
 
   const permissionCount = useMemo(
     () => Object.values(granularMatrixGroups).reduce((total, group) => total + group.length, 0),
@@ -211,6 +231,15 @@ export default function PermissionsPage() {
   );
 
   const loadUserOverrides = useCallback(async (userId: string) => {
+    if (!canViewUserOverrides) {
+      setSelectedUser(null);
+      setUserOverrides([]);
+      setResolvedPermissions([]);
+      setUserScopePreview({});
+      setRoleAssignments([]);
+      return;
+    }
+
     if (!userId) {
       setSelectedUser(null);
       setUserOverrides([]);
@@ -240,7 +269,7 @@ export default function PermissionsPage() {
     } finally {
       setLoadingUserOverrides(false);
     }
-  }, []);
+  }, [canViewUserOverrides]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -251,6 +280,10 @@ export default function PermissionsPage() {
   }, [selectedUserId, loadUserOverrides]);
 
   const toggleGranularPermission = (roleName: string, permissionName: string) => {
+    if (!canUpdateMatrix) {
+      return;
+    }
+
     if (roleName === "super_admin") {
       return;
     }
@@ -271,6 +304,10 @@ export default function PermissionsPage() {
   };
 
   const updateRoleScopeType = (roleName: string, permissionName: string, scopeType: ScopeType) => {
+    if (!canUpdateMatrix) {
+      return;
+    }
+
     setRolePermissionScopes((current) => ({
       ...current,
       [roleName]: {
@@ -284,6 +321,10 @@ export default function PermissionsPage() {
   };
 
   const updateRoleScopePayload = (roleName: string, permissionName: string, scopePayload: Record<string, unknown>) => {
+    if (!canUpdateMatrix) {
+      return;
+    }
+
     setRolePermissionScopes((current) => ({
       ...current,
       [roleName]: {
@@ -297,6 +338,8 @@ export default function PermissionsPage() {
   };
 
   const handleSave = async () => {
+    if (!canUpdateMatrix) return;
+
     setSaving(true);
     setSuccessMessage(null);
     setErrorMessage(null);
@@ -330,6 +373,8 @@ export default function PermissionsPage() {
   };
 
   const addOverride = () => {
+    if (!canUpdateUserOverrides) return;
+
     const firstPermission = Object.values(granularPermissionGroups)[0]?.[0];
     if (!firstPermission) return;
 
@@ -355,7 +400,7 @@ export default function PermissionsPage() {
   };
 
   const handleSaveOverrides = async () => {
-    if (!selectedUserId) return;
+    if (!selectedUserId || !canUpdateUserOverrides) return;
 
     setSaving(true);
     setSuccessMessage(null);
@@ -422,6 +467,8 @@ export default function PermissionsPage() {
   };
 
   const handleCreateRole = async () => {
+    if (!canUpdateMatrix) return;
+
     const name = newRoleName.trim().toLowerCase();
     if (!name) return;
 
@@ -442,6 +489,8 @@ export default function PermissionsPage() {
   };
 
   const handleDeleteRole = async (roleId: number) => {
+    if (!canUpdateMatrix) return;
+
     setDeletingRoleId(roleId);
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -458,6 +507,8 @@ export default function PermissionsPage() {
   };
 
   const handleSyncRolePermissions = async (role: RoleCatalogItem) => {
+    if (!canUpdateMatrix) return;
+
     const permissions = Array.from(granularMatrix[role.name] ?? []);
     setUpdatingRoleId(role.id);
     setErrorMessage(null);
@@ -475,7 +526,7 @@ export default function PermissionsPage() {
   };
 
   const handleSaveUserRoles = async () => {
-    if (!selectedUserId || roleAssignments.length === 0) return;
+    if (!selectedUserId || roleAssignments.length === 0 || !canUpdateUserOverrides) return;
 
     setSavingRoleAssignment(true);
     setErrorMessage(null);
@@ -553,7 +604,7 @@ export default function PermissionsPage() {
         </div>
         <button
           onClick={() => void handleSave()}
-          disabled={saving}
+          disabled={saving || !canUpdateMatrix}
           className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 font-bold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : successMessage ? <CheckCircle2 className="h-5 w-5" /> : <Save className="h-5 w-5" />}
@@ -610,7 +661,7 @@ export default function PermissionsPage() {
             <button
               type="button"
               onClick={() => void handleCreateRole()}
-              disabled={creatingRole || !newRoleName.trim()}
+              disabled={creatingRole || !newRoleName.trim() || !canUpdateMatrix}
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 disabled:opacity-50"
             >
               {creatingRole ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
@@ -633,7 +684,7 @@ export default function PermissionsPage() {
                   <button
                     type="button"
                     onClick={() => void handleDeleteRole(role.id)}
-                    disabled={deletingRoleId === role.id}
+                    disabled={deletingRoleId === role.id || !canUpdateMatrix}
                     className="inline-flex items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-400 disabled:opacity-50"
                   >
                     {deletingRoleId === role.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -648,7 +699,7 @@ export default function PermissionsPage() {
                 <button
                   type="button"
                   onClick={() => void handleSyncRolePermissions(role)}
-                  disabled={updatingRoleId === role.id}
+                  disabled={updatingRoleId === role.id || !canUpdateMatrix}
                   className="mt-4 w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-indigo-300 disabled:opacity-50"
                 >
                   {updatingRoleId === role.id ? "Kaydediliyor..." : "Matristeki izinleri role uygula"}
@@ -717,14 +768,14 @@ export default function PermissionsPage() {
                                 type="checkbox"
                                 checked={checked}
                                 onChange={() => toggleGranularPermission(role.name, permission.name)}
-                                disabled={role.name === "super_admin" || saving}
+                                disabled={role.name === "super_admin" || saving || !canUpdateMatrix}
                                 className="h-4 w-4 rounded border-slate-200 bg-white text-indigo-600 focus:ring-0 focus:ring-offset-0"
                               />
                             </div>
                             <select
                               value={scopeType}
                               onChange={(event) => updateRoleScopeType(role.name, permission.name, event.target.value as ScopeType)}
-                              disabled={!checked || saving}
+                              disabled={!checked || saving || !canUpdateMatrix}
                               className="w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-slate-900"
                             >
                               <option value="all">all</option>
@@ -745,7 +796,7 @@ export default function PermissionsPage() {
                                     .filter((item) => Number.isFinite(item) && item > 0);
                                   updateRoleScopePayload(role.name, permission.name, { project_ids: projectIds });
                                 }}
-                                disabled={!checked || saving}
+                                disabled={!checked || saving || !canUpdateMatrix}
                                 placeholder="1,2,3"
                                 className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-slate-900"
                               />
@@ -754,7 +805,7 @@ export default function PermissionsPage() {
                               <input
                                 value={unitPayload}
                                 onChange={(event) => updateRoleScopePayload(role.name, permission.name, { unit: event.target.value })}
-                                disabled={!checked || saving}
+                                disabled={!checked || saving || !canUpdateMatrix}
                                 placeholder="Birim"
                                 className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-slate-900"
                               />
@@ -784,7 +835,7 @@ export default function PermissionsPage() {
             <button
               onClick={addOverride}
               type="button"
-              disabled={!selectedUserId}
+              disabled={!selectedUserId || !canUpdateUserOverrides}
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
@@ -793,7 +844,7 @@ export default function PermissionsPage() {
             <button
               onClick={() => void handleSaveOverrides()}
               type="button"
-              disabled={!selectedUserId || saving}
+              disabled={!selectedUserId || saving || !canUpdateUserOverrides}
               className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -838,6 +889,7 @@ export default function PermissionsPage() {
                         <input
                           type="checkbox"
                           checked={checked}
+                          disabled={!canUpdateUserOverrides}
                           onChange={(event) => {
                             const nextChecked = event.target.checked;
                             setRoleAssignments((current) => {
@@ -855,7 +907,7 @@ export default function PermissionsPage() {
                 <button
                   type="button"
                   onClick={() => void handleSaveUserRoles()}
-                  disabled={savingRoleAssignment || roleAssignments.length === 0}
+                  disabled={savingRoleAssignment || roleAssignments.length === 0 || !canUpdateUserOverrides}
                   className="mt-3 w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-indigo-300 disabled:opacity-50"
                 >
                   {savingRoleAssignment ? "Kaydediliyor..." : "Rolleri Kaydet"}
@@ -908,6 +960,7 @@ export default function PermissionsPage() {
                     <select
                       value={override.permission_name}
                       onChange={(event) => updateOverride(index, { permission_name: event.target.value })}
+                      disabled={!canUpdateUserOverrides}
                       className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-900 outline-none"
                     >
                       {!selectablePermissionNames.has(override.permission_name) ? (
@@ -929,6 +982,7 @@ export default function PermissionsPage() {
                     <select
                       value={override.effect}
                       onChange={(event) => updateOverride(index, { effect: event.target.value as "allow" | "deny" })}
+                      disabled={!canUpdateUserOverrides}
                       className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-900 outline-none"
                     >
                       <option value="allow">allow</option>
@@ -938,6 +992,7 @@ export default function PermissionsPage() {
                     <select
                       value={override.scope_type ?? ""}
                       onChange={(event) => updateOverride(index, { scope_type: event.target.value || null })}
+                      disabled={!canUpdateUserOverrides}
                       className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-900 outline-none"
                     >
                       <option value="">scope yok</option>
@@ -976,6 +1031,7 @@ export default function PermissionsPage() {
 
                         updateOverride(index, { scope_payload: {} });
                       }}
+                      disabled={!canUpdateUserOverrides}
                       placeholder={
                         override.scope_type === "selected_projects"
                           ? "Proje ID'leri: 1,2,3"
@@ -989,6 +1045,7 @@ export default function PermissionsPage() {
                     <button
                       type="button"
                       onClick={() => removeOverride(index)}
+                      disabled={!canUpdateUserOverrides}
                       className="inline-flex items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-3 text-red-400 transition hover:bg-red-500 hover:text-white"
                     >
                       <X className="h-4 w-4" />

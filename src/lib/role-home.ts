@@ -34,7 +34,13 @@ export function hasPanelHomeAccess(user: HomePathUser | null | undefined): boole
   if (permissions.includes("*")) return true;
   return panelHomePermissions.some((permission) => {
     if (!permissions.includes(permission)) return false;
-    if (permission === "content.view" || permission === "settings.view") {
+    if (
+      permission === "content.view" ||
+      permission === "settings.view" ||
+      permission === "permissions.matrix.view" ||
+      permission === "newsletter.view" ||
+      permission === "chatbot.view"
+    ) {
       return user?.permission_scopes?.[permission]?.scope_type === "all";
     }
     return true;
@@ -64,16 +70,18 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
   if (has("assignments.view")) return "/panel/assignments";
   if (has("requests.view")) return "/panel/requests";
   if (has("users.view")) return "/panel/users";
-  if (has("permissions.matrix.view")) return "/panel/users/permissions";
+  if (has("permissions.matrix.view") && hasGlobal("permissions.matrix.view")) return "/panel/users/permissions";
   if (has("staff.view")) {
     return user?.permission_scopes?.["staff.view"]?.scope_type === "all" ? "/panel/staff" : "/panel/members";
   }
   if (has("periods.view")) return "/panel/periods";
   if (has("announcements.view")) return "/panel/announcements";
   if (has("content.view") && hasGlobal("content.view")) return "/panel/content";
-  if (has("newsletter.view")) return "/panel/newsletter";
+  if (has("newsletter.view") && hasGlobal("newsletter.view")) return "/panel/newsletter";
   if (has("logs.view")) return "/panel/logs";
-  if (has("chatbot.view")) return "/panel/chatbot";
+  if ((has("chatbot.view") && hasGlobal("chatbot.view")) || (has("chatbot.manage") && hasGlobal("chatbot.manage"))) {
+    return "/panel/chatbot";
+  }
   if (has("settings.view") && hasGlobal("settings.view")) return "/panel/settings";
 
   return homePathForRole(user?.role);

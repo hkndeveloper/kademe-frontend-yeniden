@@ -324,8 +324,11 @@ function itemIsVisible(
   if (item.id === "my-project") return shouldShowMyProjectNav(user, hasPermission);
   if (item.id === "staff") return user?.permission_scopes?.["staff.view"]?.scope_type === "all";
   if (item.id === "members") return user?.permission_scopes?.["staff.view"]?.scope_type !== "all";
+  if (item.id === "permission-matrix") return user?.permission_scopes?.["permissions.matrix.view"]?.scope_type === "all";
   if (item.id === "content") return user?.permission_scopes?.["content.view"]?.scope_type === "all";
   if (item.id === "settings") return user?.permission_scopes?.["settings.view"]?.scope_type === "all";
+  if (item.id === "newsletter") return user?.permission_scopes?.["newsletter.view"]?.scope_type === "all";
+  if (item.id === "assistant") return user?.permission_scopes?.["chatbot.view"]?.scope_type === "all" || user?.permission_scopes?.["chatbot.manage"]?.scope_type === "all";
   return true;
 }
 

@@ -86,7 +86,7 @@ export default function ProjectDetailPage() {
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [applicationForm, setApplicationForm] = useState<ApplicationFormData | null>(null);
-  const [formValues, setFormValues] = useState<Record<string, string | string[]>>({});
+  const [formValues, setFormValues] = useState<Record<string, string | string[] | File | null>>({});
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
@@ -106,11 +106,11 @@ export default function ProjectDetailPage() {
         setProject(response.data.project);
         setApplicationForm(response.data.application_form ?? null);
 
-        const nextFormValues: Record<string, string | string[]> = {};
+        const nextFormValues: Record<string, string | string[] | File | null> = {};
         for (const field of response.data.application_form?.fields ?? []) {
           const fieldId = field.id ?? field.key;
           if (!fieldId) continue;
-          nextFormValues[fieldId] = field.type === "checkbox" ? [] : "";
+          nextFormValues[fieldId] = field.type === "checkbox" ? [] : field.type === "file" ? null : "";
         }
         setFormValues(nextFormValues);
       } catch (error) {
@@ -125,6 +125,51 @@ export default function ProjectDetailPage() {
       void fetchProject();
     }
   }, [params.slug, router]);
+
+  const buildApplicationPayload = () => {
+    const hasFile = Object.values(formValues).some((value) => value instanceof File);
+
+    if (!hasFile) {
+      return {
+        payload: {
+          project_id: project?.id,
+          period_id: project?.active_period?.id,
+          form_data: formValues,
+          applicant: {
+            name: guestApplicant.name.trim(),
+            surname: guestApplicant.surname.trim(),
+            email: guestApplicant.email.trim(),
+            phone: guestApplicant.phone.trim() || null,
+          },
+        },
+        config: undefined,
+      };
+    }
+
+    const data = new FormData();
+    data.append("project_id", String(project?.id ?? ""));
+    data.append("period_id", String(project?.active_period?.id ?? ""));
+
+    for (const [key, value] of Object.entries(formValues)) {
+      if (value instanceof File) {
+        data.append(`form_files[${key}]`, value);
+      } else if (Array.isArray(value)) {
+        value.forEach((item) => data.append(`form_data[${key}][]`, item));
+      } else if (value !== null && value !== undefined) {
+        data.append(`form_data[${key}]`, value);
+      }
+    }
+
+    data.append("applicant[name]", guestApplicant.name.trim());
+    data.append("applicant[surname]", guestApplicant.surname.trim());
+    data.append("applicant[email]", guestApplicant.email.trim());
+    if (guestApplicant.phone.trim()) data.append("applicant[phone]", guestApplicant.phone.trim());
+
+    return {
+      payload: data,
+      config: { headers: { "Content-Type": "multipart/form-data" } },
+    };
+  };
 
   const handleApply = async () => {
     if (!project) return;
@@ -145,29 +190,20 @@ export default function ProjectDetailPage() {
 
     setApplying(true);
     try {
+      const { payload, config } = buildApplicationPayload();
       if (isAuthenticated) {
-        await api.post("/applications", {
+        await api.post("/applications", payload instanceof FormData ? payload : {
           project_id: project.id,
           period_id: project.active_period.id,
           form_data: formValues,
-        });
+        }, config);
       } else {
         if (!guestApplicant.name.trim() || !guestApplicant.surname.trim() || !guestApplicant.email.trim()) {
           setErrorMessage("Lutfen ad, soyad ve e-posta bilgilerinizi doldurun.");
           return;
         }
 
-        await api.post("/applications/public", {
-          project_id: project.id,
-          period_id: project.active_period.id,
-          form_data: formValues,
-          applicant: {
-            name: guestApplicant.name.trim(),
-            surname: guestApplicant.surname.trim(),
-            email: guestApplicant.email.trim(),
-            phone: guestApplicant.phone.trim() || null,
-          },
-        });
+        await api.post("/applications/public", payload, config);
       }
       setMessage("Basvurunuz alindi. Durumu ogrenci panelinizde gorebilirsiniz.");
       if (isAuthenticated) {
@@ -200,7 +236,7 @@ export default function ProjectDetailPage() {
 
   const activeStudents = project?.active_students ?? [];
 
-  const updateFormValue = (fieldId: string, value: string | string[]) => {
+  const updateFormValue = (fieldId: string, value: string | string[] | File | null) => {
     setFormValues((current) => ({
       ...current,
       [fieldId]: value,
@@ -289,17 +325,23 @@ export default function ProjectDetailPage() {
       );
     }
 
+    if (field.type === "file") {
+      return (
+        <input
+          type="file"
+          onChange={(event) => updateFormValue(fieldId, event.target.files?.[0] ?? null)}
+          className={commonClassName}
+        />
+      );
+    }
+
     return (
       <input
         type="text"
         value={typeof value === "string" ? value : ""}
         onChange={(event) => updateFormValue(fieldId, event.target.value)}
         className={commonClassName}
-        placeholder={
-          field.type === "file"
-            ? "Dosya baglantisi veya yukleme URL'si girin"
-            : field.label
-        }
+        placeholder={field.label}
       />
     );
   };

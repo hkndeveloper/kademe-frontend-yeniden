@@ -14,8 +14,8 @@ interface Subscriber {
 }
 
 export default function AdminNewsletterPage() {
-  const { hasPermission } = usePermissions();
-  const canView = hasPermission("newsletter.view");
+  const { hasPermission, hasGlobalScope } = usePermissions();
+  const canView = hasPermission("newsletter.view") && hasGlobalScope("newsletter.view");
 
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function AdminNewsletterPage() {
   if (!canView) {
     return (
       <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-muted-foreground">
-        E-bulten listesi icin <span className="font-mono text-slate-900">newsletter.view</span> izni gerekir.
+        E-bulten listesi icin <span className="font-mono text-slate-900">newsletter.view</span> izni ve tum sistem kapsami gerekir.
       </div>
     );
   }

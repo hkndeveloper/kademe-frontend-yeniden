@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Loader2, MapPin, Search } from "lucide-react";
 import Link from "next/link";
@@ -27,50 +27,85 @@ interface Program {
   };
 }
 
+interface Paginated<T> {
+  data: T[];
+  current_page: number;
+  last_page: number;
+  total: number;
+}
+
 export default function ActivitiesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProject, setSelectedProject] = useState("all");
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [siteSettings, setSiteSettings] = useState<SiteSettingsPayload | null>(null);
 
   useEffect(() => {
-    const loadActivities = async () => {
+    const loadStaticData = async () => {
       try {
-        const [projectsResponse, programsResponse, configResponse] = await Promise.all([
+        const [projectsResponse, configResponse] = await Promise.all([
           api.get<{ projects: Project[] }>("/projects").catch(() => ({ data: { projects: [] as Project[] } })),
-          api.get<{ programs: Program[] }>("/activities").catch(() => ({ data: { programs: [] as Program[] } })),
           api.get<SiteSettingsResponse>("/site-config"),
         ]);
 
         setProjects(projectsResponse.data.projects ?? []);
-        setPrograms(programsResponse.data.programs ?? []);
         setSiteSettings(configResponse.data.settings ?? null);
+      } catch (error) {
+        console.error("Faaliyet statik verileri cekilemedi", error);
+      }
+    };
+
+    void loadStaticData();
+  }, []);
+
+  useEffect(() => {
+    const loadPrograms = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get<{ programs: Paginated<Program> }>("/activities", {
+          params: {
+            page,
+            per_page: 12,
+            search: searchTerm.trim() || undefined,
+            project_id: selectedProject === "all" ? undefined : selectedProject,
+          },
+        });
+
+        const payload = response.data.programs;
+        setPrograms(payload.data ?? []);
+        setLastPage(payload.last_page ?? 1);
+        setTotal(payload.total ?? 0);
       } catch (error) {
         console.error("Faaliyet verileri cekilemedi", error);
         setPrograms([]);
+        setLastPage(1);
+        setTotal(0);
       } finally {
         setLoading(false);
       }
     };
 
-    void loadActivities();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void loadPrograms();
+    }, 250);
 
-  const filteredPrograms = useMemo(() => {
-    return programs.filter((program) => {
-      const matchesSearch =
-        program.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (program.project?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (program.location || "").toLowerCase().includes(searchTerm.toLowerCase());
+    return () => window.clearTimeout(timer);
+  }, [page, searchTerm, selectedProject]);
 
-      const projectId = String(program.project?.id ?? program.project_id ?? "");
-      const matchesProject = selectedProject === "all" || projectId === selectedProject;
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
 
-      return matchesSearch && matchesProject;
-    });
-  }, [programs, searchTerm, selectedProject]);
+  const handleProjectChange = (value: string) => {
+    setSelectedProject(value);
+    setPage(1);
+  };
 
   const pageSettings = siteSettings ?? defaultSiteSettings;
 
@@ -94,13 +129,13 @@ export default function ActivitiesPage() {
               type="text"
               placeholder="Faaliyet ara..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full rounded-2xl border border-border bg-input py-4 pl-12 pr-6 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md"
             />
           </div>
           <select
             value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
+            onChange={(e) => handleProjectChange(e.target.value)}
             className="rounded-2xl border border-border bg-input px-6 py-4 text-sm font-bold outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md"
           >
             <option value="all">Tum Projeler</option>
@@ -116,7 +151,7 @@ export default function ActivitiesPage() {
           <div className="flex justify-center py-24">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
           </div>
-        ) : filteredPrograms.length === 0 ? (
+        ) : programs.length === 0 ? (
           <div className="glass-panel rounded-3xl p-16 text-center">
             <h3 className="mb-3 text-2xl font-bold text-foreground">Gosterilecek faaliyet bulunamadi</h3>
             <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground">
@@ -125,7 +160,7 @@ export default function ActivitiesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
-            {filteredPrograms.map((program) => (
+            {programs.map((program) => (
               <Link key={program.id} href={`/activities/${program.id}`}>
               <motion.div
                 key={program.id}
@@ -166,6 +201,31 @@ export default function ActivitiesPage() {
             ))}
           </div>
         )}
+
+        {!loading && total > 0 ? (
+          <div className="mt-10 flex flex-col items-center justify-between gap-4 rounded-2xl border border-border bg-card/60 p-4 text-sm text-muted-foreground sm:flex-row">
+            <span>{total.toLocaleString("tr-TR")} faaliyet icinden {programs.length} kayit gosteriliyor.</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.max(current - 1, 1))}
+                disabled={page <= 1}
+                className="rounded-xl border border-border px-4 py-2 font-bold disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Onceki
+              </button>
+              <span className="px-3 font-bold text-foreground">{page} / {lastPage}</span>
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.min(current + 1, lastPage))}
+                disabled={page >= lastPage}
+                className="rounded-xl border border-border px-4 py-2 font-bold disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Sonraki
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
