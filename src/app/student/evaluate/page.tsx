@@ -23,6 +23,8 @@ interface FeedbackProgram {
   submitted_at?: string | null;
   anonymous_feedback_id?: string | null;
   credit_restored: boolean;
+  feedback_deadline_at?: string | null;
+  feedback_open?: boolean;
   project?: {
     id: number;
     name: string;
@@ -192,7 +194,7 @@ export default function EvaluatePage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Oturum Degerlendirmesi</h1>
-          <p className="text-sm text-muted-foreground">Yoklamasi alinan oturumlar icin anonim degerlendirme gonderebilir ve kredini geri alabilirsin.</p>
+          <p className="text-sm text-muted-foreground">Tamamlanan ve yoklamasi alinan oturumlar icin anonim degerlendirme gonderebilir ve kesilen kredini geri alabilirsin.</p>
         </div>
       </div>
 
@@ -218,7 +220,7 @@ export default function EvaluatePage() {
               <div className="space-y-2">
                 <h2 className="text-2xl font-black text-slate-900">Degerlendirme ve kredi iadesi aktif</h2>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Yoklamasi alinan oturumlar icin bir kez anonim degerlendirme gonderebilirsin. Form tamamlandiginda oturuma ait kredi iadesi uygulanir.
+                  Etkinlik tamamlandiktan sonra, bir sonraki etkinlik baslamadan once bir kez anonim degerlendirme gonderebilirsin. Form tamamlandiginda oturuma ait kredi iadesi uygulanir.
                 </p>
               </div>
             </div>
@@ -226,7 +228,7 @@ export default function EvaluatePage() {
             <div className="mb-8 flex items-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 p-4">
               <Zap className="h-5 w-5 text-primary" />
               <p className="text-xs font-bold uppercase tracking-widest text-primary">
-                QR yoklama sonrasi kredi gecici olarak tutulur. Degerlendirme tamamlaninca ayni oturumun kredisi geri eklenir.
+                Etkinlik tamamlaninca tum aktif katilimcilardan oturum kredisi dusulur. Yoklamasi olan ve sure icinde degerlendirme gonderen ogrencinin kredisi geri eklenir.
               </p>
             </div>
 
@@ -268,6 +270,11 @@ export default function EvaluatePage() {
                             Anonim ID: {program.anonymous_feedback_id.slice(0, 8).toUpperCase()}
                           </span>
                         ) : null}
+                        {program.feedback_deadline_at && !program.feedback_submitted ? (
+                          <span className="text-[10px] text-muted-foreground">
+                            Son tarih: {new Date(program.feedback_deadline_at).toLocaleString("tr-TR")}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </button>
@@ -286,6 +293,10 @@ export default function EvaluatePage() {
               <div className="rounded-2xl border border-primary/20 bg-primary/10 p-6 text-sm text-muted-foreground">
                 Bu oturum icin degerlendirme zaten gonderildi. {selectedProgram.submitted_at ? `Gonderim zamani: ${new Date(selectedProgram.submitted_at).toLocaleString("tr-TR")}` : ""}
                 {selectedProgram.anonymous_feedback_id ? ` Anonim takip ID: ${selectedProgram.anonymous_feedback_id.slice(0, 8).toUpperCase()}` : ""}
+              </div>
+            ) : selectedProgram.feedback_open === false ? (
+              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-6 text-sm text-amber-200">
+                Bu oturum icin degerlendirme suresi doldu. Sure bir sonraki etkinlik basladiginda kapanir.
               </div>
             ) : (
               <form className="space-y-6" onSubmit={handleSubmit}>

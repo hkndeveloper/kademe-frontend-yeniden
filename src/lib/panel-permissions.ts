@@ -23,6 +23,17 @@ function hasGlobalScopeFromUser(user: PanelNavUser | null, permission: string): 
   return user?.permission_scopes?.[permission]?.scope_type === "all";
 }
 
+function canAccessProjectWithAnyPermission(
+  user: PanelNavUser | null,
+  hasPermission: (permission: string) => boolean,
+  permissions: string[],
+  projectId: number
+): boolean {
+  return permissions.some((permission) => (
+    hasPermission(permission) && canAccessProjectFromUser(user, permission, projectId)
+  ));
+}
+
 export function canAccessPanelPath(
   pathname: string,
   hasPermission: (permission: string) => boolean,
@@ -74,6 +85,24 @@ export function canAccessPanelPath(
   const projectContent = normalized.match(/^\/panel\/projects\/(\d+)\/content$/);
   if (projectContent) {
     return hasPermission("projects.view") && canAccessProjectFromUser(user, "projects.view", Number(projectContent[1]));
+  }
+  const projectSpecialModules = normalized.match(/^\/panel\/projects\/(\d+)\/special-modules$/);
+  if (projectSpecialModules) {
+    return canAccessProjectWithAnyPermission(
+      user,
+      hasPermission,
+      [
+        "projects.internships.view",
+        "projects.internships.manage",
+        "projects.mentors.view",
+        "projects.mentors.manage",
+        "projects.eurodesk.view",
+        "projects.eurodesk.manage",
+        "projects.rewards.view",
+        "projects.rewards.manage",
+      ],
+      Number(projectSpecialModules[1])
+    );
   }
   if (/^\/panel\/programs\/[^/]+\/qr$/.test(normalized)) return hasPermission("programs.view");
   if (normalized === "/panel/periods/form-builder") {

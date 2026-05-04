@@ -41,18 +41,26 @@ interface Program {
 }
 
 interface AttendanceRecord {
-  id: number;
+  id?: number | null;
+  participant_id?: number | null;
   student: string;
   email?: string | null;
-  method: string;
+  method?: string | null;
   is_valid: boolean;
+  attendance_status?: "present" | "absent";
   feedback_submitted: boolean;
+  credit_deducted?: boolean;
+  credit_restored?: boolean;
   recorded_at?: string | null;
 }
 
 interface AttendanceSummary {
   attendance_count: number;
+  participant_count?: number;
+  absent_count?: number;
   feedback_count: number;
+  deduction_count?: number;
+  restore_count?: number;
 }
 
 interface ProgramFormState {
@@ -289,8 +297,9 @@ export default function PanelProgramsPage() {
 
   const handleComplete = async (programId: number) => {
     try {
-      await api.post(`/panel/programs/${programId}/complete`);
-      setMessage("Program tamamlandi.");
+      const response = await api.post<{ deducted_participant_count?: number }>(`/panel/programs/${programId}/complete`);
+      const count = response.data.deducted_participant_count ?? 0;
+      setMessage(`Program tamamlandi. ${count} aktif katilimciya kredi kesintisi uygulandi.`);
       await loadPrograms();
     } catch (error) {
       console.error("Program tamamlanamadi", error);
@@ -628,7 +637,9 @@ export default function PanelProgramsPage() {
 
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="text-xs text-muted-foreground">
-                Toplam yoklama: {attendanceSummary?.attendance_count ?? 0} - Geri bildirim: {attendanceSummary?.feedback_count ?? 0}
+                Katilimci: {attendanceSummary?.participant_count ?? attendanceRecords.length} - Gelen:{" "}
+                {attendanceSummary?.attendance_count ?? 0} - Gelmeyen: {attendanceSummary?.absent_count ?? 0} - Geri bildirim:{" "}
+                {attendanceSummary?.feedback_count ?? 0} - Kredi iade: {attendanceSummary?.restore_count ?? 0}
               </div>
               <PermissionGate permission="programs.attendance.export">
                 <ExportButtons
@@ -644,8 +655,9 @@ export default function PanelProgramsPage() {
                 <thead className="border-b border-white/10 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
                   <tr>
                     <th className="px-4 py-3">Ogrenci</th>
+                    <th className="px-4 py-3">Durum</th>
                     <th className="px-4 py-3">Yontem</th>
-                    <th className="px-4 py-3">Konum</th>
+                    <th className="px-4 py-3">Kredi</th>
                     <th className="px-4 py-3">Geri Bildirim</th>
                     <th className="px-4 py-3">Zaman</th>
                   </tr>
@@ -653,26 +665,37 @@ export default function PanelProgramsPage() {
                 <tbody className="divide-y divide-white/5">
                   {attendanceLoading ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-10 text-center">
+                      <td colSpan={6} className="px-4 py-10 text-center">
                         <Loader2 className="mx-auto h-6 w-6 animate-spin text-accent" />
                       </td>
                     </tr>
                   ) : attendanceRecords.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                      <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
                         Kayit bulunamadi.
                       </td>
                     </tr>
                   ) : (
                     attendanceRecords.map((record) => (
-                      <tr key={record.id}>
+                      <tr key={record.id ?? record.participant_id ?? record.email ?? record.student}>
                         <td className="px-4 py-3">
                           <div className="font-semibold text-slate-900">{record.student}</div>
                           <div className="text-xs text-muted-foreground">{record.email ?? "-"}</div>
                         </td>
-                        <td className="px-4 py-3">{record.method}</td>
-                        <td className="px-4 py-3">{record.is_valid ? "Dogrulandi" : "Alan disi"}</td>
-                        <td className="px-4 py-3">{record.feedback_submitted ? "Gonderdi" : "Bekliyor"}</td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full px-2 py-1 text-xs font-bold ${
+                            record.is_valid ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
+                          }`}>
+                            {record.is_valid ? "Geldi" : "Gelmedi"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">{record.method ?? "-"}</td>
+                        <td className="px-4 py-3">
+                          {record.credit_restored ? "Iade edildi" : record.credit_deducted ? "Kesildi" : "-"}
+                        </td>
+                        <td className="px-4 py-3">
+                          {record.feedback_submitted ? "Gonderdi" : record.is_valid ? "Bekliyor" : "Hak yok"}
+                        </td>
                         <td className="px-4 py-3">{record.recorded_at ? new Date(record.recorded_at).toLocaleString("tr-TR") : "-"}</td>
                       </tr>
                     ))

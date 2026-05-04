@@ -61,7 +61,7 @@ interface ParticipantsResponse {
 }
 
 export default function PanelParticipantsPage() {
-  const { canAccessProject } = usePermissions();
+  const { canAccessProject, hasPermission, hasAnyPermission } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [participants, setParticipants] = useState<ParticipantItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +70,10 @@ export default function PanelParticipantsPage() {
     if (typeof window === "undefined") return "all";
     return new URLSearchParams(window.location.search).get("project_id") ?? "all";
   });
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("status") ?? "all";
+  });
   const [cvParticipant, setCvParticipant] = useState<ParticipantItem | null>(null);
   const [summary, setSummary] = useState({
     total: 0,
@@ -136,10 +139,11 @@ export default function PanelParticipantsPage() {
 
   return (
     <PermissionGate
-      permission="projects.participants.view"
+      permissions={["projects.participants.view", "projects.alumni.view", "projects.student_cv.view"]}
+      require="any"
       fallback={
         <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 px-6 py-8 text-center text-sm text-amber-100">
-          Katilimcilari goruntuleme yetkiniz bulunmuyor.
+          Katilimci, mezun veya CV goruntuleme yetkiniz bulunmuyor.
         </div>
       }
     >
@@ -150,8 +154,14 @@ export default function PanelParticipantsPage() {
             <Users className="h-7 w-7" />
           </div>
         <div>
-            <h1 className="text-2xl font-bold">Katilimcilar</h1>
-            <p className="text-sm text-muted-foreground">Kendi projelerinizdeki aktif ogrencileri, mezunlari ve kredi durumlarini canli olarak takip edin.</p>
+            <h1 className="text-2xl font-bold">
+              {hasPermission("projects.participants.view")
+                ? "Katilimcilar"
+                : hasPermission("projects.alumni.view")
+                  ? "Mezunlar"
+                  : "Ogrenci CV'leri"}
+            </h1>
+            <p className="text-sm text-muted-foreground">Yetkili oldugunuz projelerdeki katilimci, mezun ve CV kayitlarini scope bazli takip edin.</p>
             {selectedProjectName ? <p className="mt-1 text-xs font-bold uppercase tracking-widest text-accent">Filtre: {selectedProjectName}</p> : null}
           </div>
         </div>
@@ -164,7 +174,8 @@ export default function PanelParticipantsPage() {
           filename="panel_katilimcilar"
           params={{
             project_id: projectFilter !== "all" ? projectFilter : undefined,
-            status: statusFilter !== "all" ? statusFilter : undefined,
+            status: !["all", "graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
+            graduation_status: ["graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
             search: searchTerm || undefined,
           }}
           buttonLabel="Katilimcilari Disa Aktar"
@@ -172,24 +183,26 @@ export default function PanelParticipantsPage() {
         </PermissionGate>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Toplam Katilimci</div>
-          <div className="mt-3 text-3xl font-black text-slate-900">{summary.total}</div>
+      {hasAnyPermission(["projects.participants.view", "projects.alumni.view"]) ? (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Toplam Kayit</div>
+            <div className="mt-3 text-3xl font-black text-slate-900">{summary.total}</div>
+          </div>
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif Katilimci</div>
+            <div className="mt-3 text-3xl font-black text-slate-900">{summary.active}</div>
+          </div>
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mezun</div>
+            <div className="mt-3 text-3xl font-black text-slate-900">{summary.graduates}</div>
+          </div>
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ortalama Kredi</div>
+            <div className="mt-3 text-3xl font-black text-slate-900">{summary.average_credit}</div>
+          </div>
         </div>
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif Katilimci</div>
-          <div className="mt-3 text-3xl font-black text-slate-900">{summary.active}</div>
-        </div>
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mezun</div>
-          <div className="mt-3 text-3xl font-black text-slate-900">{summary.graduates}</div>
-        </div>
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ortalama Kredi</div>
-          <div className="mt-3 text-3xl font-black text-slate-900">{summary.average_credit}</div>
-        </div>
-      </div>
+      ) : null}
 
       <div className="glass-panel rounded-3xl p-6">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_auto_auto]">

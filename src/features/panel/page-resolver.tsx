@@ -16,6 +16,7 @@ import PanelMembersPage from "@/features/panel/pages/panel/members/page";
 import PanelSharedRequestsPage from "@/features/panel/pages/panel/requests/page";
 import PanelUnifiedProjectDetailPage from "@/features/panel/pages/panel/projects/[id]/page";
 import PanelUnifiedProjectContentPage from "@/features/panel/pages/panel/projects/[id]/content/page";
+import PanelProjectSpecialModulesPage from "@/features/panel/pages/panel/projects/[id]/special-modules/page";
 import PanelAnnouncementsPage from "@/features/panel/pages/panel/announcements/page";
 import PanelSupportPage from "@/features/panel/pages/panel/support/page";
 import PanelContentPage from "@/features/panel/pages/panel/content/page";
@@ -72,6 +73,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   settings: PanelSettingsPage,
   "projects/[id]": PanelUnifiedProjectDetailPage,
   "projects/[id]/content": PanelUnifiedProjectContentPage,
+  "projects/[id]/special-modules": PanelProjectSpecialModulesPage,
   "programs/[id]/qr": PanelProgramQrPage,
 };
 

@@ -20,6 +20,11 @@ const panelHomePermissions = [
   "projects.view",
   "calendar.view",
   "requests.view",
+  "periods.view",
+  "announcements.view",
+  "newsletter.view",
+  "kpd.appointments.view",
+  "kpd.reports.view",
   "users.view",
   "permissions.matrix.view",
   "staff.view",
@@ -39,7 +44,9 @@ export function hasPanelHomeAccess(user: HomePathUser | null | undefined): boole
       permission === "settings.view" ||
       permission === "permissions.matrix.view" ||
       permission === "newsletter.view" ||
-      permission === "chatbot.view"
+      permission === "chatbot.view" ||
+      permission === "kpd.appointments.view" ||
+      permission === "kpd.reports.view"
     ) {
       return user?.permission_scopes?.[permission]?.scope_type === "all";
     }
@@ -68,6 +75,8 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
   if (has("calendar.view")) return "/panel/calendar";
   if (has("digital_bohca.view")) return "/panel/digital-bohca";
   if (has("assignments.view")) return "/panel/assignments";
+  if (has("kpd.reports.view") && hasGlobal("kpd.reports.view")) return "/panel/kpd";
+  if (has("kpd.appointments.view") && hasGlobal("kpd.appointments.view")) return "/panel/kpd";
   if (has("requests.view")) return "/panel/requests";
   if (has("users.view")) return "/panel/users";
   if (has("permissions.matrix.view") && hasGlobal("permissions.matrix.view")) return "/panel/users/permissions";

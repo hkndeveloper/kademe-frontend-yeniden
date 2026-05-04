@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Clock,
+  Download,
   Loader2,
   MessageSquareText,
   Search,
@@ -44,6 +45,22 @@ interface Application {
   interview_at?: string | null;
   evaluation_note?: string | null;
   rejection_reason?: string | null;
+  form_entries?: FormEntry[];
+}
+
+interface FormEntryFile {
+  original_name?: string | null;
+  mime_type?: string | null;
+  size?: number | null;
+  download_url?: string | null;
+}
+
+interface FormEntry {
+  id: string;
+  label: string;
+  type: string;
+  value?: unknown;
+  file?: FormEntryFile | null;
 }
 
 interface ApplicationApiItem {
@@ -62,6 +79,7 @@ interface ApplicationApiItem {
   interview_at?: string | null;
   evaluation_note?: string | null;
   rejection_reason?: string | null;
+  form_entries?: FormEntry[];
   project?: {
     id: number;
     name: string;
@@ -117,6 +135,20 @@ function mapApplications(items: ApplicationApiItem[]): Application[] {
     projectName: item.project?.name ?? "-",
     hasInterview: Boolean(item.project?.has_interview),
   }));
+}
+
+function formatEntryValue(value: unknown): string {
+  if (Array.isArray(value)) return value.join(", ");
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+function formatFileSize(size?: number | null): string {
+  if (!size) return "";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function AdminApplicationsPage() {
@@ -264,6 +296,36 @@ export default function AdminApplicationsPage() {
       setErrorMessage("Basvuru durumu guncellenirken hata olustu.");
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleDownloadFormFile = async (application: Application, entry: FormEntry) => {
+    if (!entry.file?.download_url) return;
+
+    try {
+      const response = await api.get(entry.file.download_url, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Basvuru dosyasi indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = entry.file.original_name || `basvuru_${application.id}_${entry.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Basvuru dosyasi indirilemedi", error);
+      setErrorMessage("Basvuru dosyasi indirilemedi.");
     }
   };
 
@@ -495,6 +557,43 @@ export default function AdminApplicationsPage() {
                   )}
                 </div>
               </div>
+
+              {application.form_entries?.length ? (
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                    Form cevaplari ve ekler
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {application.form_entries.map((entry) => (
+                      <div key={entry.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{entry.label}</div>
+                        {entry.file ? (
+                          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-bold text-slate-900">{entry.file.original_name || "Basvuru dosyasi"}</div>
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                {[entry.file.mime_type, formatFileSize(entry.file.size)].filter(Boolean).join(" · ") || "Dosya"}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => void handleDownloadFormFile(application, entry)}
+                              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold uppercase text-indigo-700 transition hover:bg-indigo-100"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Indir
+                            </button>
+                          </div>
+                        ) : (
+                          <pre className="mt-3 whitespace-pre-wrap break-words text-sm text-slate-700">
+                            {formatEntryValue(entry.value)}
+                          </pre>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </motion.div>
           ))}
 
