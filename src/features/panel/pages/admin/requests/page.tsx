@@ -19,6 +19,7 @@ interface RequestItem {
   description: string;
   response_file_path?: string | null;
   response_file_url?: string | null;
+  response_file_download_url?: string | null;
   status: "pending" | "in_progress" | "completed" | "rejected";
   requester?: {
     id: number;
@@ -165,6 +166,37 @@ export default function AdminRequestsPage() {
     }
   };
 
+  const handleDownloadResponseFile = async (requestItem: RequestItem) => {
+    const endpoint = requestItem.response_file_download_url ?? (requestItem.response_file_path ? `/requests/${requestItem.id}/response-file` : null);
+    if (!endpoint) return;
+
+    try {
+      const response = await api.get(endpoint, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Yanit belgesi indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `talep_yanit_${requestItem.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Yanit belgesi indirilemedi", error);
+      setErrorMessage("Yanit belgesi indirilemedi.");
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
@@ -280,15 +312,14 @@ export default function AdminRequestsPage() {
 
                     <div className="mt-4 border-t border-white/5 pt-4">
                       {request.response_file_path ? (
-                        <a
-                          href={request.response_file_url ?? `${process.env.NEXT_PUBLIC_STORAGE_URL || "http://localhost:8000/storage"}/${request.response_file_path.replace(/^public\//, "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => void handleDownloadResponseFile(request)}
                           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600/20 px-4 py-3 text-sm font-bold text-indigo-400 transition-colors hover:bg-indigo-600 hover:text-white"
                         >
                           <Download className="h-4 w-4" />
                           Belgeyi Indir
-                        </a>
+                        </button>
                       ) : (
                         <label
                           className={`flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/5 px-4 py-3 text-sm font-bold transition-colors ${

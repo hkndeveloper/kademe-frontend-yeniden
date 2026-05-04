@@ -8,6 +8,7 @@ import {
   CreditCard,
   Database,
   FileStack,
+  HeartPulse,
   Layers,
   LifeBuoy,
   Mail,
@@ -140,6 +141,15 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     permission: "assignments.view",
     sectionId: "operations",
     order: 46,
+  },
+  {
+    id: "kpd",
+    label: "KPD",
+    href: "/panel/kpd",
+    icon: HeartPulse,
+    anyPermissions: ["kpd.appointments.view", "kpd.reports.view"],
+    sectionId: "operations",
+    order: 47,
   },
   {
     id: "my-project",

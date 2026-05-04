@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileStack, Loader2, Trash2 } from "lucide-react";
+import { Download, FileStack, Loader2, Trash2 } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -15,6 +15,9 @@ type Project = {
 type Submission = {
   id: number;
   title?: string | null;
+  description?: string | null;
+  file_path?: string | null;
+  download_url?: string | null;
   status: "submitted" | "reviewed" | "approved" | "rejected";
   reviewer_note?: string | null;
   user?: { id: number; name: string; surname: string; email: string } | null;
@@ -119,6 +122,36 @@ export default function PanelAssignmentsPage() {
     );
   }
 
+  async function handleDownload(submission: Submission) {
+    if (!submission.download_url) return;
+
+    try {
+      const response = await api.get(submission.download_url, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Teslim dosyasi indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `odev_teslimi_${submission.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Teslim dosyasi indirilemedi", error);
+      setFeedback("Teslim dosyasi indirilemedi.");
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
@@ -212,9 +245,17 @@ export default function PanelAssignmentsPage() {
                               {submission.user?.name} {submission.user?.surname}
                             </div>
                             <div className="text-xs uppercase tracking-widest text-muted-foreground">{submission.status}</div>
+                            {submission.title ? <div className="mt-1 text-xs font-bold text-slate-700">{submission.title}</div> : null}
+                            {submission.description ? <div className="mt-1 text-xs text-muted-foreground">{submission.description}</div> : null}
                           </div>
                           <PermissionGate permission="assignments.submissions.review" requireProjectAccess={{ permission: "assignments.submissions.review", projectId: assignment.project_id }}>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
+                              {submission.download_url ? (
+                                <button type="button" onClick={() => void handleDownload(submission)} className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-700">
+                                  <Download className="h-3.5 w-3.5" />
+                                  Indir
+                                </button>
+                              ) : null}
                               {(["reviewed", "approved", "rejected"] as const).map((status) => (
                                 <button key={status} onClick={() => void handleReview(submission, status)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-bold uppercase text-slate-700">
                                   {status}

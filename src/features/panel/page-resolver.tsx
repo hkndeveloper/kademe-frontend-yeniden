@@ -30,6 +30,7 @@ import PanelFinancialsPage from "@/features/panel/pages/panel/financials/page";
 import PanelProjectsPage from "@/features/panel/pages/panel/projects/page";
 import PanelDigitalBohcaPage from "@/features/panel/pages/panel/digital-bohca/page";
 import PanelAssignmentsPage from "@/features/panel/pages/panel/assignments/page";
+import PanelKpdPage from "@/features/panel/pages/panel/kpd/page";
 import AdminPeriodFormBuilderPage from "@/features/panel/pages/admin/periods/form-builder/page";
 
 function NotFoundPanelPage() {
@@ -52,6 +53,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   financials: PanelFinancialsPage,
   "digital-bohca": PanelDigitalBohcaPage,
   assignments: PanelAssignmentsPage,
+  kpd: PanelKpdPage,
   requests: PanelSharedRequestsPage,
   support: PanelSupportPage,
   users: AdminUsersPage,

@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
+  Download,
   Filter,
   LifeBuoy,
   Loader2,
   Search,
   Send,
+  Upload,
   UserPlus,
 } from "lucide-react";
 import api from "@/lib/api/axios";
@@ -19,6 +21,8 @@ interface TicketReply {
   id: number;
   message: string;
   created_at: string;
+  attachment_path?: string | null;
+  attachment_download_url?: string | null;
   user?: {
     name: string;
     surname: string;
@@ -80,6 +84,7 @@ export default function AdminSupportPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [messageByTicket, setMessageByTicket] = useState<Record<number, string>>({});
+  const [attachmentByTicket, setAttachmentByTicket] = useState<Record<number, File | null>>({});
   const [assigneeByTicket, setAssigneeByTicket] = useState<Record<number, string>>({});
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -139,8 +144,17 @@ export default function AdminSupportPage() {
     setSuccessMessage("");
 
     try {
-      await api.post(`/tickets/${ticketId}/reply`, { message });
+      const formData = new FormData();
+      formData.append("message", message);
+      if (attachmentByTicket[ticketId]) {
+        formData.append("attachment", attachmentByTicket[ticketId] as File);
+      }
+
+      await api.post(`/tickets/${ticketId}/reply`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setMessageByTicket((current) => ({ ...current, [ticketId]: "" }));
+      setAttachmentByTicket((current) => ({ ...current, [ticketId]: null }));
       setSuccessMessage("Yanit basariyla gonderildi.");
       await loadData();
     } catch (error) {
@@ -148,6 +162,36 @@ export default function AdminSupportPage() {
       setErrorMessage("Yanit gonderilemedi.");
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleDownloadReplyAttachment = async (reply: TicketReply) => {
+    if (!reply.attachment_download_url) return;
+
+    try {
+      const response = await api.get(reply.attachment_download_url, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Ek dosya indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `destek_ek_${reply.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Ek dosya indirilemedi", error);
+      setErrorMessage("Ek dosya indirilemedi.");
     }
   };
 
@@ -334,6 +378,16 @@ export default function AdminSupportPage() {
                             </span>
                           </div>
                           <div className="text-sm text-gray-300">{reply.message}</div>
+                          {reply.attachment_download_url ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleDownloadReplyAttachment(reply)}
+                              className="mt-2 inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Ek Dosya
+                            </button>
+                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -406,6 +460,21 @@ export default function AdminSupportPage() {
                       className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-900 outline-none focus:border-indigo-500"
                       placeholder="Mesajinizi yazin"
                     />
+                    <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white p-2.5 text-xs font-bold text-slate-700">
+                      <Upload className="h-4 w-4 text-indigo-500" />
+                      <span className="truncate">{attachmentByTicket[ticket.id]?.name ?? "Ek dosya sec"}</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        disabled={ticket.status === "closed" || !canActOnTicket("support.reply", ticket)}
+                        onChange={(event) =>
+                          setAttachmentByTicket((current) => ({
+                            ...current,
+                            [ticket.id]: event.target.files?.[0] ?? null,
+                          }))
+                        }
+                      />
+                    </label>
                   </div>
 
                   <div className="flex gap-2">

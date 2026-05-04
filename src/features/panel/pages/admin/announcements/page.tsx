@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bell, CheckCircle2, FileText, Loader2, Mail, MessageSquare, Send, Users, X } from "lucide-react";
+import { Bell, CheckCircle2, Download, FileText, Loader2, Mail, MessageSquare, Send, Users, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -24,6 +24,19 @@ interface Announcement {
   published_at: string;
 }
 
+interface CommunicationLog {
+  id: number;
+  type: "email" | "sms";
+  recipients_count: number;
+  subject?: string | null;
+  attachment_path?: string | null;
+  attachment_download_url?: string | null;
+  status: string;
+  created_at: string;
+  project?: { id: number; name: string } | null;
+  sender?: { id: number; name: string; surname: string } | null;
+}
+
 const roleLabels: Record<string, string> = {
   super_admin: "Admin",
   coordinator: "Koordinator",
@@ -39,6 +52,7 @@ export default function AdminAnnouncementsPage() {
   const [activeTab, setActiveTab] = useState<"list" | "new">("list");
   const [projects, setProjects] = useState<Project[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [communicationLogs, setCommunicationLogs] = useState<CommunicationLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [listLoading, setListLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -74,6 +88,17 @@ export default function AdminAnnouncementsPage() {
     }
   }, []);
 
+  const loadCommunicationLogs = useCallback(async () => {
+    if (!canViewAnnouncements) return;
+
+    try {
+      const res = await api.get<{ logs: CommunicationLog[] }>("/panel/announcements/communication-logs");
+      setCommunicationLogs(res.data.logs ?? []);
+    } catch (error) {
+      console.error("Gonderim loglari yuklenemedi", error);
+    }
+  }, [canViewAnnouncements]);
+
   useEffect(() => {
     const initData = async () => {
       setLoading(true);
@@ -84,6 +109,7 @@ export default function AdminAnnouncementsPage() {
             ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "announcements.view" } })
             : Promise.resolve({ data: { projects: [] as Project[] } }),
           loadAnnouncements(),
+          loadCommunicationLogs(),
         ]);
         const raw = projectRes.data.projects ?? [];
         setProjects(
@@ -98,7 +124,7 @@ export default function AdminAnnouncementsPage() {
     };
 
     void initData();
-  }, [loadAnnouncements, hasPermission, canAccessProject]);
+  }, [loadAnnouncements, loadCommunicationLogs, hasPermission, canAccessProject]);
 
   const canDeleteAnnouncement = (announcement: Announcement): boolean => {
     if (!canDeleteAnnouncements) return false;
@@ -176,6 +202,7 @@ export default function AdminAnnouncementsPage() {
       setActiveTab("list");
       setSuccessMessage("Duyuru basariyla olusturuldu.");
       await loadAnnouncements();
+      await loadCommunicationLogs();
     } catch (error) {
       console.error("Duyuru gonderilemedi", error);
       setErrorMessage("Duyuru gonderilirken bir hata olustu.");
@@ -186,6 +213,36 @@ export default function AdminAnnouncementsPage() {
 
   const toggleRole = (role: string) => {
     setTargetRoles((prev) => (prev.includes(role) ? prev.filter((item) => item !== role) : [...prev, role]));
+  };
+
+  const handleDownloadAttachment = async (log: CommunicationLog) => {
+    if (!log.attachment_download_url) return;
+
+    try {
+      const response = await api.get(log.attachment_download_url, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Ek dosya indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `duyuru_eki_${log.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Ek dosya indirilemedi", error);
+      setErrorMessage("Ek dosya indirilemedi.");
+    }
   };
 
   if (loading) {
@@ -268,6 +325,7 @@ export default function AdminAnnouncementsPage() {
         }
       >
       {activeTab === "list" && canViewAnnouncements ? (
+        <div className="space-y-6">
         <div className="glass-panel overflow-hidden rounded-3xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-muted-foreground">
@@ -345,6 +403,47 @@ export default function AdminAnnouncementsPage() {
               </tbody>
             </table>
           </div>
+        </div>
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Gonderim Ekleri</h2>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Son e-posta/SMS loglari</p>
+            </div>
+            <button type="button" onClick={() => void loadCommunicationLogs()} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700">
+              Yenile
+            </button>
+          </div>
+          {communicationLogs.length === 0 ? (
+            <div className="text-sm text-muted-foreground">Gonderim kaydi bulunamadi.</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {communicationLogs.slice(0, 8).map((log) => (
+                <div key={log.id} className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-bold text-slate-900">{log.subject || log.type.toUpperCase()}</div>
+                      <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {log.type} / {log.recipients_count} kisi / {new Date(log.created_at).toLocaleString("tr-TR")}
+                      </div>
+                      {log.project?.name ? <div className="mt-1 text-xs text-indigo-400">{log.project.name}</div> : null}
+                    </div>
+                    {log.attachment_download_url ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleDownloadAttachment(log)}
+                        className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600/20 px-3 py-2 text-xs font-bold text-indigo-300 transition-colors hover:bg-indigo-600 hover:text-white"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Ek
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         </div>
       ) : null}
 

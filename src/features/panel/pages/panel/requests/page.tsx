@@ -26,6 +26,7 @@ interface RequestItem {
   description: string;
   response_file_path?: string | null;
   response_file_url?: string | null;
+  response_file_download_url?: string | null;
   status: "pending" | "in_progress" | "completed" | "rejected";
   target_user?: {
     id: number;
@@ -170,6 +171,37 @@ export default function PanelSharedRequestsPage() {
     }
   };
 
+  const handleDownloadResponseFile = async (requestItem: RequestItem) => {
+    const endpoint = requestItem.response_file_download_url ?? (requestItem.response_file_path ? `/panel/requests/${requestItem.id}/response-file` : null);
+    if (!endpoint) return;
+
+    try {
+      const response = await api.get(endpoint, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Yanit belgesi indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `talep_yanit_${requestItem.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Yanit belgesi indirilemedi", error);
+      setErrorMessage("Yanit belgesi indirilemedi.");
+    }
+  };
+
   const accent = "bg-accent text-accent-foreground";
   const accentSoft = "bg-accent/20 text-accent-foreground";
   const exportName = "panel_talepler";
@@ -285,15 +317,14 @@ export default function PanelSharedRequestsPage() {
                       </div>
                       <div className="mt-4 border-t border-white/5 pt-3">
                         {request.response_file_path ? (
-                          <a
-                            href={request.response_file_url ?? `${process.env.NEXT_PUBLIC_STORAGE_URL || "http://localhost:8000/storage"}/${request.response_file_path.replace(/^public\//, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => void handleDownloadResponseFile(request)}
                             className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent/20 px-3 py-2 text-xs font-bold text-accent-foreground transition-colors hover:bg-accent hover:text-primary-foreground"
                           >
                             <Download className="h-3 w-3" />
                             Yanit belgesini indir
-                          </a>
+                          </button>
                         ) : canUploadRequestResponse ? (
                           <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 bg-white/5 px-3 py-2 text-xs font-bold text-muted-foreground transition-colors hover:bg-white/10 hover:text-slate-900">
                             <Upload className="h-3 w-3" />

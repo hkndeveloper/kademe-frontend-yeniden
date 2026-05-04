@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { LifeBuoy, Loader2, MessageSquare, Plus, Send } from "lucide-react";
+import { Download, LifeBuoy, Loader2, MessageSquare, Plus, Send, Upload } from "lucide-react";
 import api from "@/lib/api/axios";
 
 interface Project {
@@ -18,6 +18,20 @@ interface Ticket {
   status: string;
   project_id?: number | null;
   created_at: string;
+  replies?: TicketReply[];
+}
+
+interface TicketReply {
+  id: number;
+  message: string;
+  created_at: string;
+  attachment_path?: string | null;
+  attachment_download_url?: string | null;
+  user?: {
+    name: string;
+    surname: string;
+    role: string;
+  } | null;
 }
 
 interface TicketFormState {
@@ -41,6 +55,7 @@ export default function StudentTicketsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
+  const [replyAttachment, setReplyAttachment] = useState<File | null>(null);
   const [form, setForm] = useState<TicketFormState>(initialForm);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -103,8 +118,17 @@ export default function StudentTicketsPage() {
     setErrorMessage(null);
 
     try {
-      await api.post(`/tickets/${ticketId}/reply`, { message: replyMessage });
+      const formData = new FormData();
+      formData.append("message", replyMessage);
+      if (replyAttachment) {
+        formData.append("attachment", replyAttachment);
+      }
+
+      await api.post(`/tickets/${ticketId}/reply`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setReplyMessage("");
+      setReplyAttachment(null);
       setMessage("Takip mesaji eklendi.");
       await loadData();
     } catch (error) {
@@ -112,6 +136,36 @@ export default function StudentTicketsPage() {
       setErrorMessage("Takip mesaji gonderilemedi.");
     } finally {
       setReplyingTo(null);
+    }
+  };
+
+  const handleDownloadReplyAttachment = async (reply: TicketReply) => {
+    if (!reply.attachment_download_url) return;
+
+    try {
+      const response = await api.get(reply.attachment_download_url, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Ek dosya indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `destek_ek_${reply.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Ek dosya indirilemedi", error);
+      setErrorMessage("Ek dosya indirilemedi.");
     }
   };
 
@@ -223,6 +277,28 @@ export default function StudentTicketsPage() {
                   </div>
                   <p className="text-sm text-muted-foreground">{ticket.message}</p>
                   <p className="text-xs uppercase tracking-widest text-muted-foreground">{new Date(ticket.created_at).toLocaleString("tr-TR")}</p>
+                  {ticket.replies?.length ? (
+                    <div className="mt-4 space-y-2 border-l-2 border-border pl-4">
+                      {ticket.replies.map((reply) => (
+                        <div key={reply.id} className="rounded-xl bg-muted/40 p-3">
+                          <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            {reply.user ? `${reply.user.name} ${reply.user.surname}` : "Kullanici"} / {new Date(reply.created_at).toLocaleString("tr-TR")}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{reply.message}</div>
+                          {reply.attachment_download_url ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleDownloadReplyAttachment(reply)}
+                              className="mt-2 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Ek Dosya
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="w-full max-w-md space-y-3">
@@ -240,6 +316,18 @@ export default function StudentTicketsPage() {
                     placeholder="Talebinize ek not yazin"
                     className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
                   />
+                  <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-input px-4 py-3 text-sm text-muted-foreground">
+                    <Upload className="h-4 w-4" />
+                    <span className="truncate">{replyingTo === ticket.id && replyAttachment ? replyAttachment.name : "Ek dosya sec"}</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(event) => {
+                        setReplyingTo(ticket.id);
+                        setReplyAttachment(event.target.files?.[0] ?? null);
+                      }}
+                    />
+                  </label>
                   <button
                     onClick={() => void handleReply(ticket.id)}
                     disabled={replyingTo === ticket.id && !replyMessage.trim()}

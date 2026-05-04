@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, BrainCircuit, CalendarClock, HeartPulse, Loader2, Plus, User, XCircle } from "lucide-react";
+import { AlertCircle, BrainCircuit, CalendarClock, Download, HeartPulse, Loader2, Plus, User, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 
 interface Participation {
@@ -47,10 +47,19 @@ interface KpdAppointment {
   room?: RoomOption | null;
 }
 
+interface KpdReport {
+  id: number;
+  title: string;
+  created_at?: string | null;
+  download_url?: string | null;
+  counselor?: CounselorOption | null;
+}
+
 interface KpdResponse {
   appointments: KpdAppointment[];
   counselors: CounselorOption[];
   rooms: RoomOption[];
+  reports?: KpdReport[];
 }
 
 interface AppointmentFormState {
@@ -97,6 +106,7 @@ export default function StudentKpdPage() {
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [hasPersonalityData, setHasPersonalityData] = useState(false);
   const [appointments, setAppointments] = useState<KpdAppointment[]>([]);
+  const [reports, setReports] = useState<KpdReport[]>([]);
   const [counselors, setCounselors] = useState<CounselorOption[]>([]);
   const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [form, setForm] = useState<AppointmentFormState>(defaultFormState);
@@ -117,6 +127,7 @@ export default function StudentKpdPage() {
         setParticipations(summaryResponse.data.participations ?? []);
         setHasPersonalityData(Boolean(profileResponse.data.user.profile?.personality_test_data && Object.keys(profileResponse.data.user.profile?.personality_test_data || {}).length > 0));
         setAppointments(kpdResponse.data.appointments ?? []);
+        setReports(kpdResponse.data.reports ?? []);
         setCounselors(kpdResponse.data.counselors ?? []);
         setRooms(kpdResponse.data.rooms ?? []);
       } catch (error) {
@@ -174,6 +185,36 @@ export default function StudentKpdPage() {
       setErrorMessage("Randevu iptal edilemedi.");
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleDownloadReport = async (report: KpdReport) => {
+    const endpoint = report.download_url ?? `/kpd/reports/${report.id}/download`;
+
+    try {
+      const response = await api.get(endpoint, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Rapor indirilemedi.");
+      }
+
+      const blobUrl = window.URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `kpd_raporu_${report.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("KPD raporu indirilemedi", error);
+      setErrorMessage("KPD raporu indirilemedi.");
     }
   };
 
@@ -274,6 +315,50 @@ export default function StudentKpdPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          <div className="glass-panel rounded-3xl p-8">
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">Raporlarim</h2>
+                <p className="text-sm text-muted-foreground">Danismanlar tarafindan yuklenen KPD raporlarini buradan indirebilirsin.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                {reports.length} dosya
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex min-h-24 items-center justify-center">
+                <Loader2 className="h-7 w-7 animate-spin text-primary" />
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-muted-foreground">
+                Henuz yuklenmis bir KPD raporun yok.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {reports.map((report) => (
+                  <div key={report.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="font-bold text-slate-900">{report.title}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {report.created_at ? new Date(report.created_at).toLocaleDateString("tr-TR") : "Tarih yok"}
+                        {report.counselor ? ` / ${report.counselor.name} ${report.counselor.surname}` : ""}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadReport(report)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
+                    >
+                      <Download className="h-4 w-4" />
+                      Indir
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>

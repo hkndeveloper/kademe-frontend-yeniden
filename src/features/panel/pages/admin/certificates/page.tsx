@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Award, Search, Filter, Loader2, Plus, Trash2, CheckCircle } from "lucide-react";
+import { Award, Search, Filter, Loader2, Plus, Trash2, CheckCircle, Upload, Download } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
@@ -24,6 +24,8 @@ interface Certificate {
   type: string;
   verification_code: string;
   issued_at: string;
+  certificate_path?: string | null;
+  download_url?: string | null;
   project?: { id: number; name: string };
   user?: { id: number; name: string; surname: string; email: string };
 }
@@ -52,6 +54,7 @@ export default function AdminCertificatesPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [form, setForm] = useState({ user_id: "", project_id: "", type: "participation" });
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -117,9 +120,20 @@ export default function AdminCertificatesPage() {
     if (!form.user_id || !form.project_id || !form.type) return alert("Lütfen tüm alanları doldurun.");
     setCreating(true);
     try {
-      await api.post("/panel/certificates", form);
+      const formData = new FormData();
+      formData.append("user_id", form.user_id);
+      formData.append("project_id", form.project_id);
+      formData.append("type", form.type);
+      if (certificateFile) {
+        formData.append("certificate_file", certificateFile);
+      }
+
+      await api.post("/panel/certificates", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setIsModalOpen(false);
       setForm({ user_id: "", project_id: "", type: "participation" });
+      setCertificateFile(null);
       applyFilters();
     } catch (error: unknown) {
       const msg = isAxiosError(error)
@@ -138,6 +152,37 @@ export default function AdminCertificatesPage() {
       setCertificates(prev => prev.filter(c => c.id !== id));
     } catch {
       alert("Silinemedi.");
+    }
+  };
+
+  const handleDownload = async (certificate: Certificate) => {
+    if (!certificate.download_url) return;
+
+    try {
+      const endpoint = certificate.download_url.replace(/^.*\/api/, "");
+      const response = await api.get(endpoint, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Sertifika indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `sertifika_${certificate.verification_code}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Sertifika indirilemedi", error);
+      alert("Sertifika indirilemedi.");
     }
   };
 
@@ -259,6 +304,16 @@ export default function AdminCertificatesPage() {
                     <td className="px-6 py-4 font-mono text-xs text-slate-900">{cert.verification_code}</td>
                     <td className="px-6 py-4">{new Date(cert.issued_at).toLocaleDateString('tr-TR')}</td>
                     <td className="px-6 py-4 text-right">
+                      {cert.download_url ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleDownload(cert)}
+                          className="mr-2 inline-flex items-center gap-1 rounded-xl bg-emerald-500/10 p-2 text-xs font-bold text-emerald-600 transition-colors hover:bg-emerald-500 hover:text-white"
+                          title="Indir"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                      ) : null}
                       {canDelete && cert.project?.id != null && canAccessProject("certificates.delete", cert.project.id) ? (
                         <button
                           type="button"
@@ -360,11 +415,29 @@ export default function AdminCertificatesPage() {
                   <option value="graduation">Mezuniyet Belgesi</option>
                 </select>
               </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Sertifika Dosyasi
+                </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white p-3 text-sm font-bold text-slate-700 transition-colors hover:border-amber-500">
+                  <Upload className="h-4 w-4 text-amber-500" />
+                  <span className="truncate">{certificateFile ? certificateFile.name : "PDF veya gorsel sec"}</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(event) => setCertificateFile(event.target.files?.[0] ?? null)}
+                  />
+                </label>
+              </div>
             </div>
             <div className="mt-8 flex items-center justify-end gap-3">
               <button 
                 type="button" 
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setCertificateFile(null);
+                }}
                 className="rounded-xl px-4 py-2 text-sm font-bold text-muted-foreground hover:text-slate-900"
               >
                 İptal

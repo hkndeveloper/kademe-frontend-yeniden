@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, CheckCircle2, FileCheck, Loader2, Send, Upload, XCircle } from "lucide-react";
+import { Calendar, CheckCircle2, Download, FileCheck, Loader2, Send, Upload, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 
 interface AssignmentSubmission {
@@ -10,6 +10,7 @@ interface AssignmentSubmission {
   status?: string;
   description?: string;
   file_path?: string | null;
+  download_url?: string | null;
 }
 
 interface AssignmentFormState {
@@ -73,7 +74,6 @@ export default function AlumniAssignmentsPage() {
     const formData = new FormData();
     formData.append("title", payload.title);
     formData.append("description", payload.description);
-    if (payload.file_path) formData.append("file_path", payload.file_path);
     if (payload.file) formData.append("file", payload.file);
 
     setSubmitting(assignmentId);
@@ -88,6 +88,35 @@ export default function AlumniAssignmentsPage() {
       console.error("Ödev teslimi başarısız", error);
     } finally {
       setSubmitting(null);
+    }
+  };
+
+  const handleDownload = async (submission: AssignmentSubmission) => {
+    if (!submission.download_url) return;
+
+    try {
+      const response = await api.get(submission.download_url, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Teslim dosyasi indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `odev_teslimi_${submission.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Teslim dosyasi indirilemedi", error);
     }
   };
 
@@ -145,6 +174,16 @@ export default function AlumniAssignmentsPage() {
                         Teslim tarihi: {new Date(assignment.due_date).toLocaleDateString("tr-TR")}
                       </div>
                     )}
+                    {assignment.submissions?.[0]?.download_url ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleDownload(assignment.submissions![0])}
+                        className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700"
+                      >
+                        <Download className="h-4 w-4" />
+                        Teslim Dosyasini Indir
+                      </button>
+                    ) : null}
                   </div>
 
                   <button
@@ -175,13 +214,6 @@ export default function AlumniAssignmentsPage() {
                     <input
                       type="file"
                       onChange={(e) => updateForm(assignment.id, "file", e.target.files?.[0] ?? null)}
-                      className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Dosya baglantisi (opsiyonel)"
-                      value={form[assignment.id]?.file_path || ""}
-                      onChange={(e) => updateForm(assignment.id, "file_path", e.target.value)}
                       className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
                     />
                     <button

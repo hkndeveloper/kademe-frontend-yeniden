@@ -42,6 +42,37 @@ export default function AlumniCertificatesPage() {
     void loadCertificates();
   }, []);
 
+  const handleDownload = async (certificate: CertificateItem) => {
+    if (!certificate.download_url) return;
+
+    try {
+      const endpoint = certificate.download_url.replace(/^.*\/api/, "");
+      const response = await api.get(endpoint, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Sertifika indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `sertifika_${certificate.verification_code}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Sertifika indirilemedi", error);
+      setErrorMessage("Sertifika indirilemedi.");
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
@@ -95,14 +126,13 @@ export default function AlumniCertificatesPage() {
 
                 <div className="flex flex-wrap gap-3">
                   {certificate.download_url && (
-                    <a
-                      href={certificate.download_url}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => void handleDownload(certificate)}
                       className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-bold text-white"
                     >
                       Belgeyi Ac <ExternalLink className="h-4 w-4" />
-                    </a>
+                    </button>
                   )}
                   <Link href={`/certificates/verify?code=${encodeURIComponent(certificate.verification_code)}`} className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-white/5">
                     Dogrula

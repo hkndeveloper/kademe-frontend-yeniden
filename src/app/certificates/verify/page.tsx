@@ -71,6 +71,37 @@ function CertificateVerifyContent() {
     await verifyCertificate(code);
   };
 
+  const handleDownload = async (certificate: CertificateItem) => {
+    if (!certificate.download_url) return;
+
+    try {
+      const endpoint = certificate.download_url.replace(/^.*\/api/, "");
+      const response = await api.get(endpoint, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Sertifika indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `sertifika_${certificate.verification_code}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Sertifika indirilemedi", error);
+      setErrorMessage("Sertifika indirilemedi.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24 pt-16">
       <div className="container mx-auto max-w-5xl px-6">
@@ -134,9 +165,9 @@ function CertificateVerifyContent() {
                   <Link href="/student/certificates" className="block hover:text-primary">Ogrenci Sertifikalari</Link>
                   <Link href="/alumni/certificates" className="block hover:text-primary">Mezun Sertifikalari</Link>
                   {result.certificate.download_url && (
-                    <a href={result.certificate.download_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground transition-opacity hover:opacity-90">
+                    <button type="button" onClick={() => void handleDownload(result.certificate)} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground transition-opacity hover:opacity-90">
                       Belgeyi Ac <ExternalLink className="h-4 w-4" />
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
