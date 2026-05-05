@@ -273,7 +273,7 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const homepageBlockLabels: Record<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter", string> = {
+  const homepageBlockLabels: Record<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify", string> = {
     hero: "Hero",
     intro: "Kisa Tanitim Bloklari",
     stats: "Sayilarla Veriler",
@@ -282,6 +282,7 @@ export default function AdminSettingsPage() {
     about: "Hakkimizda",
     blog: "Blog",
     newsletter: "E-Bulten",
+    certificate_verify: "Sertifika Dogrulama",
   };
 
   const moveBlock = (index: number, direction: -1 | 1) => {
@@ -305,7 +306,7 @@ export default function AdminSettingsPage() {
     });
   };
 
-  const toggleBlockVisibility = (key: "hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter") => {
+  const toggleBlockVisibility = (key: "hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify") => {
     setSettings((current) => ({
       ...current,
       homepage: {
