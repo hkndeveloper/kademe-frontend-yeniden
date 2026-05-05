@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { isAxiosError } from "axios";
 import {
   CheckCircle,
   CheckCircle2,
@@ -179,6 +180,16 @@ export default function AdminFinancialsPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
+      if (isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          setErrorMessage("Bu fatura dosyasini indirme yetkiniz bulunmuyor.");
+          return;
+        }
+        if (error.response?.status === 404) {
+          setErrorMessage("Fatura dosyasi bulunamadi veya silinmis olabilir.");
+          return;
+        }
+      }
       console.error("Invoice could not be downloaded", error);
       setErrorMessage("Fatura indirilemedi.");
     } finally {

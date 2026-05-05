@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Filter, Loader2, MessageSquare, Upload } from "lucide-react";
+import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -167,7 +168,7 @@ export default function AdminRequestsPage() {
   };
 
   const handleDownloadResponseFile = async (requestItem: RequestItem) => {
-    const endpoint = requestItem.response_file_download_url ?? (requestItem.response_file_path ? `/requests/${requestItem.id}/response-file` : null);
+    const endpoint = requestItem.response_file_path ? `/panel/requests/${requestItem.id}/response-file` : null;
     if (!endpoint) return;
 
     try {
@@ -192,6 +193,16 @@ export default function AdminRequestsPage() {
       link.remove();
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
+      if (isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          setErrorMessage("Bu talep yanit belgesini indirme yetkiniz bulunmuyor.");
+          return;
+        }
+        if (error.response?.status === 404) {
+          setErrorMessage("Yanit belgesi bulunamadi veya silinmis olabilir.");
+          return;
+        }
+      }
       console.error("Yanit belgesi indirilemedi", error);
       setErrorMessage("Yanit belgesi indirilemedi.");
     }

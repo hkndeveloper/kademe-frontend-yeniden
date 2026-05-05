@@ -25,7 +25,7 @@ interface PaginatedMembers {
 }
 
 export default function StaffMembersPage() {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [members, setMembers] = useState<StaffMember[]>([]);
   const [unit, setUnit] = useState("");
   const [search, setSearch] = useState("");
@@ -33,6 +33,11 @@ export default function StaffMembersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!hasPermission("staff.view")) {
+      setLoading(false);
+      return;
+    }
+
     const loadMembers = async () => {
       try {
         const response = await api.get<{ members: PaginatedMembers; unit?: string | null; message?: string }>("/panel/members");
@@ -50,7 +55,7 @@ export default function StaffMembersPage() {
     };
 
     void loadMembers();
-  }, []);
+  }, [hasPermission]);
 
   const filteredMembers = members.filter((member) => {
     const haystack = `${member.name} ${member.surname} ${member.email ?? ""} ${member.staff_profile?.title ?? ""}`.toLowerCase();
