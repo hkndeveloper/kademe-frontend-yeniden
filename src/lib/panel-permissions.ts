@@ -12,8 +12,20 @@ function canAccessProjectFromUser(user: PanelNavUser | null, permission: string,
   const scope = user?.permission_scopes?.[permission];
   if (!scope) return false;
   if (scope.scope_type === "all") return true;
-  if (["own_projects", "assigned_projects", "selected_projects"].includes(scope.scope_type)) {
+  if (["own_projects", "assigned_projects"].includes(scope.scope_type)) {
+    const ids = Array.isArray(user?.authorization_context?.manageable_project_ids)
+      ? user.authorization_context.manageable_project_ids
+      : [];
+    return ids.map((id) => Number(id)).filter((id) => Number.isFinite(id)).includes(projectId);
+  }
+  if (scope.scope_type === "selected_projects") {
     const ids = Array.isArray(scope.scope_payload?.project_ids) ? scope.scope_payload.project_ids : [];
+    return ids.map((id) => Number(id)).filter((id) => Number.isFinite(id)).includes(projectId);
+  }
+  if (scope.scope_type === "self") {
+    const ids = Array.isArray(user?.authorization_context?.manageable_project_ids)
+      ? user.authorization_context.manageable_project_ids
+      : [];
     return ids.map((id) => Number(id)).filter((id) => Number.isFinite(id)).includes(projectId);
   }
   return false;
@@ -100,7 +112,11 @@ export function canAccessPanelPath(
   }
   const projectContent = normalized.match(/^\/panel\/projects\/(\d+)\/content$/);
   if (projectContent) {
-    return hasPermission("projects.view") && canAccessProjectFromUser(user, "projects.view", Number(projectContent[1]));
+    const pid = Number(projectContent[1]);
+    return (
+      (hasPermission("projects.view") && canAccessProjectFromUser(user, "projects.view", pid)) ||
+      (hasPermission("projects.content.update") && canAccessProjectFromUser(user, "projects.content.update", pid))
+    );
   }
   const projectSpecialModules = normalized.match(/^\/panel\/projects\/(\d+)\/special-modules$/);
   if (projectSpecialModules) {

@@ -43,12 +43,20 @@ export function usePermissions() {
       if (scope?.scope_type === "all") {
         return true;
       }
-      if (
-        scope?.scope_type === "own_projects" ||
-        scope?.scope_type === "assigned_projects" ||
-        scope?.scope_type === "selected_projects"
-      ) {
+      if (scope?.scope_type === "own_projects" || scope?.scope_type === "assigned_projects") {
+        const ids = (user.authorization_context?.manageable_project_ids ?? [])
+          .map((id) => Number(id))
+          .filter((id) => Number.isFinite(id));
+        return ids.includes(pid);
+      }
+      if (scope?.scope_type === "selected_projects") {
         const ids = ((scope.scope_payload as ScopePayload | undefined)?.project_ids ?? [])
+          .map((id) => Number(id))
+          .filter((id) => Number.isFinite(id));
+        return ids.includes(pid);
+      }
+      if (scope?.scope_type === "self") {
+        const ids = (user.authorization_context?.manageable_project_ids ?? [])
           .map((id) => Number(id))
           .filter((id) => Number.isFinite(id));
         return ids.includes(pid);

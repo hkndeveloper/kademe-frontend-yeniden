@@ -13,6 +13,12 @@ export function manageableProjectCount(user: PanelNavUser | null | undefined): n
   return user?.authorization_context?.manageable_project_ids?.length ?? 0;
 }
 
+function selectedProjectCount(user: PanelNavUser | null | undefined): number {
+  const ids = user?.permission_scopes?.["projects.view"]?.scope_payload?.project_ids;
+  if (!Array.isArray(ids)) return 0;
+  return ids.map((id) => Number(id)).filter((id) => Number.isFinite(id)).length;
+}
+
 export function shouldShowProjectsListNav(
   user: PanelNavUser | null | undefined,
   hasPermission: (p: string) => boolean
@@ -22,8 +28,9 @@ export function shouldShowProjectsListNav(
   const scope = user?.permission_scopes?.["projects.view"];
   if (scope?.scope_type === "self") return false;
   if (scope?.scope_type === "all") return true;
+  if (scope?.scope_type === "selected_projects") return selectedProjectCount(user) > 1;
 
-  if (["own_projects", "assigned_projects", "selected_projects"].includes(scope?.scope_type ?? "")) {
+  if (["own_projects", "assigned_projects"].includes(scope?.scope_type ?? "")) {
     return manageableProjectCount(user) > 1;
   }
 
@@ -39,5 +46,6 @@ export function shouldShowMyProjectNav(
   const scope = user?.permission_scopes?.["projects.view"];
   if (scope?.scope_type === "all") return false;
   if (scope?.scope_type === "self") return true;
+  if (scope?.scope_type === "selected_projects") return selectedProjectCount(user) <= 1;
   return manageableProjectCount(user) <= 1;
 }
