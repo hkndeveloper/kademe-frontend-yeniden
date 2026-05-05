@@ -194,13 +194,23 @@ export default function AdminAnnouncementsPage() {
         formData.append("email_attachment", file);
       }
 
-      await api.post("/panel/announcements", formData, {
+      const response = await api.post<{
+        message: string;
+        target_count: number;
+        email_sent_to?: number;
+        sms_sent_to?: number;
+      }>("/panel/announcements", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       resetForm();
       setActiveTab("list");
-      setSuccessMessage("Duyuru basariyla olusturuldu.");
+      const emailSentTo = Number(response.data.email_sent_to ?? 0);
+      const smsSentTo = Number(response.data.sms_sent_to ?? 0);
+      const targetCount = Number(response.data.target_count ?? 0);
+      setSuccessMessage(
+        `${response.data.message} (hedef: ${targetCount}, e-posta: ${emailSentTo}, sms: ${smsSentTo})`
+      );
       await loadAnnouncements();
       await loadCommunicationLogs();
     } catch (error) {
