@@ -25,11 +25,15 @@ const panelHomePermissions = [
   "newsletter.view",
   "kpd.appointments.view",
   "kpd.reports.view",
+  "kpd.appointments.manage",
+  "kpd.reports.create",
+  "kpd.reports.delete",
   "users.view",
   "permissions.matrix.view",
   "staff.view",
   "content.view",
   "settings.view",
+  "content.site_settings.update",
   "logs.view",
   "chatbot.view",
 ];
@@ -42,6 +46,7 @@ export function hasPanelHomeAccess(user: HomePathUser | null | undefined): boole
     if (
       permission === "content.view" ||
       permission === "settings.view" ||
+      permission === "content.site_settings.update" ||
       permission === "permissions.matrix.view" ||
       permission === "newsletter.view" ||
       permission === "chatbot.view" ||
@@ -59,6 +64,10 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
   const has = (permission: string) => permissions.includes("*") || permissions.includes(permission);
   const hasAny = (items: string[]) => permissions.includes("*") || items.some((permission) => permissions.includes(permission));
   const hasGlobal = (permission: string) => permissions.includes("*") || user?.permission_scopes?.[permission]?.scope_type === "all";
+  const hasSettingsAccess = () => (
+    (has("settings.view") && hasGlobal("settings.view")) ||
+    (has("content.site_settings.update") && hasGlobal("content.site_settings.update"))
+  );
 
   if (permissions.includes("*")) return "/panel/dashboard";
   if (hasAny(["dashboard.admin.view", "dashboard.coordinator.view", "dashboard.staff.view"])) return "/panel/dashboard";
@@ -77,6 +86,9 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
   if (has("assignments.view")) return "/panel/assignments";
   if (has("kpd.reports.view") && hasGlobal("kpd.reports.view")) return "/panel/kpd";
   if (has("kpd.appointments.view") && hasGlobal("kpd.appointments.view")) return "/panel/kpd";
+  if (has("kpd.appointments.manage") && hasGlobal("kpd.appointments.manage")) return "/panel/kpd";
+  if (has("kpd.reports.create") && hasGlobal("kpd.reports.create")) return "/panel/kpd";
+  if (has("kpd.reports.delete") && hasGlobal("kpd.reports.delete")) return "/panel/kpd";
   if (has("requests.view")) return "/panel/requests";
   if (has("users.view")) return "/panel/users";
   if (has("permissions.matrix.view") && hasGlobal("permissions.matrix.view")) return "/panel/users/permissions";
@@ -91,7 +103,7 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
   if ((has("chatbot.view") && hasGlobal("chatbot.view")) || (has("chatbot.manage") && hasGlobal("chatbot.manage"))) {
     return "/panel/chatbot";
   }
-  if (has("settings.view") && hasGlobal("settings.view")) return "/panel/settings";
+  if (hasSettingsAccess()) return "/panel/settings";
 
   return homePathForRole(user?.role);
 }

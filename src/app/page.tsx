@@ -12,6 +12,7 @@ import {
   MapPin,
   PlayCircle,
   Send,
+  ShieldCheck,
   Trophy,
   Users,
 } from "lucide-react";
@@ -191,7 +192,7 @@ export default function HomePage() {
     }
   };
 
-  const sectionMap: Record<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter", ReactNode> = {
+  const sectionMap: Record<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify", ReactNode> = {
     hero: (
       <section className="relative flex min-h-[92vh] items-center justify-center overflow-hidden pt-20">
         {resolvedSettings.homepage.hero_background_image_url ? (
@@ -575,6 +576,31 @@ export default function HomePage() {
                   </div>
                 ) : null}
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    ),
+    certificate_verify: (
+      <section className="pb-28">
+        <div className="container mx-auto px-6">
+          <div className="glass-panel rounded-[34px] border border-primary/20 p-8 md:p-10">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-3xl">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
+                  <ShieldCheck className="h-4 w-4" />
+                  Kamusal Dogrulama
+                </div>
+                <h2 className="text-3xl font-black md:text-4xl">{resolvedSettings.homepage.certificate_verify_title}</h2>
+                <p className="mt-4 text-muted-foreground">{resolvedSettings.homepage.certificate_verify_description}</p>
+              </div>
+              <Link
+                href={resolvedSettings.homepage.certificate_verify_cta_href}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-4 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:shadow-primary/30"
+              >
+                {resolvedSettings.homepage.certificate_verify_cta_label}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </div>

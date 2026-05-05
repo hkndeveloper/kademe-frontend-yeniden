@@ -1,6 +1,6 @@
 # Unified Panel Smoke Test Checklist
 
-Last updated: 2026-04-29
+Last updated: 2026-05-05
 
 ## Core access and guard checks
 
@@ -55,6 +55,10 @@ Last updated: 2026-04-29
 - [ ] Staff + tek/sifir `manageable_project_ids` durumunda `Projeler` gizli, `Projem` gorunur.
 - [ ] Staff + birden fazla `manageable_project_ids` durumunda `Projeler` gorunur.
 - [ ] `/panel/projects` deep-link guard sonucu menu kurallariyla ayni davranir.
+- [ ] `/panel/programs/:id/qr` sadece `programs.qr.manage` olan kullanicida acilir.
+- [ ] `/panel/periods/form-builder` sadece `projects.application_form.update` olan kullanicida acilir.
+- [ ] `/panel/settings` sayfasi `settings.view` global veya `content.site_settings.update` global ile acilir.
+- [ ] KPD menusu `kpd.appointments.manage` veya `kpd.reports.create/delete` global ile de gorunur.
 
 ## Critical actions
 

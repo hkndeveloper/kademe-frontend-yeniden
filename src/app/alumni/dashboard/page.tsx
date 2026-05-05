@@ -29,6 +29,10 @@ interface AlumniProject {
   graduated_at?: string | null;
 }
 
+interface SummaryResponse {
+  monthly_titles?: string[];
+}
+
 interface Announcement {
   id: number;
   title: string;
@@ -44,16 +48,18 @@ export default function AlumniDashboardPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [certificates, setCertificates] = useState<CertificateItem[]>([]);
   const [projects, setProjects] = useState<AlumniProject[]>([]);
+  const [monthlyTitles, setMonthlyTitles] = useState<string[]>([]);
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [bohcaResponse, ticketsResponse, annResponse, certResponse, projectResponse] = await Promise.all([
+        const [bohcaResponse, ticketsResponse, annResponse, certResponse, projectResponse, summaryResponse] = await Promise.all([
           api.get<{ materials: BohcaMaterial[] }>("/digital-bohca").catch(() => ({ data: { materials: [] } })),
           api.get<{ tickets: TicketItem[] }>("/tickets").catch(() => ({ data: { tickets: [] } })),
           api.get<{ announcements: Announcement[] }>("/announcements").catch(() => ({ data: { announcements: [] } })),
           api.get<{ certificates: CertificateItem[] }>("/certificates").catch(() => ({ data: { certificates: [] } })),
           api.get<{ projects: AlumniProject[] }>("/dashboard/projects").catch(() => ({ data: { projects: [] } })),
+          api.get<SummaryResponse>("/dashboard/summary").catch(() => ({ data: { monthly_titles: [] } })),
         ]);
 
         setMaterials(bohcaResponse.data.materials ?? []);
@@ -61,6 +67,7 @@ export default function AlumniDashboardPage() {
         setAnnouncements(annResponse.data.announcements ?? []);
         setCertificates(certResponse.data.certificates ?? []);
         setProjects(projectResponse.data.projects ?? []);
+        setMonthlyTitles(summaryResponse.data.monthly_titles ?? []);
       } catch (error) {
         console.error("Mezun dashboard verileri cekilemedi", error);
       } finally {
@@ -138,8 +145,8 @@ export default function AlumniDashboardPage() {
 
         <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
           <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Sistem Duyuruları</p>
-            <h3 className="text-3xl font-black text-slate-900">{announcements.length}</h3>
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aylik Unvanlar</p>
+            <h3 className="text-3xl font-black text-slate-900">{monthlyTitles.length}</h3>
           </div>
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
             <Bell className="h-7 w-7" />
@@ -183,6 +190,30 @@ export default function AlumniDashboardPage() {
                 Gönüllülük sayfasına git
               </Link>
             </div>
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-3xl p-8 flex flex-col">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-lg font-bold">
+              <Award className="h-5 w-5 text-primary" />
+              Aylik Unvanlarim
+            </h3>
+          </div>
+          <div className="flex-1">
+            {monthlyTitles.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-center text-muted-foreground">
+                Bu ay icin atanmis bir unvan gorunmuyor.
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {monthlyTitles.map((title) => (
+                  <span key={title} className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+                    {title}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

@@ -29,6 +29,10 @@ function roleBadgeLabel(role: string | undefined) {
 export default function AdminDashboardPage() {
   const { hasPermission, canAccessProject } = usePermissions();
   const { user } = useAuth();
+  const role = user?.role;
+  const isSuperAdmin = role === "super_admin";
+  const isCoordinator = role === "coordinator";
+  const isStaff = role === "staff";
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
@@ -90,7 +94,7 @@ export default function AdminDashboardPage() {
 
   const kpi = [
     {
-      label: "Aktif Katilimci",
+      label: isStaff ? "Aktif Gorevli Katilim" : "Aktif Katilimci",
       value: stats.students.active.toLocaleString("tr-TR"),
       icon: Users,
     },
@@ -105,8 +109,8 @@ export default function AdminDashboardPage() {
       icon: Calendar,
     },
     {
-      label: "Bekleyen Basvuru",
-      value: String(stats.pending.applications),
+      label: isStaff ? "Bekleyen Destek" : "Bekleyen Basvuru",
+      value: String(isStaff ? stats.pending.support : stats.pending.applications),
       icon: MessageSquare,
     },
   ];
@@ -124,7 +128,13 @@ export default function AdminDashboardPage() {
               {roleBadgeLabel(user?.role)}
             </span>
           </div>
-          <p className="text-sm text-slate-500">Tum sistem operasyonel ozeti asagidadir.</p>
+          <p className="text-sm text-slate-500">
+            {isSuperAdmin
+              ? "Tum sistem operasyonel ozeti asagidadir."
+              : isCoordinator
+                ? "Koordinator oldugunuz proje kapsamindaki operasyonel ozet asagidadir."
+                : "Yetki kapsaminizdaki operasyonel ozet asagidadir."}
+          </p>
         </div>
         <div className="flex gap-2">
           <PermissionGate permission="financial.export">
@@ -235,20 +245,22 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="panel-surface border-sky-100/80 bg-sky-50/30 p-5">
-                <h4 className="mb-3 text-xs font-bold uppercase text-slate-800">Kullanici Dagilimi</h4>
-                <div className="space-y-2">
-                  {Object.entries(stats.user_stats).map(([role, count]) => (
-                    <div key={role} className="flex items-center justify-between text-xs text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#FF6B00]" />
-                        <span className="capitalize">{role.replace(/_/g, " ")}</span>
+              {isSuperAdmin ? (
+                <div className="panel-surface border-sky-100/80 bg-sky-50/30 p-5">
+                  <h4 className="mb-3 text-xs font-bold uppercase text-slate-800">Kullanici Dagilimi</h4>
+                  <div className="space-y-2">
+                    {Object.entries(stats.user_stats).map(([role, count]) => (
+                      <div key={role} className="flex items-center justify-between text-xs text-slate-600">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-[#FF6B00]" />
+                          <span className="capitalize">{role.replace(/_/g, " ")}</span>
+                        </div>
+                        <span className="font-bold text-slate-900">{count}</span>
                       </div>
-                      <span className="font-bold text-slate-900">{count}</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
 
             <div className="space-y-6 lg:col-span-4">

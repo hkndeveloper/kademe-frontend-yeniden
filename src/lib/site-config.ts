@@ -22,7 +22,7 @@ export interface SiteSettingsPayload {
     footer_project_links: Array<{ label: string; href: string }>;
   };
   homepage: {
-    block_order: Array<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter">;
+    block_order: Array<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify">;
     block_visibility: {
       hero: boolean;
       intro: boolean;
@@ -32,6 +32,7 @@ export interface SiteSettingsPayload {
       about: boolean;
       blog: boolean;
       newsletter: boolean;
+      certificate_verify: boolean;
     };
     hero_badge: string;
     hero_title_line_1: string;
@@ -66,6 +67,10 @@ export interface SiteSettingsPayload {
     featured_blog_slugs: string[];
     newsletter_title: string;
     newsletter_description: string;
+    certificate_verify_title: string;
+    certificate_verify_description: string;
+    certificate_verify_cta_label: string;
+    certificate_verify_cta_href: string;
     footer_description: string;
     footer_copyright: string;
     stats: Array<{ label: string; value: string; icon: string }>;
@@ -130,7 +135,7 @@ export const defaultSiteSettings: SiteSettingsPayload = {
     footer_project_links: [],
   },
   homepage: {
-    block_order: ["hero", "intro", "stats", "projects", "activities", "about", "blog", "newsletter"],
+    block_order: ["hero", "intro", "stats", "projects", "activities", "about", "blog", "newsletter", "certificate_verify"],
     block_visibility: {
       hero: true,
       intro: true,
@@ -140,6 +145,7 @@ export const defaultSiteSettings: SiteSettingsPayload = {
       about: true,
       blog: true,
       newsletter: true,
+      certificate_verify: true,
     },
     hero_badge: "KADEME: Gelecegin Liderlik Okulu",
     hero_title_line_1: "YETENEGINI",
@@ -190,6 +196,10 @@ export const defaultSiteSettings: SiteSettingsPayload = {
     featured_blog_slugs: [],
     newsletter_title: "KADEME E-Bultenine Katil",
     newsletter_description: "Yeni faaliyetler, proje duyurulari ve blog icerikleri yayinlandiginda ilk sen haberdar ol.",
+    certificate_verify_title: "Sertifika Dogrula",
+    certificate_verify_description: "KADEME tarafindan verilen sertifikalari dogrulama kodu ile kamusal olarak sorgulayabilirsiniz.",
+    certificate_verify_cta_label: "Dogrulama Ekranina Git",
+    certificate_verify_cta_href: "/certificates/verify",
     footer_description: "T3 Vakfi Kariyer Gelisim Merkezi. Gelecegin liderlerini bugunden yetistiriyoruz.",
     footer_copyright: "© 2026 KADEME YONETIM SISTEMI | T3 VAKFI. TUM HAKLARI SAKLIDIR.",
     stats: [

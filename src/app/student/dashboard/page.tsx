@@ -23,6 +23,7 @@ interface DashboardBadge {
 interface DashboardSummaryResponse {
   participations: DashboardParticipation[];
   earned_badges: DashboardBadge[];
+  monthly_titles?: string[];
   total_score: number;
 }
 
@@ -46,6 +47,7 @@ export default function StudentDashboardPage() {
   const [badges, setBadges] = useState<DashboardBadge[]>([]);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [materials, setMaterials] = useState<BohcaMaterial[]>([]);
+  const [monthlyTitles, setMonthlyTitles] = useState<string[]>([]);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -59,6 +61,7 @@ export default function StudentDashboardPage() {
         setTotalScore(summaryResponse.data.total_score ?? 0);
         setParticipations(summaryResponse.data.participations ?? []);
         setBadges(summaryResponse.data.earned_badges ?? []);
+        setMonthlyTitles(summaryResponse.data.monthly_titles ?? []);
         setPrograms((programsResponse.data.programs ?? []).slice(0, 3));
         setMaterials((bohcaResponse.data.materials ?? []).slice(0, 3));
       } catch (error) {
@@ -142,6 +145,24 @@ export default function StudentDashboardPage() {
                 ))
               )}
             </div>
+          </div>
+
+          <div className="glass-panel rounded-3xl p-6">
+            <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Aylik Unvanlar</h4>
+            {monthlyTitles.length === 0 ? (
+              <div className="text-sm text-muted-foreground">Bu ay icin atanmis bir unvan gorunmuyor.</div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {monthlyTitles.map((title) => (
+                  <span
+                    key={title}
+                    className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold text-primary"
+                  >
+                    {title}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="glass-panel rounded-3xl p-6">

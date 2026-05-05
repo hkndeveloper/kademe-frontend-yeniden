@@ -34,6 +34,16 @@ function canAccessProjectWithAnyPermission(
   ));
 }
 
+function hasSettingsAccess(
+  user: PanelNavUser | null,
+  hasPermission: (permission: string) => boolean
+): boolean {
+  return (
+    (hasPermission("settings.view") && hasGlobalScopeFromUser(user, "settings.view")) ||
+    (hasPermission("content.site_settings.update") && hasGlobalScopeFromUser(user, "content.site_settings.update"))
+  );
+}
+
 export function canAccessPanelPath(
   pathname: string,
   hasPermission: (permission: string) => boolean,
@@ -67,13 +77,19 @@ export function canAccessPanelPath(
       (hasPermission("chatbot.manage") && hasGlobalScopeFromUser(user, "chatbot.manage"))
     );
   }
+  if (normalized === "/panel/settings") {
+    return hasSettingsAccess(user, hasPermission);
+  }
 
   const menuMatch = unifiedPanelMenu.find((item) => item.href === normalized);
   if (menuMatch) {
     if (menuMatch.anyPermissions?.length) return hasAnyPermission(menuMatch.anyPermissions);
     if (!menuMatch.permission) return true;
-    if (["content.view", "settings.view", "permissions.matrix.view", "newsletter.view", "chatbot.view"].includes(menuMatch.permission)) {
+    if (["content.view", "permissions.matrix.view", "newsletter.view", "chatbot.view"].includes(menuMatch.permission)) {
       return hasPermission(menuMatch.permission) && hasGlobalScopeFromUser(user, menuMatch.permission);
+    }
+    if (menuMatch.permission === "settings.view") {
+      return hasSettingsAccess(user, hasPermission);
     }
     return hasPermission(menuMatch.permission);
   }
@@ -104,9 +120,12 @@ export function canAccessPanelPath(
       Number(projectSpecialModules[1])
     );
   }
-  if (/^\/panel\/programs\/[^/]+\/qr$/.test(normalized)) return hasPermission("programs.view");
+  const programQr = normalized.match(/^\/panel\/programs\/(\d+)\/qr$/);
+  if (programQr) {
+    return hasPermission("programs.qr.manage");
+  }
   if (normalized === "/panel/periods/form-builder") {
-    return hasPermission("projects.application_form.update") || hasPermission("periods.view");
+    return hasPermission("projects.application_form.update");
   }
   return false;
 }

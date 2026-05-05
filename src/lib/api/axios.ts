@@ -1,8 +1,24 @@
 import axios from 'axios';
 import { useAuth } from '@/store/useAuth';
 
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+const isProduction = process.env.NODE_ENV === 'production';
+
+function resolveApiBaseUrl() {
+    if (rawApiUrl) return rawApiUrl;
+    if (!isProduction) return 'http://localhost:8000/api';
+    if (typeof window !== 'undefined') return `${window.location.origin}/api`;
+    return '/api';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
+if (isProduction && !rawApiUrl && typeof window !== 'undefined') {
+    // Production'da env unutuldugunda sessiz localhost fallback yerine gozlemlenebilir uyarı.
+    console.warn('NEXT_PUBLIC_API_URL tanimli degil; API cagrilari mevcut origin /api uzerinden yapilacak.');
+}
+
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+    baseURL: API_BASE_URL,
     timeout: 15000,
     headers: {
         'Content-Type': 'application/json',
@@ -13,7 +29,7 @@ const api = axios.create({
 
 // CSRF çerezi için yardımcı fonksiyon (API öneki olmadan)
 export const getCsrfCookie = () => {
-    const rootUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api').replace('/api', '');
+    const rootUrl = API_BASE_URL.replace(/\/api\/?$/, '');
     return api.get(`${rootUrl}/sanctum/csrf-cookie`);
 };
 

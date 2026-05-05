@@ -147,7 +147,13 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     label: "KPD",
     href: "/panel/kpd",
     icon: HeartPulse,
-    anyPermissions: ["kpd.appointments.view", "kpd.reports.view"],
+    anyPermissions: [
+      "kpd.appointments.view",
+      "kpd.reports.view",
+      "kpd.appointments.manage",
+      "kpd.reports.create",
+      "kpd.reports.delete",
+    ],
     sectionId: "operations",
     order: 47,
   },
@@ -336,13 +342,21 @@ function itemIsVisible(
   if (item.id === "members") return user?.permission_scopes?.["staff.view"]?.scope_type !== "all";
   if (item.id === "permission-matrix") return user?.permission_scopes?.["permissions.matrix.view"]?.scope_type === "all";
   if (item.id === "content") return user?.permission_scopes?.["content.view"]?.scope_type === "all";
-  if (item.id === "settings") return user?.permission_scopes?.["settings.view"]?.scope_type === "all";
+  if (item.id === "settings") {
+    return (
+      user?.permission_scopes?.["settings.view"]?.scope_type === "all" ||
+      user?.permission_scopes?.["content.site_settings.update"]?.scope_type === "all"
+    );
+  }
   if (item.id === "newsletter") return user?.permission_scopes?.["newsletter.view"]?.scope_type === "all";
   if (item.id === "assistant") return user?.permission_scopes?.["chatbot.view"]?.scope_type === "all" || user?.permission_scopes?.["chatbot.manage"]?.scope_type === "all";
   if (item.id === "kpd") {
     return (
       user?.permission_scopes?.["kpd.appointments.view"]?.scope_type === "all" ||
-      user?.permission_scopes?.["kpd.reports.view"]?.scope_type === "all"
+      user?.permission_scopes?.["kpd.reports.view"]?.scope_type === "all" ||
+      user?.permission_scopes?.["kpd.appointments.manage"]?.scope_type === "all" ||
+      user?.permission_scopes?.["kpd.reports.create"]?.scope_type === "all" ||
+      user?.permission_scopes?.["kpd.reports.delete"]?.scope_type === "all"
     );
   }
   return true;
