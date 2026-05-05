@@ -68,6 +68,8 @@ export default function PanelSharedRequestsPage() {
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [projectFilter, setProjectFilter] = useState<string>("");
   const [form, setForm] = useState({
     type: "",
     target_unit: "",
@@ -99,12 +101,13 @@ export default function PanelSharedRequestsPage() {
     void loadRequests();
   }, []);
 
-  const highlighted = useMemo(() => {
-    if (isResponder) {
-      return requests.filter((request) => request.target_user !== null);
-    }
-    return requests.filter((request) => request.status === "pending" || request.status === "in_progress");
-  }, [isResponder, requests]);
+  const visibleRequests = useMemo(() => {
+    return requests.filter((request) => {
+      const statusMatches = !statusFilter || request.status === statusFilter;
+      const projectMatches = !projectFilter || String(request.project?.id ?? "") === projectFilter;
+      return statusMatches && projectMatches;
+    });
+  }, [projectFilter, requests, statusFilter]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -274,19 +277,44 @@ export default function PanelSharedRequestsPage() {
           <PermissionGate permission="requests.view">
             <div className="glass-panel rounded-3xl p-8">
               <h2 className="mb-4 text-lg font-bold text-slate-900">
-                {isResponder ? "Bana Atanan veya Sectigim Talepler" : "Acik Talepler"}
+                {isResponder ? "Bana Dusebilecek Talepler" : "Talepler"}
               </h2>
+              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-900"
+                >
+                  <option value="">Tum durumlar</option>
+                  <option value="pending">Beklemede</option>
+                  <option value="in_progress">Isleniyor</option>
+                  <option value="completed">Tamamlandi</option>
+                  <option value="rejected">Reddedildi</option>
+                </select>
+                <select
+                  value={projectFilter}
+                  onChange={(event) => setProjectFilter(event.target.value)}
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-900"
+                >
+                  <option value="">Tum projeler</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {loading ? (
                 <div className="flex min-h-32 items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-accent" />
                 </div>
-              ) : highlighted.length === 0 ? (
+              ) : visibleRequests.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
-                  {isResponder ? "Hedef kullanicisi olan talep kaydi yok." : "Acik talep bulunmuyor."}
+                  Secili filtrelerle talep bulunmuyor.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {highlighted.slice(0, isResponder ? 8 : 6).map((request) => (
+                  {visibleRequests.map((request) => (
                     <div key={request.id} className="rounded-2xl border border-white/5 bg-white/5 p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="text-sm font-bold text-slate-900">{typeLabels[request.type] || request.type}</div>

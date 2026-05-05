@@ -121,8 +121,9 @@ export default function ContributorFinancialsPage() {
       setLoading(true);
       setErrorMessage("");
       try {
+        const projectPermission = canCreateFinancials ? "financial.create" : "financial.view";
         const [projectResponse] = await Promise.all([
-          api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "financial.view" } }),
+          api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: projectPermission } }),
           loadTransactions(),
         ]);
         const permittedProjects = (projectResponse.data.projects ?? []).filter((project) =>
@@ -139,7 +140,7 @@ export default function ContributorFinancialsPage() {
     };
 
     void initData();
-  }, [loadTransactions, canAccessProject]);
+  }, [loadTransactions, canAccessProject, canCreateFinancials]);
 
   const filteredTransactions = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("tr-TR");
