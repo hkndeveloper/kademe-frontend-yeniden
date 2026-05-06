@@ -55,7 +55,7 @@ export default function StudentLayout({
   return (
     <div className="panel-workspace min-h-screen w-full">
       <StudentSidebar />
-      <div className="ml-72 min-h-screen border-l border-slate-200/60 bg-slate-100/95">
+      <div className="ml-20 min-h-screen border-l border-slate-200/60 bg-slate-100/95 transition-[margin-left] duration-300 peer-hover:ml-72 peer-focus-within:ml-72">
         <main className="min-h-screen p-6 sm:p-8 lg:p-10">{children}</main>
       </div>
     </div>
