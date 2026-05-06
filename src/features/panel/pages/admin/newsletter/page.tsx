@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Mail, Search } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
+import { ExportButtons } from "@/components/shared/ExportButtons";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Subscriber {
@@ -100,6 +101,12 @@ export default function AdminNewsletterPage() {
         >
           Ara
         </button>
+        <ExportButtons
+          endpoint="/panel/newsletter/subscribers/export"
+          filename="newsletter_aboneleri"
+          params={{ search: search || undefined }}
+          buttonLabel="Aboneleri Disa Aktar"
+        />
       </div>
 
       <div className="glass-panel overflow-hidden rounded-3xl">

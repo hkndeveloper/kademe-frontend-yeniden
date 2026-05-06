@@ -37,6 +37,14 @@ interface CommunicationLog {
   sender?: { id: number; name: string; surname: string } | null;
 }
 
+interface PaginatedLogs {
+  data: CommunicationLog[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
 const roleLabels: Record<string, string> = {
   super_admin: "Admin",
   coordinator: "Koordinator",
@@ -53,6 +61,18 @@ export default function AdminAnnouncementsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [communicationLogs, setCommunicationLogs] = useState<CommunicationLog[]>([]);
+  const [logPage, setLogPage] = useState(1);
+  const [logLastPage, setLogLastPage] = useState(1);
+  const [logTotal, setLogTotal] = useState(0);
+  const [logLoading, setLogLoading] = useState(false);
+  const [logFilters, setLogFilters] = useState({
+    search: "",
+    type: "",
+    status: "",
+    project_id: "",
+    date_from: "",
+    date_to: "",
+  });
   const [loading, setLoading] = useState(true);
   const [listLoading, setListLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -88,16 +108,35 @@ export default function AdminAnnouncementsPage() {
     }
   }, []);
 
-  const loadCommunicationLogs = useCallback(async () => {
+  const loadCommunicationLogs = useCallback(async (page = 1) => {
     if (!canViewAnnouncements) return;
 
+    setLogLoading(true);
     try {
-      const res = await api.get<{ logs: CommunicationLog[] }>("/panel/announcements/communication-logs");
-      setCommunicationLogs(res.data.logs ?? []);
+      const res = await api.get<{ logs: PaginatedLogs }>("/panel/announcements/communication-logs", {
+        params: {
+          page,
+          per_page: 12,
+          search: logFilters.search || undefined,
+          type: logFilters.type || undefined,
+          status: logFilters.status || undefined,
+          project_id: logFilters.project_id || undefined,
+          date_from: logFilters.date_from || undefined,
+          date_to: logFilters.date_to || undefined,
+        },
+      });
+      const logs = res.data.logs;
+      setCommunicationLogs(logs?.data ?? []);
+      setLogPage(logs?.current_page ?? 1);
+      setLogLastPage(logs?.last_page ?? 1);
+      setLogTotal(logs?.total ?? 0);
     } catch (error) {
       console.error("Gonderim loglari yuklenemedi", error);
+      setCommunicationLogs([]);
+    } finally {
+      setLogLoading(false);
     }
-  }, [canViewAnnouncements]);
+  }, [canViewAnnouncements, logFilters]);
 
   useEffect(() => {
     const initData = async () => {
@@ -109,7 +148,7 @@ export default function AdminAnnouncementsPage() {
             ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "announcements.view" } })
             : Promise.resolve({ data: { projects: [] as Project[] } }),
           loadAnnouncements(),
-          loadCommunicationLogs(),
+          loadCommunicationLogs(1),
         ]);
         const raw = projectRes.data.projects ?? [];
         setProjects(
@@ -125,6 +164,11 @@ export default function AdminAnnouncementsPage() {
 
     void initData();
   }, [loadAnnouncements, loadCommunicationLogs, hasPermission, canAccessProject]);
+
+  useEffect(() => {
+    if (!canViewAnnouncements) return;
+    void loadCommunicationLogs(1);
+  }, [canViewAnnouncements, loadCommunicationLogs]);
 
   const canDeleteAnnouncement = (announcement: Announcement): boolean => {
     if (!canDeleteAnnouncements) return false;
@@ -418,17 +462,110 @@ export default function AdminAnnouncementsPage() {
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Gonderim Ekleri</h2>
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Son e-posta/SMS loglari</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Filtrelenebilir e-posta/SMS loglari</p>
             </div>
-            <button type="button" onClick={() => void loadCommunicationLogs()} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700">
-              Yenile
-            </button>
+            <div className="flex items-center gap-2">
+              <ExportButtons
+                endpoint="/panel/announcements/communication-logs/export"
+                filename="iletisim_loglari"
+                params={{
+                  search: logFilters.search || undefined,
+                  type: logFilters.type || undefined,
+                  status: logFilters.status || undefined,
+                  project_id: logFilters.project_id || undefined,
+                  date_from: logFilters.date_from || undefined,
+                  date_to: logFilters.date_to || undefined,
+                }}
+                buttonLabel="Loglari Disa Aktar"
+              />
+              <button type="button" onClick={() => void loadCommunicationLogs(1)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700">
+                Yenile
+              </button>
+            </div>
           </div>
-          {communicationLogs.length === 0 ? (
+          <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-6">
+            <input
+              value={logFilters.search}
+              onChange={(e) => setLogFilters((prev) => ({ ...prev, search: e.target.value }))}
+              placeholder="Konu / icerik ara"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 md:col-span-2"
+            />
+            <select
+              value={logFilters.type}
+              onChange={(e) => setLogFilters((prev) => ({ ...prev, type: e.target.value }))}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900"
+            >
+              <option value="">Kanal: Tumu</option>
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+            </select>
+            <input
+              value={logFilters.status}
+              onChange={(e) => setLogFilters((prev) => ({ ...prev, status: e.target.value }))}
+              placeholder="Durum (sent/failed/queued)"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900"
+            />
+            <select
+              value={logFilters.project_id}
+              onChange={(e) => setLogFilters((prev) => ({ ...prev, project_id: e.target.value }))}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900"
+            >
+              <option value="">Proje: Tumu</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => void loadCommunicationLogs(1)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+              >
+                Uygula
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLogFilters({
+                    search: "",
+                    type: "",
+                    status: "",
+                    project_id: "",
+                    date_from: "",
+                    date_to: "",
+                  });
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+              >
+                Temizle
+              </button>
+            </div>
+            <input
+              type="date"
+              value={logFilters.date_from}
+              onChange={(e) => setLogFilters((prev) => ({ ...prev, date_from: e.target.value }))}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900"
+            />
+            <input
+              type="date"
+              value={logFilters.date_to}
+              onChange={(e) => setLogFilters((prev) => ({ ...prev, date_to: e.target.value }))}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900"
+            />
+          </div>
+          {logLoading ? (
+            <div className="flex min-h-24 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+            </div>
+          ) : communicationLogs.length === 0 ? (
             <div className="text-sm text-muted-foreground">Gonderim kaydi bulunamadi.</div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {communicationLogs.slice(0, 8).map((log) => (
+            <div className="space-y-3">
+              <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Toplam {logTotal} kayit
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {communicationLogs.map((log) => (
                 <div key={log.id} className="rounded-2xl border border-white/5 bg-white/5 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -451,6 +588,30 @@ export default function AdminAnnouncementsPage() {
                   </div>
                 </div>
               ))}
+              </div>
+              {logLastPage > 1 ? (
+                <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                  <button
+                    type="button"
+                    disabled={logPage <= 1}
+                    onClick={() => void loadCommunicationLogs(Math.max(1, logPage - 1))}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 disabled:opacity-50"
+                  >
+                    Onceki
+                  </button>
+                  <span className="text-xs font-bold text-muted-foreground">
+                    {logPage} / {logLastPage}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={logPage >= logLastPage}
+                    onClick={() => void loadCommunicationLogs(logPage + 1)}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 disabled:opacity-50"
+                  >
+                    Sonraki
+                  </button>
+                </div>
+              ) : null}
             </div>
           )}
         </div>

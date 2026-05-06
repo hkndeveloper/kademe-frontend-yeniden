@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Database, Download, Loader2, Trash2, Upload } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
+import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -138,16 +139,21 @@ export default function PanelDigitalBohcaPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-600/15 text-cyan-600">
-          <Database className="h-7 w-7" />
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-600/15 text-cyan-600">
+            <Database className="h-7 w-7" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900">Dijital Bohca</h1>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
+              Proje ve ogrenci materyallerini scope bazli yonet
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-black text-slate-900">Dijital Bohca</h1>
-          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Proje ve ogrenci materyallerini scope bazli yonet
-          </p>
-        </div>
+        <PermissionGate permission="digital_bohca.view">
+          <ExportButtons endpoint="/panel/digital-bohca/export" filename="digital_bohca" buttonLabel="Materyalleri Disa Aktar" />
+        </PermissionGate>
       </div>
 
       {feedback ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700">{feedback}</div> : null}

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ClipboardList, Loader2, Plus, Trash2, UserCheck } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { ExportButtons } from "@/components/shared/ExportButtons";
 import { usePermissions } from "@/hooks/usePermissions";
 
 type Project = {
@@ -13,7 +14,7 @@ type Project = {
 
 type VolunteerApplication = {
   id: number;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "waitlisted" | "rejected";
   motivation_text?: string | null;
   notes?: string | null;
   evaluation_note?: string | null;
@@ -28,7 +29,7 @@ type Opportunity = {
   start_at?: string | null;
   end_at?: string | null;
   quota?: number | null;
-  status: "open" | "closed" | "draft";
+  status: "open" | "closed" | "archived";
   project_id: number;
   project?: Project | null;
   applications_count?: number;
@@ -115,30 +116,43 @@ export default function PanelVolunteerPage() {
       setFeedback(response.data.message);
       setForm(emptyForm);
       setShowForm(false);
+    } catch (error) {
+      console.error("Gonullu ilani olusturulamadi", error);
+      setFeedback("Gonullu ilani olusturulurken bir hata olustu.");
     } finally {
       setSaving(false);
     }
   }
 
   async function updateApplication(application: VolunteerApplication, status: VolunteerApplication["status"]) {
-    const response = await api.put<{ message: string; application: VolunteerApplication }>(
-      `/panel/volunteer/applications/${application.id}`,
-      { status },
-    );
-    setFeedback(response.data.message);
-    setOpportunities((current) =>
-      current.map((opportunity) => ({
-        ...opportunity,
-        applications: opportunity.applications?.map((item) =>
-          item.id === application.id ? response.data.application : item,
-        ),
-      })),
-    );
+    try {
+      const response = await api.put<{ message: string; application: VolunteerApplication }>(
+        `/panel/volunteer/applications/${application.id}`,
+        { status },
+      );
+      setFeedback(response.data.message);
+      setOpportunities((current) =>
+        current.map((opportunity) => ({
+          ...opportunity,
+          applications: opportunity.applications?.map((item) =>
+            item.id === application.id ? response.data.application : item,
+          ),
+        })),
+      );
+    } catch (error) {
+      console.error("Gonullu basvurusu guncellenemedi", error);
+      setFeedback("Basvuru guncellenirken bir hata olustu.");
+    }
   }
 
   async function deleteOpportunity(opportunity: Opportunity) {
-    await api.delete(`/panel/volunteer/opportunities/${opportunity.id}`);
-    setOpportunities((current) => current.filter((item) => item.id !== opportunity.id));
+    try {
+      await api.delete(`/panel/volunteer/opportunities/${opportunity.id}`);
+      setOpportunities((current) => current.filter((item) => item.id !== opportunity.id));
+    } catch (error) {
+      console.error("Gonullu ilani silinemedi", error);
+      setFeedback("Ilan silinirken bir hata olustu.");
+    }
   }
 
   return (
@@ -157,16 +171,23 @@ export default function PanelVolunteerPage() {
               <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Proje kapsaminda ilan ve basvuru yonetimi</p>
             </div>
           </div>
-          <PermissionGate permission="volunteer.manage">
-            <button
-              type="button"
-              onClick={() => setShowForm((current) => !current)}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white"
-            >
-              <Plus className="h-4 w-4" />
-              Yeni Ilan
-            </button>
-          </PermissionGate>
+          <div className="flex items-center gap-2">
+            <ExportButtons
+              endpoint="/panel/volunteer/opportunities/export"
+              filename="gonullu_ilanlari"
+              buttonLabel="Gonullu Kayitlarini Disa Aktar"
+            />
+            <PermissionGate permission="volunteer.manage">
+              <button
+                type="button"
+                onClick={() => setShowForm((current) => !current)}
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white"
+              >
+                <Plus className="h-4 w-4" />
+                Yeni Ilan
+              </button>
+            </PermissionGate>
+          </div>
         </div>
 
         {feedback ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700">{feedback}</div> : null}
@@ -274,7 +295,7 @@ export default function PanelVolunteerPage() {
                           </div>
                           <PermissionGate permission="volunteer.manage" requireProjectAccess={{ permission: "volunteer.manage", projectId: opportunity.project_id }}>
                             <div className="flex gap-2">
-                              {(["accepted", "rejected"] as const).map((status) => (
+                              {(["accepted", "waitlisted", "rejected"] as const).map((status) => (
                                 <button key={status} onClick={() => void updateApplication(application, status)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1 text-xs font-bold uppercase text-slate-700">
                                   <UserCheck className="h-3 w-3" />
                                   {status}

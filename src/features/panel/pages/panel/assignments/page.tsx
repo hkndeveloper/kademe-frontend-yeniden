@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, FileStack, Loader2, Trash2 } from "lucide-react";
 import api from "@/lib/api/axios";
+import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -154,16 +155,21 @@ export default function PanelAssignmentsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600/15 text-violet-600">
-          <FileStack className="h-7 w-7" />
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600/15 text-violet-600">
+            <FileStack className="h-7 w-7" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900">Odevler</h1>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
+              Proje bazli odev ve teslim takibi
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-black text-slate-900">Odevler</h1>
-          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Proje bazli odev ve teslim takibi
-          </p>
-        </div>
+        <PermissionGate permission="assignments.view">
+          <ExportButtons endpoint="/panel/assignments/export" filename="odevler" buttonLabel="Odevleri Disa Aktar" />
+        </PermissionGate>
       </div>
 
       {feedback ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700">{feedback}</div> : null}
