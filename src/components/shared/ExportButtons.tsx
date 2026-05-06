@@ -65,33 +65,37 @@ export function ExportButtons({
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-white/10"
+        className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-card-foreground shadow-sm transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
       >
-        <Download className="h-4 w-4" /> {buttonLabel}
+        <Download className="h-4 w-4 shrink-0" /> {buttonLabel}
       </button>
 
       <AnimatePresence>
         {isOpen ? (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden />
             <motion.div
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-2xl border border-white/10 bg-[#121218] p-2 shadow-2xl"
+              className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-2xl border border-border bg-popover p-2 text-popover-foreground shadow-xl"
             >
               {exportTypes.map((type) => (
                 <button
                   key={type.label}
+                  type="button"
                   onClick={() => void handleExport(type.format)}
                   disabled={loadingFormat !== null}
-                  className="group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all hover:bg-white/5 disabled:opacity-50"
+                  className="group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
                 >
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${type.bg} ${type.color}`}>
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${type.bg} ${type.color}`}>
                     {loadingFormat === type.format ? <Loader2 className="h-4 w-4 animate-spin" /> : <type.icon className="h-4 w-4" />}
                   </div>
-                  <span className="text-xs font-bold text-muted-foreground transition-colors group-hover:text-white">{type.label}</span>
+                  <span className="text-xs font-bold text-muted-foreground transition-colors group-hover:text-foreground">
+                    {type.label}
+                  </span>
                 </button>
               ))}
             </motion.div>
