@@ -40,6 +40,7 @@ interface User {
     manageable_project_ids?: number[];
     manageable_unit?: string | null;
   };
+  must_change_password?: boolean | null;
 }
 
 interface AuthState {

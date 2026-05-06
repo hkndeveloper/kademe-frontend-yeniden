@@ -34,7 +34,15 @@ export default function LoginPage() {
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         console.error("Giriş Hatası Detayı:", err.response?.data);
-        setError(err.response?.data?.message || "Giriş yapılamadı. Bilgilerinizi kontrol edin.");
+        const data = err.response?.data as { message?: string; must_change_password?: boolean } | undefined;
+        if (err.response?.status === 403 && data?.must_change_password) {
+          setError(
+            data.message ??
+              "Önce e-postanızdaki bağlantı ile şifrenizi belirlemeniz gerekiyor. Gerekirse «Şifremi unuttum» ile yeni bağlantı isteyin.",
+          );
+        } else {
+          setError(data?.message || "Giriş yapılamadı. Bilgilerinizi kontrol edin.");
+        }
       } else {
         console.error("Giriş Hatası:", err);
         setError("Giriş yapılamadı. Bilgilerinizi kontrol edin.");
@@ -95,8 +103,8 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="ml-1 flex items-center justify-between">
                 <label className="text-sm font-medium text-foreground">Parola</label>
-                <Link href="#" className="text-xs text-primary hover:underline">
-                  Şifremi Unuttum
+                <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
+                  Şifremi unuttum
                 </Link>
               </div>
               <div className="relative">

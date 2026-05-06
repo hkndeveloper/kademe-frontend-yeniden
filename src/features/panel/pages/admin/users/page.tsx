@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Award,
@@ -10,14 +10,17 @@ import {
   GraduationCap,
   Loader2,
   Search,
+  UserPlus,
   Users,
   X,
   XCircle,
 } from "lucide-react";
+import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/store/useAuth";
 
 interface User {
   id: number;
@@ -56,10 +59,17 @@ const roleLabels: Record<string, string> = {
   staff: "Personel",
   student: "Ogrenci",
   alumni: "Mezun",
+  visitor: "Ziyaretci",
 };
+
+interface RoleOption {
+  name: string;
+  label: string;
+}
 
 export default function AdminUsersPage() {
   const { hasPermission, hasGlobalScope } = usePermissions();
+  const authUser = useAuth((s) => s.user);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -73,6 +83,26 @@ export default function AdminUsersPage() {
   const [modalLoading, setModalLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createRoles, setCreateRoles] = useState<RoleOption[]>([]);
+  const [createRolesLoading, setCreateRolesLoading] = useState(false);
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    surname: "",
+    email: "",
+    phone: "",
+    role: "",
+  });
+  const [createError, setCreateError] = useState("");
+
+  const roleOptionsForForm = useMemo(() => {
+    if (authUser?.role === "super_admin") {
+      return createRoles;
+    }
+    return createRoles.filter((r) => r.name !== "super_admin");
+  }, [createRoles, authUser?.role]);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -172,6 +202,69 @@ export default function AdminUsersPage() {
     void loadUsers();
   };
 
+  const openCreateModal = () => {
+    setCreateOpen(true);
+    setCreateError("");
+    setCreateForm({ name: "", surname: "", email: "", phone: "", role: "" });
+    setCreateRolesLoading(true);
+    void api
+      .get<{ roles: RoleOption[] }>("/panel/users/create-options")
+      .then((res) => {
+        const roles = res.data?.roles ?? [];
+        setCreateRoles(roles);
+        setCreateForm((prev) => ({
+          ...prev,
+          role: roles[0]?.name ?? "",
+        }));
+      })
+      .catch(() => {
+        setCreateError("Rol listesi yuklenemedi. Yetkinizi kontrol edin.");
+        setCreateRoles([]);
+      })
+      .finally(() => setCreateRolesLoading(false));
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError("");
+    if (!createForm.name.trim() || !createForm.surname.trim() || !createForm.email.trim() || !createForm.role) {
+      setCreateError("Ad, soyad, e-posta ve rol zorunludur.");
+      return;
+    }
+    setCreateSubmitting(true);
+    try {
+      const payload: Record<string, string> = {
+        name: createForm.name.trim(),
+        surname: createForm.surname.trim(),
+        email: createForm.email.trim(),
+        role: createForm.role,
+      };
+      if (createForm.phone.trim()) {
+        payload.phone = createForm.phone.trim();
+      }
+      const res = await api.post<{ message?: string }>("/panel/users", payload);
+      setSuccessMessage(res.data?.message ?? "Kullanici olusturuldu.");
+      void loadUsers();
+    } catch (err) {
+      if (isAxiosError(err)) {
+        const data = err.response?.data as { message?: string; errors?: Record<string, string[]> } | undefined;
+        const fromMessage = data?.message;
+        const fromErrors = data?.errors
+          ? Object.values(data.errors)
+              .flat()
+              .filter(Boolean)
+              .join(" ")
+          : "";
+        const msg = fromMessage || fromErrors;
+        setCreateError(msg ? String(msg) : "Kayit basarisiz.");
+      } else {
+        setCreateError("Kayit basarisiz.");
+      }
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
@@ -186,18 +279,30 @@ export default function AdminUsersPage() {
             </p>
           </div>
         </div>
-        <PermissionGate permission="users.export">
-          <ExportButtons
-            endpoint="/panel/users/export"
-            filename="kullanici_listesi"
-            params={{
-              role: roleFilter || undefined,
-              status: statusFilter || undefined,
-              search: search || undefined,
-            }}
-            buttonLabel="Listeyi Disa Aktar"
-          />
-        </PermissionGate>
+        <div className="flex flex-wrap items-center gap-3">
+          {hasPermission("users.create") && hasGlobalScope("users.create") ? (
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white"
+            >
+              <UserPlus className="h-4 w-4" />
+              Yeni Kullanici
+            </button>
+          ) : null}
+          <PermissionGate permission="users.export">
+            <ExportButtons
+              endpoint="/panel/users/export"
+              filename="kullanici_listesi"
+              params={{
+                role: roleFilter || undefined,
+                status: statusFilter || undefined,
+                search: search || undefined,
+              }}
+              buttonLabel="Listeyi Disa Aktar"
+            />
+          </PermissionGate>
+        </div>
       </div>
 
       {(successMessage || errorMessage) && (
@@ -387,6 +492,116 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+
+      {createOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
+                <UserPlus className="h-5 w-5 text-indigo-600" />
+                Yeni kullanici olustur
+              </h2>
+              <button
+                type="button"
+                onClick={() => setCreateOpen(false)}
+                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={(e) => void handleCreateUser(e)} className="space-y-4 p-6">
+              {createError ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{createError}</div>
+              ) : null}
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-950">
+                Kullaniciya <strong>sifre belirleme baglantisi</strong> e-posta ile gider. Baglantiyi kullanmadan panele veya
+                ogrenci alanina <strong>giris yapamaz</strong>. E-posta gelmezse &quot;Sifremi unuttum&quot; ile yeni baglanti
+                talep edebilir.
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Ad</label>
+                  <input
+                    required
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Soyad</label>
+                  <input
+                    required
+                    value={createForm.surname}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, surname: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">E-posta</label>
+                <input
+                  required
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Telefon (istege bagli)</label>
+                <input
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, phone: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Rol</label>
+                {createRolesLoading ? (
+                  <div className="mt-2 flex justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={createForm.role}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  >
+                    {roleOptionsForForm.length === 0 ? (
+                      <option value="">Rol yok</option>
+                    ) : (
+                      roleOptionsForForm.map((r) => (
+                        <option key={r.name} value={r.name}>
+                          {r.label}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                )}
+              </div>
+              <div className="flex flex-wrap justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(false)}
+                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  Kapat
+                </button>
+                <button
+                  type="submit"
+                  disabled={createSubmitting || createRolesLoading || roleOptionsForForm.length === 0}
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {createSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Olustur
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">

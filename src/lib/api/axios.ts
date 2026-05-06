@@ -63,7 +63,12 @@ api.interceptors.response.use(
 
             // KVKK veya Kara Liste engeline takıldıysa
             if (status === 403) {
-                const errType = error.response.data?.error;
+                const data = error.response.data as { error?: string; must_change_password?: boolean } | undefined;
+                const errType = data?.error;
+                if (data?.must_change_password && typeof window !== 'undefined') {
+                    useAuth.getState().logout();
+                    window.location.href = '/auth/forgot-password?notice=setup';
+                }
                 if (errType === 'kvkk_required' && typeof window !== 'undefined') {
                     window.location.href = '/auth/kvkk-consent';
                 }
