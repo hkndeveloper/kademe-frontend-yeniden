@@ -28,7 +28,7 @@ interface User {
   email: string;
   phone: string | null;
   role: string;
-  status: "active" | "inactive" | "banned";
+  status: "active" | "passive" | "blacklisted" | "alumni";
   created_at: string;
 }
 
@@ -128,7 +128,7 @@ export default function AdminUsersPage() {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      const newStatus = currentStatus === "active" ? "inactive" : "active";
+      const newStatus: User["status"] = currentStatus === "active" ? "passive" : "active";
       await api.put(`/panel/users/${id}`, { status: newStatus });
       setUsers((prev) => prev.map((user) => (user.id === id ? { ...user, status: newStatus } : user)));
       setSuccessMessage("Kullanici durumu guncellendi.");
@@ -337,8 +337,9 @@ export default function AdminUsersPage() {
         >
           <option value="">Tum Durumlar</option>
           <option value="active">Aktif</option>
-          <option value="inactive">Inaktif</option>
-          <option value="banned">Yasakli</option>
+          <option value="passive">Pasif</option>
+          <option value="blacklisted">Kara Liste</option>
+          <option value="alumni">Mezun</option>
         </select>
         <button
           onClick={applyFilters}
@@ -414,7 +415,7 @@ export default function AdminUsersPage() {
                         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
                           user.status === "active"
                             ? "bg-green-500/10 text-green-500"
-                            : user.status === "inactive"
+                            : user.status === "passive"
                               ? "bg-red-500/10 text-red-500"
                               : "bg-amber-500/10 text-amber-500"
                         }`}
