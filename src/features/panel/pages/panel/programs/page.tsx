@@ -30,7 +30,7 @@ interface Program {
   location?: string | null;
   start_at: string;
   end_at?: string | null;
-  status?: string;
+  status?: ProgramFormState["status"];
   radius_meters?: number | null;
   credit_deduction?: number | null;
   project_id: number;
@@ -85,6 +85,25 @@ const initialForm: ProgramFormState = {
   radius_meters: "100",
   credit_deduction: "10",
   status: "scheduled",
+};
+
+const statusLabels: Record<ProgramFormState["status"], string> = {
+  scheduled: "Planlandi",
+  active: "Aktif",
+  completed: "Tamamlandi",
+  cancelled: "Iptal",
+};
+
+const statusClasses: Record<ProgramFormState["status"], string> = {
+  scheduled: "bg-blue-50 text-blue-700 border-blue-200",
+  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  completed: "bg-slate-100 text-slate-700 border-slate-200",
+  cancelled: "bg-red-50 text-red-700 border-red-200",
+};
+
+const normalizeStatus = (status?: Program["status"]): ProgramFormState["status"] => {
+  if (status === "active" || status === "completed" || status === "cancelled") return status;
+  return "scheduled";
 };
 
 export default function PanelProgramsPage() {
@@ -176,6 +195,7 @@ export default function PanelProgramsPage() {
             return (response.data.programs ?? []).map((program) => ({
               ...program,
               project_id: program.project_id ?? project.id,
+              status: normalizeStatus(program.status),
             }));
           } catch (error) {
             console.error(`Proje #${project.id} programlari yuklenemedi`, error);
@@ -299,6 +319,9 @@ export default function PanelProgramsPage() {
     try {
       const response = await api.post<{ deducted_participant_count?: number }>(`/panel/programs/${programId}/complete`);
       const count = response.data.deducted_participant_count ?? 0;
+      setPrograms((current) =>
+        current.map((program) => (program.id === programId ? { ...program, status: "completed" } : program))
+      );
       setMessage(`Program tamamlandi. ${count} aktif katilimciya kredi kesintisi uygulandi.`);
       await loadPrograms();
     } catch (error) {
@@ -537,7 +560,12 @@ export default function PanelProgramsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {filteredPrograms.map((program, index) => (
+          {filteredPrograms.map((program, index) => {
+            const programStatus = normalizeStatus(program.status);
+            const canCompleteThisProgram = programStatus !== "completed" && programStatus !== "cancelled";
+            const canStartQrForProgram = programStatus === "scheduled" || programStatus === "active";
+
+            return (
             <motion.div
               key={program.id}
               initial={{ opacity: 0, y: 10 }}
@@ -556,8 +584,8 @@ export default function PanelProgramsPage() {
                       <span className="rounded-full bg-accent/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent">
                         {program.project?.name ?? projectNameMap[program.project_id] ?? `Proje #${program.project_id}`}
                       </span>
-                      <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        {program.status || "scheduled"}
+                      <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${statusClasses[programStatus]}`}>
+                        {statusLabels[programStatus]}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -593,17 +621,16 @@ export default function PanelProgramsPage() {
                       Duzenle
                     </button>
                   ) : null}
-                  {canCompletePrograms && canAccessProject("programs.complete", program.project_id) ? (
+                  {canCompletePrograms && canCompleteThisProgram && canAccessProject("programs.complete", program.project_id) ? (
                     <button
                       onClick={() => void handleComplete(program.id)}
-                      disabled={program.status === "completed"}
-                      className="flex items-center justify-center gap-2 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-300 disabled:opacity-50"
+                      className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
                     >
                       <SquareCheckBig className="h-4 w-4" />
                       Tamamla
                     </button>
                   ) : null}
-                  {canManageQr && canAccessProject("programs.qr.manage", program.project_id) ? (
+                  {canManageQr && canStartQrForProgram && canAccessProject("programs.qr.manage", program.project_id) ? (
                     <Link
                       href={`/panel/programs/${program.id}/qr?title=${encodeURIComponent(program.title)}`}
                       className="flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-lg shadow-accent/20 transition-all hover:scale-[1.02]"
@@ -615,7 +642,8 @@ export default function PanelProgramsPage() {
                 </div>
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       )}
       {attendanceModalProgram ? (
