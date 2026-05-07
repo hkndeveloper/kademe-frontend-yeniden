@@ -66,6 +66,12 @@ const statusClasses: Record<string, string> = {
   paid: "text-emerald-300 bg-emerald-500/10",
 };
 
+const invoiceExtensions: Record<string, string> = {
+  "application/pdf": "pdf",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+};
+
 export default function AdminFinancialsPage() {
   const { hasPermission } = useAuth();
   const { canAccessProject, hasGlobalScope } = usePermissions();
@@ -221,10 +227,11 @@ export default function AdminFinancialsPage() {
           return;
         }
       }
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const extension = invoiceExtensions[contentType.split(";")[0]] ?? "pdf";
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType || undefined }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = `fatura_${name.replace(/\s+/g, "_")}.pdf`;
+      link.download = `fatura_${name.replace(/\s+/g, "_")}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
