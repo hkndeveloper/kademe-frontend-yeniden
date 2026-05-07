@@ -9,7 +9,9 @@ import {
   FileText,
   Filter,
   Loader2,
+  Plus,
   Search,
+  Upload,
   XCircle,
 } from "lucide-react";
 import api from "@/lib/api/axios";
@@ -21,6 +23,10 @@ import { usePermissions } from "@/hooks/usePermissions";
 interface Project {
   id: number;
   name: string;
+  active_period?: {
+    id: number;
+    name?: string | null;
+  } | null;
 }
 
 interface FinancialTransaction {
@@ -62,10 +68,13 @@ const statusClasses: Record<string, string> = {
 
 export default function AdminFinancialsPage() {
   const { hasPermission } = useAuth();
-  const { canAccessProject } = usePermissions();
+  const { canAccessProject, hasGlobalScope } = usePermissions();
+  const [activeTab, setActiveTab] = useState<"list" | "new">("list");
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [createProjects, setCreateProjects] = useState<Project[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [categoryStats, setCategoryStats] = useState<Array<{ category: string; total: number }>>([]);
   const [projectStats, setProjectStats] = useState<Array<{ project?: { name: string }; total: number }>>([]);
@@ -79,31 +88,52 @@ export default function AdminFinancialsPage() {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [formProjectId, setFormProjectId] = useState("");
+  const [formCategory, setFormCategory] = useState<FinancialTransaction["category"]>("food");
+  const [formPayee, setFormPayee] = useState("");
+  const [formAmount, setFormAmount] = useState("");
+  const [formFile, setFormFile] = useState<File | null>(null);
+  const canViewFinancials = hasPermission("financial.view");
+  const canCreateFinancials = hasPermission("financial.create");
   const canDownloadInvoice = hasPermission("financial.invoice.download");
-  const canApproveFinancials = hasPermission("financial.approve");
-  const canRejectFinancials = hasPermission("financial.reject");
-  const canDeleteFinancials = hasPermission("financial.delete");
-  const canMarkPaidFinancials = hasPermission("financial.mark_paid");
+  const canApproveFinancials = hasPermission("financial.approve") && hasGlobalScope("financial.approve");
+  const canRejectFinancials = hasPermission("financial.reject") && hasGlobalScope("financial.reject");
+  const canDeleteFinancials = hasPermission("financial.delete") && hasGlobalScope("financial.delete");
+  const canMarkPaidFinancials = hasPermission("financial.mark_paid") && hasGlobalScope("financial.mark_paid");
 
   const loadData = useCallback(async (targetPage = page) => {
     setLoading(true);
     setErrorMessage("");
 
     try {
-      const [financialResponse, projectsResponse] = await Promise.all([
-        api.get("/panel/financials", {
-          params: {
-            page: targetPage,
-            project_id: projectId || undefined,
-            status: status || undefined,
-            payee: search || undefined,
-            date_from: dateFrom || undefined,
-            date_to: dateTo || undefined,
-          },
-        }),
+      const [financialResponse, projectsResponse, createProjectsResponse] = await Promise.all([
+        canViewFinancials
+          ? api.get("/panel/financials", {
+              params: {
+                page: targetPage,
+                project_id: projectId || undefined,
+                status: status || undefined,
+                payee: search || undefined,
+                date_from: dateFrom || undefined,
+                date_to: dateTo || undefined,
+              },
+            })
+          : Promise.resolve({
+              data: {
+                transactions: { data: [], last_page: 1 },
+                total_amount: 0,
+                category_stats: [],
+                project_stats: [],
+              },
+            }),
         hasPermission("financial.view")
           ? api.get<{ projects: Array<{ id: number; name: string }> }>("/panel/projects/manageable", {
               params: { permission: "financial.view" },
+            })
+          : Promise.resolve({ data: { projects: [] } }),
+        canCreateFinancials
+          ? api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+              params: { permission: "financial.create" },
             })
           : Promise.resolve({ data: { projects: [] } }),
       ]);
@@ -115,18 +145,38 @@ export default function AdminFinancialsPage() {
       setProjectStats(financialResponse.data.project_stats ?? []);
       const rawProjects = projectsResponse.data.projects ?? [];
       setProjects(rawProjects.filter((p) => canAccessProject("financial.view", p.id)));
+      const rawCreateProjects = createProjectsResponse.data.projects ?? [];
+      setCreateProjects(rawCreateProjects.filter((p) => canAccessProject("financial.create", p.id)));
     } catch (error) {
       console.error("Financial data could not be loaded", error);
       setErrorMessage("Mali islemler yuklenemedi.");
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, page, projectId, search, status, hasPermission, canAccessProject]);
+  }, [
+    dateFrom,
+    dateTo,
+    page,
+    projectId,
+    search,
+    status,
+    hasPermission,
+    canAccessProject,
+    canCreateFinancials,
+    canViewFinancials,
+  ]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData(page);
   }, [loadData, page]);
+
+  useEffect(() => {
+    if (!canViewFinancials && canCreateFinancials) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab("new");
+    }
+  }, [canCreateFinancials, canViewFinancials]);
 
   const applyFilters = () => {
     setPage(1);
@@ -197,6 +247,60 @@ export default function AdminFinancialsPage() {
     }
   };
 
+  const resetForm = () => {
+    setFormProjectId("");
+    setFormCategory("food");
+    setFormPayee("");
+    setFormAmount("");
+    setFormFile(null);
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!formProjectId || !formPayee.trim() || !formAmount || !formFile) {
+      setErrorMessage("Proje, kategori, alici, tutar ve belge zorunludur.");
+      return;
+    }
+
+    const selectedProject = createProjects.find((project) => String(project.id) === formProjectId);
+    if (!selectedProject || !canAccessProject("financial.create", selectedProject.id)) {
+      setErrorMessage("Bu proje icin fatura olusturma yetkiniz bulunmuyor.");
+      return;
+    }
+
+    setSubmitting(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("project_id", formProjectId);
+      if (selectedProject.active_period?.id) {
+        formData.append("period_id", String(selectedProject.active_period.id));
+      }
+      formData.append("type", "expense");
+      formData.append("category", formCategory);
+      formData.append("payee_name", formPayee.trim());
+      formData.append("amount", formAmount);
+      formData.append("invoice", formFile);
+
+      await api.post("/panel/financials", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      resetForm();
+      setActiveTab("list");
+      setSuccessMessage("Fatura basariyla onaya gonderildi.");
+      await loadData(1);
+    } catch (error) {
+      console.error("Invoice could not be submitted", error);
+      setErrorMessage("Fatura kaydedilirken bir hata olustu.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-10">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
@@ -233,6 +337,41 @@ export default function AdminFinancialsPage() {
         </div>
       )}
 
+      {(canViewFinancials || canCreateFinancials) && (
+        <div className="flex space-x-1 rounded-2xl bg-black/40 p-1 md:w-max">
+          {canViewFinancials && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("list")}
+              className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all ${
+                activeTab === "list"
+                  ? "bg-indigo-600 text-white shadow-lg"
+                  : "text-muted-foreground hover:bg-white/5 hover:text-slate-900"
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              Fatura Listesi
+            </button>
+          )}
+          {canCreateFinancials && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("new")}
+              className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all ${
+                activeTab === "new"
+                  ? "bg-indigo-600 text-white shadow-lg"
+                  : "text-muted-foreground hover:bg-white/5 hover:text-slate-900"
+              }`}
+            >
+              <Upload className="h-4 w-4" />
+              Yeni Fatura Yukle
+            </button>
+          )}
+        </div>
+      )}
+
+      {activeTab === "list" && canViewFinancials ? (
+        <>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
           <div>
@@ -539,6 +678,106 @@ export default function AdminFinancialsPage() {
           </div>
         )}
       </div>
+        </>
+      ) : null}
+
+      {activeTab === "new" && canCreateFinancials ? (
+        <form onSubmit={handleSubmit} className="glass-panel space-y-6 rounded-3xl p-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Proje</label>
+              <select
+                value={formProjectId}
+                onChange={(event) => setFormProjectId(event.target.value)}
+                required
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              >
+                <option value="">Proje secin</option>
+                {createProjects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+              {createProjects.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Fatura yukleyebileceginiz bir proje bulunamadi.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kategori</label>
+              <select
+                value={formCategory}
+                onChange={(event) => setFormCategory(event.target.value as FinancialTransaction["category"])}
+                required
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              >
+                {Object.entries(categoryLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Alici / Firma Adi
+              </label>
+              <input
+                value={formPayee}
+                onChange={(event) => setFormPayee(event.target.value)}
+                required
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                placeholder="Orn: ABC Catering A.S."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tutar (TL)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formAmount}
+                onChange={(event) => setFormAmount(event.target.value)}
+                required
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2 rounded-2xl border border-dashed border-slate-300 bg-white p-6">
+            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <Upload className="h-4 w-4" />
+              Fatura / Fis Belgesi
+            </label>
+            <input
+              type="file"
+              onChange={(event) => setFormFile(event.target.files?.[0] || null)}
+              accept=".pdf,.jpg,.jpeg,.png"
+              required
+              className="block w-full text-xs text-slate-500 file:mr-4 file:rounded-full file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-widest file:text-white hover:file:bg-indigo-700"
+            />
+          </div>
+
+          <div className="flex justify-end border-t border-white/5 pt-6">
+            <button
+              type="submit"
+              disabled={submitting || createProjects.length === 0}
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
+              Faturayi Gonder
+            </button>
+          </div>
+        </form>
+      ) : null}
     </div>
   );
 }
