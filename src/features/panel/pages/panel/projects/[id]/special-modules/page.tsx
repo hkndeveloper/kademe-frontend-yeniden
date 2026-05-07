@@ -49,20 +49,42 @@ type RewardTier = {
   reward_description: string;
 };
 
+type RewardEligibleParticipant = {
+  participant_id: number;
+  name: string;
+  email?: string | null;
+  badge_count: number;
+  credit: number;
+  eligible_rewards: Array<{ id: number; name: string; reward_description: string }>;
+};
+
+type RewardAward = {
+  id: number;
+  name?: string | null;
+  email?: string | null;
+  reward_name: string;
+  status: string;
+  awarded_at?: string | null;
+};
+
 type ResponsePayload = {
   project: { id: number; name: string; type?: string | null };
   access: AccessMap;
+  applicable_modules?: string[];
   participants: Participant[];
   internships: Internship[];
   mentors: Mentor[];
   eurodesk_projects: EurodeskProject[];
   reward_tiers: RewardTier[];
+  reward_eligible_participants?: RewardEligibleParticipant[];
+  reward_awards?: RewardAward[];
 };
 
 const initialInternship = { participant_id: "", company_name: "", position: "", start_date: "", end_date: "", description: "", document_path: "" };
 const initialMentor = { name: "", expertise: "", bio: "", photo_path: "" };
 const initialEurodesk = { title: "", partner_organizations: "", grant_amount: "", grant_status: "applied", start_date: "", end_date: "" };
 const initialReward = { name: "", description: "", min_badges: "0", min_credits: "0", reward_description: "" };
+const initialRewardAward = { participant_id: "", reward_tier_id: "", reward_name: "", status: "given", note: "" };
 const inputClass = "rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none focus:border-accent";
 const buttonClass = "inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white";
 
@@ -80,6 +102,7 @@ export default function PanelProjectSpecialModulesPage() {
   const [mentorForm, setMentorForm] = useState(initialMentor);
   const [eurodeskForm, setEurodeskForm] = useState(initialEurodesk);
   const [rewardForm, setRewardForm] = useState(initialReward);
+  const [rewardAwardForm, setRewardAwardForm] = useState(initialRewardAward);
 
   const loadData = useCallback(async () => {
     if (invalidProjectId) return;
@@ -196,6 +219,13 @@ export default function PanelProjectSpecialModulesPage() {
           <div className="text-xs font-bold uppercase tracking-widest text-accent">{data.project.type || "Proje"}</div>
           <h1 className="mt-2 text-3xl font-black text-white">{data.project.name} - Ozel Moduller</h1>
           <p className="mt-2 text-sm text-muted-foreground">Staj, mentor, Eurodesk hibe ve Kademe Plus hediye kademelerini tek panelden yonetin.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(data.applicable_modules ?? ["digital_bohca"]).map((module) => (
+              <span key={module} className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                {module.replaceAll("_", " ")}
+              </span>
+            ))}
+          </div>
         </div>
 
         {feedback ? <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-sm text-white">{feedback}</div> : null}
@@ -316,6 +346,66 @@ export default function PanelProjectSpecialModulesPage() {
                 </SimpleForm>
               ) : null}
               <RecordList items={data.reward_tiers} render={(item) => `${item.name} - ${item.reward_description} (${item.min_badges} rozet / ${item.min_credits} kredi)`} onDelete={access["projects.rewards.manage"] ? (id) => destroy("reward-tiers", id) : undefined} />
+              <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Hediye hakki kazananlar</h3>
+                {(data.reward_eligible_participants ?? []).length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Su an kosullari saglayan katilimci yok.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {(data.reward_eligible_participants ?? []).map((participant) => (
+                      <div key={participant.participant_id} className="rounded-lg bg-black/10 p-3 text-sm text-white">
+                        <div className="font-bold">{participant.name || participant.email || "Katilimci"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {participant.badge_count} rozet / {participant.credit} kredi - {participant.eligible_rewards.map((reward) => reward.reward_description).join(", ")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {access["projects.rewards.manage"] ? (
+                <form
+                  className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void submit("reward-awards", {
+                      participant_id: Number(rewardAwardForm.participant_id),
+                      reward_tier_id: rewardAwardForm.reward_tier_id ? Number(rewardAwardForm.reward_tier_id) : null,
+                      reward_name: rewardAwardForm.reward_name,
+                      status: rewardAwardForm.status,
+                      note: rewardAwardForm.note || null,
+                    }, () => setRewardAwardForm(initialRewardAward));
+                  }}
+                >
+                  <select value={rewardAwardForm.participant_id} onChange={(event) => setRewardAwardForm((current) => ({ ...current, participant_id: event.target.value }))} className={inputClass} required>
+                    <option value="">Katilimci sec</option>
+                    {data.participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}</option>)}
+                  </select>
+                  <select value={rewardAwardForm.reward_tier_id} onChange={(event) => {
+                    const tier = data.reward_tiers.find((item) => String(item.id) === event.target.value);
+                    setRewardAwardForm((current) => ({ ...current, reward_tier_id: event.target.value, reward_name: tier?.reward_description || current.reward_name }));
+                  }} className={inputClass}>
+                    <option value="">Kademe secmeden</option>
+                    {data.reward_tiers.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}
+                  </select>
+                  <input value={rewardAwardForm.reward_name} onChange={(event) => setRewardAwardForm((current) => ({ ...current, reward_name: event.target.value }))} placeholder="Verilen hediye" className={inputClass} required />
+                  <select value={rewardAwardForm.status} onChange={(event) => setRewardAwardForm((current) => ({ ...current, status: event.target.value }))} className={inputClass}>
+                    <option value="given">Verildi</option>
+                    <option value="planned">Planlandi</option>
+                    <option value="cancelled">Iptal</option>
+                  </select>
+                  <input value={rewardAwardForm.note} onChange={(event) => setRewardAwardForm((current) => ({ ...current, note: event.target.value }))} placeholder="Not" className={`${inputClass} md:col-span-2`} />
+                  <button className={`${buttonClass} md:col-span-2`}><Gift className="h-4 w-4" /> Hediye kaydi ekle</button>
+                </form>
+              ) : null}
+              <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Verilen hediyeler</h3>
+                {(data.reward_awards ?? []).length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Hediye kaydi yok.</div>
+                ) : (
+                  <RecordList items={data.reward_awards ?? []} render={(item) => `${item.name || item.email || "Katilimci"} - ${item.reward_name} (${item.status})`} onDelete={access["projects.rewards.manage"] ? (id) => destroy("reward-awards", id) : undefined} />
+                )}
+              </div>
             </ModuleCard>
           ) : null}
         </div>

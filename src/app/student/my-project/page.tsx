@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { BookOpen, Briefcase, Award, FileCheck, ChevronRight, Loader2, Calendar, Clock, FileText } from "lucide-react";
+import { BookOpen, Briefcase, Award, FileCheck, ChevronRight, Loader2, Calendar, Clock, FileText, Gift, Handshake, Users } from "lucide-react";
 import api from "@/lib/api/axios";
 
 interface Participation {
@@ -45,24 +46,37 @@ interface BohcaMaterial {
   file_type?: string | null;
 }
 
+interface ProjectSpecial {
+  project: { id: number; name: string; type?: string | null };
+  modules: string[];
+  internships: Array<{ id: number; company_name: string; position: string; has_document?: boolean }>;
+  mentors: Array<{ id: number; name: string; expertise?: string | null; bio?: string | null }>;
+  eurodesk_projects: Array<{ id: number; title: string; partner_organizations?: string[]; grant_amount?: string | number | null; grant_status: string }>;
+  reward_tiers: Array<{ id: number; name: string; min_badges: number; min_credits: number; reward_description: string; eligible: boolean }>;
+  reward_progress?: { badge_count: number; credit: number; eligible_count: number } | null;
+}
+
 export default function StudentMyProjectPage() {
   const [loading, setLoading] = useState(true);
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [materials, setMaterials] = useState<BohcaMaterial[]>([]);
+  const [specials, setSpecials] = useState<ProjectSpecial[]>([]);
 
   useEffect(() => {
     const loadProjectData = async () => {
       try {
-        const [summaryResponse, assignmentsResponse, bohcaResponse] = await Promise.all([
+        const [summaryResponse, assignmentsResponse, bohcaResponse, specialsResponse] = await Promise.all([
           api.get<DashboardSummaryResponse>("/dashboard/summary"),
           api.get<{ assignments: Assignment[] }>("/assignments"),
           api.get<{ materials: BohcaMaterial[] }>("/digital-bohca"),
+          api.get<{ projects: ProjectSpecial[] }>("/dashboard/project-specials"),
         ]);
 
         setParticipations(summaryResponse.data.participations ?? []);
         setAssignments(assignmentsResponse.data.assignments ?? []);
         setMaterials(bohcaResponse.data.materials ?? []);
+        setSpecials(specialsResponse.data.projects ?? []);
       } catch (error) {
         console.error("Projem verileri çekilemedi", error);
       } finally {
@@ -76,6 +90,7 @@ export default function StudentMyProjectPage() {
   const activeParticipation = participations[0] ?? null;
   const activeProjectName = activeParticipation?.project?.name || "Aktif Proje Bulunamadı";
   const activeThreshold = activeParticipation?.period?.credit_threshold ?? 1000;
+  const activeSpecial = specials.find((item) => item.project.id === activeParticipation?.project?.id) ?? specials[0] ?? null;
 
   const assignmentSummary = useMemo(() => {
     const submitted = assignments.filter((assignment) => (assignment.submissions?.length ?? 0) > 0).length;
@@ -181,6 +196,74 @@ export default function StudentMyProjectPage() {
                   )}
                 </div>
               </div>
+
+              {activeSpecial ? (
+                <div className="mt-8 rounded-3xl border border-white/5 bg-white/5 p-6">
+                  <h4 className="mb-4 text-lg font-bold text-slate-900">Projeye Ozel Icerikler</h4>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {activeSpecial.modules.includes("internships") ? (
+                      <SpecialBox icon={<Briefcase className="h-5 w-5" />} title="Staj Bilgileri">
+                        {activeSpecial.internships.length === 0 ? (
+                          <p>Staj kaydi bulunmuyor.</p>
+                        ) : (
+                          activeSpecial.internships.slice(0, 3).map((item) => (
+                            <div key={item.id} className="rounded-2xl bg-black/10 p-3">
+                              <div className="font-bold text-slate-900">{item.company_name}</div>
+                              <div>{item.position}{item.has_document ? " - belge yuklendi" : ""}</div>
+                            </div>
+                          ))
+                        )}
+                      </SpecialBox>
+                    ) : null}
+
+                    {activeSpecial.modules.includes("mentors") ? (
+                      <SpecialBox icon={<Users className="h-5 w-5" />} title="Mentor Bilgileri">
+                        {activeSpecial.mentors.length === 0 ? (
+                          <p>Mentor bilgisi bulunmuyor.</p>
+                        ) : (
+                          activeSpecial.mentors.slice(0, 3).map((item) => (
+                            <div key={item.id} className="rounded-2xl bg-black/10 p-3">
+                              <div className="font-bold text-slate-900">{item.name}</div>
+                              <div>{item.expertise || "Uzmanlik girilmemis"}</div>
+                            </div>
+                          ))
+                        )}
+                      </SpecialBox>
+                    ) : null}
+
+                    {activeSpecial.modules.includes("eurodesk_projects") ? (
+                      <SpecialBox icon={<Handshake className="h-5 w-5" />} title="Eurodesk Projeleri">
+                        {activeSpecial.eurodesk_projects.length === 0 ? (
+                          <p>Eurodesk proje kaydi bulunmuyor.</p>
+                        ) : (
+                          activeSpecial.eurodesk_projects.slice(0, 3).map((item) => (
+                            <div key={item.id} className="rounded-2xl bg-black/10 p-3">
+                              <div className="font-bold text-slate-900">{item.title}</div>
+                              <div>{item.grant_status}{item.grant_amount ? ` - ${item.grant_amount}` : ""}</div>
+                            </div>
+                          ))
+                        )}
+                      </SpecialBox>
+                    ) : null}
+
+                    {activeSpecial.modules.includes("reward_tiers") ? (
+                      <SpecialBox icon={<Gift className="h-5 w-5" />} title="Hediye Haklari">
+                        <p>{activeSpecial.reward_progress?.badge_count ?? 0} rozet / {activeSpecial.reward_progress?.credit ?? 0} kredi</p>
+                        {activeSpecial.reward_tiers.length === 0 ? (
+                          <p>Hediye kademesi tanimli degil.</p>
+                        ) : (
+                          activeSpecial.reward_tiers.slice(0, 3).map((item) => (
+                            <div key={item.id} className="rounded-2xl bg-black/10 p-3">
+                              <div className="font-bold text-slate-900">{item.name}</div>
+                              <div>{item.reward_description} - {item.eligible ? "Hak kazanildi" : `${item.min_badges} rozet / ${item.min_credits} kredi`}</div>
+                            </div>
+                          ))
+                        )}
+                      </SpecialBox>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -242,6 +325,18 @@ export default function StudentMyProjectPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function SpecialBox({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-3xl border border-white/5 bg-white/5 p-5 text-sm text-muted-foreground">
+      <div className="mb-3 flex items-center gap-2 font-bold text-slate-900">
+        <span className="text-primary">{icon}</span>
+        {title}
+      </div>
+      <div className="space-y-2">{children}</div>
     </div>
   );
 }

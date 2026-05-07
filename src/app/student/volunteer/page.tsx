@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertCircle, HeartHandshake, Loader2, Send } from "lucide-react";
+import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 
 interface Project {
@@ -134,7 +135,11 @@ export default function StudentVolunteerPage() {
       setNotes("");
     } catch (error) {
       console.error("Gonullu basvurusu gonderilemedi", error);
-      setErrorMessage("Basvuru gonderilemedi. Aciklama alanini kontrol edip tekrar dene.");
+      setErrorMessage(
+        isAxiosError(error) && typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : "Basvuru gonderilemedi. Aciklama alanini kontrol edip tekrar dene.",
+      );
     } finally {
       setSaving(false);
     }

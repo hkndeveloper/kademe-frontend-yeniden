@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { CheckCircle2, HeartHandshake, Loader2, MapPin, Send, Users } from "lucide-react";
+import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 
 interface VolunteerOpportunity {
@@ -111,7 +112,11 @@ export default function AlumniVolunteerPage() {
       await loadData();
     } catch (error) {
       console.error("Gonulluluk basvurusu gonderilemedi", error);
-      setErrorMessage("Gonulluluk basvurusu gonderilemedi.");
+      setErrorMessage(
+        isAxiosError(error) && typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : "Gonulluluk basvurusu gonderilemedi.",
+      );
     } finally {
       setSubmitting(false);
     }
