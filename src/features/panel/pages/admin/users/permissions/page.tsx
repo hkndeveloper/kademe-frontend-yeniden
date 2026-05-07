@@ -1,7 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, History, Loader2, Plus, Save, Shield, ShieldAlert, Trash2, UserCog, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  History,
+  KeyRound,
+  Loader2,
+  Plus,
+  Save,
+  Search,
+  Shield,
+  ShieldAlert,
+  Trash2,
+  UserCog,
+  Users,
+  X,
+} from "lucide-react";
 import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api/axios";
@@ -139,6 +155,7 @@ export default function PermissionsPage() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [rolePermissionScopes, setRolePermissionScopes] = useState<RoleScopeState>({});
   const [roleScopeStorageReady, setRoleScopeStorageReady] = useState(true);
+  const [activeSection, setActiveSection] = useState<"matrix" | "roles" | "users" | "audit">("matrix");
 
   const loadAudit = useCallback(async () => {
     if (!canViewAudit) {
@@ -229,6 +246,25 @@ export default function PermissionsPage() {
     () => Object.values(granularPermissionGroups).reduce((total, group) => total + group.length, 0),
     [granularPermissionGroups]
   );
+
+  const changedPermissionCount = useMemo(() => {
+    return Object.values(granularMatrixGroups).reduce((total, permissions) => {
+      return total + permissions.filter((permission) =>
+        roles.some((role) => {
+          const baseline = role.granular_effective ?? role.permissions ?? [];
+          const currentAllowed = granularMatrix[role.name]?.has(permission.name) ?? false;
+          return currentAllowed !== baseline.includes(permission.name);
+        })
+      ).length;
+    }, 0);
+  }, [granularMatrixGroups, granularMatrix, roles]);
+
+  const rolePermissionTotals = useMemo(() => {
+    return roles.reduce<Record<string, number>>((acc, role) => {
+      acc[role.name] = role.name === "super_admin" ? permissionCount : granularMatrix[role.name]?.size ?? 0;
+      return acc;
+    }, {});
+  }, [granularMatrix, permissionCount, roles]);
 
   const loadUserOverrides = useCallback(async (userId: string) => {
     if (!canViewUserOverrides) {
@@ -592,6 +628,11 @@ export default function PermissionsPage() {
     }, {});
   }, [permissionSearch, changedOnly, granularMatrixGroups, roles, granularMatrix]);
 
+  const allVisibleGroupsExpanded = useMemo(() => {
+    const groups = Object.keys(filteredGroups);
+    return groups.length > 0 && groups.every((group) => expandedGroups[group]);
+  }, [expandedGroups, filteredGroups]);
+
   const selectablePermissionNames = useMemo(
     () => new Set(Object.values(granularPermissionGroups).flat()),
     [granularPermissionGroups]
@@ -606,27 +647,29 @@ export default function PermissionsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400">
+    <div className="space-y-6">
+      <div className="rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
             <Shield className="h-7 w-7" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-slate-900">Yetki Matrisi</h1>
+              <p className="mt-1 text-sm font-bold uppercase tracking-widest text-slate-500">
+                Islem bazli rol izinleri, scope atamalari ve kullanici override yonetimi
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-black text-slate-900">Yetki Matrisi</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Islem bazli (granular) rol matrisi ve kullanici override
-            </p>
-          </div>
+          <button
+            onClick={() => void handleSave()}
+            disabled={saving || !canUpdateMatrix}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : successMessage ? <CheckCircle2 className="h-5 w-5" /> : <Save className="h-5 w-5" />}
+            Degisiklikleri Kaydet
+          </button>
         </div>
-        <button
-          onClick={() => void handleSave()}
-          disabled={saving || !canUpdateMatrix}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 font-bold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : successMessage ? <CheckCircle2 className="h-5 w-5" /> : <Save className="h-5 w-5" />}
-          Degisiklikleri Kaydet
-        </button>
       </div>
 
       {(successMessage || errorMessage) && (
@@ -641,26 +684,59 @@ export default function PermissionsPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <div className="glass-panel rounded-3xl p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Rol sayisi</p>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Rol sayisi</p>
           <p className="mt-2 text-3xl font-black text-slate-900">{roles.length}</p>
         </div>
-        <div className="glass-panel rounded-3xl p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Yetki sayisi</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Yetki sayisi</p>
           <p className="mt-2 text-3xl font-black text-slate-900">{permissionCount}</p>
         </div>
-        <div className="glass-panel rounded-3xl p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kullanicilar</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Kullanicilar</p>
           <p className="mt-2 text-3xl font-black text-slate-900">{roles.reduce((total, role) => total + role.user_count, 0)}</p>
         </div>
-        <div className="glass-panel rounded-3xl p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Detayli izin</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Detayli izin</p>
           <p className="mt-2 text-3xl font-black text-slate-900">{granularPermissionCount}</p>
+        </div>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-amber-700">Kaydedilmemis</p>
+          <p className="mt-2 text-3xl font-black text-amber-900">{changedPermissionCount}</p>
         </div>
       </div>
 
-      <div className="glass-panel space-y-5 rounded-[40px] border border-white/5 p-8">
+      <div className="sticky top-3 z-10 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          {[
+            { key: "matrix", label: "Matris", icon: KeyRound },
+            { key: "roles", label: "Roller", icon: Shield },
+            { key: "users", label: "Kullanici Override", icon: Users },
+            { key: "audit", label: "Gecmis", icon: History },
+          ].map((item) => {
+            const Icon = item.icon;
+            const active = activeSection === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActiveSection(item.key as typeof activeSection)}
+                className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition ${
+                  active
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className={`${activeSection === "roles" ? "block" : "hidden"} space-y-5 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm`}>
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <h2 className="text-xl font-black text-slate-900">Rol Katalogu (Sistem + Ozel)</h2>
@@ -673,13 +749,13 @@ export default function PermissionsPage() {
               value={newRoleName}
               onChange={(event) => setNewRoleName(event.target.value)}
               placeholder="orn: sosyal_medya_koordinatoru"
-              className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-900"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400"
             />
             <button
               type="button"
               onClick={() => void handleCreateRole()}
               disabled={creatingRole || !newRoleName.trim() || !canUpdateMatrix}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-slate-100 disabled:opacity-50"
             >
               {creatingRole ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Rol Ekle
@@ -688,12 +764,12 @@ export default function PermissionsPage() {
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {roleCatalog.map((role) => (
-            <div key={role.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div key={role.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-bold text-slate-900">{role.label}</div>
-                  <div className="mt-1 font-mono text-[10px] uppercase text-muted-foreground">{role.name}</div>
-                  <div className="mt-2 text-xs text-muted-foreground">
+                  <div className="mt-1 font-mono text-[10px] uppercase text-slate-500">{role.name}</div>
+                  <div className="mt-2 text-xs text-slate-500">
                     {role.user_count} kullanici • {role.permission_count} izin
                   </div>
                 </div>
@@ -702,7 +778,7 @@ export default function PermissionsPage() {
                     type="button"
                     onClick={() => void handleDeleteRole(role.id)}
                     disabled={deletingRoleId === role.id || !canUpdateMatrix}
-                    className="inline-flex items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-400 disabled:opacity-50"
+                    className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 p-2 text-red-600 disabled:opacity-50"
                   >
                     {deletingRoleId === role.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                   </button>
@@ -717,7 +793,7 @@ export default function PermissionsPage() {
                   type="button"
                   onClick={() => void handleSyncRolePermissions(role)}
                   disabled={updatingRoleId === role.id || !canUpdateMatrix}
-                  className="mt-4 w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-indigo-300 disabled:opacity-50"
+                  className="mt-4 w-full rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
                 >
                   {updatingRoleId === role.id ? "Kaydediliyor..." : "Matristeki izinleri role uygula"}
                 </button>
@@ -727,119 +803,172 @@ export default function PermissionsPage() {
         </div>
       </div>
 
-      <div className="glass-panel space-y-4 overflow-hidden rounded-[40px] border border-white/5 p-6">
+      <div className={`${activeSection === "matrix" ? "block" : "hidden"} space-y-4 overflow-hidden rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm`}>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-lg font-black text-slate-900">Rol Yetki Matrisi (Moduler)</h3>
-            <p className="text-xs text-muted-foreground">Grup bazli ac/kapa, arama ve scope atama ile yonetin.</p>
+            <p className="text-xs text-slate-500">Roller kolonlarda, izinler satirlarda. Scope secimleri mevcut backend mantigina aynen gider.</p>
           </div>
-          <div className="flex flex-col gap-2 md:flex-row md:items-center">
-            <input
-              value={permissionSearch}
-              onChange={(event) => setPermissionSearch(event.target.value)}
-              placeholder="Yetki ara (orn: financial.view)"
-              className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-900"
-            />
-            <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={permissionSearch}
+                onChange={(event) => setPermissionSearch(event.target.value)}
+                placeholder="Yetki ara: financial.view"
+                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-400 xl:w-72"
+              />
+            </div>
+            <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-600">
               <input type="checkbox" checked={changedOnly} onChange={(event) => setChangedOnly(event.target.checked)} />
-              Sadece degisenler
+              Degisenler
             </label>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !allVisibleGroupsExpanded;
+                setExpandedGroups((current) => ({
+                  ...current,
+                  ...Object.keys(filteredGroups).reduce<Record<string, boolean>>((acc, group) => {
+                    acc[group] = next;
+                    return acc;
+                  }, {}),
+                }));
+              }}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-100"
+            >
+              {allVisibleGroupsExpanded ? "Tumunu Daralt" : "Tumunu Genislet"}
+            </button>
           </div>
         </div>
 
         {Object.entries(filteredGroups).map(([group, permissions]) => (
-          <div key={group} className="rounded-2xl border border-white/10 bg-white/5">
+          <div key={group} className="rounded-2xl border border-slate-200 bg-slate-50">
             <button
               type="button"
               onClick={() => setExpandedGroups((current) => ({ ...current, [group]: !current[group] }))}
               className="flex w-full items-center justify-between px-4 py-3 text-left"
             >
-              <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">
+              <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-indigo-700">
+                {expandedGroups[group] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 {group} ({permissions.length})
               </span>
-              <span className="text-xs text-muted-foreground">{expandedGroups[group] ? "Daralt" : "Genislet"}</span>
+              <span className="text-xs text-slate-500">
+                {permissions.reduce((total, permission) => {
+                  return total + roles.filter((role) => role.name === "super_admin" || granularMatrix[role.name]?.has(permission.name)).length;
+                }, 0)} aktif secim
+              </span>
             </button>
 
             {expandedGroups[group] ? (
-              <div className="space-y-3 border-t border-white/10 p-4">
-                {permissions.map((permission) => (
-                  <div key={permission.name} className="rounded-xl border border-white/10 bg-black/20 p-3">
-                    <div className="mb-3">
-                      <div className="font-mono text-xs font-bold text-slate-900">{permission.name}</div>
-                      {permission.description ? <p className="mt-1 text-xs text-muted-foreground">{permission.description}</p> : null}
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                      {roles.map((role) => {
-                        const checked = role.name === "super_admin" || (granularMatrix[role.name]?.has(permission.name) ?? false);
-                        const scope = rolePermissionScopes[role.name]?.[permission.name];
-                        const scopeType: ScopeType = scope?.scope_type ?? "all";
-                        const projectPayload = String((scope?.scope_payload?.project_ids as number[] | undefined)?.join(",") ?? "");
-                        const unitPayload = String((scope?.scope_payload?.unit as string | undefined) ?? "");
-
-                        return (
-                          <div key={`${permission.name}-${role.name}`} className="rounded-lg border border-white/10 bg-white/5 p-3">
-                            <div className="mb-2 flex items-center justify-between">
-                              <span className="text-xs font-bold text-slate-900">{role.label}</span>
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => toggleGranularPermission(role.name, permission.name)}
-                                disabled={role.name === "super_admin" || saving || !canUpdateMatrix}
-                                className="h-4 w-4 rounded border-slate-200 bg-white text-indigo-600 focus:ring-0 focus:ring-offset-0"
-                              />
+              <div className="border-t border-slate-200 bg-white">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-collapse text-left text-sm">
+                    <thead className="sticky top-0 z-[1] bg-slate-100">
+                      <tr>
+                        <th className="sticky left-0 z-[2] w-80 border-b border-r border-slate-200 bg-slate-100 p-3 text-xs font-black uppercase tracking-widest text-slate-600">
+                          Izin
+                        </th>
+                        {roles.map((role) => (
+                          <th key={`${group}-${role.name}`} className="min-w-56 border-b border-slate-200 p-3 align-top">
+                            <div className="text-xs font-black text-slate-900">{role.label}</div>
+                            <div className="mt-1 font-mono text-[10px] uppercase text-slate-500">
+                              {rolePermissionTotals[role.name] ?? 0}/{permissionCount}
                             </div>
-                            <select
-                              value={scopeType}
-                              onChange={(event) => updateRoleScopeType(role.name, permission.name, event.target.value as ScopeType)}
-                              disabled={!checked || saving || !canUpdateMatrix}
-                              className="w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-slate-900"
-                            >
-                              <option value="all">all</option>
-                              <option value="own_projects">own_projects</option>
-                              <option value="assigned_projects">assigned_projects</option>
-                              <option value="selected_projects">selected_projects</option>
-                              <option value="own_unit">own_unit</option>
-                              <option value="self">self</option>
-                              <option value="none">none</option>
-                            </select>
-                            {scopeType === "selected_projects" ? (
-                              <input
-                                value={projectPayload}
-                                onChange={(event) => {
-                                  const projectIds = event.target.value
-                                    .split(",")
-                                    .map((item) => Number(item.trim()))
-                                    .filter((item) => Number.isFinite(item) && item > 0);
-                                  updateRoleScopePayload(role.name, permission.name, { project_ids: projectIds });
-                                }}
-                                disabled={!checked || saving || !canUpdateMatrix}
-                                placeholder="1,2,3"
-                                className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-slate-900"
-                              />
-                            ) : null}
-                            {scopeType === "own_unit" ? (
-                              <input
-                                value={unitPayload}
-                                onChange={(event) => updateRoleScopePayload(role.name, permission.name, { unit: event.target.value })}
-                                disabled={!checked || saving || !canUpdateMatrix}
-                                placeholder="Birim"
-                                className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-slate-900"
-                              />
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {permissions.map((permission) => (
+                        <tr key={permission.name} className="border-b border-slate-100 hover:bg-slate-50">
+                          <td className="sticky left-0 z-[1] w-80 border-r border-slate-200 bg-white p-3 align-top">
+                            <div className="font-mono text-xs font-black text-slate-900">{permission.name}</div>
+                            {permission.description ? <p className="mt-1 text-xs leading-relaxed text-slate-500">{permission.description}</p> : null}
+                          </td>
+                          {roles.map((role) => {
+                            const checked = role.name === "super_admin" || (granularMatrix[role.name]?.has(permission.name) ?? false);
+                            const scope = rolePermissionScopes[role.name]?.[permission.name];
+                            const scopeType: ScopeType = scope?.scope_type ?? "all";
+                            const projectPayload = String((scope?.scope_payload?.project_ids as number[] | undefined)?.join(",") ?? "");
+                            const unitPayload = String((scope?.scope_payload?.unit as string | undefined) ?? "");
+                            const baseline = role.granular_effective ?? role.permissions ?? [];
+                            const changed = checked !== baseline.includes(permission.name);
+
+                            return (
+                              <td key={`${permission.name}-${role.name}`} className="min-w-56 p-3 align-top">
+                                <div className={`rounded-xl border p-3 ${checked ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-white"} ${changed ? "ring-2 ring-amber-300" : ""}`}>
+                                  <label className="flex items-center justify-between gap-2">
+                                    <span className={`text-xs font-black uppercase tracking-widest ${checked ? "text-indigo-700" : "text-slate-500"}`}>
+                                      {checked ? "Acik" : "Kapali"}
+                                    </span>
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => toggleGranularPermission(role.name, permission.name)}
+                                      disabled={role.name === "super_admin" || saving || !canUpdateMatrix}
+                                      className="h-4 w-4 rounded border-slate-300 bg-white text-indigo-600 focus:ring-0 focus:ring-offset-0"
+                                    />
+                                  </label>
+                                  <select
+                                    value={scopeType}
+                                    onChange={(event) => updateRoleScopeType(role.name, permission.name, event.target.value as ScopeType)}
+                                    disabled={!checked || saving || !canUpdateMatrix}
+                                    className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                                  >
+                                    <option value="all">all</option>
+                                    <option value="own_projects">own_projects</option>
+                                    <option value="assigned_projects">assigned_projects</option>
+                                    <option value="selected_projects">selected_projects</option>
+                                    <option value="own_unit">own_unit</option>
+                                    <option value="self">self</option>
+                                    <option value="none">none</option>
+                                  </select>
+                                  {scopeType === "selected_projects" ? (
+                                    <input
+                                      value={projectPayload}
+                                      onChange={(event) => {
+                                        const projectIds = event.target.value
+                                          .split(",")
+                                          .map((item) => Number(item.trim()))
+                                          .filter((item) => Number.isFinite(item) && item > 0);
+                                        updateRoleScopePayload(role.name, permission.name, { project_ids: projectIds });
+                                      }}
+                                      disabled={!checked || saving || !canUpdateMatrix}
+                                      placeholder="Proje ID: 1,2,3"
+                                      className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100"
+                                    />
+                                  ) : null}
+                                  {scopeType === "own_unit" ? (
+                                    <input
+                                      value={unitPayload}
+                                      onChange={(event) => updateRoleScopePayload(role.name, permission.name, { unit: event.target.value })}
+                                      disabled={!checked || saving || !canUpdateMatrix}
+                                      placeholder="Birim"
+                                      className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100"
+                                    />
+                                  ) : null}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : null}
           </div>
         ))}
+        {Object.keys(filteredGroups).length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
+            Arama veya filtreye uygun yetki bulunamadi.
+          </div>
+        ) : null}
       </div>
 
-      <div className="glass-panel space-y-6 rounded-[40px] border border-white/5 p-8">
+      <div className={`${activeSection === "users" ? "block" : "hidden"} space-y-6 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm`}>
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div className="flex items-center gap-3">
             <UserCog className="h-6 w-6 text-indigo-400" />
@@ -853,7 +982,7 @@ export default function PermissionsPage() {
               onClick={addOverride}
               type="button"
               disabled={!selectedUserId || !canUpdateUserOverrides}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-slate-100 disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
               Override Ekle
@@ -876,7 +1005,7 @@ export default function PermissionsPage() {
             <select
               value={selectedUserId}
               onChange={(event) => setSelectedUserId(event.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-900 outline-none"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
             >
               <option value="">Kullanici secin</option>
               {managedUsers.map((user) => (
@@ -887,7 +1016,7 @@ export default function PermissionsPage() {
             </select>
 
             {selectedUser ? (
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-muted-foreground">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
                 <div className="font-bold text-slate-900">{selectedUser.name} {selectedUser.surname}</div>
                 <div className="mt-1">{selectedUser.email}</div>
                 <div className="mt-2 text-xs uppercase tracking-widest text-indigo-400">{selectedUser.role}</div>
@@ -896,8 +1025,8 @@ export default function PermissionsPage() {
             ) : null}
 
             {selectedUser ? (
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Kullanici rolleri</div>
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Kullanici rolleri</div>
                 <div className="space-y-2">
                   {roleCatalog.map((role) => {
                     const checked = roleAssignments.includes(role.name);
@@ -925,7 +1054,7 @@ export default function PermissionsPage() {
                   type="button"
                   onClick={() => void handleSaveUserRoles()}
                   disabled={savingRoleAssignment || roleAssignments.length === 0 || !canUpdateUserOverrides}
-                  className="mt-3 w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-indigo-300 disabled:opacity-50"
+                  className="mt-3 w-full rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
                 >
                   {savingRoleAssignment ? "Kaydediliyor..." : "Rolleri Kaydet"}
                 </button>
@@ -933,14 +1062,14 @@ export default function PermissionsPage() {
             ) : null}
 
             {selectedUser ? (
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Efektif izin ozet</div>
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Efektif izin ozet</div>
                 <div className="max-h-64 space-y-2 overflow-y-auto">
                   {resolvedPermissions.length === 0 ? (
                     <div className="text-sm text-muted-foreground">Henuz efektif izin bulunmuyor.</div>
                   ) : (
                     resolvedPermissions.map((permission) => (
-                      <div key={permission} className="rounded-xl bg-black/30 px-3 py-2 text-xs text-slate-900">
+                      <div key={permission} className="rounded-xl bg-white px-3 py-2 text-xs text-slate-900">
                         <div className="font-bold">{permission}</div>
                         {userScopePreview[permission] ? (
                           <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -957,28 +1086,28 @@ export default function PermissionsPage() {
 
           <div className="space-y-4">
             {!selectedUserId ? (
-              <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/5 text-sm text-muted-foreground">
+              <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
                 Override duzenlemek icin bir kullanici secin.
               </div>
             ) : loadingUserOverrides ? (
-              <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-white/10 bg-white/5">
+              <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-slate-200 bg-slate-50">
                 <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
               </div>
             ) : (
               <div className="space-y-4">
                 {userOverrides.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-8 text-sm text-muted-foreground">
+                  <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-sm text-slate-500">
                     Bu kullanici icin henuz ozel override tanimli degil.
                   </div>
                 ) : null}
 
                 {userOverrides.map((override, index) => (
-                  <div key={`${override.permission_name}-${index}`} className="grid grid-cols-1 gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 lg:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto]">
+                  <div key={`${override.permission_name}-${index}`} className="grid grid-cols-1 gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto]">
                     <select
                       value={override.permission_name}
                       onChange={(event) => updateOverride(index, { permission_name: event.target.value })}
                       disabled={!canUpdateUserOverrides}
-                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-900 outline-none"
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
                     >
                       {!selectablePermissionNames.has(override.permission_name) ? (
                         <option value={override.permission_name}>
@@ -1000,7 +1129,7 @@ export default function PermissionsPage() {
                       value={override.effect}
                       onChange={(event) => updateOverride(index, { effect: event.target.value as "allow" | "deny" })}
                       disabled={!canUpdateUserOverrides}
-                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-900 outline-none"
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
                     >
                       <option value="allow">allow</option>
                       <option value="deny">deny</option>
@@ -1010,7 +1139,7 @@ export default function PermissionsPage() {
                       value={override.scope_type ?? ""}
                       onChange={(event) => updateOverride(index, { scope_type: event.target.value || null })}
                       disabled={!canUpdateUserOverrides}
-                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-900 outline-none"
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
                     >
                       <option value="">scope yok</option>
                       <option value="all">all</option>
@@ -1056,7 +1185,7 @@ export default function PermissionsPage() {
                             ? "Birim adi"
                             : "Scope alani"
                       }
-                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-900 outline-none"
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
                     />
 
                     <button
@@ -1075,13 +1204,13 @@ export default function PermissionsPage() {
         </div>
       </div>
 
-      <div className="glass-panel space-y-4 rounded-[40px] border border-white/5 p-8">
+      <div className={`${activeSection === "audit" ? "block" : "hidden"} space-y-4 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm`}>
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div className="flex items-center gap-3">
             <History className="h-6 w-6 text-indigo-400" />
             <div>
               <h2 className="text-xl font-black text-slate-900">Yetki Degisiklik Gecmisi</h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-slate-500">
                 Rol matrisi ve kullanici override kayitlari (son 50 islem, activity log).
               </p>
             </div>
@@ -1090,7 +1219,7 @@ export default function PermissionsPage() {
             type="button"
             onClick={() => void loadAudit()}
             disabled={auditLoading}
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 disabled:opacity-50"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-slate-100 disabled:opacity-50"
           >
             {auditLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Yenile"}
           </button>
@@ -1100,29 +1229,29 @@ export default function PermissionsPage() {
             <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
           </div>
         ) : auditLogs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Henuz kayit yok veya log tablosu kullanilamiyor.</p>
+          <p className="text-sm text-slate-500">Henuz kayit yok veya log tablosu kullanilamiyor.</p>
         ) : (
-          <div className="max-h-80 overflow-auto rounded-2xl border border-white/10">
+          <div className="max-h-80 overflow-auto rounded-2xl border border-slate-200">
             <table className="w-full border-collapse text-left text-sm">
-              <thead className="sticky top-0 bg-zinc-950/95">
-                <tr className="border-b border-white/10">
-                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">Tarih</th>
-                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">Islem</th>
-                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">Yapan</th>
-                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">Hedef</th>
+              <thead className="sticky top-0 bg-slate-100">
+                <tr className="border-b border-slate-200">
+                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">Tarih</th>
+                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">Islem</th>
+                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">Yapan</th>
+                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">Hedef</th>
                 </tr>
               </thead>
               <tbody>
                 {auditLogs.map((log) => (
-                  <tr key={log.id} className="border-b border-white/5 hover:bg-white/5">
-                    <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
+                  <tr key={log.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="whitespace-nowrap p-3 text-xs text-slate-500">
                       {log.created_at ? new Date(log.created_at).toLocaleString("tr-TR") : "-"}
                     </td>
                     <td className="p-3 text-xs font-bold text-slate-900">{log.description}</td>
-                    <td className="p-3 text-xs text-muted-foreground">
+                    <td className="p-3 text-xs text-slate-500">
                       {log.causer ? `${log.causer.name} (${log.causer.role})` : "Sistem"}
                     </td>
-                    <td className="p-3 text-xs text-muted-foreground">
+                    <td className="p-3 text-xs text-slate-500">
                       {log.subject_type && log.subject_id ? `${log.subject_type} #${log.subject_id}` : "-"}
                     </td>
                   </tr>
