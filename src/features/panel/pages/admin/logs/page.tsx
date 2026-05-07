@@ -18,11 +18,22 @@ interface ActivityLog {
   created_at: string;
   user?: { name: string; surname: string; role: string } | null;
   log_name?: string | null;
+  path?: string | null;
+  status_code?: number | null;
 }
 
 function normalizeActivityRow(raw: Record<string, unknown>): ActivityLog {
   const causer = raw.causer as { id?: number; name?: string; surname?: string; role?: string } | undefined;
+  const properties = raw.properties as
+    | { ip_address?: unknown; path?: unknown; route_uri?: unknown; status_code?: unknown; outcome?: unknown }
+    | undefined;
   const event = raw.event != null && String(raw.event).length > 0 ? String(raw.event) : null;
+  const path =
+    properties?.path != null
+      ? String(properties.path)
+      : properties?.route_uri != null
+        ? String(properties.route_uri)
+        : null;
 
   return {
     id: Number(raw.id),
@@ -31,7 +42,12 @@ function normalizeActivityRow(raw: Record<string, unknown>): ActivityLog {
     description: String(raw.description ?? ""),
     model_type: raw.subject_type != null ? String(raw.subject_type) : null,
     model_id: raw.subject_id != null ? Number(raw.subject_id) : null,
-    ip_address: raw.ip_address != null ? String(raw.ip_address) : null,
+    ip_address:
+      properties?.ip_address != null
+        ? String(properties.ip_address)
+        : raw.ip_address != null
+          ? String(raw.ip_address)
+          : null,
     created_at: String(raw.created_at ?? ""),
     user: causer
       ? {
@@ -41,6 +57,11 @@ function normalizeActivityRow(raw: Record<string, unknown>): ActivityLog {
         }
       : null,
     log_name: raw.log_name != null ? String(raw.log_name) : null,
+    path,
+    status_code:
+      properties?.status_code != null && Number.isFinite(Number(properties.status_code))
+        ? Number(properties.status_code)
+        : null,
   };
 }
 
@@ -48,8 +69,14 @@ const actionColors: Record<string, string> = {
   created: "bg-green-500/10 text-green-500",
   updated: "bg-blue-500/10 text-blue-500",
   deleted: "bg-red-500/10 text-red-500",
+  registered: "bg-green-500/10 text-green-500",
   login: "bg-indigo-500/10 text-indigo-500",
+  login_failed: "bg-red-500/10 text-red-500",
+  login_blocked: "bg-amber-500/10 text-amber-500",
   logout: "bg-gray-500/10 text-gray-400",
+  password_reset_requested: "bg-blue-500/10 text-blue-500",
+  password_reset: "bg-green-500/10 text-green-500",
+  password_reset_failed: "bg-red-500/10 text-red-500",
   assigned: "bg-amber-500/10 text-amber-500",
   status_changed: "bg-purple-500/10 text-purple-500",
 };
@@ -111,6 +138,8 @@ export default function AdminLogsPage() {
         log.model_type,
         log.ip_address,
         log.log_name,
+        log.path,
+        log.status_code,
       ]
         .filter(Boolean)
         .join(" ")
@@ -193,8 +222,14 @@ export default function AdminLogsPage() {
           <option value="created">Olusturma</option>
           <option value="updated">Guncelleme</option>
           <option value="deleted">Silme</option>
+          <option value="registered">Kayit</option>
           <option value="login">Giris</option>
+          <option value="login_failed">Basarisiz Giris</option>
+          <option value="login_blocked">Engellenen Giris</option>
           <option value="logout">Cikis</option>
+          <option value="password_reset_requested">Sifre Linki</option>
+          <option value="password_reset">Sifre Sifirlama</option>
+          <option value="password_reset_failed">Basarisiz Sifre</option>
           <option value="status_changed">Durum</option>
           <option value="assigned">Atama</option>
         </select>
@@ -269,6 +304,11 @@ export default function AdminLogsPage() {
                       {log.model_type && (
                         <div className="text-[10px] uppercase text-muted-foreground">
                           Hedef: {log.model_type.split("\\").pop()} #{log.model_id}
+                        </div>
+                      )}
+                      {(log.path || log.status_code) && (
+                        <div className="text-[10px] uppercase text-muted-foreground">
+                          {[log.path, log.status_code ? `HTTP ${log.status_code}` : null].filter(Boolean).join(" | ")}
                         </div>
                       )}
                     </td>
