@@ -28,6 +28,8 @@ interface Program {
   title: string;
   description?: string | null;
   location?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   start_at: string;
   end_at?: string | null;
   status?: ProgramFormState["status"];
@@ -68,6 +70,8 @@ interface ProgramFormState {
   title: string;
   description: string;
   location: string;
+  latitude: string;
+  longitude: string;
   start_at: string;
   end_at: string;
   radius_meters: string;
@@ -80,6 +84,8 @@ const initialForm: ProgramFormState = {
   title: "",
   description: "",
   location: "",
+  latitude: "",
+  longitude: "",
   start_at: "",
   end_at: "",
   radius_meters: "100",
@@ -129,7 +135,9 @@ export default function PanelProgramsPage() {
   const [attendanceModalProgram, setAttendanceModalProgram] = useState<Program | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
+  const [attendanceActionLoading, setAttendanceActionLoading] = useState<number | null>(null);
   const canViewAttendanceStats = hasPermission("programs.attendance.view");
+  const canManageAttendance = hasPermission("programs.attendance.manage");
   const canUpdatePrograms = hasPermission("programs.update");
   const canCompletePrograms = hasPermission("programs.complete");
   const canManageQr = hasPermission("programs.qr.manage");
@@ -256,6 +264,8 @@ export default function PanelProgramsPage() {
       title: program.title,
       description: program.description ?? "",
       location: program.location ?? "",
+      latitude: program.latitude != null ? String(program.latitude) : "",
+      longitude: program.longitude != null ? String(program.longitude) : "",
       start_at: program.start_at ? new Date(program.start_at).toISOString().slice(0, 16) : "",
       end_at: program.end_at ? new Date(program.end_at).toISOString().slice(0, 16) : "",
       radius_meters: String(program.radius_meters ?? 100),
@@ -287,6 +297,8 @@ export default function PanelProgramsPage() {
       title: form.title,
       description: form.description || null,
       location: form.location || null,
+      latitude: form.latitude ? Number(form.latitude) : null,
+      longitude: form.longitude ? Number(form.longitude) : null,
       radius_meters: Number(form.radius_meters),
       credit_deduction: Number(form.credit_deduction),
       start_at: form.start_at,
@@ -347,6 +359,28 @@ export default function PanelProgramsPage() {
       setErrorMessage("Yoklama detaylari yuklenemedi.");
     } finally {
       setAttendanceLoading(false);
+    }
+  };
+
+  const updateManualAttendance = async (record: AttendanceRecord, isValid: boolean) => {
+    if (!attendanceModalProgram || !record.participant_id) return;
+
+    setAttendanceActionLoading(record.participant_id);
+    setErrorMessage(null);
+
+    try {
+      await api.put(`/panel/programs/${attendanceModalProgram.id}/attendances/${record.participant_id}`, {
+        is_valid: isValid,
+        manual_note: isValid ? "Panel uzerinden manuel katilim onayi." : "Panel uzerinden manuel gelmedi isaretlendi.",
+      });
+
+      await openAttendanceModal(attendanceModalProgram);
+      await loadPrograms();
+    } catch (error) {
+      console.error("Manuel yoklama guncellenemedi", error);
+      setErrorMessage("Manuel yoklama guncellenemedi.");
+    } finally {
+      setAttendanceActionLoading(null);
     }
   };
 
@@ -443,6 +477,22 @@ export default function PanelProgramsPage() {
               value={form.location}
               onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))}
               placeholder="Konum"
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+            />
+            <input
+              type="number"
+              step="0.00000001"
+              value={form.latitude}
+              onChange={(event) => setForm((prev) => ({ ...prev, latitude: event.target.value }))}
+              placeholder="Merkez enlem (opsiyonel)"
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+            />
+            <input
+              type="number"
+              step="0.00000001"
+              value={form.longitude}
+              onChange={(event) => setForm((prev) => ({ ...prev, longitude: event.target.value }))}
+              placeholder="Merkez boylam (opsiyonel)"
               className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
             />
             <input
@@ -648,7 +698,7 @@ export default function PanelProgramsPage() {
       )}
       {attendanceModalProgram ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
+          <div className="w-full max-w-6xl rounded-3xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-black text-slate-900">Yoklama Detaylari</h2>
@@ -657,7 +707,7 @@ export default function PanelProgramsPage() {
               <button
                 type="button"
                 onClick={() => setAttendanceModalProgram(null)}
-                className="rounded-full p-2 text-muted-foreground transition hover:bg-white/10 hover:text-slate-900"
+                className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -678,9 +728,9 @@ export default function PanelProgramsPage() {
               </PermissionGate>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto rounded-2xl border border-white/10">
+            <div className="max-h-[60vh] overflow-y-auto rounded-2xl border border-slate-200">
               <table className="w-full text-left text-sm text-muted-foreground">
-                <thead className="border-b border-white/10 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-widest text-slate-900">
                   <tr>
                     <th className="px-4 py-3">Ogrenci</th>
                     <th className="px-4 py-3">Durum</th>
@@ -688,18 +738,21 @@ export default function PanelProgramsPage() {
                     <th className="px-4 py-3">Kredi</th>
                     <th className="px-4 py-3">Geri Bildirim</th>
                     <th className="px-4 py-3">Zaman</th>
+                    {canManageAttendance && canAccessProject("programs.attendance.manage", attendanceModalProgram.project_id) ? (
+                      <th className="px-4 py-3 text-right">Islem</th>
+                    ) : null}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-100">
                   {attendanceLoading ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center">
+                      <td colSpan={canManageAttendance ? 7 : 6} className="px-4 py-10 text-center">
                         <Loader2 className="mx-auto h-6 w-6 animate-spin text-accent" />
                       </td>
                     </tr>
                   ) : attendanceRecords.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                      <td colSpan={canManageAttendance ? 7 : 6} className="px-4 py-10 text-center text-muted-foreground">
                         Kayit bulunamadi.
                       </td>
                     </tr>
@@ -725,6 +778,32 @@ export default function PanelProgramsPage() {
                           {record.feedback_submitted ? "Gonderdi" : record.is_valid ? "Bekliyor" : "Hak yok"}
                         </td>
                         <td className="px-4 py-3">{record.recorded_at ? new Date(record.recorded_at).toLocaleString("tr-TR") : "-"}</td>
+                        {canManageAttendance && canAccessProject("programs.attendance.manage", attendanceModalProgram.project_id) ? (
+                          <td className="px-4 py-3 text-right">
+                            {record.participant_id ? (
+                              <button
+                                type="button"
+                                onClick={() => void updateManualAttendance(record, !record.is_valid)}
+                                disabled={attendanceActionLoading === record.participant_id}
+                                className={`inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-bold transition disabled:opacity-50 ${
+                                  record.is_valid
+                                    ? "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                                    : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                }`}
+                              >
+                                {attendanceActionLoading === record.participant_id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : record.is_valid ? (
+                                  "Gelmedi Yap"
+                                ) : (
+                                  "Katildi Yap"
+                                )}
+                              </button>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        ) : null}
                       </tr>
                     ))
                   )}
