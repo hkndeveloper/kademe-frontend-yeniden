@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { Html5QrcodeScanType, Html5QrcodeScanner } from "html5-qrcode";
 import {
   AlertCircle,
   Briefcase,
@@ -13,7 +14,9 @@ import {
   MapPin,
   MessageSquareText,
   MinusCircle,
+  QrCode,
   ShieldCheck,
+  X,
   XCircle,
 } from "lucide-react";
 import api from "@/lib/api/axios";
@@ -60,6 +63,7 @@ interface Program {
 }
 
 type Filter = "all" | "upcoming" | "completed" | "attended" | "missed";
+type ScanStatus = "idle" | "loading" | "success" | "error";
 
 const statusLabels: Record<Program["status"], string> = {
   scheduled: "Planlandi",
@@ -131,21 +135,146 @@ export default function StudentProgramsPage() {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("all");
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanStatus, setScanStatus] = useState<ScanStatus>("idle");
+  const [scanMessage, setScanMessage] = useState("");
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const locationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const submittedRef = useRef(false);
+
+  const fetchPrograms = useCallback(async () => {
+    try {
+      const response = await api.get<{ programs: Program[] }>("/programs");
+      setPrograms(response.data.programs ?? []);
+    } catch (error) {
+      console.error("Programlar cekilemedi", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchPrograms = async () => {
-      try {
-        const response = await api.get<{ programs: Program[] }>("/programs");
-        setPrograms(response.data.programs ?? []);
-      } catch (error) {
-        console.error("Programlar cekilemedi", error);
-      } finally {
-        setLoading(false);
+    void fetchPrograms();
+  }, [fetchPrograms]);
+
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+
+  const extractToken = useCallback((raw: string): string => {
+    const value = raw.trim();
+    if (!value) return "";
+    try {
+      const url = new URL(value);
+      const token = url.searchParams.get("token");
+      return token?.trim() || value;
+    } catch {
+      return value;
+    }
+  }, []);
+
+  const closeScanner = useCallback(() => {
+    if (scannerRef.current) {
+      void scannerRef.current.clear();
+      scannerRef.current = null;
+    }
+    submittedRef.current = false;
+    setScannerOpen(false);
+    setScanStatus("idle");
+    setScanMessage("");
+  }, []);
+
+  const submitAttendance = useCallback(async (rawToken: string) => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const qrToken = extractToken(rawToken);
+    const currentLocation = locationRef.current;
+
+    if (!qrToken) {
+      setScanStatus("error");
+      setScanMessage("QR kod gecersiz. Lutfen tekrar okutun.");
+      submittedRef.current = false;
+      return;
+    }
+
+    if (!currentLocation) {
+      setScanStatus("error");
+      setScanMessage("Konum verisi alinamadi. Lutfen konum izni verip tekrar deneyin.");
+      submittedRef.current = false;
+      return;
+    }
+
+    setScanStatus("loading");
+    try {
+      const response = await api.post("/attendances/qr", {
+        qr_token: qrToken,
+        latitude: currentLocation.lat,
+        longitude: currentLocation.lng,
+      });
+
+      setScanStatus("success");
+      setScanMessage(response.data.message || "Yoklaman basariyla alindi.");
+      await fetchPrograms();
+    } catch (error: unknown) {
+      const nextMessage =
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message ?? "Yoklama islemi basarisiz oldu."
+          : "Yoklama islemi basarisiz oldu.";
+
+      setScanStatus("error");
+      setScanMessage(nextMessage);
+      submittedRef.current = false;
+    }
+  }, [extractToken, fetchPrograms]);
+
+  useEffect(() => {
+    if (!scannerOpen) return undefined;
+
+    submittedRef.current = false;
+    setScanStatus("idle");
+    setScanMessage("");
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => setScanMessage("Yoklama icin konum izni vermen zorunludur."),
+        { enableHighAccuracy: true },
+      );
+    }
+
+    const scanner = new Html5QrcodeScanner(
+      "student-program-qr-reader",
+      {
+        fps: 12,
+        qrbox: { width: 260, height: 260 },
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+        rememberLastUsedCamera: true,
+      },
+      false,
+    );
+
+    scanner.render(
+      (decodedText) => {
+        void scanner.clear();
+        scannerRef.current = null;
+        void submitAttendance(decodedText);
+      },
+      () => {},
+    );
+
+    scannerRef.current = scanner;
+
+    return () => {
+      if (scannerRef.current) {
+        void scannerRef.current.clear();
+        scannerRef.current = null;
       }
     };
-
-    void fetchPrograms();
-  }, []);
+  }, [scannerOpen, submitAttendance]);
 
   const summary = useMemo(() => {
     return {
@@ -224,6 +353,14 @@ export default function StudentProgramsPage() {
             {item.label}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => setScannerOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-primary"
+        >
+          <QrCode className="h-4 w-4" />
+          QR Yoklama Oku
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
@@ -283,6 +420,17 @@ export default function StudentProgramsPage() {
                       {program.location || "Konum bilgisi yok"}
                     </div>
                   </div>
+
+                  {(program.status === "scheduled" || program.status === "active") && (
+                    <button
+                      type="button"
+                      onClick={() => setScannerOpen(true)}
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black uppercase tracking-widest text-primary-foreground transition hover:opacity-90"
+                    >
+                      <QrCode className="h-4 w-4" />
+                      Bu Program Icin QR Okut
+                    </button>
+                  )}
                 </div>
 
                 <div className="grid w-full gap-3 xl:w-[420px]">
@@ -338,6 +486,109 @@ export default function StudentProgramsPage() {
           ))
         )}
       </div>
+
+      <AnimatePresence>
+        {scannerOpen ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              className="w-full max-w-2xl overflow-hidden rounded-3xl border border-border bg-white shadow-2xl"
+            >
+              <div className="flex items-start justify-between border-b border-border/60 p-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <QrCode className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900">QR Yoklama</h2>
+                    <p className="text-sm text-muted-foreground">Program ekranindaki QR kodu okut.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeScanner}
+                  className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                  aria-label="Kapat"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                {scanStatus === "idle" ? (
+                  <div className="space-y-5">
+                    <div
+                      id="student-program-qr-reader"
+                      className="overflow-hidden rounded-2xl border border-border bg-slate-950"
+                    />
+                    <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold uppercase tracking-widest">
+                      <span className={location ? "text-emerald-600" : "text-amber-600"}>
+                        {location ? "Konum alindi" : "Konum bekleniyor"}
+                      </span>
+                      <span className="text-primary">Guvenli yoklama</span>
+                    </div>
+                    {scanMessage ? (
+                      <p className="text-center text-sm text-amber-600">{scanMessage}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {scanStatus === "loading" ? (
+                  <div className="py-16 text-center">
+                    <Loader2 className="mx-auto mb-5 h-14 w-14 animate-spin text-primary" />
+                    <h3 className="text-xl font-black text-slate-900">Yoklama isleniyor</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">QR ve konum bilgisi dogrulaniyor.</p>
+                  </div>
+                ) : null}
+
+                {scanStatus === "success" ? (
+                  <div className="py-16 text-center">
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+                      <CheckCircle2 className="h-10 w-10" />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900">Yoklama alindi</h3>
+                    <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{scanMessage}</p>
+                    <button
+                      type="button"
+                      onClick={closeScanner}
+                      className="mt-7 rounded-xl bg-primary px-8 py-3 text-sm font-bold text-primary-foreground"
+                    >
+                      Tamam
+                    </button>
+                  </div>
+                ) : null}
+
+                {scanStatus === "error" ? (
+                  <div className="py-16 text-center">
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 text-red-600">
+                      <XCircle className="h-10 w-10" />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900">Yoklama alinamadi</h3>
+                    <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{scanMessage}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeScanner();
+                        window.setTimeout(() => setScannerOpen(true), 100);
+                      }}
+                      className="mt-7 rounded-xl border border-border px-8 py-3 text-sm font-bold text-slate-900"
+                    >
+                      Tekrar Dene
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
