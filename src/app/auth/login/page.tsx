@@ -10,6 +10,27 @@ import api, { getCsrfCookie } from "@/lib/api/axios";
 import { homePathForUser } from "@/lib/role-home";
 import { useAuth } from "@/store/useAuth";
 
+function formatAuthErrorMessage(
+  data: { message?: string; errors?: Record<string, string[] | string> } | undefined,
+  fallback: string,
+): string {
+  if (!data) {
+    return fallback;
+  }
+  if (data.message && String(data.message).trim()) {
+    return String(data.message);
+  }
+  if (data.errors && typeof data.errors === "object") {
+    const parts = Object.values(data.errors)
+      .flatMap((v) => (Array.isArray(v) ? v : [v]))
+      .filter((v) => v != null && String(v).trim() !== "");
+    if (parts.length) {
+      return parts.map(String).join(" ");
+    }
+  }
+  return fallback;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { setAuth } = useAuth();
@@ -26,7 +47,8 @@ export default function LoginPage() {
 
     try {
       await getCsrfCookie();
-      const response = await api.post("/auth/login", { email, password });
+      const emailNorm = email.trim().toLowerCase();
+      const response = await api.post("/auth/login", { email: emailNorm, password });
 
       setAuth(response.data.user, response.data.access_token);
 
@@ -34,14 +56,16 @@ export default function LoginPage() {
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         console.error("Giriş Hatası Detayı:", err.response?.data);
-        const data = err.response?.data as { message?: string; must_change_password?: boolean } | undefined;
+        const data = err.response?.data as
+          | { message?: string; must_change_password?: boolean; errors?: Record<string, string[] | string> }
+          | undefined;
         if (err.response?.status === 403 && data?.must_change_password) {
           setError(
             data.message ??
               "Önce e-postanızdaki bağlantı ile şifrenizi belirlemeniz gerekiyor. Gerekirse «Şifremi unuttum» ile yeni bağlantı isteyin.",
           );
         } else {
-          setError(data?.message || "Giriş yapılamadı. Bilgilerinizi kontrol edin.");
+          setError(formatAuthErrorMessage(data, "Giriş yapılamadı. Bilgilerinizi kontrol edin."));
         }
       } else {
         console.error("Giriş Hatası:", err);

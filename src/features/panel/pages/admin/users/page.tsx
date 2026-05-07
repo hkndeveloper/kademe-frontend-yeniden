@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   Award,
@@ -20,7 +20,6 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useAuth } from "@/store/useAuth";
 
 interface User {
   id: number;
@@ -51,15 +50,12 @@ interface UserDetail extends User {
   absent_count?: number;
   certificates?: CertificateItem[];
   documents?: Array<{ path: string; label: string; uploaded_at: string }>;
+  coordinated_projects?: Array<{ id: number; name: string }>;
 }
 
 const roleLabels: Record<string, string> = {
-  super_admin: "Admin",
-  coordinator: "Koordinator",
-  staff: "Personel",
   student: "Ogrenci",
   alumni: "Mezun",
-  visitor: "Ziyaretci",
 };
 
 interface RoleOption {
@@ -69,7 +65,6 @@ interface RoleOption {
 
 export default function AdminUsersPage() {
   const { hasPermission, hasGlobalScope } = usePermissions();
-  const authUser = useAuth((s) => s.user);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -97,12 +92,7 @@ export default function AdminUsersPage() {
   });
   const [createError, setCreateError] = useState("");
 
-  const roleOptionsForForm = useMemo(() => {
-    if (authUser?.role === "super_admin") {
-      return createRoles;
-    }
-    return createRoles.filter((r) => r.name !== "super_admin");
-  }, [createRoles, authUser?.role]);
+  const roleOptionsForForm = createRoles;
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -273,9 +263,9 @@ export default function AdminUsersPage() {
             <Users className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Kullanici Yonetimi</h1>
+            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Ogrenci ve Mezun Yonetimi</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Sistemdeki tum hesaplar
+              Ogrenci ve mezun hesaplari
             </p>
           </div>
         </div>
@@ -287,7 +277,7 @@ export default function AdminUsersPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white"
             >
               <UserPlus className="h-4 w-4" />
-              Yeni Kullanici
+              Yeni Ogrenci / Mezun
             </button>
           ) : null}
           <PermissionGate permission="users.export">
@@ -325,7 +315,7 @@ export default function AdminUsersPage() {
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && applyFilters()}
             className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none focus:border-indigo-500"
-            placeholder="Isim, soyisim, e-posta veya telefon ara..."
+            placeholder="Ogrenci veya mezun ara..."
           />
         </div>
         <select
@@ -333,7 +323,7 @@ export default function AdminUsersPage() {
           onChange={(e) => setRoleFilter(e.target.value)}
           className="min-w-[150px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
         >
-          <option value="">Tum Roller</option>
+          <option value="">Ogrenci ve Mezun</option>
           {Object.entries(roleLabels).map(([key, value]) => (
             <option key={key} value={key}>
               {value}
@@ -499,7 +489,7 @@ export default function AdminUsersPage() {
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
                 <UserPlus className="h-5 w-5 text-indigo-600" />
-                Yeni kullanici olustur
+                Yeni ogrenci / mezun olustur
               </h2>
               <button
                 type="button"
@@ -514,8 +504,8 @@ export default function AdminUsersPage() {
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{createError}</div>
               ) : null}
               <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-950">
-                Kullaniciya <strong>sifre belirleme baglantisi</strong> e-posta ile gider. Baglantiyi kullanmadan panele veya
-                ogrenci alanina <strong>giris yapamaz</strong>. E-posta gelmezse &quot;Sifremi unuttum&quot; ile yeni baglanti
+                Hesaba <strong>sifre belirleme baglantisi</strong> e-posta ile gider. Baglantiyi kullanmadan ogrenci/mezun
+                alanina <strong>giris yapamaz</strong>. E-posta gelmezse &quot;Sifremi unuttum&quot; ile yeni baglanti
                 talep edebilir.
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

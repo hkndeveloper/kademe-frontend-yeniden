@@ -12,12 +12,16 @@ import {
   Search,
   Upload,
   UserCog,
+  UserPlus,
+  FolderKanban,
   X,
   XCircle,
 } from "lucide-react";
+import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface StaffProfile {
   title: string | null;
@@ -25,6 +29,17 @@ interface StaffProfile {
   contract_type: string | null;
   start_date: string | null;
   personal_documents?: Array<{ path: string; url?: string | null; label: string; uploaded_at: string }> | null;
+}
+
+interface ProjectAssignment {
+  id: number;
+  name: string;
+  assignment_type?: "coordinator" | "staff";
+}
+
+interface RoleOption {
+  name: string;
+  label: string;
 }
 
 interface StaffUser {
@@ -35,6 +50,9 @@ interface StaffUser {
   phone: string | null;
   role: string;
   staff_profile: StaffProfile | null;
+  projects?: ProjectAssignment[];
+  coordinated_projects?: ProjectAssignment[];
+  assigned_projects?: ProjectAssignment[];
 }
 
 interface LeaveRequest {
@@ -64,11 +82,15 @@ interface ActiveStats {
 type StaffDetail = StaffUser;
 
 export default function AdminStaffPage() {
+  const { hasPermission, hasGlobalScope } = usePermissions();
   const [activeTab, setActiveTab] = useState<"staff" | "leaves">("staff");
   const [staffLoading, setStaffLoading] = useState(false);
   const [staff, setStaff] = useState<StaffUser[]>([]);
   const [staffSearch, setStaffSearch] = useState("");
   const [staffRole, setStaffRole] = useState("");
+  const [projectFilter, setProjectFilter] = useState("");
+  const [projectOptions, setProjectOptions] = useState<ProjectAssignment[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
   const [leavesLoading, setLeavesLoading] = useState(false);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [leaveStatus, setLeaveStatus] = useState("");
@@ -77,8 +99,27 @@ export default function AdminStaffPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [savingProjects, setSavingProjects] = useState(false);
+  const [coordinatedProjectIds, setCoordinatedProjectIds] = useState<number[]>([]);
+  const [assignedProjectIds, setAssignedProjectIds] = useState<number[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createRoles, setCreateRoles] = useState<RoleOption[]>([]);
+  const [createRolesLoading, setCreateRolesLoading] = useState(false);
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createProjectIds, setCreateProjectIds] = useState<number[]>([]);
+  const [createError, setCreateError] = useState("");
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    surname: "",
+    email: "",
+    phone: "",
+    role: "",
+    unit: "Genel",
+  });
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const canManageProjectAssignments = hasPermission("staff.update") && hasGlobalScope("staff.update");
 
   const loadActiveStats = useCallback(async () => {
     try {
@@ -94,7 +135,7 @@ export default function AdminStaffPage() {
     setErrorMessage("");
     try {
       const res = await api.get("/panel/staff", {
-        params: { search: staffSearch, role: staffRole },
+        params: { search: staffSearch, role: staffRole, project_id: projectFilter || undefined },
       });
       setStaff(res.data?.staff?.data || []);
     } catch (error) {
@@ -103,7 +144,25 @@ export default function AdminStaffPage() {
     } finally {
       setStaffLoading(false);
     }
-  }, [staffRole, staffSearch]);
+  }, [projectFilter, staffRole, staffSearch]);
+
+  const loadProjectOptions = useCallback(async () => {
+    if (!hasPermission("projects.view")) {
+      return;
+    }
+    setProjectsLoading(true);
+    try {
+      const res = await api.get<{ projects: ProjectAssignment[] }>("/panel/projects/manageable", {
+        params: { permission: "projects.view" },
+      });
+      setProjectOptions((res.data?.projects ?? []).map((p) => ({ id: p.id, name: p.name })));
+    } catch (error) {
+      console.error("Proje listesi yuklenemedi", error);
+      setProjectOptions([]);
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, [hasPermission]);
 
   const loadLeaves = useCallback(async () => {
     setLeavesLoading(true);
@@ -131,6 +190,14 @@ export default function AdminStaffPage() {
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
+      void loadProjectOptions();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadProjectOptions]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
       if (activeTab === "staff") {
         void loadStaff();
       } else {
@@ -148,12 +215,104 @@ export default function AdminStaffPage() {
     try {
       const res = await api.get(`/panel/staff/${id}`);
       setSelectedStaff(res.data.staff);
+      setCoordinatedProjectIds((res.data.staff?.coordinated_projects ?? []).map((p: ProjectAssignment) => p.id));
+      setAssignedProjectIds((res.data.staff?.assigned_projects ?? []).map((p: ProjectAssignment) => p.id));
     } catch (error) {
       console.error("Personel detaylari yuklenemedi", error);
       setErrorMessage("Personel detaylari yuklenemedi.");
       setSelectedStaff(null);
     } finally {
       setModalLoading(false);
+    }
+  };
+
+  const toggleProjectId = (kind: "coordinator" | "staff", projectId: number) => {
+    const setter = kind === "coordinator" ? setCoordinatedProjectIds : setAssignedProjectIds;
+    setter((prev) => (prev.includes(projectId) ? prev.filter((id) => id !== projectId) : [...prev, projectId]));
+  };
+
+  const handleSaveProjects = async () => {
+    if (!selectedStaff) return;
+    setSavingProjects(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      const res = await api.put<{ message?: string; staff: StaffDetail }>(`/panel/staff/${selectedStaff.id}/projects`, {
+        coordinated_project_ids: selectedStaff.role === "coordinator" ? coordinatedProjectIds : [],
+        assigned_project_ids: selectedStaff.role === "coordinator" ? [] : assignedProjectIds,
+      });
+      setSelectedStaff(res.data.staff);
+      setCoordinatedProjectIds((res.data.staff.coordinated_projects ?? []).map((p) => p.id));
+      setAssignedProjectIds((res.data.staff.assigned_projects ?? []).map((p) => p.id));
+      setSuccessMessage(res.data.message ?? "Proje atamalari guncellendi.");
+      await loadStaff();
+    } catch (error) {
+      console.error("Proje atamalari kaydedilemedi", error);
+      setErrorMessage("Proje atamalari kaydedilemedi.");
+    } finally {
+      setSavingProjects(false);
+    }
+  };
+
+  const roleOptions = Array.from(new Set(staff.map((item) => item.role).filter(Boolean))).sort();
+
+  const openCreateModal = () => {
+    setCreateOpen(true);
+    setCreateError("");
+    setCreateProjectIds([]);
+    setCreateForm({ name: "", surname: "", email: "", phone: "", role: "", unit: "Genel" });
+    setCreateRolesLoading(true);
+    void api
+      .get<{ roles: RoleOption[] }>("/panel/staff/create-options")
+      .then((res) => {
+        const roles = res.data?.roles ?? [];
+        setCreateRoles(roles);
+        setCreateForm((prev) => ({ ...prev, role: roles[0]?.name ?? "" }));
+      })
+      .catch(() => {
+        setCreateError("Rol listesi yuklenemedi. Yetkinizi kontrol edin.");
+        setCreateRoles([]);
+      })
+      .finally(() => setCreateRolesLoading(false));
+  };
+
+  const toggleCreateProject = (projectId: number) => {
+    setCreateProjectIds((prev) => (prev.includes(projectId) ? prev.filter((id) => id !== projectId) : [...prev, projectId]));
+  };
+
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError("");
+    if (!createForm.name.trim() || !createForm.surname.trim() || !createForm.email.trim() || !createForm.role) {
+      setCreateError("Ad, soyad, e-posta ve rol zorunludur.");
+      return;
+    }
+    setCreateSubmitting(true);
+    try {
+      const payload = {
+        name: createForm.name.trim(),
+        surname: createForm.surname.trim(),
+        email: createForm.email.trim(),
+        phone: createForm.phone.trim() || undefined,
+        role: createForm.role,
+        unit: createForm.unit.trim() || "Genel",
+        project_ids: createProjectIds,
+      };
+      const res = await api.post<{ message?: string }>("/panel/staff", payload);
+      setSuccessMessage(res.data?.message ?? "Calisan olusturuldu.");
+      setCreateOpen(false);
+      await loadStaff();
+      await loadActiveStats();
+    } catch (err) {
+      if (isAxiosError(err)) {
+        const data = err.response?.data as { message?: string; errors?: Record<string, string[]> } | undefined;
+        const fromErrors = data?.errors ? Object.values(data.errors).flat().filter(Boolean).join(" ") : "";
+        setCreateError(data?.message || fromErrors || "Calisan olusturulamadi.");
+      } else {
+        setCreateError("Calisan olusturulamadi.");
+      }
+    } finally {
+      setCreateSubmitting(false);
     }
   };
 
@@ -227,7 +386,17 @@ export default function AdminStaffPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {canManageProjectAssignments ? (
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white"
+            >
+              <UserPlus className="h-4 w-4" />
+              Yeni Calisan
+            </button>
+          ) : null}
           <a
             href="http://kademepuantaj.com"
             target="_blank"
@@ -245,6 +414,7 @@ export default function AdminStaffPage() {
                 params={{
                   role: staffRole || undefined,
                   search: staffSearch || undefined,
+                  project_id: projectFilter || undefined,
                 }}
                 buttonLabel="Personeli Disa Aktar"
               />
@@ -345,6 +515,26 @@ export default function AdminStaffPage() {
               <option value="">Tum Roller</option>
               <option value="coordinator">Koordinator</option>
               <option value="staff">Personel</option>
+              {roleOptions
+                .filter((role) => !["coordinator", "staff"].includes(role))
+                .map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={projectFilter}
+              onChange={(e) => setProjectFilter(e.target.value)}
+              className="min-w-[180px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              disabled={projectsLoading}
+            >
+              <option value="">Tum Projeler</option>
+              {projectOptions.map((project) => (
+                <option key={project.id} value={String(project.id)}>
+                  {project.name}
+                </option>
+              ))}
             </select>
             <button
               onClick={() => void loadStaff()}
@@ -363,6 +553,7 @@ export default function AdminStaffPage() {
                     <th className="px-6 py-4">Personel</th>
                     <th className="px-6 py-4">Iletisim</th>
                     <th className="px-6 py-4">Birim / Unvan</th>
+                    <th className="px-6 py-4">Projeler</th>
                     <th className="px-6 py-4">Sozlesme</th>
                     <th className="px-6 py-4 text-right">Islem</th>
                   </tr>
@@ -370,13 +561,13 @@ export default function AdminStaffPage() {
                 <tbody className="divide-y divide-white/5">
                   {staffLoading ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center">
+                      <td colSpan={6} className="px-6 py-12 text-center">
                         <Loader2 className="mx-auto h-8 w-8 animate-spin text-indigo-400" />
                       </td>
                     </tr>
                   ) : staff.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                      <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                         Personel bulunamadi.
                       </td>
                     </tr>
@@ -396,6 +587,28 @@ export default function AdminStaffPage() {
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-900">{staffItem.staff_profile?.unit || "-"}</div>
                           <div className="text-xs">{staffItem.staff_profile?.title || "-"}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {!staffItem.projects?.length ? (
+                            <span className="text-xs text-muted-foreground">Atama yok</span>
+                          ) : (
+                            <div className="flex max-w-xs flex-wrap gap-1.5">
+                              {staffItem.projects.slice(0, 3).map((project) => (
+                                <span
+                                  key={`${project.assignment_type}-${project.id}`}
+                                  className="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-1 text-[10px] font-bold text-indigo-500"
+                                  title={project.assignment_type === "coordinator" ? "Koordinator" : "Gorevli"}
+                                >
+                                  {project.name}
+                                </span>
+                              ))}
+                              {staffItem.projects.length > 3 ? (
+                                <span className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-bold text-muted-foreground">
+                                  +{staffItem.projects.length - 3}
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4">{staffItem.staff_profile?.contract_type || "-"}</td>
                         <td className="px-6 py-4 text-right">
@@ -538,6 +751,146 @@ export default function AdminStaffPage() {
         </div>
       )}
 
+      {createOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
+                <UserPlus className="h-5 w-5 text-indigo-600" />
+                Yeni calisan olustur
+              </h2>
+              <button
+                type="button"
+                onClick={() => setCreateOpen(false)}
+                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={(e) => void handleCreateStaff(e)} className="space-y-4 overflow-y-auto p-6">
+              {createError ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{createError}</div>
+              ) : null}
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-950">
+                Calisana sifre belirleme baglantisi e-posta ile gider. Proje atamalari rol kapsaminda panel gorunurlugunu belirler.
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Ad</label>
+                  <input
+                    required
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Soyad</label>
+                  <input
+                    required
+                    value={createForm.surname}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, surname: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">E-posta</label>
+                  <input
+                    required
+                    type="email"
+                    value={createForm.email}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Telefon</label>
+                  <input
+                    value={createForm.phone}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, phone: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Rol</label>
+                  {createRolesLoading ? (
+                    <div className="mt-2 flex justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+                    </div>
+                  ) : (
+                    <select
+                      required
+                      value={createForm.role}
+                      onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                    >
+                      {createRoles.length === 0 ? (
+                        <option value="">Rol yok</option>
+                      ) : (
+                        createRoles.map((role) => (
+                          <option key={role.name} value={role.name}>
+                            {role.label}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Birim</label>
+                  <input
+                    value={createForm.unit}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, unit: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Projeler</div>
+                <div className="max-h-44 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  {projectOptions.length === 0 ? (
+                    <div className="text-sm text-slate-500">Proje listesi yuklenemedi veya proje yok.</div>
+                  ) : (
+                    projectOptions.map((project) => (
+                      <label key={project.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-white">
+                        <input
+                          type="checkbox"
+                          checked={createProjectIds.includes(project.id)}
+                          onChange={() => toggleCreateProject(project.id)}
+                          className="h-4 w-4 rounded border-slate-400 text-indigo-600"
+                        />
+                        <span className="font-medium text-slate-900">{project.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(false)}
+                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  Kapat
+                </button>
+                <button
+                  type="submit"
+                  disabled={createSubmitting || createRolesLoading || createRoles.length === 0}
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {createSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Olustur
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 shadow-2xl">
@@ -599,6 +952,88 @@ export default function AdminStaffPage() {
                   </div>
 
                   <hr className="border-white/5" />
+
+                  <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-5">
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-indigo-400">
+                        <FolderKanban className="h-4 w-4" />
+                        Proje Atamalari
+                      </h3>
+                      {canManageProjectAssignments ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleSaveProjects()}
+                          disabled={savingProjects || projectsLoading}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                          {savingProjects ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                          Projeleri Kaydet
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {projectsLoading ? (
+                      <div className="flex justify-center py-6">
+                        <Loader2 className="h-7 w-7 animate-spin text-indigo-400" />
+                      </div>
+                    ) : projectOptions.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-4 text-sm text-muted-foreground">
+                        Proje listesi yuklenemedi veya erisilebilir proje bulunamadi.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4">
+                        {selectedStaff.role === "coordinator" ? (
+                          <div>
+                            <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-900">
+                              Koordine ettigi projeler
+                            </div>
+                            <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-3">
+                              {projectOptions.map((project) => (
+                                <label
+                                  key={`coordinated-${project.id}`}
+                                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-white/10"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={coordinatedProjectIds.includes(project.id)}
+                                    onChange={() => toggleProjectId("coordinator", project.id)}
+                                    disabled={!canManageProjectAssignments}
+                                    className="h-4 w-4 rounded border-slate-400 text-indigo-600"
+                                  />
+                                  <span className="font-medium text-slate-900">{project.name}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {selectedStaff.role !== "coordinator" ? (
+                          <div>
+                            <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-900">
+                              Gorevli oldugu projeler
+                            </div>
+                            <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-3">
+                              {projectOptions.map((project) => (
+                                <label
+                                  key={`assigned-${project.id}`}
+                                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-white/10"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={assignedProjectIds.includes(project.id)}
+                                    onChange={() => toggleProjectId("staff", project.id)}
+                                    disabled={!canManageProjectAssignments}
+                                    className="h-4 w-4 rounded border-slate-400 text-indigo-600"
+                                  />
+                                  <span className="font-medium text-slate-900">{project.name}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
 
                   <div>
                     <h3 className="mb-4 flex items-center justify-between text-sm font-bold uppercase tracking-widest text-slate-900">
