@@ -65,6 +65,65 @@ const VALID_SCOPE_TYPES: ScopeType[] = [
   "none",
 ];
 
+function permissionStartsWith(permissionName: string, prefixes: string[]): boolean {
+  return prefixes.some((prefix) => permissionName.startsWith(prefix));
+}
+
+function defaultScopeForRole(roleName: string, permissionName: string): ScopeType {
+  if (roleName === "super_admin") return "all";
+  if (permissionName === "calendar.view" && ["coordinator", "staff"].includes(roleName)) return "all";
+
+  if (roleName === "coordinator") {
+    if (
+      permissionStartsWith(permissionName, [
+        "projects.",
+        "periods.",
+        "programs.",
+        "calendar.",
+        "applications.",
+        "volunteer.",
+        "financial.",
+        "support.",
+        "requests.",
+        "announcements.",
+        "content.",
+        "certificates.",
+        "digital_bohca.",
+        "assignments.",
+      ])
+    ) {
+      return "own_projects";
+    }
+    if (permissionStartsWith(permissionName, ["staff.", "users."])) return "own_unit";
+  }
+
+  if (roleName === "staff") {
+    if (
+      permissionStartsWith(permissionName, [
+        "requests.",
+        "support.",
+        "applications.",
+        "volunteer.",
+        "projects.",
+        "programs.",
+        "periods.",
+        "calendar.",
+        "announcements.",
+        "content.",
+        "certificates.",
+        "digital_bohca.",
+        "assignments.",
+      ])
+    ) {
+      return "assigned_projects";
+    }
+    if (permissionStartsWith(permissionName, ["staff.", "users."])) return "own_unit";
+  }
+
+  if (roleName === "student" || roleName === "alumni") return "self";
+  return "none";
+}
+
 interface ManagedUser {
   id: number;
   name: string;
@@ -324,6 +383,17 @@ export default function PermissionsPage() {
       return;
     }
 
+    const currentlyEnabled = granularMatrix[roleName]?.has(permissionName) ?? false;
+    if (currentlyEnabled) {
+      setRolePermissionScopes((scopeState) => {
+        const nextScopes = { ...scopeState };
+        const roleScopes = { ...(nextScopes[roleName] ?? {}) };
+        delete roleScopes[permissionName];
+        nextScopes[roleName] = roleScopes;
+        return nextScopes;
+      });
+    }
+
     setGranularMatrix((current) => {
       const next = { ...current };
       const permissions = new Set(next[roleName] ?? []);
@@ -388,11 +458,13 @@ export default function PermissionsPage() {
         })),
         granular_scopes: roles.map((role) => ({
           role: role.name,
-          scopes: Object.entries(rolePermissionScopes[role.name] ?? {}).map(([permission_name, scope]) => ({
-            permission_name,
-            scope_type: scope.scope_type,
-            scope_payload: scope.scope_payload ?? {},
-          })),
+          scopes: Object.entries(rolePermissionScopes[role.name] ?? {})
+            .filter(([permission_name]) => role.name === "super_admin" || (granularMatrix[role.name]?.has(permission_name) ?? false))
+            .map(([permission_name, scope]) => ({
+              permission_name,
+              scope_type: scope.scope_type,
+              scope_payload: scope.scope_payload ?? {},
+            })),
         })),
       });
 
@@ -562,7 +634,7 @@ export default function PermissionsPage() {
       permission_name,
       scope_type: scope.scope_type,
       scope_payload: scope.scope_payload ?? {},
-    }));
+    })).filter((scope) => role.name === "super_admin" || permissions.includes(scope.permission_name));
     setUpdatingRoleId(role.id);
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -889,7 +961,7 @@ export default function PermissionsPage() {
                           {roles.map((role) => {
                             const checked = role.name === "super_admin" || (granularMatrix[role.name]?.has(permission.name) ?? false);
                             const scope = rolePermissionScopes[role.name]?.[permission.name];
-                            const scopeType: ScopeType = scope?.scope_type ?? "all";
+                            const scopeType: ScopeType = scope?.scope_type ?? defaultScopeForRole(role.name, permission.name);
                             const projectPayload = String((scope?.scope_payload?.project_ids as number[] | undefined)?.join(",") ?? "");
                             const unitPayload = String((scope?.scope_payload?.unit as string | undefined) ?? "");
                             const baseline = role.granular_effective ?? role.permissions ?? [];
