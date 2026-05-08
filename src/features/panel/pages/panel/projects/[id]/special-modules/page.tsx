@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, BriefcaseBusiness, Gift, Handshake, Loader2, Plus, Trash2, Upload, Users } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, Edit2, Gift, Handshake, Loader2, Plus, Save, Trash2, Upload, Users, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 
@@ -23,6 +23,7 @@ type Internship = {
   start_date: string;
   end_date?: string | null;
   description?: string | null;
+  document_path?: string | null;
   participant?: { user?: { name?: string; surname?: string } | null } | null;
 };
 
@@ -31,6 +32,7 @@ type Mentor = {
   name: string;
   expertise?: string | null;
   bio?: string | null;
+  photo_path?: string | null;
 };
 
 type EurodeskProject = {
@@ -39,13 +41,17 @@ type EurodeskProject = {
   partner_organizations?: string[] | null;
   grant_amount?: string | number | null;
   grant_status: string;
+  start_date?: string | null;
+  end_date?: string | null;
 };
 
 type RewardTier = {
   id: number;
+  project_id?: number | null;
   name: string;
   min_badges: number;
   min_credits: number;
+  description?: string | null;
   reward_description: string;
 };
 
@@ -87,6 +93,7 @@ const initialReward = { name: "", description: "", min_badges: "0", min_credits:
 const initialRewardAward = { participant_id: "", reward_tier_id: "", reward_name: "", status: "given", note: "" };
 const inputClass = "rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none focus:border-accent";
 const buttonClass = "inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white";
+const editableEndpoints = new Set(["internships", "mentors", "eurodesk-projects", "reward-tiers"]);
 
 export default function PanelProjectSpecialModulesPage() {
   const params = useParams();
@@ -103,6 +110,7 @@ export default function PanelProjectSpecialModulesPage() {
   const [eurodeskForm, setEurodeskForm] = useState(initialEurodesk);
   const [rewardForm, setRewardForm] = useState(initialReward);
   const [rewardAwardForm, setRewardAwardForm] = useState(initialRewardAward);
+  const [editing, setEditing] = useState<{ endpoint: string; id: number } | null>(null);
 
   const loadData = useCallback(async () => {
     if (invalidProjectId) return;
@@ -136,16 +144,27 @@ export default function PanelProjectSpecialModulesPage() {
     [access]
   );
 
+  function resetEditing(reset?: () => void) {
+    setEditing(null);
+    reset?.();
+  }
+
   async function submit(endpoint: string, payload: unknown, reset: () => void) {
     setFeedback(null);
     try {
-      await api.post(`/panel/projects/${projectId}/special-modules/${endpoint}`, payload);
+      const isEditing = editing?.endpoint === endpoint && editableEndpoints.has(endpoint);
+      if (isEditing) {
+        await api.put(`/panel/projects/${projectId}/special-modules/${endpoint}/${editing.id}`, payload);
+      } else {
+        await api.post(`/panel/projects/${projectId}/special-modules/${endpoint}`, payload);
+      }
       reset();
+      setEditing(null);
       await loadData();
-      setFeedback("Kayit eklendi.");
+      setFeedback(isEditing ? "Kayit guncellendi." : "Kayit eklendi.");
     } catch (error) {
-      console.error("Ozel modul kaydi eklenemedi", error);
-      setFeedback("Kayit eklenemedi. Alanlari ve yetkileri kontrol edin.");
+      console.error("Ozel modul kaydi kaydedilemedi", error);
+      setFeedback("Kayit kaydedilemedi. Alanlari ve yetkileri kontrol edin.");
     }
   }
 
@@ -270,17 +289,33 @@ export default function PanelProjectSpecialModulesPage() {
                       }}
                     />
                   </label>
-                  <button className={`${buttonClass} md:col-span-2`}><Plus className="h-4 w-4" /> Staj ekle</button>
+                  <FormActions isEditing={editing?.endpoint === "internships"} onCancel={() => resetEditing(() => setInternshipForm(initialInternship))} label="Staj" />
                 </form>
               ) : null}
-              <RecordList items={data.internships} render={(item) => `${item.company_name} - ${item.position}`} onDelete={access["projects.internships.manage"] ? (id) => destroy("internships", id) : undefined} />
+              <RecordList
+                items={data.internships}
+                render={(item) => `${item.company_name} - ${item.position}`}
+                onEdit={access["projects.internships.manage"] ? (item) => {
+                  setEditing({ endpoint: "internships", id: item.id });
+                  setInternshipForm({
+                    participant_id: "",
+                    company_name: item.company_name,
+                    position: item.position,
+                    start_date: toDateInput(item.start_date),
+                    end_date: toDateInput(item.end_date),
+                    description: item.description ?? "",
+                    document_path: item.document_path ?? "",
+                  });
+                } : undefined}
+                onDelete={access["projects.internships.manage"] ? (id) => destroy("internships", id) : undefined}
+              />
             </ModuleCard>
           ) : null}
 
           {access["projects.mentors.view"] || access["projects.mentors.manage"] ? (
             <ModuleCard icon={<Users className="h-5 w-5" />} title="Pergel Mentor Bilgileri">
               {access["projects.mentors.manage"] ? (
-                <SimpleForm onSubmit={() => submit("mentors", mentorForm, () => setMentorForm(initialMentor))}>
+                <SimpleForm isEditing={editing?.endpoint === "mentors"} label="Mentor" onCancel={() => resetEditing(() => setMentorForm(initialMentor))} onSubmit={() => submit("mentors", mentorForm, () => setMentorForm(initialMentor))}>
                   <input value={mentorForm.name} onChange={(event) => setMentorForm((current) => ({ ...current, name: event.target.value }))} placeholder="Mentor adi" className={inputClass} required />
                   <input value={mentorForm.expertise} onChange={(event) => setMentorForm((current) => ({ ...current, expertise: event.target.value }))} placeholder="Uzmanlik" className={inputClass} />
                   <input value={mentorForm.photo_path} onChange={(event) => setMentorForm((current) => ({ ...current, photo_path: event.target.value }))} placeholder="Foto yolu veya URL" className={inputClass} />
@@ -301,14 +336,27 @@ export default function PanelProjectSpecialModulesPage() {
                   <textarea value={mentorForm.bio} onChange={(event) => setMentorForm((current) => ({ ...current, bio: event.target.value }))} placeholder="Kisa bio" className={`${inputClass} md:col-span-2`} />
                 </SimpleForm>
               ) : null}
-              <RecordList items={data.mentors} render={(item) => `${item.name}${item.expertise ? ` - ${item.expertise}` : ""}`} onDelete={access["projects.mentors.manage"] ? (id) => destroy("mentors", id) : undefined} />
+              <RecordList
+                items={data.mentors}
+                render={(item) => `${item.name}${item.expertise ? ` - ${item.expertise}` : ""}`}
+                onEdit={access["projects.mentors.manage"] ? (item) => {
+                  setEditing({ endpoint: "mentors", id: item.id });
+                  setMentorForm({
+                    name: item.name,
+                    expertise: item.expertise ?? "",
+                    bio: item.bio ?? "",
+                    photo_path: item.photo_path ?? "",
+                  });
+                } : undefined}
+                onDelete={access["projects.mentors.manage"] ? (id) => destroy("mentors", id) : undefined}
+              />
             </ModuleCard>
           ) : null}
 
           {access["projects.eurodesk.view"] || access["projects.eurodesk.manage"] ? (
             <ModuleCard icon={<Handshake className="h-5 w-5" />} title="Eurodesk Hibe ve Ortakliklar">
               {access["projects.eurodesk.manage"] ? (
-                <SimpleForm onSubmit={() => submit("eurodesk-projects", {
+                <SimpleForm isEditing={editing?.endpoint === "eurodesk-projects"} label="Eurodesk proje" onCancel={() => resetEditing(() => setEurodeskForm(initialEurodesk))} onSubmit={() => submit("eurodesk-projects", {
                   ...eurodeskForm,
                   partner_organizations: eurodeskForm.partner_organizations.split(",").map((item) => item.trim()).filter(Boolean),
                   grant_amount: eurodeskForm.grant_amount ? Number(eurodeskForm.grant_amount) : null,
@@ -326,14 +374,29 @@ export default function PanelProjectSpecialModulesPage() {
                   </select>
                 </SimpleForm>
               ) : null}
-              <RecordList items={data.eurodesk_projects} render={(item) => `${item.title} - ${item.grant_status}${item.grant_amount ? ` - ${item.grant_amount}` : ""}`} onDelete={access["projects.eurodesk.manage"] ? (id) => destroy("eurodesk-projects", id) : undefined} />
+              <RecordList
+                items={data.eurodesk_projects}
+                render={(item) => `${item.title} - ${item.grant_status}${item.grant_amount ? ` - ${item.grant_amount}` : ""}`}
+                onEdit={access["projects.eurodesk.manage"] ? (item) => {
+                  setEditing({ endpoint: "eurodesk-projects", id: item.id });
+                  setEurodeskForm({
+                    title: item.title,
+                    partner_organizations: (item.partner_organizations ?? []).join(", "),
+                    grant_amount: item.grant_amount ? String(item.grant_amount) : "",
+                    grant_status: item.grant_status,
+                    start_date: toDateInput(item.start_date),
+                    end_date: toDateInput(item.end_date),
+                  });
+                } : undefined}
+                onDelete={access["projects.eurodesk.manage"] ? (id) => destroy("eurodesk-projects", id) : undefined}
+              />
             </ModuleCard>
           ) : null}
 
           {access["projects.rewards.view"] || access["projects.rewards.manage"] ? (
             <ModuleCard icon={<Gift className="h-5 w-5" />} title="Kademe Plus Rozet ve Hediye Kademeleri">
               {access["projects.rewards.manage"] ? (
-                <SimpleForm onSubmit={() => submit("reward-tiers", {
+                <SimpleForm isEditing={editing?.endpoint === "reward-tiers"} label="Hediye kademesi" onCancel={() => resetEditing(() => setRewardForm(initialReward))} onSubmit={() => submit("reward-tiers", {
                   ...rewardForm,
                   min_badges: Number(rewardForm.min_badges),
                   min_credits: Number(rewardForm.min_credits),
@@ -345,7 +408,23 @@ export default function PanelProjectSpecialModulesPage() {
                   <input type="number" value={rewardForm.min_credits} onChange={(event) => setRewardForm((current) => ({ ...current, min_credits: event.target.value }))} placeholder="Min kredi" className={inputClass} />
                 </SimpleForm>
               ) : null}
-              <RecordList items={data.reward_tiers} render={(item) => `${item.name} - ${item.reward_description} (${item.min_badges} rozet / ${item.min_credits} kredi)`} onDelete={access["projects.rewards.manage"] ? (id) => destroy("reward-tiers", id) : undefined} />
+              <RecordList
+                items={data.reward_tiers}
+                render={(item) => `${item.name} - ${item.reward_description} (${item.min_badges} rozet / ${item.min_credits} kredi)`}
+                canEdit={(item) => item.project_id === data.project.id}
+                canDelete={(item) => item.project_id === data.project.id}
+                onEdit={access["projects.rewards.manage"] ? (item) => {
+                  setEditing({ endpoint: "reward-tiers", id: item.id });
+                  setRewardForm({
+                    name: item.name,
+                    description: item.description ?? "",
+                    min_badges: String(item.min_badges),
+                    min_credits: String(item.min_credits),
+                    reward_description: item.reward_description,
+                  });
+                } : undefined}
+                onDelete={access["projects.rewards.manage"] ? (id) => destroy("reward-tiers", id) : undefined}
+              />
               <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4">
                 <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Hediye hakki kazananlar</h3>
                 {(data.reward_eligible_participants ?? []).length === 0 ? (
@@ -428,7 +507,7 @@ function ModuleCard({ title, icon, children }: { title: string; icon: ReactNode;
   );
 }
 
-function SimpleForm({ children, onSubmit }: { children: ReactNode; onSubmit: () => Promise<void> }) {
+function SimpleForm({ children, isEditing, label, onCancel, onSubmit }: { children: ReactNode; isEditing?: boolean; label?: string; onCancel?: () => void; onSubmit: () => Promise<void> }) {
   return (
     <form
       className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2"
@@ -438,12 +517,54 @@ function SimpleForm({ children, onSubmit }: { children: ReactNode; onSubmit: () 
       }}
     >
       {children}
-      <button className={`${buttonClass} md:col-span-2`}><Plus className="h-4 w-4" /> Kaydet</button>
+      <div className="flex flex-wrap gap-2 md:col-span-2">
+        <button className={buttonClass}>
+          {isEditing ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {isEditing ? `${label ?? "Kayit"} guncelle` : "Kaydet"}
+        </button>
+        {isEditing && onCancel ? (
+          <button type="button" onClick={onCancel} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-white/[0.06] hover:text-white">
+            <X className="h-4 w-4" />
+            Vazgec
+          </button>
+        ) : null}
+      </div>
     </form>
   );
 }
 
-function RecordList<T extends { id: number }>({ items, render, onDelete }: { items: T[]; render: (item: T) => string; onDelete?: (id: number) => void }) {
+function FormActions({ isEditing, label, onCancel }: { isEditing?: boolean; label: string; onCancel: () => void }) {
+  return (
+    <div className="flex flex-wrap gap-2 md:col-span-2">
+      <button className={buttonClass}>
+        {isEditing ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+        {isEditing ? `${label} guncelle` : `${label} ekle`}
+      </button>
+      {isEditing ? (
+        <button type="button" onClick={onCancel} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-white/[0.06] hover:text-white">
+          <X className="h-4 w-4" />
+          Vazgec
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function RecordList<T extends { id: number }>({
+  items,
+  render,
+  canEdit,
+  canDelete,
+  onEdit,
+  onDelete,
+}: {
+  items: T[];
+  render: (item: T) => string;
+  canEdit?: (item: T) => boolean;
+  canDelete?: (item: T) => boolean;
+  onEdit?: (item: T) => void;
+  onDelete?: (id: number) => void;
+}) {
   if (items.length === 0) return <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-muted-foreground">Kayit yok.</div>;
 
   return (
@@ -451,13 +572,25 @@ function RecordList<T extends { id: number }>({ items, render, onDelete }: { ite
       {items.map((item) => (
         <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
           <div className="text-sm font-semibold text-white">{render(item)}</div>
-          {onDelete ? (
-            <button type="button" onClick={() => onDelete(item.id)} className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          ) : null}
+          <div className="flex shrink-0 items-center gap-2">
+            {onEdit && (canEdit ? canEdit(item) : true) ? (
+              <button type="button" onClick={() => onEdit(item)} className="rounded-lg border border-white/10 p-2 text-muted-foreground hover:bg-white/[0.06] hover:text-white" title="Duzenle">
+                <Edit2 className="h-4 w-4" />
+              </button>
+            ) : null}
+            {onDelete && (canDelete ? canDelete(item) : true) ? (
+              <button type="button" onClick={() => onDelete(item.id)} className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10" title="Sil">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
         </div>
       ))}
     </div>
   );
+}
+
+function toDateInput(value?: string | null): string {
+  if (!value) return "";
+  return value.slice(0, 10);
 }

@@ -5,12 +5,17 @@ import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  BriefcaseBusiness,
   Calendar,
   CheckCircle2,
+  Clock,
   X,
   FileText,
+  Gift,
+  GraduationCap,
   Image as ImageIcon,
   Loader2,
+  MapPin,
   MessageSquareText,
   Sparkles,
   Users,
@@ -73,10 +78,75 @@ interface ProjectDetail {
   alumni?: Alumni[];
 }
 
+interface PublicProgram {
+  id: number;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  guest_info?: unknown;
+  status: string;
+  start_at?: string | null;
+  end_at?: string | null;
+  period?: ActivePeriod | null;
+}
+
+interface ProjectProgramsPayload {
+  summary: {
+    total: number;
+    upcoming: number;
+    completed: number;
+  };
+  upcoming: PublicProgram[];
+  recent_completed: PublicProgram[];
+}
+
+interface ProjectSpecialsPayload {
+  module_keys: string[];
+  internships?: {
+    total: number;
+    active: number;
+    companies: string[];
+    positions: string[];
+  };
+  mentors?: Array<{
+    id: number;
+    name: string;
+    bio?: string | null;
+    expertise?: string | null;
+    photo?: string | null;
+  }>;
+  reward_tiers?: Array<{
+    id: number;
+    name: string;
+    description?: string | null;
+    min_badges?: number | null;
+    min_credits?: number | null;
+    reward_description?: string | null;
+  }>;
+  eurodesk_projects?: Array<{
+    id: number;
+    title: string;
+    partner_organizations?: string[];
+    grant_amount?: string | number | null;
+    grant_status?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+  }>;
+  kpd?: {
+    rooms: Array<{
+      id: number;
+      name: string;
+      description?: string | null;
+    }>;
+  };
+}
+
 interface ProjectResponse {
   project: ProjectDetail;
   current_period?: ActivePeriod | null;
   application_form?: ApplicationFormData | null;
+  programs?: ProjectProgramsPayload;
+  project_specials?: ProjectSpecialsPayload;
 }
 
 export default function ProjectDetailPage() {
@@ -86,6 +156,8 @@ export default function ProjectDetailPage() {
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [applicationForm, setApplicationForm] = useState<ApplicationFormData | null>(null);
+  const [programs, setPrograms] = useState<ProjectProgramsPayload | null>(null);
+  const [projectSpecials, setProjectSpecials] = useState<ProjectSpecialsPayload | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string | string[] | File | null>>({});
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -105,6 +177,8 @@ export default function ProjectDetailPage() {
         const response = await api.get<ProjectResponse>(`/projects/${params.slug}`);
         setProject(response.data.project);
         setApplicationForm(response.data.application_form ?? null);
+        setPrograms(response.data.programs ?? null);
+        setProjectSpecials(response.data.project_specials ?? null);
 
         const nextFormValues: Record<string, string | string[] | File | null> = {};
         for (const field of response.data.application_form?.fields ?? []) {
@@ -235,6 +309,35 @@ export default function ProjectDetailPage() {
   }, [project?.alumni]);
 
   const activeStudents = project?.active_students ?? [];
+  const upcomingPrograms = programs?.upcoming ?? [];
+  const completedPrograms = programs?.recent_completed ?? [];
+  const hasSpecialContent = Boolean(
+    (projectSpecials?.internships && projectSpecials.internships.total > 0) ||
+      (projectSpecials?.mentors?.length ?? 0) > 0 ||
+      (projectSpecials?.reward_tiers?.length ?? 0) > 0 ||
+      (projectSpecials?.eurodesk_projects?.length ?? 0) > 0 ||
+      (projectSpecials?.kpd?.rooms?.length ?? 0) > 0,
+  );
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return "Tarih belirtilmedi";
+    return new Intl.DateTimeFormat("tr-TR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
+  };
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return "Tarih belirtilmedi";
+    return new Intl.DateTimeFormat("tr-TR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(value));
+  };
 
   const updateFormValue = (fieldId: string, value: string | string[] | File | null) => {
     setFormValues((current) => ({
@@ -346,6 +449,33 @@ export default function ProjectDetailPage() {
     );
   };
 
+  const renderProgramCard = (program: PublicProgram) => (
+    <div key={program.id} className="rounded-2xl border border-border/70 bg-muted/30 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/50">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="font-bold text-foreground">{program.title}</p>
+          {program.period?.name ? <p className="mt-1 text-xs text-muted-foreground">{program.period.name}</p> : null}
+        </div>
+        <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+          {program.status}
+        </span>
+      </div>
+      <div className="space-y-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-primary" />
+          <span>{formatDateTime(program.start_at)}</span>
+        </div>
+        {program.location ? (
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-primary" />
+            <span>{program.location}</span>
+          </div>
+        ) : null}
+      </div>
+      {program.description ? <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{program.description}</p> : null}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -419,6 +549,177 @@ export default function ProjectDetailPage() {
                 <p className="mt-2 text-sm font-bold text-foreground">{project.has_interview ? "Mulakatli" : "Mulakatsiz"}</p>
               </div>
             </div>
+          </section>
+
+          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <h2 className="flex items-center gap-2 text-2xl font-bold">
+                <Calendar className="h-6 w-6 text-primary" />
+                Program Akisi ve Takvim
+              </h2>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="rounded-xl bg-muted/40 px-3 py-2">
+                  <p className="font-extrabold text-foreground">{programs?.summary.total ?? 0}</p>
+                  <p className="text-muted-foreground">Toplam</p>
+                </div>
+                <div className="rounded-xl bg-muted/40 px-3 py-2">
+                  <p className="font-extrabold text-foreground">{programs?.summary.upcoming ?? 0}</p>
+                  <p className="text-muted-foreground">Yaklasan</p>
+                </div>
+                <div className="rounded-xl bg-muted/40 px-3 py-2">
+                  <p className="font-extrabold text-foreground">{programs?.summary.completed ?? 0}</p>
+                  <p className="text-muted-foreground">Gecmis</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <div>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">Yaklasan Programlar</h3>
+                {upcomingPrograms.length > 0 ? (
+                  <div className="space-y-3">{upcomingPrograms.map(renderProgramCard)}</div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
+                    Yaklasan program henuz eklenmemis.
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">Gecmis Programlar</h3>
+                {completedPrograms.length > 0 ? (
+                  <div className="space-y-3">{completedPrograms.map(renderProgramCard)}</div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
+                    Gecmis program henuz eklenmemis.
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+            <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
+              <BriefcaseBusiness className="h-6 w-6 text-primary" />
+              Projeye Ozel Icerikler
+            </h2>
+
+            {hasSpecialContent ? (
+              <div className="space-y-5">
+                {projectSpecials?.internships ? (
+                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                    <div className="mb-4 flex items-center gap-2 font-bold">
+                      <BriefcaseBusiness className="h-5 w-5 text-primary" />
+                      Staj Bilgileri
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+                      <div className="rounded-xl bg-background/60 p-3">
+                        <p className="text-xs text-muted-foreground">Toplam</p>
+                        <p className="text-lg font-extrabold">{projectSpecials.internships.total}</p>
+                      </div>
+                      <div className="rounded-xl bg-background/60 p-3">
+                        <p className="text-xs text-muted-foreground">Aktif</p>
+                        <p className="text-lg font-extrabold">{projectSpecials.internships.active}</p>
+                      </div>
+                      <div className="rounded-xl bg-background/60 p-3 md:col-span-2">
+                        <p className="text-xs text-muted-foreground">Kurumlar</p>
+                        <p className="mt-1 text-sm font-semibold">{projectSpecials.internships.companies.join(", ") || "Belirtilmedi"}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {(projectSpecials?.mentors?.length ?? 0) > 0 ? (
+                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                    <div className="mb-4 flex items-center gap-2 font-bold">
+                      <GraduationCap className="h-5 w-5 text-primary" />
+                      Mentorler
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {projectSpecials?.mentors?.map((mentor) => (
+                        <div key={mentor.id} className="flex gap-4 rounded-xl bg-background/60 p-4">
+                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
+                            {mentor.photo ? <Image src={mentor.photo} alt={mentor.name} fill unoptimized className="object-cover" /> : null}
+                          </div>
+                          <div>
+                            <p className="font-bold text-foreground">{mentor.name}</p>
+                            {mentor.expertise ? <p className="text-xs text-primary">{mentor.expertise}</p> : null}
+                            {mentor.bio ? <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">{mentor.bio}</p> : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {(projectSpecials?.reward_tiers?.length ?? 0) > 0 ? (
+                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                    <div className="mb-4 flex items-center gap-2 font-bold">
+                      <Gift className="h-5 w-5 text-primary" />
+                      Rozet ve Odul Esikleri
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {projectSpecials?.reward_tiers?.map((tier) => (
+                        <div key={tier.id} className="rounded-xl bg-background/60 p-4">
+                          <p className="font-bold text-foreground">{tier.name}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {tier.min_badges ?? 0} rozet / {tier.min_credits ?? 0} kredi
+                          </p>
+                          {tier.reward_description ? <p className="mt-3 text-sm text-primary">{tier.reward_description}</p> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {(projectSpecials?.eurodesk_projects?.length ?? 0) > 0 ? (
+                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                    <div className="mb-4 flex items-center gap-2 font-bold">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      Eurodesk Projeleri
+                    </div>
+                    <div className="space-y-3">
+                      {projectSpecials?.eurodesk_projects?.map((item) => (
+                        <div key={item.id} className="rounded-xl bg-background/60 p-4">
+                          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                            <div>
+                              <p className="font-bold text-foreground">{item.title}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {formatDate(item.start_date)} - {formatDate(item.end_date)}
+                              </p>
+                            </div>
+                            {item.grant_status ? <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{item.grant_status}</span> : null}
+                          </div>
+                          {(item.partner_organizations?.length ?? 0) > 0 ? (
+                            <p className="mt-3 text-sm text-muted-foreground">{item.partner_organizations?.join(", ")}</p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {(projectSpecials?.kpd?.rooms?.length ?? 0) > 0 ? (
+                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                    <div className="mb-4 flex items-center gap-2 font-bold">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      KPD Oturum Odalari
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {projectSpecials?.kpd?.rooms.map((room) => (
+                        <div key={room.id} className="rounded-xl bg-background/60 p-4">
+                          <p className="font-bold text-foreground">{room.name}</p>
+                          {room.description ? <p className="mt-2 text-sm text-muted-foreground">{room.description}</p> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
+                Bu proje icin public tarafta gosterilecek ozel icerik henuz eklenmemis.
+              </div>
+            )}
           </section>
 
           <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">

@@ -22,13 +22,17 @@ export default function AlumniAnnouncementsPage() {
         const response = await api.get<{ announcements: Announcement[] }>("/announcements");
         setAnnouncements(response.data.announcements ?? []);
       } catch (error) {
-        console.error("Duyurular yüklenemedi", error);
+        console.error("Duyurular yuklenemedi", error);
       } finally {
         setLoading(false);
       }
     };
 
-    void fetchAnnouncements();
+    const timer = window.setTimeout(() => {
+      void fetchAnnouncements();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   if (loading) {
@@ -47,7 +51,7 @@ export default function AlumniAnnouncementsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Duyurular</h1>
-          <p className="text-sm text-muted-foreground">KADEME ailesinden sistem duyuruları ve güncellemeler.</p>
+          <p className="text-sm text-muted-foreground">KADEME ailesinden sistem duyurulari ve guncellemeler.</p>
         </div>
       </div>
 
@@ -55,7 +59,7 @@ export default function AlumniAnnouncementsPage() {
         {announcements.length === 0 ? (
           <div className="glass-panel rounded-3xl p-20 text-center text-muted-foreground">
             <Bell className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            Sistemde henüz duyuru bulunmuyor.
+            Sistemde henuz duyuru bulunmuyor.
           </div>
         ) : (
           announcements.map((announcement, index) => (

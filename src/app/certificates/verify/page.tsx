@@ -110,7 +110,7 @@ function CertificateVerifyContent() {
             <Award className="h-8 w-8" />
           </div>
           <h1 className="mb-4 text-4xl font-black text-foreground md:text-5xl">Sertifika Dogrulama</h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">Katilim belgesi ve sertifikalar icin ziyaretci dogrulama ekrani artik backend verify endpoint&apos;ine bagli.</p>
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">KADEME tarafindan verilen sertifika ve katilim belgelerini dogrulama koduyla kontrol edebilirsiniz.</p>
         </div>
 
         <div className="glass-panel rounded-[40px] p-8 md:p-10">
@@ -160,10 +160,10 @@ function CertificateVerifyContent() {
               </div>
 
               <div className="rounded-3xl border border-border bg-muted/30 p-6">
-                <h2 className="mb-3 text-lg font-bold text-foreground">Baglantili Ekranlar</h2>
+                <h2 className="mb-3 text-lg font-bold text-foreground">Belge Islemleri</h2>
                 <div className="space-y-3 text-sm text-muted-foreground">
-                  <Link href="/student/certificates" className="block hover:text-primary">Ogrenci Sertifikalari</Link>
-                  <Link href="/alumni/certificates" className="block hover:text-primary">Mezun Sertifikalari</Link>
+                  <Link href="/student/certificates" className="block hover:text-primary">Ogrenci sertifika paneli</Link>
+                  <Link href="/alumni/certificates" className="block hover:text-primary">Mezun sertifika paneli</Link>
                   {result.certificate.download_url && (
                     <button type="button" onClick={() => void handleDownload(result.certificate)} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground transition-opacity hover:opacity-90">
                       Belgeyi Ac <ExternalLink className="h-4 w-4" />

@@ -64,6 +64,11 @@ interface Program {
 
 type Filter = "all" | "upcoming" | "completed" | "attended" | "missed";
 type ScanStatus = "idle" | "loading" | "success" | "error";
+type FeedbackBlock = {
+  program_id?: number;
+  program_title?: string;
+  redirect_to?: string;
+};
 
 const statusLabels: Record<Program["status"], string> = {
   scheduled: "Planlandi",
@@ -138,12 +143,16 @@ export default function StudentProgramsPage() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanStatus, setScanStatus] = useState<ScanStatus>("idle");
   const [scanMessage, setScanMessage] = useState("");
+  const [feedbackBlock, setFeedbackBlock] = useState<FeedbackBlock | null>(null);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const locationRef = useRef<{ lat: number; lng: number } | null>(null);
   const submittedRef = useRef(false);
 
-  const fetchPrograms = useCallback(async () => {
+  const fetchPrograms = useCallback(async (showSpinner = false) => {
+    if (showSpinner) {
+      setLoading(true);
+    }
     try {
       const response = await api.get<{ programs: Program[] }>("/programs");
       setPrograms(response.data.programs ?? []);
@@ -155,7 +164,9 @@ export default function StudentProgramsPage() {
   }, []);
 
   useEffect(() => {
-    void fetchPrograms();
+    window.setTimeout(() => {
+      void fetchPrograms(true);
+    }, 0);
   }, [fetchPrograms]);
 
   useEffect(() => {
@@ -183,6 +194,7 @@ export default function StudentProgramsPage() {
     setScannerOpen(false);
     setScanStatus("idle");
     setScanMessage("");
+    setFeedbackBlock(null);
   }, []);
 
   const submitAttendance = useCallback(async (rawToken: string) => {
@@ -206,6 +218,7 @@ export default function StudentProgramsPage() {
     }
 
     setScanStatus("loading");
+    setFeedbackBlock(null);
     try {
       const response = await api.post("/attendances/qr", {
         qr_token: qrToken,
@@ -217,16 +230,22 @@ export default function StudentProgramsPage() {
       setScanMessage(response.data.message || "Yoklaman basariyla alindi.");
       await fetchPrograms();
     } catch (error: unknown) {
-      const nextMessage =
+      const payload =
         typeof error === "object" &&
         error !== null &&
         "response" in error &&
-        typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message ?? "Yoklama islemi basarisiz oldu."
-          : "Yoklama islemi basarisiz oldu.";
+        typeof (error as { response?: { data?: { message?: string; requires_feedback?: boolean; program_id?: number; program_title?: string; redirect_to?: string } } }).response?.data === "object"
+          ? (error as { response?: { data?: { message?: string; requires_feedback?: boolean; program_id?: number; program_title?: string; redirect_to?: string } } }).response?.data
+          : null;
+      const nextMessage = payload?.message ?? "Yoklama islemi basarisiz oldu.";
 
       setScanStatus("error");
       setScanMessage(nextMessage);
+      setFeedbackBlock(payload?.requires_feedback ? {
+        program_id: payload.program_id,
+        program_title: payload.program_title,
+        redirect_to: payload.redirect_to,
+      } : null);
       submittedRef.current = false;
     }
   }, [extractToken, fetchPrograms]);
@@ -234,9 +253,12 @@ export default function StudentProgramsPage() {
   useEffect(() => {
     if (!scannerOpen) return undefined;
 
+    window.setTimeout(() => {
+      setScanStatus("idle");
+      setScanMessage("");
+      setFeedbackBlock(null);
+    }, 0);
     submittedRef.current = false;
-    setScanStatus("idle");
-    setScanMessage("");
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -572,16 +594,31 @@ export default function StudentProgramsPage() {
                     </div>
                     <h3 className="text-xl font-black text-slate-900">Yoklama alinamadi</h3>
                     <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{scanMessage}</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeScanner();
-                        window.setTimeout(() => setScannerOpen(true), 100);
-                      }}
-                      className="mt-7 rounded-xl border border-border px-8 py-3 text-sm font-bold text-slate-900"
-                    >
-                      Tekrar Dene
-                    </button>
+                    {feedbackBlock ? (
+                      <div className="mt-6 space-y-3">
+                        {feedbackBlock.program_title ? (
+                          <p className="text-sm font-semibold text-slate-900">Bekleyen oturum: {feedbackBlock.program_title}</p>
+                        ) : null}
+                        <Link
+                          href={feedbackBlock.redirect_to || "/student/feedback"}
+                          onClick={closeScanner}
+                          className="inline-flex rounded-xl bg-primary px-8 py-3 text-sm font-bold text-primary-foreground"
+                        >
+                          Degerlendirmeye Git
+                        </Link>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeScanner();
+                          window.setTimeout(() => setScannerOpen(true), 100);
+                        }}
+                        className="mt-7 rounded-xl border border-border px-8 py-3 text-sm font-bold text-slate-900"
+                      >
+                        Tekrar Dene
+                      </button>
+                    )}
                   </div>
                 ) : null}
               </div>

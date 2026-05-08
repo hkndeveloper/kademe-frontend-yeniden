@@ -65,6 +65,24 @@ const VALID_SCOPE_TYPES: ScopeType[] = [
   "none",
 ];
 
+function scopeOptionsFor(roleName: string, permissionName: string): ScopeType[] {
+  if (roleName === "super_admin") return ["all"];
+  if (roleName === "student" || roleName === "alumni") return ["self", "none"];
+  if (permissionName === "calendar.view" && ["coordinator", "staff"].includes(roleName)) {
+    return ["all", "own_projects", "assigned_projects", "selected_projects", "none"];
+  }
+  if (permissionStartsWith(permissionName, ["users.", "staff."])) {
+    return ["all", "own_unit", "self", "none"];
+  }
+  if (permissionStartsWith(permissionName, ["permissions.", "settings.", "logs.", "newsletter.", "chatbot."])) {
+    return ["all", "none"];
+  }
+  if (permissionStartsWith(permissionName, ["dashboard."])) {
+    return ["all", "own_projects", "assigned_projects", "own_unit", "none"];
+  }
+  return ["all", "own_projects", "assigned_projects", "selected_projects", "none"];
+}
+
 function permissionStartsWith(permissionName: string, prefixes: string[]): boolean {
   return prefixes.some((prefix) => permissionName.startsWith(prefix));
 }
@@ -961,11 +979,14 @@ export default function PermissionsPage() {
                           {roles.map((role) => {
                             const checked = role.name === "super_admin" || (granularMatrix[role.name]?.has(permission.name) ?? false);
                             const scope = rolePermissionScopes[role.name]?.[permission.name];
+                            const hasStoredScope = Boolean(scope);
                             const scopeType: ScopeType = scope?.scope_type ?? defaultScopeForRole(role.name, permission.name);
                             const projectPayload = String((scope?.scope_payload?.project_ids as number[] | undefined)?.join(",") ?? "");
                             const unitPayload = String((scope?.scope_payload?.unit as string | undefined) ?? "");
                             const baseline = role.granular_effective ?? role.permissions ?? [];
                             const changed = checked !== baseline.includes(permission.name);
+                            const scopeOptions = scopeOptionsFor(role.name, permission.name);
+                            const displayedScopeType = scopeOptions.includes(scopeType) ? scopeType : scopeOptions[0] ?? "none";
 
                             return (
                               <td key={`${permission.name}-${role.name}`} className="min-w-56 p-3 align-top">
@@ -983,20 +1004,23 @@ export default function PermissionsPage() {
                                     />
                                   </label>
                                   <select
-                                    value={scopeType}
+                                    value={displayedScopeType}
                                     onChange={(event) => updateRoleScopeType(role.name, permission.name, event.target.value as ScopeType)}
                                     disabled={!checked || saving || !canUpdateMatrix}
                                     className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100 disabled:text-slate-400"
                                   >
-                                    <option value="all">all</option>
-                                    <option value="own_projects">own_projects</option>
-                                    <option value="assigned_projects">assigned_projects</option>
-                                    <option value="selected_projects">selected_projects</option>
-                                    <option value="own_unit">own_unit</option>
-                                    <option value="self">self</option>
-                                    <option value="none">none</option>
+                                    {scopeOptions.map((option) => (
+                                      <option key={`${permission.name}-${role.name}-${option}`} value={option}>
+                                        {option}
+                                      </option>
+                                    ))}
                                   </select>
-                                  {scopeType === "selected_projects" ? (
+                                  {checked ? (
+                                    <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                      {hasStoredScope ? "Kayitli scope" : "Varsayilan scope"}
+                                    </div>
+                                  ) : null}
+                                  {displayedScopeType === "selected_projects" ? (
                                     <input
                                       value={projectPayload}
                                       onChange={(event) => {
@@ -1011,7 +1035,7 @@ export default function PermissionsPage() {
                                       className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100"
                                     />
                                   ) : null}
-                                  {scopeType === "own_unit" ? (
+                                  {displayedScopeType === "own_unit" ? (
                                     <input
                                       value={unitPayload}
                                       onChange={(event) => updateRoleScopePayload(role.name, permission.name, { unit: event.target.value })}

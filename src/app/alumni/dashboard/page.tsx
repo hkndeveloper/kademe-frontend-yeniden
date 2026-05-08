@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { Award, Bell, BookOpen, Briefcase, HeartHandshake, Loader2, Calendar } from "lucide-react";
+import { Award, Bell, BookOpen, Briefcase, Calendar, HeartHandshake, Loader2 } from "lucide-react";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
 
@@ -75,7 +76,11 @@ export default function AlumniDashboardPage() {
       }
     };
 
-    void loadDashboard();
+    const timer = window.setTimeout(() => {
+      void loadDashboard();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   if (loading) {
@@ -87,206 +92,199 @@ export default function AlumniDashboardPage() {
   }
 
   const openTickets = tickets.filter((ticket) => ticket.status !== "closed").length;
+  const displayName = user?.name || "Mezun";
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+    <div className="space-y-8">
+      <section className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-black text-slate-900">Mezun Paneli</h1>
-          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            KADEME ailesindeki yolculuğunuz mezuniyet sonrasında da devam ediyor
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">Mezun Portali</p>
+          <h1 className="mt-2 text-3xl font-black text-slate-900">Hos geldin, {displayName}</h1>
+          <p className="mt-2 max-w-2xl text-sm font-medium text-muted-foreground">
+            Mezun oldugun projeleri, duyurulari, sertifikalarini ve KADEME ile devam eden firsatlarini tek ekrandan takip edebilirsin.
           </p>
         </div>
-        <div className="flex gap-4 flex-wrap">
-          <Link href="/alumni/volunteer" className="rounded-xl border border-white/10 px-5 py-2 text-xs font-bold uppercase tracking-widest transition-all hover:bg-white/5 flex items-center gap-2">
+
+        <div className="flex flex-wrap gap-3">
+          <Link href="/alumni/volunteer" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
             <HeartHandshake className="h-4 w-4" />
-            Gönüllülük
+            Gonulluluk
           </Link>
-          <Link href="/alumni/assignments" className="rounded-xl border border-white/10 px-5 py-2 text-xs font-bold uppercase tracking-widest transition-all hover:bg-white/5 flex items-center gap-2">
+          <Link href="/alumni/assignments" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
             <BookOpen className="h-4 w-4" />
-            Ödevlerim
+            Odevlerim
           </Link>
-          <Link href="/alumni/resume" className="rounded-xl bg-primary px-5 py-2 text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20">
-            Özgeçmişimi Aç
+          <Link href="/alumni/resume" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20">
+            <Briefcase className="h-4 w-4" />
+            Ozgecmisim
           </Link>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-        <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
-          <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Dijital Bohça Dosyaları</p>
-            <h3 className="text-3xl font-black text-slate-900">{materials.length}</h3>
-          </div>
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500">
-            <BookOpen className="h-7 w-7" />
-          </div>
-        </div>
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard title="Dijital Bohca Dosyalari" value={materials.length} icon={<BookOpen className="h-6 w-6" />} tone="blue" />
+        <SummaryCard title="Acik Destek Talepleri" value={openTickets} icon={<HeartHandshake className="h-6 w-6" />} tone="rose" />
+        <SummaryCard title="Sertifikalarim" value={certificates.length} icon={<Award className="h-6 w-6" />} tone="amber" />
+        <SummaryCard title="Mezun Projelerim" value={projects.length} icon={<Briefcase className="h-6 w-6" />} tone="violet" />
+      </section>
 
-        <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
-          <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Açık Destek Talepleri</p>
-            <h3 className="text-3xl font-black text-slate-900">{openTickets}</h3>
-          </div>
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-500/10 text-pink-500">
-            <HeartHandshake className="h-7 w-7" />
-          </div>
-        </div>
-
-        <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
-          <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Sertifikalarım</p>
-            <h3 className="text-3xl font-black text-slate-900">{certificates.length}</h3>
-          </div>
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
-            <Award className="h-7 w-7" />
-          </div>
-        </div>
-
-        <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
-          <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aylik Unvanlar</p>
-            <h3 className="text-3xl font-black text-slate-900">{monthlyTitles.length}</h3>
-          </div>
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
-            <Bell className="h-7 w-7" />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-        <div className="glass-panel rounded-3xl p-8 flex flex-col">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-lg font-bold">
-              <Briefcase className="h-5 w-5 text-primary" />
-              Kariyer ve Fırsatlar
-            </h3>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Canlı</span>
-          </div>
-
-          <div className="space-y-4 flex-1">
-            <div className="rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition">
-              <div className="mb-2 flex items-center justify-between">
-                <h4 className="font-bold text-slate-900">Özgeçmişini güncel tut</h4>
-                <span className="text-xs text-muted-foreground">{user?.name || "Mezun"}</span>
-              </div>
-              <p className="mb-4 text-xs text-muted-foreground leading-relaxed">
-                Kariyer özeti, eğitim bilgileri ve sosyal bağlantılarını mezun özgeçmiş ekranından düzenleyebilirsin. Mezun panosunda görüntülenmen için önemlidir.
-              </p>
-              <Link href="/alumni/resume" className="text-xs font-bold text-primary hover:underline">
-                Özgeçmişe git
-              </Link>
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr,0.9fr]">
+        <div className="glass-panel rounded-3xl p-7">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">Mezun Oldugum Projeler</h2>
+              <p className="mt-1 text-sm text-muted-foreground">KADEME gecmisin ve mezuniyet kayitlarin.</p>
             </div>
-
-            <div className="rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition">
-              <div className="mb-2 flex items-center justify-between">
-                <h4 className="font-bold text-slate-900">Gönüllülük Havuzu</h4>
-                <span className="text-xs text-muted-foreground">Aktif Görevler</span>
-              </div>
-              <p className="mb-4 text-xs text-muted-foreground leading-relaxed">
-                Projelerdeki açık gönüllülük fırsatlarını incele, yeni öğrencilerle deneyimlerini paylaş.
-              </p>
-              <Link href="/alumni/volunteer" className="text-xs font-bold text-primary hover:underline">
-                Gönüllülük sayfasına git
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-panel rounded-3xl p-8 flex flex-col">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-lg font-bold">
-              <Award className="h-5 w-5 text-primary" />
-              Aylik Unvanlarim
-            </h3>
-          </div>
-          <div className="flex-1">
-            {monthlyTitles.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-center text-muted-foreground">
-                Bu ay icin atanmis bir unvan gorunmuyor.
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {monthlyTitles.map((title) => (
-                  <span key={title} className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                    {title}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-panel rounded-3xl p-8 flex flex-col">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-lg font-bold">
-              <Award className="h-5 w-5 text-primary" />
-              Mezun Oldugum Projeler
-            </h3>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{projects.length}</span>
+            <Link href="/alumni/portfolio" className="rounded-xl border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
+              Portfolyo
+            </Link>
           </div>
 
-          <div className="space-y-4 flex-1">
-            {projects.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-center text-muted-foreground h-full flex flex-col items-center justify-center min-h-[200px]">
-                Mezuniyet projesi kaydi gorunmuyor.
-              </div>
-            ) : (
-              projects.map((project) => (
-                <div key={project.id} className="rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition">
-                  <div className="flex justify-between items-start gap-4">
-                    <h4 className="text-sm font-bold text-slate-900">{project.name}</h4>
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+          {projects.length === 0 ? (
+            <EmptyState message="Mezuniyet projesi kaydi gorunmuyor." />
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {projects.map((project) => (
+                <article key={project.id} className="rounded-2xl border border-border bg-background/60 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="font-bold text-slate-900">{project.name}</h3>
+                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
                       {project.type || "Proje"}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
+                  <p className="mt-3 text-sm text-muted-foreground">
                     {project.graduated_at
                       ? `Mezuniyet: ${new Date(project.graduated_at).toLocaleDateString("tr-TR")}`
                       : project.graduation_status || "Mezuniyet kaydi"}
                   </p>
-                </div>
-              ))
-            )}
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="glass-panel rounded-3xl p-7">
+          <div className="mb-5">
+            <h2 className="text-lg font-black text-slate-900">Aylik Unvanlarim</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Ay icinde kazandigin unvanlar burada gorunur.</p>
+          </div>
+
+          {monthlyTitles.length === 0 ? (
+            <EmptyState message="Bu ay atanmis bir unvan gorunmuyor." />
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {monthlyTitles.map((title) => (
+                <span key={title} className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
+                  {title}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="glass-panel rounded-3xl p-7">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">Mezun Aksiyonu</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Sistemde aktif tutman gereken mezun islemleri.</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <ActionCard
+              title="Ozgecmisini guncel tut"
+              description="Kariyer bilgilerini ve sosyal baglantilarini mezun ozgecmis ekranindan duzenleyebilirsin."
+              href="/alumni/resume"
+              cta="Ozgecmise git"
+            />
+            <ActionCard
+              title="Gonulluluk firsatlarini takip et"
+              description="Acik gonulluluk ilanlarina basvurabilir, proje ekipleriyle tekrar bag kurabilirsin."
+              href="/alumni/volunteer"
+              cta="Firsatlari gor"
+            />
+            <ActionCard
+              title="Dijital bohca dosyalarina ulas"
+              description="Mezuniyet sonrasinda seninle paylasilan dosya, belge ve icerikler burada saklanir."
+              href="/alumni/bohca"
+              cta="Bohcayi ac"
+            />
           </div>
         </div>
 
-        <div className="glass-panel rounded-3xl p-8 flex flex-col">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-lg font-bold">
-              <Bell className="h-5 w-5 text-primary" />
-              Güncel Duyurular
-            </h3>
-            <Link href="/alumni/announcements" className="text-xs font-bold text-primary hover:underline">
-              Tümünü Gör
+        <div className="glass-panel rounded-3xl p-7">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">Guncel Duyurular</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Mezunlara acik duyurular ve sistem bildirimleri.</p>
+            </div>
+            <Link href="/alumni/announcements" className="rounded-xl border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
+              Tumunu Gor
             </Link>
           </div>
 
-          <div className="space-y-4 flex-1">
-            {announcements.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-center text-muted-foreground h-full flex flex-col items-center justify-center min-h-[200px]">
-                <Bell className="h-8 w-8 text-muted-foreground mb-3 opacity-50" />
-                Aktif sistem duyurusu bulunmuyor.
-              </div>
-            ) : (
-              announcements.slice(0, 3).map((ann) => (
-                <div key={ann.id} className="rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition">
-                  <div className="flex justify-between items-start gap-4">
-                    <h4 className="text-sm font-bold text-slate-900">{ann.title}</h4>
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
+          {announcements.length === 0 ? (
+            <EmptyState icon={<Bell className="h-7 w-7" />} message="Aktif sistem duyurusu bulunmuyor." />
+          ) : (
+            <div className="space-y-3">
+              {announcements.slice(0, 3).map((ann) => (
+                <article key={ann.id} className="rounded-2xl border border-border bg-background/60 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="text-sm font-bold text-slate-900">{ann.title}</h3>
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                       <Calendar className="h-3 w-3" />
                       {new Date(ann.created_at).toLocaleDateString("tr-TR")}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                    {ann.content}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
+                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{ann.content}</p>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
+      </section>
+    </div>
+  );
+}
+
+function SummaryCard({ title, value, icon, tone }: { title: string; value: number; icon: ReactNode; tone: "blue" | "rose" | "amber" | "violet" }) {
+  const toneClasses = {
+    blue: "bg-blue-500/10 text-blue-600",
+    rose: "bg-rose-500/10 text-rose-600",
+    amber: "bg-amber-500/10 text-amber-600",
+    violet: "bg-violet-500/10 text-violet-600",
+  } satisfies Record<typeof tone, string>;
+
+  return (
+    <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
+      <div>
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{title}</p>
+        <h3 className="text-3xl font-black text-slate-900">{value}</h3>
       </div>
+      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${toneClasses[tone]}`}>{icon}</div>
+    </div>
+  );
+}
+
+function ActionCard({ title, description, href, cta }: { title: string; description: string; href: string; cta: string }) {
+  return (
+    <article className="rounded-2xl border border-border bg-background/60 p-4">
+      <h3 className="font-bold text-slate-900">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+      <Link href={href} className="mt-3 inline-flex text-xs font-bold uppercase tracking-widest text-primary hover:underline">
+        {cta}
+      </Link>
+    </article>
+  );
+}
+
+function EmptyState({ message, icon }: { message: string; icon?: ReactNode }) {
+  return (
+    <div className="flex min-h-[160px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/50 p-6 text-center text-sm text-muted-foreground">
+      {icon ? <div className="mb-3 opacity-60">{icon}</div> : null}
+      {message}
     </div>
   );
 }

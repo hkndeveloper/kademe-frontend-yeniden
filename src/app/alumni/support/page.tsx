@@ -194,7 +194,7 @@ export default function AlumniSupportPage() {
         <div>
           <h1 className="text-3xl font-black text-slate-900">Destek ve Gonulluluk</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Mezun destek talepleri ve gonulluluk basvurulari artik gercek backend akislariyla bagli
+            Mezun destek taleplerini, yanitlari ve gonulluluk basvurularini buradan takip et.
           </p>
         </div>
       </div>
@@ -224,7 +224,7 @@ export default function AlumniSupportPage() {
                       {application.status}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{application.opportunity?.project?.name || "Genel gonulluluk kapsamı"}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{application.opportunity?.project?.name || "Genel gonulluluk kapsami"}</p>
                   <p className="mt-2 text-xs uppercase tracking-widest text-muted-foreground">
                     {new Date(application.created_at).toLocaleString("tr-TR")}
                   </p>

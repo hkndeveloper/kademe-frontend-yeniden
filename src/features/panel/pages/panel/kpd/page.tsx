@@ -17,6 +17,7 @@ type UserOption = {
   name: string;
   surname: string;
   email?: string | null;
+  role?: string | null;
 };
 
 type KpdReport = {
@@ -37,24 +38,58 @@ type KpdAppointment = {
   end_at: string;
   counselor?: UserOption | null;
   counselee?: UserOption | null;
-  room?: { id: number; name: string } | null;
+  room?: RoomOption | null;
+};
+
+type RoomOption = {
+  id: number;
+  name: string;
+  description?: string | null;
+};
+
+type AppointmentsResponse = {
+  appointments: Paginated<KpdAppointment>;
+  counselees?: UserOption[];
+  counselors?: UserOption[];
+  rooms?: RoomOption[];
+};
+
+type KpdOptionsResponse = {
+  counselees: UserOption[];
+  counselors?: UserOption[];
+  rooms?: RoomOption[];
+};
+
+const initialAppointmentForm = {
+  counselor_id: "",
+  counselee_id: "",
+  room_id: "",
+  start_at: "",
+  end_at: "",
+  notes: "",
 };
 
 export default function PanelKpdPage() {
-  const { hasPermission, hasGlobalScope } = usePermissions();
-  const canViewReports = hasPermission("kpd.reports.view") && hasGlobalScope("kpd.reports.view");
-  const canCreateReports = hasPermission("kpd.reports.create") && hasGlobalScope("kpd.reports.create");
-  const canDeleteReports = hasPermission("kpd.reports.delete") && hasGlobalScope("kpd.reports.delete");
-  const canViewAppointments = hasPermission("kpd.appointments.view") && hasGlobalScope("kpd.appointments.view");
-  const canListUsers = hasPermission("users.view");
+  const { hasPermission } = usePermissions();
+  const canViewReports = hasPermission("kpd.reports.view");
+  const canCreateReports = hasPermission("kpd.reports.create");
+  const canDeleteReports = hasPermission("kpd.reports.delete");
+  const canViewAppointments = hasPermission("kpd.appointments.view");
+  const canManageAppointments = hasPermission("kpd.appointments.manage");
 
   const [reports, setReports] = useState<KpdReport[]>([]);
   const [appointments, setAppointments] = useState<KpdAppointment[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
+  const [counselees, setCounselees] = useState<UserOption[]>([]);
+  const [counselors, setCounselors] = useState<UserOption[]>([]);
+  const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingAppointment, setSavingAppointment] = useState(false);
+  const [updatingAppointmentId, setUpdatingAppointmentId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [form, setForm] = useState({ user_id: "", title: "" });
+  const [appointmentForm, setAppointmentForm] = useState(initialAppointmentForm);
   const [file, setFile] = useState<File | null>(null);
 
   const loadData = useCallback(async () => {
@@ -66,25 +101,28 @@ export default function PanelKpdPage() {
         canViewReports
           ? api.get<{ reports: Paginated<KpdReport> }>("/panel/kpd/reports")
           : Promise.resolve({ data: { reports: { data: [] as KpdReport[] } } }),
-        canViewAppointments
-          ? api.get<{ appointments: Paginated<KpdAppointment> }>("/panel/kpd/appointments")
-          : Promise.resolve({ data: { appointments: { data: [] as KpdAppointment[] } } }),
-        canListUsers && canCreateReports
-          ? api.get<{ users?: Paginated<UserOption> }>("/panel/users", { params: { per_page: 500, role: "student" } })
-          : Promise.resolve({ data: { users: { data: [] as UserOption[] } } }),
+        canViewAppointments || canManageAppointments
+          ? api.get<AppointmentsResponse>("/panel/kpd/appointments")
+          : Promise.resolve({ data: { appointments: { data: [] as KpdAppointment[] }, counselees: [], counselors: [], rooms: [] } satisfies AppointmentsResponse }),
+        canCreateReports
+          ? api.get<KpdOptionsResponse>("/panel/kpd/options", { params: { permission: "kpd.reports.create" } })
+          : Promise.resolve({ data: { counselees: [] as UserOption[] } }),
       ] as const;
 
-      const [reportsResponse, appointmentsResponse, usersResponse] = await Promise.all(requests);
+      const [reportsResponse, appointmentsResponse, optionsResponse] = await Promise.all(requests);
       setReports(reportsResponse.data.reports?.data ?? []);
       setAppointments(appointmentsResponse.data.appointments?.data ?? []);
-      setUsers(usersResponse.data.users?.data ?? []);
+      setCounselees(appointmentsResponse.data.counselees ?? []);
+      setCounselors(appointmentsResponse.data.counselors ?? []);
+      setRooms(appointmentsResponse.data.rooms ?? []);
+      setUsers(optionsResponse.data.counselees ?? []);
     } catch (error) {
       console.error("KPD verileri yuklenemedi", error);
       setFeedback("KPD verileri yuklenirken bir sorun olustu.");
     } finally {
       setLoading(false);
     }
-  }, [canCreateReports, canListUsers, canViewAppointments, canViewReports]);
+  }, [canCreateReports, canManageAppointments, canViewAppointments, canViewReports]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -168,6 +206,55 @@ export default function PanelKpdPage() {
     }
   }
 
+  async function handleCreateAppointment(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSavingAppointment(true);
+    setFeedback(null);
+
+    try {
+      const response = await api.post<{ message: string; appointment: KpdAppointment }>("/panel/kpd/appointments", {
+        counselor_id: Number(appointmentForm.counselor_id),
+        counselee_id: Number(appointmentForm.counselee_id),
+        room_id: Number(appointmentForm.room_id),
+        start_at: appointmentForm.start_at,
+        end_at: appointmentForm.end_at,
+        notes: appointmentForm.notes.trim() || null,
+      });
+
+      setAppointments((current) => [response.data.appointment, ...current]);
+      setAppointmentForm(initialAppointmentForm);
+      setFeedback(response.data.message);
+    } catch (error) {
+      const message = isAxiosError(error)
+        ? String((error.response?.data as { message?: string })?.message ?? "KPD randevusu olusturulamadi.")
+        : "KPD randevusu olusturulamadi.";
+      setFeedback(message);
+    } finally {
+      setSavingAppointment(false);
+    }
+  }
+
+  async function handleUpdateAppointmentStatus(appointmentId: number, status: string) {
+    setUpdatingAppointmentId(appointmentId);
+    setFeedback(null);
+
+    try {
+      const response = await api.put<{ message: string; appointment: KpdAppointment }>(`/panel/kpd/appointments/${appointmentId}/status`, {
+        status,
+      });
+
+      setAppointments((current) => current.map((item) => (item.id === appointmentId ? response.data.appointment : item)));
+      setFeedback(response.data.message);
+    } catch (error) {
+      const message = isAxiosError(error)
+        ? String((error.response?.data as { message?: string })?.message ?? "Randevu durumu guncellenemedi.")
+        : "Randevu durumu guncellenemedi.";
+      setFeedback(message);
+    } finally {
+      setUpdatingAppointmentId(null);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
@@ -186,11 +273,103 @@ export default function PanelKpdPage() {
 
       {feedback ? <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-700">{feedback}</div> : null}
 
-      {!canViewReports && !canViewAppointments ? (
+      {!canViewReports && !canViewAppointments && !canManageAppointments ? (
         <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-6 text-sm text-amber-800">
-          KPD ekranlari global kapsam gerektirir. Yetki matrisinde ilgili KPD action icin scope &quot;all&quot; olmalidir.
+          KPD ekrani icin ilgili randevu veya rapor action yetkisi gerekir. Scope proje kapsamliysa backend yalnizca erisilebilir KPD projesindeki danisanlari getirir.
         </div>
       ) : null}
+
+      <PermissionGate permission="kpd.appointments.manage">
+        {canManageAppointments ? (
+          <form onSubmit={handleCreateAppointment} className="glass-panel rounded-3xl p-6">
+            <div className="mb-5 flex items-center gap-3">
+              <Plus className="h-5 w-5 text-rose-600" />
+              <div>
+                <h2 className="text-xl font-black text-slate-900">Randevu Olustur</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Scope kapsamindaki KPD danisanlari icin danisman, oda ve zaman sec.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <select
+                value={appointmentForm.counselee_id}
+                onChange={(event) => setAppointmentForm((current) => ({ ...current, counselee_id: event.target.value }))}
+                required
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              >
+                <option value="">Danisan sec</option>
+                {counselees.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} {user.surname} {user.email ? `(${user.email})` : ""}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={appointmentForm.counselor_id}
+                onChange={(event) => setAppointmentForm((current) => ({ ...current, counselor_id: event.target.value }))}
+                required
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              >
+                <option value="">Danisman sec</option>
+                {counselors.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} {user.surname} {user.role ? `(${user.role})` : ""}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={appointmentForm.room_id}
+                onChange={(event) => setAppointmentForm((current) => ({ ...current, room_id: event.target.value }))}
+                required
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              >
+                <option value="">Oda sec</option>
+                {rooms.map((room) => (
+                  <option key={room.id} value={room.id}>
+                    {room.name}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="datetime-local"
+                value={appointmentForm.start_at}
+                onChange={(event) => setAppointmentForm((current) => ({ ...current, start_at: event.target.value }))}
+                required
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              />
+              <input
+                type="datetime-local"
+                value={appointmentForm.end_at}
+                onChange={(event) => setAppointmentForm((current) => ({ ...current, end_at: event.target.value }))}
+                required
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              />
+              <input
+                value={appointmentForm.notes}
+                onChange={(event) => setAppointmentForm((current) => ({ ...current, notes: event.target.value }))}
+                placeholder="Not"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                {counselees.length} danisan, {counselors.length} danisman ve {rooms.length} oda listeleniyor.
+              </p>
+              <button
+                disabled={savingAppointment || counselees.length === 0 || counselors.length === 0 || rooms.length === 0}
+                className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {savingAppointment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Randevu Olustur
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </PermissionGate>
 
       <PermissionGate permission="kpd.reports.create">
         {canCreateReports ? (
@@ -200,31 +379,19 @@ export default function PanelKpdPage() {
               <h2 className="text-xl font-black text-slate-900">Rapor Yukle</h2>
             </div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_auto]">
-              {canListUsers ? (
-                <select
-                  value={form.user_id}
-                  onChange={(event) => setForm((current) => ({ ...current, user_id: event.target.value }))}
-                  required
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
-                >
-                  <option value="">Ogrenci sec</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} {user.surname} {user.email ? `(${user.email})` : ""}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="number"
-                  value={form.user_id}
-                  onChange={(event) => setForm((current) => ({ ...current, user_id: event.target.value }))}
-                  required
-                  min={1}
-                  placeholder="Ogrenci kullanici ID"
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
-                />
-              )}
+              <select
+                value={form.user_id}
+                onChange={(event) => setForm((current) => ({ ...current, user_id: event.target.value }))}
+                required
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              >
+                <option value="">Danisan sec</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} {user.surname} {user.email ? `(${user.email})` : ""}
+                  </option>
+                ))}
+              </select>
               <input
                 value={form.title}
                 onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
@@ -246,7 +413,7 @@ export default function PanelKpdPage() {
             </div>
             <div className="mt-4 flex justify-end">
               <button
-                disabled={saving}
+                disabled={saving || users.length === 0}
                 className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
@@ -325,9 +492,24 @@ export default function PanelKpdPage() {
                       {new Date(appointment.start_at).toLocaleString("tr-TR")} - {new Date(appointment.end_at).toLocaleString("tr-TR")}
                     </div>
                   </div>
-                  <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold uppercase tracking-widest text-slate-600">
-                    {appointment.status}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold uppercase tracking-widest text-slate-600">
+                      {appointment.status}
+                    </span>
+                    {canManageAppointments ? (
+                      <select
+                        value={appointment.status}
+                        disabled={updatingAppointmentId === appointment.id}
+                        onChange={(event) => void handleUpdateAppointmentStatus(appointment.id, event.target.value)}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-60"
+                      >
+                        <option value="scheduled">Planlandi</option>
+                        <option value="completed">Tamamlandi</option>
+                        <option value="cancelled">Iptal</option>
+                        <option value="no_show">Katilim olmadi</option>
+                      </select>
+                    ) : null}
+                  </div>
                 </div>
               ))}
               {!loading && appointments.length === 0 ? <div className="p-10 text-center text-sm text-muted-foreground">Randevu bulunamadi.</div> : null}

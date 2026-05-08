@@ -131,7 +131,7 @@ export default function AlumniVolunteerPage() {
         <div>
           <h1 className="text-3xl font-black text-slate-900">Gonulluluk Havuzu</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Mezun gonulluluk basvurulari artik gercek ilan ve basvuru endpointleriyle bagli
+            Mezunlara acik gonulluluk firsatlarini incele ve basvurularini takip et.
           </p>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { isAxiosError } from "axios";
 import {
   Calendar,
   Check,
@@ -45,6 +46,11 @@ interface Application {
   interview_at?: string | null;
   evaluation_note?: string | null;
   rejection_reason?: string | null;
+  available_statuses?: ActionStatus[];
+  workflow?: {
+    has_interview: boolean;
+    next_step?: string | null;
+  };
   form_entries?: FormEntry[];
 }
 
@@ -79,6 +85,11 @@ interface ApplicationApiItem {
   interview_at?: string | null;
   evaluation_note?: string | null;
   rejection_reason?: string | null;
+  available_statuses?: ActionStatus[];
+  workflow?: {
+    has_interview: boolean;
+    next_step?: string | null;
+  };
   form_entries?: FormEntry[];
   project?: {
     id: number;
@@ -125,7 +136,12 @@ const quickActions: Array<{ label: string; status: ActionStatus; tone: string }>
 const perPage = 20;
 
 function applicationActionPermission(status: ActionStatus): string {
+  if (status === "interview_planned") return "applications.plan_interview";
   return status === "waitlisted" ? "applications.waitlist.manage" : "applications.update_status";
+}
+
+function statusLabel(status: string): string {
+  return statusOptions.find((option) => option.value === status)?.label ?? status;
 }
 
 function mapApplications(items: ApplicationApiItem[]): Application[] {
@@ -236,6 +252,10 @@ export default function AdminApplicationsPage() {
   }, [fetchApplications]);
 
   const availableActionStatuses = (application: Application): ActionStatus[] => {
+    if (application.available_statuses?.length) {
+      return application.available_statuses;
+    }
+
     if (!application.hasInterview) {
       return ["accepted", "waitlisted", "rejected"];
     }
@@ -267,10 +287,13 @@ export default function AdminApplicationsPage() {
         await api.post(`/panel/applications/${id}/waitlist`, {
           evaluation_note: note || null,
         });
+      } else if (status === "interview_planned") {
+        await api.put(`/panel/applications/${id}/interview`, {
+          interview_at: interviewAt,
+        });
       } else {
         await api.put(`/panel/applications/${id}/status`, {
           status,
-          interview_at: status === "interview_planned" && interviewAt ? interviewAt : undefined,
           evaluation_note: note || null,
           rejection_reason: status === "rejected" ? note || "Yonetim degerlendirmesi sonucunda reddedildi." : null,
         });
@@ -285,6 +308,7 @@ export default function AdminApplicationsPage() {
                 interview_at: status === "interview_planned" && interviewAt ? interviewAt : application.interview_at,
                 evaluation_note: note || application.evaluation_note,
                 rejection_reason: status === "rejected" ? note || application.rejection_reason : application.rejection_reason,
+                available_statuses: undefined,
               }
             : application
         )
@@ -293,7 +317,13 @@ export default function AdminApplicationsPage() {
       setMessage("Basvuru durumu basariyla guncellendi.");
     } catch (error) {
       console.error("Basvuru durumu guncellenemedi", error);
-      setErrorMessage("Basvuru durumu guncellenirken hata olustu.");
+      const responseMessage = isAxiosError(error)
+        ? error.response?.data?.message ||
+          Object.values(error.response?.data?.errors ?? {})
+            .flat()
+            .join(" ")
+        : null;
+      setErrorMessage(responseMessage || "Basvuru durumu guncellenirken hata olustu.");
     } finally {
       setActionLoading(null);
     }
@@ -437,7 +467,7 @@ export default function AdminApplicationsPage() {
                         {application.period?.name && (
                           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{application.period.name}</span>
                         )}
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{application.status}</span>
+                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{statusLabel(application.status)}</span>
                         {application.hasInterview ? (
                           <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">Mulakatli</span>
                         ) : (
@@ -555,6 +585,17 @@ export default function AdminApplicationsPage() {
                       Son ret/degerlendirme notu: {application.rejection_reason}
                     </div>
                   )}
+
+                  {application.workflow?.next_step ? (
+                    <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-3 text-xs font-bold uppercase tracking-widest text-indigo-500">
+                      Sonraki adim:{" "}
+                      {application.workflow.next_step === "plan_interview"
+                        ? "Mulakat planla"
+                        : application.workflow.next_step === "record_interview_result"
+                          ? "Mulakat sonucunu isle"
+                          : "Nihai karar ver"}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Image as ImageIcon, Loader2, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarClock, CheckCircle2, ClipboardList, Image as ImageIcon, Loader2, Plus, Save, Trash2, XCircle } from "lucide-react";
+import { isAxiosError } from "axios";
 import Image from "next/image";
 import Link from "next/link";
 import api from "@/lib/api/axios";
@@ -63,6 +64,15 @@ const emptyForm: EditableProjectContent = {
   has_interview: false,
   quota: "",
 };
+
+function formatApplicationDate(value: string): string {
+  if (!value) return "Belirtilmedi";
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
 
 export function ProjectContentEditor({ projectId, panelBasePath, readOnly = false }: ProjectContentEditorProps) {
   const [loading, setLoading] = useState(true);
@@ -158,15 +168,32 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
 
   const handleSave = async () => {
     if (readOnly) return;
-    setSaving(true);
     setMessage(null);
     setErrorMessage(null);
+
+    if (!form.name.trim() || !form.slug.trim() || !form.type.trim()) {
+      setErrorMessage("Proje adi, slug ve proje tipi zorunludur.");
+      return;
+    }
+
+    if (!form.application_open && !form.next_application_date) {
+      setErrorMessage("Basvurular kapaliysa ziyaretci tarafinda gorunmesi icin sonraki basvuru tarihini girin.");
+      return;
+    }
+
+    if (form.quota !== "" && Number(form.quota) < 0) {
+      setErrorMessage("Kontenjan negatif olamaz.");
+      return;
+    }
+
+    setSaving(true);
 
     try {
       const root = panelContentApiRoot();
       const response = await api.put<ProjectContentResponse & { message: string }>(`${root}/projects/${projectId}/content`, {
         ...form,
         quota: form.quota === "" ? null : Number(form.quota),
+        next_application_date: form.application_open ? null : form.next_application_date,
         gallery_paths: form.gallery_paths.filter(Boolean),
       });
 
@@ -181,7 +208,13 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
       setMessage(response.data.message);
     } catch (error) {
       console.error("Proje icerigi kaydedilemedi", error);
-      setErrorMessage("Proje icerigi kaydedilemedi.");
+      const responseMessage = isAxiosError(error)
+        ? error.response?.data?.message ||
+          Object.values(error.response?.data?.errors ?? {})
+            .flat()
+            .join(" ")
+        : null;
+      setErrorMessage(responseMessage || "Proje icerigi kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -379,32 +412,118 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
           </div>
 
           <div className="glass-panel space-y-4 rounded-3xl p-8">
-            <h2 className="text-lg font-bold text-slate-900">Basvuru Bilgileri</h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <label className={`flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 ${readOnly ? "opacity-70" : ""}`}>
-                <input type="checkbox" disabled={readOnly} checked={form.application_open} onChange={(event) => setForm((current) => ({ ...current, application_open: event.target.checked }))} />
-                Basvuru acik
-              </label>
-              <label className={`flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 ${readOnly ? "opacity-70" : ""}`}>
-                <input type="checkbox" disabled={readOnly} checked={form.has_interview} onChange={(event) => setForm((current) => ({ ...current, has_interview: event.target.checked }))} />
-                Mulakatli
-              </label>
-              <input
-                type="number"
-                readOnly={readOnly}
-                value={form.quota}
-                onChange={(event) => setForm((current) => ({ ...current, quota: event.target.value === "" ? "" : Number(event.target.value) }))}
-                placeholder="Kontenjan"
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
-              />
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Basvuru Ayarlari</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Public proje sayfasindaki basvuru karti ve paneldeki degerlendirme akisi buradan beslenir.</p>
+              </div>
+              <Link
+                href={`/panel/periods/form-builder?project_id=${projectId}`}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100"
+              >
+                <ClipboardList className="h-4 w-4" />
+                Basvuru Formu
+              </Link>
             </div>
-            <input
-              type="date"
-              readOnly={readOnly}
-              value={form.next_application_date}
-              onChange={(event) => setForm((current) => ({ ...current, next_application_date: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
-            />
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+                  {form.application_open ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <XCircle className="h-5 w-5 text-amber-600" />}
+                  Basvuru Durumu
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => setForm((current) => ({ ...current, application_open: true, next_application_date: "" }))}
+                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${
+                      form.application_open
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    } disabled:opacity-60`}
+                  >
+                    Acik
+                  </button>
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => setForm((current) => ({ ...current, application_open: false }))}
+                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${
+                      !form.application_open
+                        ? "border-amber-300 bg-amber-50 text-amber-700"
+                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    } disabled:opacity-60`}
+                  >
+                    Kapali
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+                  <CalendarClock className="h-5 w-5 text-indigo-600" />
+                  Degerlendirme Akisi
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => setForm((current) => ({ ...current, has_interview: false }))}
+                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${
+                      !form.has_interview
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    } disabled:opacity-60`}
+                  >
+                    Mulakatsiz
+                  </button>
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => setForm((current) => ({ ...current, has_interview: true }))}
+                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${
+                      form.has_interview
+                        ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    } disabled:opacity-60`}
+                  >
+                    Mulakatli
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kontenjan</span>
+                <input
+                  type="number"
+                  min="0"
+                  readOnly={readOnly}
+                  value={form.quota}
+                  onChange={(event) => setForm((current) => ({ ...current, quota: event.target.value === "" ? "" : Number(event.target.value) }))}
+                  placeholder="Orn: 40"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sonraki Basvuru Tarihi</span>
+                <input
+                  type="date"
+                  readOnly={readOnly || form.application_open}
+                  value={form.next_application_date}
+                  onChange={(event) => setForm((current) => ({ ...current, next_application_date: event.target.value }))}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:bg-slate-50 read-only:opacity-90"
+                />
+              </label>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+              {form.application_open
+                ? "Basvurular acikken public sayfada basvuru butonu gorunur; sonraki basvuru tarihi otomatik temizlenir."
+                : `Basvurular kapaliyken public sayfada sonraki tarih gorunur: ${formatApplicationDate(form.next_application_date)}`}
+            </div>
           </div>
         </div>
 
@@ -422,6 +541,24 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
             <div className="text-xs font-bold uppercase tracking-widest text-primary">{form.type || "Proje"}</div>
             <h3 className="mt-2 text-2xl font-black text-slate-900">{form.name || "Proje adi"}</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{form.short_description || "Kisa tanitim burada gorunecek."}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className={`rounded-2xl border px-4 py-3 ${form.application_open ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+              <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">Basvuru</div>
+              <div className="mt-1 font-extrabold">{form.application_open ? "Acik" : "Kapali"}</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-800">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Akis</div>
+              <div className="mt-1 font-extrabold">{form.has_interview ? "Mulakatli" : "Mulakatsiz"}</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-800">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kontenjan</div>
+              <div className="mt-1 font-extrabold">{form.quota === "" ? "Yok" : form.quota}</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-800">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Sonraki Tarih</div>
+              <div className="mt-1 font-extrabold">{formatApplicationDate(form.next_application_date)}</div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {form.gallery_paths.filter(Boolean).slice(0, 4).map((item, index) => (

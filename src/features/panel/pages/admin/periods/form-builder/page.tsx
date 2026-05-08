@@ -60,6 +60,7 @@ export default function FormBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { canAccessProject } = usePermissions();
@@ -101,7 +102,11 @@ export default function FormBuilderPage() {
       setErrorMessage(null);
 
       try {
-        const response = await api.get<ApplicationFormResponse>(`/panel/projects/${projectId}/application-form`);
+        const response = await api.get<ApplicationFormResponse>(`/panel/projects/${projectId}/application-form`, {
+          params: {
+            period_id: periodId || undefined,
+          },
+        });
         const nextPeriods = response.data.periods ?? [];
         const nextQuestions = response.data.application_form?.fields ?? [];
 
@@ -109,11 +114,9 @@ export default function FormBuilderPage() {
         setQuestions(nextQuestions);
         setQuestionSeed(Math.max(1, nextQuestions.length + 1));
 
-        if (initialPeriodId && !periodId) {
-          setPeriodId(initialPeriodId);
-        } else if (response.data.application_form?.period_id) {
+        if (response.data.application_form?.period_id) {
           setPeriodId(String(response.data.application_form.period_id));
-        } else if (!initialPeriodId) {
+        } else if (!initialPeriodId && !periodId) {
           setPeriodId("");
         }
       } catch (error) {
@@ -208,7 +211,11 @@ export default function FormBuilderPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <button type="button" className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-bold text-slate-900 transition-all hover:bg-white/10">
+          <button
+            type="button"
+            onClick={() => setShowPreview((current) => !current)}
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-bold text-slate-900 transition-all hover:bg-white/10"
+          >
             <Eye className="h-5 w-5" /> Onizle
           </button>
           <button
@@ -228,6 +235,62 @@ export default function FormBuilderPage() {
       {projectId && !canEditForm ? (
         <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
           Bu proje icin basvuru formunu guncelleme yetkiniz yok; formu yalnizca goruntuleyebilirsiniz.
+        </div>
+      ) : null}
+
+      {showPreview ? (
+        <div className="glass-panel rounded-3xl border border-indigo-500/20 bg-indigo-500/5 p-6">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Form Onizleme</h2>
+              <p className="text-sm text-muted-foreground">{selectedProject?.name ?? "Secili proje"} basvuru formu</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPreview(false)}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-900"
+            >
+              Kapat
+            </button>
+          </div>
+
+          {questions.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-muted-foreground">
+              Onizlenecek soru bulunmuyor.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {questions.map((question) => (
+                <div key={`preview-${question.id}`} className="rounded-2xl border border-white/10 bg-white/70 p-4">
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                    {question.label}
+                    {question.required ? <span className="ml-1 text-red-500">*</span> : null}
+                  </label>
+                  {question.type === "longtext" ? (
+                    <textarea disabled rows={3} className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                  ) : question.type === "select" ? (
+                    <select disabled className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                      <option>Secim yapin</option>
+                      {question.options?.map((option) => <option key={option}>{option}</option>)}
+                    </select>
+                  ) : question.type === "radio" || question.type === "checkbox" ? (
+                    <div className="space-y-2">
+                      {question.options?.map((option) => (
+                        <label key={option} className="flex items-center gap-2 text-sm text-slate-700">
+                          <input disabled type={question.type === "radio" ? "radio" : "checkbox"} />
+                          {option}
+                        </label>
+                      ))}
+                    </div>
+                  ) : question.type === "file" ? (
+                    <input disabled type="file" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                  ) : (
+                    <input disabled type="text" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : null}
 

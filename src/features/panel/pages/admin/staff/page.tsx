@@ -381,7 +381,7 @@ export default function AdminStaffPage() {
           <div>
             <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Personel Yonetimi</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Kadro, ozluk ve izin surecleri
+              Panel rolleri, proje atamalari, ozluk ve izin surecleri
             </p>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function AdminStaffPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white"
             >
               <UserPlus className="h-4 w-4" />
-              Yeni Calisan
+              Yeni Panel Hesabi
             </button>
           ) : null}
           <a
@@ -757,7 +757,7 @@ export default function AdminStaffPage() {
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
                 <UserPlus className="h-5 w-5 text-indigo-600" />
-                Yeni calisan olustur
+                Yeni panel hesabi olustur
               </h2>
               <button
                 type="button"
@@ -772,7 +772,7 @@ export default function AdminStaffPage() {
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{createError}</div>
               ) : null}
               <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-950">
-                Calisana sifre belirleme baglantisi e-posta ile gider. Proje atamalari rol kapsaminda panel gorunurlugunu belirler.
+                Koordinator, personel veya yetki matrisinde olusturulan ozel panel rolleri buradan acilir. Sifre belirleme baglantisi e-posta ile gider; proje atamalari panel gorunurlugunu belirler.
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
@@ -850,7 +850,7 @@ export default function AdminStaffPage() {
                 </div>
               </div>
               <div>
-                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Projeler</div>
+                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Panelde erisecegi projeler</div>
                 <div className="max-h-44 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
                   {projectOptions.length === 0 ? (
                     <div className="text-sm text-slate-500">Proje listesi yuklenemedi veya proje yok.</div>
@@ -868,6 +868,10 @@ export default function AdminStaffPage() {
                     ))
                   )}
                 </div>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  Rol koordinator ise secilen projeler koordine ettigi projeler olarak, diger panel rolleri icin gorevli
+                  oldugu projeler olarak kaydedilir.
+                </p>
               </div>
               <div className="flex flex-wrap justify-end gap-2 pt-2">
                 <button
