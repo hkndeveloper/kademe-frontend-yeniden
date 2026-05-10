@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Award,
   BookOpen,
+  CalendarDays,
   ChevronRight,
   FileCheck,
   FileSpreadsheet,
@@ -21,6 +22,7 @@ import { PanelBrandBlock } from "@/components/shared/PanelBrandBlock";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Panel Ozet", href: "/alumni/dashboard" },
+  { icon: CalendarDays, label: "Program Gecmisim", href: "/alumni/programs" },
   { icon: Megaphone, label: "Duyurular", href: "/alumni/announcements" },
   { icon: FileSpreadsheet, label: "Ozgecmis Havuzu", href: "/alumni/resume" },
   { icon: BookOpen, label: "Dijital Bohca", href: "/alumni/bohca" },

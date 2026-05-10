@@ -7,6 +7,7 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { downloadBlobResponse } from "@/lib/download";
 
 interface Project {
   id: number;
@@ -104,6 +105,8 @@ export default function ContributorFinancialsPage() {
     try {
       const params: Record<string, string> = {};
       if (statusFilter) params.status = statusFilter;
+      if (projectFilter) params.project_id = projectFilter;
+      if (search.trim()) params.payee = search.trim();
 
       const response = await api.get("/panel/financials", { params });
       const items = Array.isArray(response.data?.transactions?.data) ? response.data.transactions.data : [];
@@ -114,7 +117,7 @@ export default function ContributorFinancialsPage() {
     } finally {
       setListLoading(false);
     }
-  }, [statusFilter]);
+  }, [projectFilter, search, statusFilter]);
 
   useEffect(() => {
     const initData = async () => {
@@ -184,28 +187,13 @@ export default function ContributorFinancialsPage() {
   const handleApplyFilters = () => {
     setSuccessMessage("");
     setErrorMessage("");
+    void loadTransactions();
   };
 
   const handleDownload = async (id: number) => {
     try {
       const res = await api.get(`/panel/financials/${id}/invoice`, { responseType: "blob" });
-      const contentType = String(res.headers["content-type"] ?? "");
-      if (contentType.includes("application/json")) {
-        const payload = JSON.parse(await res.data.text()) as { download_url?: string };
-        if (payload.download_url) {
-          window.open(payload.download_url, "_blank", "noopener,noreferrer");
-          return;
-        }
-      }
-      const blob = new Blob([res.data]);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `fatura-${id}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      await downloadBlobResponse(res.data, res.headers, `fatura-${id}`);
     } catch (error) {
       console.error("Fatura indirilemedi", error);
       setErrorMessage("Fatura indirilemedi.");

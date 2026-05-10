@@ -19,6 +19,7 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { downloadBlobResponse } from "@/lib/download";
 
 interface Project {
   id: number;
@@ -66,10 +67,9 @@ const statusClasses: Record<string, string> = {
   paid: "text-emerald-300 bg-emerald-500/10",
 };
 
-const invoiceExtensions: Record<string, string> = {
-  "application/pdf": "pdf",
-  "image/jpeg": "jpg",
-  "image/png": "png",
+const typeLabels: Record<string, string> = {
+  expense: "Harcama",
+  payment: "Odeme",
 };
 
 export default function AdminFinancialsPage() {
@@ -84,8 +84,11 @@ export default function AdminFinancialsPage() {
   const [totalAmount, setTotalAmount] = useState(0);
   const [categoryStats, setCategoryStats] = useState<Array<{ category: string; total: number }>>([]);
   const [projectStats, setProjectStats] = useState<Array<{ project?: { name: string }; total: number }>>([]);
+  const [statusStats, setStatusStats] = useState<Array<{ status: string; total: number; count: number }>>([]);
   const [projectId, setProjectId] = useState("");
   const [status, setStatus] = useState("");
+  const [category, setCategory] = useState("");
+  const [transactionType, setTransactionType] = useState("");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -119,6 +122,8 @@ export default function AdminFinancialsPage() {
                 page: targetPage,
                 project_id: projectId || undefined,
                 status: status || undefined,
+                category: category || undefined,
+                type: transactionType || undefined,
                 payee: search || undefined,
                 date_from: dateFrom || undefined,
                 date_to: dateTo || undefined,
@@ -130,6 +135,7 @@ export default function AdminFinancialsPage() {
                 total_amount: 0,
                 category_stats: [],
                 project_stats: [],
+                status_stats: [],
               },
             }),
         hasPermission("financial.view")
@@ -149,6 +155,7 @@ export default function AdminFinancialsPage() {
       setTotalAmount(Number(financialResponse.data.total_amount ?? 0));
       setCategoryStats(financialResponse.data.category_stats ?? []);
       setProjectStats(financialResponse.data.project_stats ?? []);
+      setStatusStats(financialResponse.data.status_stats ?? []);
       const rawProjects = projectsResponse.data.projects ?? [];
       setProjects(rawProjects.filter((p) => canAccessProject("financial.view", p.id)));
       const rawCreateProjects = createProjectsResponse.data.projects ?? [];
@@ -162,10 +169,12 @@ export default function AdminFinancialsPage() {
   }, [
     dateFrom,
     dateTo,
+    category,
     page,
     projectId,
     search,
     status,
+    transactionType,
     hasPermission,
     canAccessProject,
     canCreateFinancials,
@@ -219,23 +228,7 @@ export default function AdminFinancialsPage() {
       const response = await api.get(`/panel/financials/${id}/invoice`, {
         responseType: "blob",
       });
-      const contentType = String(response.headers["content-type"] ?? "");
-      if (contentType.includes("application/json")) {
-        const payload = JSON.parse(await response.data.text()) as { download_url?: string };
-        if (payload.download_url) {
-          window.open(payload.download_url, "_blank", "noopener,noreferrer");
-          return;
-        }
-      }
-      const extension = invoiceExtensions[contentType.split(";")[0]] ?? "pdf";
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType || undefined }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `fatura_${name.replace(/\s+/g, "_")}.${extension}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await downloadBlobResponse(response.data, response.headers, `fatura_${name}`);
     } catch (error) {
       if (isAxiosError(error)) {
         if (error.response?.status === 403) {
@@ -324,6 +317,9 @@ export default function AdminFinancialsPage() {
             params={{
               project_id: projectId || undefined,
               status: status || undefined,
+              category: category || undefined,
+              type: transactionType || undefined,
+              payee: search || undefined,
               date_from: dateFrom || undefined,
               date_to: dateTo || undefined,
             }}
@@ -379,7 +375,7 @@ export default function AdminFinancialsPage() {
 
       {activeTab === "list" && canViewFinancials ? (
         <>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
         <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -397,6 +393,41 @@ export default function AdminFinancialsPage() {
             <CreditCard className="h-6 w-6" />
           </div>
         </div>
+        {(["pending", "approved", "rejected", "paid"] as const).map((statusKey) => {
+          const stat = statusStats.find((item) => item.status === statusKey);
+          const amount = Number(stat?.total ?? 0);
+
+          return (
+            <button
+              key={statusKey}
+              type="button"
+              onClick={() => {
+                setStatus((current) => (current === statusKey ? "" : statusKey));
+                setPage(1);
+              }}
+              className={`glass-panel flex items-center justify-between rounded-3xl p-6 text-left transition ${
+                status === statusKey ? "ring-2 ring-indigo-500" : "hover:border-indigo-500/30"
+              }`}
+            >
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  {statusLabels[statusKey]}
+                </p>
+                <h4 className="mt-1 text-2xl font-black text-slate-900">
+                  {amount.toLocaleString("tr-TR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  TL
+                </h4>
+                <p className="mt-1 text-xs text-muted-foreground">{Number(stat?.count ?? 0)} kayit</p>
+              </div>
+              <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${statusClasses[statusKey]}`}>
+                {statusKey}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -496,6 +527,32 @@ export default function AdminFinancialsPage() {
           >
             <option value="">Tum durumlar</option>
             {Object.entries(statusLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+          >
+            <option value="">Tum kategoriler</option>
+            {Object.entries(categoryLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={transactionType}
+            onChange={(event) => setTransactionType(event.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+          >
+            <option value="">Tum turler</option>
+            {Object.entries(typeLabels).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>

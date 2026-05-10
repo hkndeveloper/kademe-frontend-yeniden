@@ -33,9 +33,14 @@ interface ApplicationFormResponse {
     id: number;
     period_id?: number | null;
     fields: Question[];
+    require_consent?: boolean;
+    consent_text?: string | null;
     is_active: boolean;
   } | null;
 }
+
+const defaultConsentText =
+  "Basvuru kosullarini, uyarilari ve yaptirimlari okudum; verdigim bilgilerin dogru oldugunu kabul ediyorum.";
 
 const questionTypes: Array<{ type: Question["type"]; label: string; icon: typeof Type }> = [
   { type: "text", label: "Kisa Metin", icon: Type },
@@ -61,6 +66,8 @@ export default function FormBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [requireConsent, setRequireConsent] = useState(false);
+  const [consentText, setConsentText] = useState(defaultConsentText);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { canAccessProject } = usePermissions();
@@ -109,9 +116,12 @@ export default function FormBuilderPage() {
         });
         const nextPeriods = response.data.periods ?? [];
         const nextQuestions = response.data.application_form?.fields ?? [];
+        const nextForm = response.data.application_form;
 
         setPeriods(nextPeriods);
         setQuestions(nextQuestions);
+        setRequireConsent(Boolean(nextForm?.require_consent));
+        setConsentText(nextForm?.consent_text || defaultConsentText);
         setQuestionSeed(Math.max(1, nextQuestions.length + 1));
 
         if (response.data.application_form?.period_id) {
@@ -123,6 +133,8 @@ export default function FormBuilderPage() {
         console.error("Basvuru formu yuklenemedi", error);
         setQuestions([]);
         setPeriods([]);
+        setRequireConsent(false);
+        setConsentText(defaultConsentText);
         setErrorMessage("Basvuru formu yuklenemedi.");
       } finally {
         setLoading(false);
@@ -185,6 +197,8 @@ export default function FormBuilderPage() {
           required: question.required,
           options: question.options ?? [],
         })),
+        require_consent: requireConsent,
+        consent_text: requireConsent ? consentText.trim() : null,
         is_active: true,
       });
 
@@ -259,36 +273,44 @@ export default function FormBuilderPage() {
               Onizlenecek soru bulunmuyor.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {questions.map((question) => (
-                <div key={`preview-${question.id}`} className="rounded-2xl border border-white/10 bg-white/70 p-4">
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                    {question.label}
-                    {question.required ? <span className="ml-1 text-red-500">*</span> : null}
-                  </label>
-                  {question.type === "longtext" ? (
-                    <textarea disabled rows={3} className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
-                  ) : question.type === "select" ? (
-                    <select disabled className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                      <option>Secim yapin</option>
-                      {question.options?.map((option) => <option key={option}>{option}</option>)}
-                    </select>
-                  ) : question.type === "radio" || question.type === "checkbox" ? (
-                    <div className="space-y-2">
-                      {question.options?.map((option) => (
-                        <label key={option} className="flex items-center gap-2 text-sm text-slate-700">
-                          <input disabled type={question.type === "radio" ? "radio" : "checkbox"} />
-                          {option}
-                        </label>
-                      ))}
-                    </div>
-                  ) : question.type === "file" ? (
-                    <input disabled type="file" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
-                  ) : (
-                    <input disabled type="text" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
-                  )}
-                </div>
-              ))}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {questions.map((question) => (
+                  <div key={`preview-${question.id}`} className="rounded-2xl border border-white/10 bg-white/70 p-4">
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      {question.label}
+                      {question.required ? <span className="ml-1 text-red-500">*</span> : null}
+                    </label>
+                    {question.type === "longtext" ? (
+                      <textarea disabled rows={3} className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                    ) : question.type === "select" ? (
+                      <select disabled className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                        <option>Secim yapin</option>
+                        {question.options?.map((option) => <option key={option}>{option}</option>)}
+                      </select>
+                    ) : question.type === "radio" || question.type === "checkbox" ? (
+                      <div className="space-y-2">
+                        {question.options?.map((option) => (
+                          <label key={option} className="flex items-center gap-2 text-sm text-slate-700">
+                            <input disabled type={question.type === "radio" ? "radio" : "checkbox"} />
+                            {option}
+                          </label>
+                        ))}
+                      </div>
+                    ) : question.type === "file" ? (
+                      <input disabled type="file" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                    ) : (
+                      <input disabled type="text" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              {requireConsent ? (
+                <label className="flex items-start gap-3 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4 text-sm text-slate-700">
+                  <input disabled type="checkbox" className="mt-1" />
+                  <span>{consentText || defaultConsentText}</span>
+                </label>
+              ) : null}
             </div>
           )}
         </div>
@@ -319,6 +341,32 @@ export default function FormBuilderPage() {
           </select>
         </div>
         {selectedProject ? <p className="mt-4 text-sm text-muted-foreground">Aktif duzenleme kapsami: {selectedProject.name}{periodId ? ` / ${periods.find((period) => String(period.id) === periodId)?.name ?? "Secili donem"}` : ""}</p> : null}
+      </div>
+
+      <div className="glass-panel rounded-3xl p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Basvuru Onayi</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Uyari, yaptirim ve kosul metnini public basvuru formunda zorunlu onay olarak gosterir.</p>
+          </div>
+          <label className={`flex items-center gap-2 ${canEditForm ? "cursor-pointer" : "cursor-default opacity-70"}`}>
+            <input
+              type="checkbox"
+              checked={requireConsent}
+              disabled={!canEditForm}
+              onChange={(event) => setRequireConsent(event.target.checked)}
+              className="h-4 w-4 rounded border-slate-200 bg-white text-indigo-600 disabled:opacity-50"
+            />
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Zorunlu</span>
+          </label>
+        </div>
+        <textarea
+          value={consentText}
+          readOnly={!canEditForm}
+          onChange={(event) => setConsentText(event.target.value)}
+          rows={4}
+          className="mt-4 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 read-only:opacity-70"
+        />
       </div>
 
       {loading ? (

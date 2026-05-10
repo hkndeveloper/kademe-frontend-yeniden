@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { FileText, GraduationCap, Loader2, Mail, Phone, Search, Star, Users, X } from "lucide-react";
+import { CheckCircle2, FileText, GraduationCap, Loader2, Mail, Phone, Search, Star, Users, X, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -75,6 +75,8 @@ export default function PanelParticipantsPage() {
     return new URLSearchParams(window.location.search).get("status") ?? "all";
   });
   const [cvParticipant, setCvParticipant] = useState<ParticipantItem | null>(null);
+  const [graduationLoadingId, setGraduationLoadingId] = useState<number | null>(null);
+  const [message, setMessage] = useState("");
   const [summary, setSummary] = useState({
     total: 0,
     active: 0,
@@ -136,6 +138,51 @@ export default function PanelParticipantsPage() {
       return matchesSearch && matchesProject && matchesStatus;
     });
   }, [participants, projectFilter, searchTerm, statusFilter]);
+
+  const refreshParticipants = async () => {
+    const response = await api.get<ParticipantsResponse>("/panel/participants", {
+      params: {
+        project_id: projectFilter !== "all" ? projectFilter : undefined,
+        status: !["all", "graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
+        graduation_status: ["graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
+        search: searchTerm || undefined,
+      },
+    });
+    setProjects(response.data.projects ?? []);
+    setParticipants(response.data.participants ?? []);
+    setSummary(response.data.summary);
+  };
+
+  const updateGraduationStatus = async (
+    participant: ParticipantItem,
+    graduationStatus: "completed" | "graduated" | "not_completed",
+  ) => {
+    const note =
+      graduationStatus === "not_completed"
+        ? window.prompt("Tamamlayamama gerekcesini yazin")?.trim()
+        : window.prompt("Not eklemek ister misiniz? Bos birakabilirsiniz.")?.trim();
+
+    if (graduationStatus === "not_completed" && !note) {
+      setMessage("Tamamlayamadi durumu icin gerekce zorunludur.");
+      return;
+    }
+
+    setGraduationLoadingId(participant.id);
+    setMessage("");
+    try {
+      const response = await api.patch(`/panel/participants/${participant.id}/graduation`, {
+        graduation_status: graduationStatus,
+        graduation_note: note || undefined,
+      });
+      setMessage(response.data?.message ?? "Katilimci durumu guncellendi.");
+      await refreshParticipants();
+    } catch (error) {
+      console.error("Mezuniyet durumu guncellenemedi", error);
+      setMessage("Mezuniyet durumu guncellenemedi.");
+    } finally {
+      setGraduationLoadingId(null);
+    }
+  };
 
   return (
     <PermissionGate
@@ -201,6 +248,12 @@ export default function PanelParticipantsPage() {
             <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ortalama Kredi</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{summary.average_credit}</div>
           </div>
+        </div>
+      ) : null}
+
+      {message ? (
+        <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm font-semibold text-slate-900">
+          {message}
         </div>
       ) : null}
 
@@ -294,6 +347,38 @@ export default function PanelParticipantsPage() {
                   >
                     <FileText className="h-4 w-4" />
                     CV Bilgilerini Gor
+                  </button>
+                </div>
+              ) : null}
+
+              {hasPermission("projects.participants.manage") && canAccessProject("projects.participants.manage", participant.project.id) ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={graduationLoadingId === participant.id}
+                    onClick={() => void updateGraduationStatus(participant, "completed")}
+                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-500 hover:text-white disabled:opacity-60"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Tamamladi
+                  </button>
+                  <button
+                    type="button"
+                    disabled={graduationLoadingId === participant.id}
+                    onClick={() => void updateGraduationStatus(participant, "graduated")}
+                    className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-500 hover:text-white disabled:opacity-60"
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Mezun Yap
+                  </button>
+                  <button
+                    type="button"
+                    disabled={graduationLoadingId === participant.id}
+                    onClick={() => void updateGraduationStatus(participant, "not_completed")}
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-500 hover:text-white disabled:opacity-60"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Tamamlayamadi
                   </button>
                 </div>
               ) : null}

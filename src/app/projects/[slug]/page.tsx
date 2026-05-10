@@ -50,6 +50,8 @@ interface ApplicationField {
 interface ApplicationFormData {
   id: number;
   fields: ApplicationField[];
+  require_consent?: boolean;
+  consent_text?: string | null;
   is_active: boolean;
 }
 
@@ -162,6 +164,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const [guestApplicant, setGuestApplicant] = useState({
     name: "",
     surname: "",
@@ -187,6 +190,7 @@ export default function ProjectDetailPage() {
           nextFormValues[fieldId] = field.type === "checkbox" ? [] : field.type === "file" ? null : "";
         }
         setFormValues(nextFormValues);
+        setConsentAccepted(false);
       } catch (error) {
         console.error("Proje bulunamadi", error);
         router.push("/projects");
@@ -209,6 +213,7 @@ export default function ProjectDetailPage() {
           project_id: project?.id,
           period_id: project?.active_period?.id,
           form_data: formValues,
+          consent_accepted: consentAccepted,
           applicant: {
             name: guestApplicant.name.trim(),
             surname: guestApplicant.surname.trim(),
@@ -223,6 +228,7 @@ export default function ProjectDetailPage() {
     const data = new FormData();
     data.append("project_id", String(project?.id ?? ""));
     data.append("period_id", String(project?.active_period?.id ?? ""));
+    data.append("consent_accepted", consentAccepted ? "1" : "0");
 
     for (const [key, value] of Object.entries(formValues)) {
       if (value instanceof File) {
@@ -256,9 +262,16 @@ export default function ProjectDetailPage() {
       return;
     }
 
-    // Dinamik alanlar modal icinde acilir.
-    if (!showApplicationForm && (applicationForm?.fields?.length ?? 0) > 0) {
+    const needsApplicationModal = (applicationForm?.fields?.length ?? 0) > 0 || Boolean(applicationForm?.require_consent);
+
+    // Dinamik alanlar ve basvuru onayi modal icinde acilir.
+    if (!showApplicationForm && needsApplicationModal) {
       setShowApplicationForm(true);
+      return;
+    }
+
+    if (applicationForm?.require_consent && !consentAccepted) {
+      setErrorMessage("Basvuru kosullarini kabul etmeniz gerekiyor.");
       return;
     }
 
@@ -270,6 +283,7 @@ export default function ProjectDetailPage() {
           project_id: project.id,
           period_id: project.active_period.id,
           form_data: formValues,
+          consent_accepted: consentAccepted,
         }, config);
       } else {
         if (!guestApplicant.name.trim() || !guestApplicant.surname.trim() || !guestApplicant.email.trim()) {
@@ -487,6 +501,7 @@ export default function ProjectDetailPage() {
   if (!project) return null;
 
   const hasDynamicForm = (applicationForm?.fields?.length ?? 0) > 0;
+  const needsApplicationModal = hasDynamicForm || Boolean(applicationForm?.require_consent);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -836,6 +851,10 @@ export default function ProjectDetailPage() {
                   <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
                     Basvuru formu &quot;Basvuruyu Gonder&quot; butonuna tikladiginizda popup olarak acilacaktir.
                   </div>
+                ) : applicationForm?.require_consent ? (
+                  <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                    Basvuru onayi &quot;Basvuruyu Gonder&quot; butonuna tikladiginizda acilacaktir.
+                  </div>
                 ) : (
                   <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
                     Bu proje icin ozel form tanimi bulunmuyor. Varsayilan basvuru akisi kullanilacak.
@@ -852,7 +871,7 @@ export default function ProjectDetailPage() {
                   ) : (
                     <>
                       <MessageSquareText className="h-5 w-5" />
-                      {hasDynamicForm ? "Basvuruyu Gonder" : "Hemen Basvur"}
+                      {needsApplicationModal ? "Basvuruyu Gonder" : "Hemen Basvur"}
                     </>
                   )}
                 </button>
@@ -881,7 +900,7 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {showApplicationForm && hasDynamicForm ? (
+      {showApplicationForm && needsApplicationModal ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="glass-panel max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border/70 p-6 shadow-2xl md:p-8">
             <div className="mb-6 flex items-center justify-between">
@@ -941,6 +960,21 @@ export default function ProjectDetailPage() {
                   </div>
                 );
               })}
+
+              {applicationForm?.require_consent ? (
+                <label className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={consentAccepted}
+                    onChange={(event) => setConsentAccepted(event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-border text-primary"
+                  />
+                  <span>
+                    {applicationForm.consent_text ||
+                      "Basvuru kosullarini, uyarilari ve yaptirimlari okudum; verdigim bilgilerin dogru oldugunu kabul ediyorum."}
+                  </span>
+                </label>
+              ) : null}
             </div>
 
             {errorMessage ? <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{errorMessage}</div> : null}
