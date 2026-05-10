@@ -23,6 +23,11 @@ interface Project {
 
 type ProjectsPayload = Project[] | { data?: Project[] };
 
+type ApiErrorPayload = {
+  message?: string;
+  errors?: Record<string, string[]>;
+};
+
 interface Program {
   id: number;
   title: string;
@@ -111,6 +116,16 @@ const normalizeStatus = (status?: Program["status"]): ProgramFormState["status"]
   if (status === "active" || status === "completed" || status === "cancelled") return status;
   return "scheduled";
 };
+
+function apiErrorMessage(error: unknown, fallback: string): string {
+  const axiosError = error as AxiosError<ApiErrorPayload>;
+  const responseMessage = axiosError.response?.data?.message;
+  const validationMessage = Object.values(axiosError.response?.data?.errors ?? {})
+    .flat()
+    .join(" ");
+
+  return validationMessage || responseMessage || fallback;
+}
 
 export default function PanelProgramsPage() {
   const { hasPermission, canAccessProject } = usePermissions();
@@ -321,7 +336,7 @@ export default function PanelProgramsPage() {
       await loadPrograms();
     } catch (error) {
       console.error("Program kaydedilemedi", error);
-      setErrorMessage("Program kaydedilemedi. Alanlari ve yetkileri kontrol edin.");
+      setErrorMessage(apiErrorMessage(error, "Program kaydedilemedi. Alanlari ve yetkileri kontrol edin."));
     } finally {
       setSubmitting(false);
     }
