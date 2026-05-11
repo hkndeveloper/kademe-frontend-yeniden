@@ -165,11 +165,6 @@ export default function AdminAnnouncementsPage() {
     void initData();
   }, [loadAnnouncements, loadCommunicationLogs, hasPermission, canAccessProject]);
 
-  useEffect(() => {
-    if (!canViewAnnouncements) return;
-    void loadCommunicationLogs(1);
-  }, [canViewAnnouncements, loadCommunicationLogs]);
-
   const canDeleteAnnouncement = (announcement: Announcement): boolean => {
     if (!canDeleteAnnouncements) return false;
     if (announcement.project?.id) return canAccessProject("announcements.delete", announcement.project.id);

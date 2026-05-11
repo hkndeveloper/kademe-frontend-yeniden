@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Loader2, Lock, Save, UserCircle } from "lucide-react";
+import { CheckCircle, Loader2, Lock, Save, UserCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
 
@@ -22,6 +22,11 @@ interface PasswordForm {
   current_password: string;
   password: string;
   password_confirmation: string;
+}
+
+interface VerificationState {
+  tc: boolean;
+  yok: boolean;
 }
 
 const emptyProfile: ProfileForm = {
@@ -52,12 +57,17 @@ export default function AlumniProfilePage() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [verification, setVerification] = useState<VerificationState>({ tc: false, yok: false });
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const response = await api.get("/user/profile");
         const nextUser = response.data.user;
+        setVerification({
+          tc: Boolean(nextUser.tc_verified),
+          yok: Boolean(nextUser.yok_verified),
+        });
         setForm({
           phone: nextUser.phone ?? "",
           address: nextUser.address ?? "",
@@ -140,11 +150,17 @@ export default function AlumniProfilePage() {
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
         <form onSubmit={handleProfileSubmit} className="xl:col-span-2">
           <div className="glass-panel space-y-6 rounded-3xl p-8">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Iletisim ve Kariyer Bilgileri</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {user?.name} {user?.surname} ({user?.email})
-              </p>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Iletisim ve Kariyer Bilgileri</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {user?.name} {user?.surname} ({user?.email})
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <VerificationPill label="TC" verified={verification.tc} />
+                <VerificationPill label="YOK" verified={verification.yok} />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -153,6 +169,19 @@ export default function AlumniProfilePage() {
               <input value={form.hometown} onChange={(e) => setForm((prev) => ({ ...prev, hometown: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-purple-500" placeholder="Sehir" />
               <input value={form.university} onChange={(e) => setForm((prev) => ({ ...prev, university: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-purple-500" placeholder="Universite" />
               <input value={form.department} onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-purple-500" placeholder="Bolum" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <LockedVerificationField
+                label="T.C. Kimlik No"
+                value={verification.tc ? "Sistemde dogrulandi" : "Dogrulama bekliyor"}
+                verified={verification.tc}
+              />
+              <LockedVerificationField
+                label="YOK Mezun Bilgisi"
+                value={verification.yok ? "Sistemde dogrulandi" : "Dogrulama bekliyor"}
+                verified={verification.yok}
+              />
             </div>
 
             <textarea value={form.address} onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))} className="min-h-[96px] w-full rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-purple-500" placeholder="Adres" />
@@ -210,6 +239,30 @@ export default function AlumniProfilePage() {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function VerificationPill({ label, verified }: { label: string; verified: boolean }) {
+  return (
+    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold ${verified ? "border-green-500/20 bg-green-500/10 text-green-600" : "border-amber-500/20 bg-amber-500/10 text-amber-600"}`}>
+      {verified ? <CheckCircle className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+      {label} {verified ? "dogrulandi" : "bekliyor"}
+    </div>
+  );
+}
+
+function LockedVerificationField({ label, value, verified }: { label: string; value: string; verified: boolean }) {
+  return (
+    <div className="rounded-xl border border-border bg-muted/40 p-4">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+        <Lock className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="font-semibold text-slate-900">{value}</div>
+      <div className={`mt-2 text-xs font-semibold ${verified ? "text-green-600" : "text-amber-600"}`}>
+        {verified ? "Bu alan kullanici tarafindan degistirilemez." : "Entegrasyon tamamlandiginda sistem tarafindan dogrulanacak."}
       </div>
     </div>
   );

@@ -45,6 +45,7 @@ interface Program {
   end_at?: string | null;
   radius_meters?: number | null;
   credit_deduction?: number | null;
+  application_quota?: number | null;
   project_id: number;
   project?: {
     id: number;
@@ -107,6 +108,7 @@ const initialForm = {
   end_at: "",
   radius_meters: "100",
   credit_deduction: "10",
+  application_quota: "",
 };
 
 export default function AdminCalendarPage() {
@@ -217,6 +219,7 @@ export default function AdminCalendarPage() {
         period_id: Number(form.period_id),
         radius_meters: Number(form.radius_meters),
         credit_deduction: Number(form.credit_deduction),
+        application_quota: form.application_quota ? Number(form.application_quota) : null,
       });
 
       setSuccessMessage("Program takvime eklendi.");
@@ -956,6 +959,20 @@ export default function AdminCalendarPage() {
                   min={0}
                   value={form.credit_deduction}
                   onChange={(event) => setForm((current) => ({ ...current, credit_deduction: event.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Basvuru Kontenjani
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={form.application_quota}
+                  onChange={(event) => setForm((current) => ({ ...current, application_quota: event.target.value }))}
+                  placeholder="Opsiyonel"
                   className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
                 />
               </div>

@@ -50,11 +50,15 @@ interface PermissionMatrixResponse {
   granular_permission_groups: Record<string, string[]>;
   role_permission_scopes?: Record<string, Record<string, { scope_type: ScopeType; scope_payload: Record<string, unknown> }>>;
   role_scope_storage_ready?: boolean;
+  supported_scope_options?: ScopeOptionsMap;
+  default_role_scopes?: DefaultRoleScopes;
 }
 
 type MatrixState = Record<string, Set<string>>;
 type ScopeType = "all" | "own_projects" | "assigned_projects" | "own_unit" | "selected_projects" | "self" | "none";
 type RoleScopeState = Record<string, Record<string, { scope_type: ScopeType; scope_payload: Record<string, unknown> }>>;
+type ScopeOptionsMap = Record<string, ScopeType[]>;
+type DefaultRoleScopes = Record<string, Record<string, ScopeType>>;
 const VALID_SCOPE_TYPES: ScopeType[] = [
   "all",
   "own_projects",
@@ -65,9 +69,13 @@ const VALID_SCOPE_TYPES: ScopeType[] = [
   "none",
 ];
 
-function scopeOptionsFor(roleName: string, permissionName: string): ScopeType[] {
+function scopeOptionsFor(roleName: string, permissionName: string, supportedScopeOptions: ScopeOptionsMap = {}): ScopeType[] {
   if (roleName === "super_admin") return ["all"];
   if (roleName === "student" || roleName === "alumni") return ["self", "none"];
+  const backendOptions = supportedScopeOptions[permissionName]?.filter((option): option is ScopeType =>
+    VALID_SCOPE_TYPES.includes(option)
+  );
+  if (backendOptions?.length) return backendOptions;
   if (permissionName === "calendar.view" && ["coordinator", "staff"].includes(roleName)) {
     return ["all", "own_projects", "assigned_projects", "selected_projects", "none"];
   }
@@ -87,8 +95,16 @@ function permissionStartsWith(permissionName: string, prefixes: string[]): boole
   return prefixes.some((prefix) => permissionName.startsWith(prefix));
 }
 
-function defaultScopeForRole(roleName: string, permissionName: string): ScopeType {
+function defaultScopeForRole(
+  roleName: string,
+  permissionName: string,
+  defaultRoleScopes: DefaultRoleScopes = {},
+  supportedScopeOptions: ScopeOptionsMap = {}
+): ScopeType {
   if (roleName === "super_admin") return "all";
+  const options = scopeOptionsFor(roleName, permissionName, supportedScopeOptions);
+  const backendDefault = defaultRoleScopes[roleName]?.[permissionName];
+  if (backendDefault && options.includes(backendDefault)) return backendDefault;
   if (permissionName === "calendar.view" && ["coordinator", "staff"].includes(roleName)) return "all";
 
   if (roleName === "coordinator") {
@@ -108,11 +124,12 @@ function defaultScopeForRole(roleName: string, permissionName: string): ScopeTyp
         "certificates.",
         "digital_bohca.",
         "assignments.",
+        "kpd.",
       ])
     ) {
-      return "own_projects";
+      return options.includes("own_projects") ? "own_projects" : "none";
     }
-    if (permissionStartsWith(permissionName, ["staff.", "users."])) return "own_unit";
+    if (permissionStartsWith(permissionName, ["staff.", "users."])) return options.includes("own_unit") ? "own_unit" : "none";
   }
 
   if (roleName === "staff") {
@@ -131,11 +148,12 @@ function defaultScopeForRole(roleName: string, permissionName: string): ScopeTyp
         "certificates.",
         "digital_bohca.",
         "assignments.",
+        "kpd.",
       ])
     ) {
-      return "assigned_projects";
+      return options.includes("assigned_projects") ? "assigned_projects" : "none";
     }
-    if (permissionStartsWith(permissionName, ["staff.", "users."])) return "own_unit";
+    if (permissionStartsWith(permissionName, ["staff.", "users."])) return options.includes("own_unit") ? "own_unit" : "none";
   }
 
   if (roleName === "student" || roleName === "alumni") return "self";
@@ -232,6 +250,8 @@ export default function PermissionsPage() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [rolePermissionScopes, setRolePermissionScopes] = useState<RoleScopeState>({});
   const [roleScopeStorageReady, setRoleScopeStorageReady] = useState(true);
+  const [supportedScopeOptions, setSupportedScopeOptions] = useState<ScopeOptionsMap>({});
+  const [defaultRoleScopes, setDefaultRoleScopes] = useState<DefaultRoleScopes>({});
   const [activeSection, setActiveSection] = useState<"matrix" | "roles" | "users" | "audit">("matrix");
 
   const loadAudit = useCallback(async () => {
@@ -275,6 +295,8 @@ export default function PermissionsPage() {
       setGranularPermissionGroups(nextGranularGroups);
       setRolePermissionScopes(response.data.role_permission_scopes ?? {});
       setRoleScopeStorageReady(response.data.role_scope_storage_ready ?? true);
+      setSupportedScopeOptions(response.data.supported_scope_options ?? {});
+      setDefaultRoleScopes(response.data.default_role_scopes ?? {});
       setManagedUsers(userResponse.data.users ?? []);
       setRoleCatalog(roleResponse.data.roles ?? []);
       setGranularMatrix(
@@ -478,6 +500,7 @@ export default function PermissionsPage() {
           role: role.name,
           scopes: Object.entries(rolePermissionScopes[role.name] ?? {})
             .filter(([permission_name]) => role.name === "super_admin" || (granularMatrix[role.name]?.has(permission_name) ?? false))
+            .filter(([permission_name, scope]) => scopeOptionsFor(role.name, permission_name, supportedScopeOptions).includes(scope.scope_type))
             .map(([permission_name, scope]) => ({
               permission_name,
               scope_type: scope.scope_type,
@@ -538,7 +561,12 @@ export default function PermissionsPage() {
           const permissionName = String(override.permission_name ?? "").trim();
           const effect = override.effect === "deny" ? "deny" : "allow";
           const rawScopeType = (override.scope_type ?? "") as ScopeType | "";
-          const scopeType = VALID_SCOPE_TYPES.includes(rawScopeType as ScopeType) ? rawScopeType : null;
+          const allowedScopeOptions = selectedUser
+            ? scopeOptionsFor(selectedUser.role, permissionName, supportedScopeOptions)
+            : VALID_SCOPE_TYPES;
+          const scopeType = VALID_SCOPE_TYPES.includes(rawScopeType as ScopeType) && allowedScopeOptions.includes(rawScopeType as ScopeType)
+            ? rawScopeType
+            : null;
 
           let scopePayload: Record<string, unknown> = {};
           if (scopeType === "selected_projects") {
@@ -980,12 +1008,12 @@ export default function PermissionsPage() {
                             const checked = role.name === "super_admin" || (granularMatrix[role.name]?.has(permission.name) ?? false);
                             const scope = rolePermissionScopes[role.name]?.[permission.name];
                             const hasStoredScope = Boolean(scope);
-                            const scopeType: ScopeType = scope?.scope_type ?? defaultScopeForRole(role.name, permission.name);
+                            const scopeType: ScopeType = scope?.scope_type ?? defaultScopeForRole(role.name, permission.name, defaultRoleScopes, supportedScopeOptions);
                             const projectPayload = String((scope?.scope_payload?.project_ids as number[] | undefined)?.join(",") ?? "");
                             const unitPayload = String((scope?.scope_payload?.unit as string | undefined) ?? "");
                             const baseline = role.granular_effective ?? role.permissions ?? [];
                             const changed = checked !== baseline.includes(permission.name);
-                            const scopeOptions = scopeOptionsFor(role.name, permission.name);
+                            const scopeOptions = scopeOptionsFor(role.name, permission.name, supportedScopeOptions);
                             const displayedScopeType = scopeOptions.includes(scopeType) ? scopeType : scopeOptions[0] ?? "none";
 
                             return (
@@ -1197,7 +1225,15 @@ export default function PermissionsPage() {
                   </div>
                 ) : null}
 
-                {userOverrides.map((override, index) => (
+                {userOverrides.map((override, index) => {
+                  const overrideScopeOptions = selectedUser
+                    ? scopeOptionsFor(selectedUser.role, override.permission_name, supportedScopeOptions)
+                    : scopeOptionsFor("staff", override.permission_name, supportedScopeOptions);
+                  const overrideScopeValue = override.scope_type && overrideScopeOptions.includes(override.scope_type as ScopeType)
+                    ? override.scope_type
+                    : "";
+
+                  return (
                   <div key={`${override.permission_name}-${index}`} className="grid grid-cols-1 gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto]">
                     <select
                       value={override.permission_name}
@@ -1232,19 +1268,17 @@ export default function PermissionsPage() {
                     </select>
 
                     <select
-                      value={override.scope_type ?? ""}
+                      value={overrideScopeValue}
                       onChange={(event) => updateOverride(index, { scope_type: event.target.value || null })}
                       disabled={!canUpdateUserOverrides}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
                     >
                       <option value="">scope yok</option>
-                      <option value="all">all</option>
-                      <option value="own_projects">own_projects</option>
-                      <option value="assigned_projects">assigned_projects</option>
-                      <option value="selected_projects">selected_projects</option>
-                      <option value="own_unit">own_unit</option>
-                      <option value="self">self</option>
-                      <option value="none">none</option>
+                      {overrideScopeOptions.map((option) => (
+                        <option key={`${override.permission_name}-${option}`} value={option}>
+                          {option}
+                        </option>
+                      ))}
                     </select>
 
                     <input
@@ -1293,7 +1327,8 @@ export default function PermissionsPage() {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

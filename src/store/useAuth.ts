@@ -17,6 +17,8 @@ interface User {
   department?: string | null;
   class_year?: string | null;
   hometown?: string | null;
+  tc_verified?: boolean | null;
+  yok_verified?: boolean | null;
   profile?: {
     motivation_message?: string | null;
     linkedin_url?: string | null;

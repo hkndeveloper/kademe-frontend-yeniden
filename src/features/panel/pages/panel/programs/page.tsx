@@ -40,6 +40,7 @@ interface Program {
   status?: ProgramFormState["status"];
   radius_meters?: number | null;
   credit_deduction?: number | null;
+  application_quota?: number | null;
   project_id: number;
   project?: { id: number; name: string } | null;
   period?: { id: number; name: string } | null;
@@ -81,6 +82,7 @@ interface ProgramFormState {
   end_at: string;
   radius_meters: string;
   credit_deduction: string;
+  application_quota: string;
   status: "scheduled" | "active" | "completed" | "cancelled";
 }
 
@@ -95,6 +97,7 @@ const initialForm: ProgramFormState = {
   end_at: "",
   radius_meters: "100",
   credit_deduction: "10",
+  application_quota: "",
   status: "scheduled",
 };
 
@@ -285,6 +288,7 @@ export default function PanelProgramsPage() {
       end_at: program.end_at ? new Date(program.end_at).toISOString().slice(0, 16) : "",
       radius_meters: String(program.radius_meters ?? 100),
       credit_deduction: String(program.credit_deduction ?? 10),
+      application_quota: program.application_quota != null ? String(program.application_quota) : "",
       status: (program.status as ProgramFormState["status"]) || "scheduled",
     });
     setShowForm(true);
@@ -316,6 +320,7 @@ export default function PanelProgramsPage() {
       longitude: form.longitude ? Number(form.longitude) : null,
       radius_meters: Number(form.radius_meters),
       credit_deduction: Number(form.credit_deduction),
+      application_quota: form.application_quota ? Number(form.application_quota) : null,
       start_at: form.start_at,
       end_at: form.end_at,
       status: form.status,
@@ -542,6 +547,14 @@ export default function PanelProgramsPage() {
               className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
               required
             />
+            <input
+              type="number"
+              min={1}
+              value={form.application_quota}
+              onChange={(event) => setForm((prev) => ({ ...prev, application_quota: event.target.value }))}
+              placeholder="Basvuru kontenjani (opsiyonel)"
+              className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+            />
             <select
               value={form.status}
               onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as ProgramFormState["status"] }))}
@@ -664,6 +677,7 @@ export default function PanelProgramsPage() {
                       {program.period?.name ? <div>{program.period.name}</div> : null}
                       {canViewAttendanceStats ? <div>Yoklama: {program.attendance_count ?? 0}</div> : null}
                       {canViewAttendanceStats ? <div>Degerlendirme: {program.feedback_count ?? 0}</div> : null}
+                      {program.application_quota ? <div>Basvuru kontenjani: {program.application_quota}</div> : null}
                     </div>
                   </div>
                 </div>

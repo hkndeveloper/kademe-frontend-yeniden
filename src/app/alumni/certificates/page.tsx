@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Award, CheckCircle2, Download, ExternalLink, Loader2, Search, ShieldCheck } from "lucide-react";
 import api from "@/lib/api/axios";
+import { downloadBlobResponse } from "@/lib/download";
 
 interface CertificateItem {
   id: number;
@@ -86,25 +87,7 @@ export default function AlumniCertificatesPage() {
     try {
       const endpoint = certificate.download_url.replace(/^.*\/api/, "");
       const response = await api.get(endpoint, { responseType: "blob" });
-      const contentType = String(response.headers["content-type"] ?? "");
-
-      if (contentType.includes("application/json")) {
-        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
-        if (payload.download_url) {
-          window.open(payload.download_url, "_blank", "noopener,noreferrer");
-          return;
-        }
-        throw new Error(payload.message ?? "Sertifika indirilemedi.");
-      }
-
-      const blobUrl = URL.createObjectURL(response.data);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = `sertifika_${certificate.verification_code}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(blobUrl);
+      await downloadBlobResponse(response.data, response.headers, `sertifika_${certificate.verification_code}`);
     } catch (error) {
       console.error("Sertifika indirilemedi", error);
       setErrorMessage("Sertifika indirilemedi.");

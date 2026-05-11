@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Calendar, CreditCard, BarChart3, MessageSquare, TrendingUp, Zap, Loader2, CheckCircle2, Send } from "lucide-react";
+import { Users, Calendar, CreditCard, BarChart3, MessageSquare, TrendingUp, Zap, Loader2, CheckCircle2, Send, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -13,6 +13,18 @@ interface DashboardStats {
   programs: { monthly_total: number; monthly_completed: number; monthly_upcoming: number };
   financials: { monthly_expense: number; expense_change_percent: number | null; pending_count: number };
   pending: { applications: number; support: number; financials: number };
+  credit_risk?: {
+    count: number;
+    participants: Array<{
+      id: number;
+      student: string;
+      email?: string | null;
+      project?: { id: number; name: string; slug: string } | null;
+      period?: { id: number; name: string; credit_threshold: number } | null;
+      credit: number;
+      threshold: number;
+    }>;
+  };
   project_occupancy: Array<{ id: number; name: string; active: number; max: number; rate: number | null }>;
   sms: { total_this_month: number; by_project: Array<{ project_id: number; count: number; project: { name: string } }> };
   upcoming_programs: Array<{ id: number; title: string; start_at: string; location: string; project_id: number; project?: { name: string } }>;
@@ -241,6 +253,10 @@ export default function AdminDashboardPage() {
                       <span className="text-xs font-semibold text-slate-700">Destek Talepleri</span>
                       <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">{stats.pending.support} Bekleyen</span>
                     </div>
+                    <div className="flex items-center justify-between rounded-lg border border-red-200/80 bg-red-50 p-2.5">
+                      <span className="text-xs font-semibold text-red-800">Kredi Riski</span>
+                      <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">{stats.credit_risk?.count ?? 0} Kisi</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -312,6 +328,33 @@ export default function AdminDashboardPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="panel-surface border-red-100 bg-red-50/40 p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="text-[10px] font-bold uppercase text-red-700">Kritik Kredi Takibi</h4>
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                </div>
+                {(stats.credit_risk?.participants.length ?? 0) === 0 ? (
+                  <p className="text-sm text-slate-500">Esik altinda katilimci bulunmuyor.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.credit_risk?.participants.map((participant) => (
+                      <div key={participant.id} className="rounded-lg border border-red-100 bg-white p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-bold text-slate-900">{participant.student}</p>
+                            <p className="truncate text-[10px] text-slate-500">{participant.project?.name ?? "Proje yok"}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-black text-red-600">{participant.credit}</p>
+                            <p className="text-[9px] uppercase text-slate-400">Esik {participant.threshold}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

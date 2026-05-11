@@ -6,6 +6,7 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
+import { downloadBlobResponse } from "@/lib/download";
 
 type Project = {
   id: number;
@@ -128,25 +129,7 @@ export default function PanelAssignmentsPage() {
 
     try {
       const response = await api.get(submission.download_url, { responseType: "blob" });
-      const contentType = String(response.headers["content-type"] ?? "");
-
-      if (contentType.includes("application/json")) {
-        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
-        if (payload.download_url) {
-          window.open(payload.download_url, "_blank", "noopener,noreferrer");
-          return;
-        }
-        throw new Error(payload.message ?? "Teslim dosyasi indirilemedi.");
-      }
-
-      const blobUrl = URL.createObjectURL(response.data);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = `odev_teslimi_${submission.id}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(blobUrl);
+      await downloadBlobResponse(response.data, response.headers, `odev_teslimi_${submission.id}`);
     } catch (error) {
       console.error("Teslim dosyasi indirilemedi", error);
       setFeedback("Teslim dosyasi indirilemedi.");

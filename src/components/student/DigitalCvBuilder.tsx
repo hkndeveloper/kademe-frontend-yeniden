@@ -171,6 +171,17 @@ const sanitizeFileName = (value: string) =>
     .replace(/[^a-z0-9]+/gi, "-")
     .replace(/^-+|-+$/g, "") || "kademe-dijital-cv";
 
+interface CvExportContext {
+  form: CvForm;
+  approved: ApprovedCv;
+  verifiedProjects: CvProject[];
+  badges: CvBadge[];
+  certificates: CvCertificate[];
+  creditHistory: CvCreditLog[];
+  skills: string[];
+  languages: string[];
+}
+
 export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
   const { user, fetchProfile } = useAuth();
   const [form, setForm] = useState<CvForm>(emptyForm);
@@ -278,7 +289,32 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
 
   const exportPdf = () => {
     saveDraft();
-    window.setTimeout(() => window.print(), 80);
+    printCvDocument(buildCvHtmlDocument({
+      form,
+      approved,
+      verifiedProjects,
+      badges,
+      certificates,
+      creditHistory,
+      skills,
+      languages,
+    }));
+  };
+
+  const exportWord = () => {
+    saveDraft();
+    const html = buildCvHtmlDocument({
+      form,
+      approved,
+      verifiedProjects,
+      badges,
+      certificates,
+      creditHistory,
+      skills,
+      languages,
+    });
+    const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
+    downloadBlob(blob, `${sanitizeFileName(form.fullName)}-kademe-cv.doc`);
   };
 
   const exportText = () => {
@@ -293,12 +329,7 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
       languages,
     });
     const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${sanitizeFileName(form.fullName)}-ats-cv.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${sanitizeFileName(form.fullName)}-ats-cv.txt`);
   };
 
   if (loading) {
@@ -369,6 +400,10 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
           <button onClick={exportText} className="inline-flex items-center gap-2 rounded-lg border border-slate-900 bg-white px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-slate-50">
             <FileText className="h-4 w-4" />
             ATS Metin
+          </button>
+          <button onClick={exportWord} className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2.5 text-sm font-bold text-indigo-700 hover:bg-indigo-50">
+            <Download className="h-4 w-4" />
+            Word CV
           </button>
           <button onClick={exportPdf} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700">
             <Download className="h-4 w-4" />
@@ -691,6 +726,294 @@ function Entry({ title, subtitle, date, description }: { title?: string | null; 
       {description && <p className="mt-1 whitespace-pre-line text-slate-700">{description}</p>}
     </div>
   );
+}
+
+function escapeHtml(value?: string | number | null) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function htmlParagraph(value?: string | null) {
+  return escapeHtml(value).replace(/\n/g, "<br />");
+}
+
+function exportEntry({ title, subtitle, date, description }: { title?: string | null; subtitle?: string | null; date?: string | null; description?: string | null }) {
+  if (!title && !subtitle && !date && !description) return "";
+
+  return `
+    <div class="entry">
+      <div class="entry-head">
+        <div>
+          <strong>${escapeHtml(title || "-")}</strong>
+          ${subtitle ? `<div class="muted">${escapeHtml(subtitle)}</div>` : ""}
+        </div>
+        ${date ? `<span class="date">${escapeHtml(date)}</span>` : ""}
+      </div>
+      ${description ? `<p>${htmlParagraph(description)}</p>` : ""}
+    </div>
+  `;
+}
+
+function exportSection(title: string, content: string) {
+  if (!content.trim()) return "";
+
+  return `
+    <section>
+      <h2>${escapeHtml(title)}</h2>
+      ${content}
+    </section>
+  `;
+}
+
+function buildCvHtmlDocument({
+  form,
+  approved,
+  verifiedProjects,
+  badges,
+  certificates,
+  creditHistory,
+  skills,
+  languages,
+}: CvExportContext) {
+  const manualExperience = form.experience.filter((item) => item.title || item.subtitle || item.description);
+  const manualEducation = form.education.filter((item) => item.title || item.subtitle || item.description);
+  const manualProjects = form.projects.filter((item) => item.title || item.subtitle || item.description);
+  const manualCertificates = form.certificates.filter((item) => item.title || item.subtitle || item.description);
+  const fullName = form.fullName || "Ad Soyad";
+  const contact = [form.email, form.phone, form.location].filter(Boolean).map(escapeHtml).join(" | ");
+  const links = [form.linkedin, form.github, form.instagram].filter(Boolean).map(escapeHtml).join(" | ");
+
+  const sections = [
+    exportSection("Profesyonel Ozet", `<p>${htmlParagraph(form.summary || "KADEME programlari, proje deneyimleri ve manuel eklemelerle olusturulan ATS uyumlu dijital CV.")}</p>`),
+    exportSection(
+      "KADEME Onayli Kazanimlar",
+      `
+        <div class="metrics">
+          <span><strong>${escapeHtml(approved.completed_project_count ?? verifiedProjects.length)}</strong> proje</span>
+          <span><strong>${escapeHtml(approved.total_credit ?? 0)}</strong> kredi</span>
+          <span><strong>${escapeHtml(approved.badge_count ?? badges.length)}</strong> rozet</span>
+          <span><strong>${escapeHtml(approved.certificate_count ?? certificates.length)}</strong> sertifika</span>
+        </div>
+      `,
+    ),
+    exportSection(
+      "Egitim",
+      [
+        exportEntry({ title: form.university || "Universite", subtitle: form.department, date: form.classYear }),
+        ...manualEducation.map((item) => exportEntry(item)),
+      ].join(""),
+    ),
+    exportSection("Deneyim", manualExperience.map((item) => exportEntry(item)).join("")),
+    exportSection(
+      "Tamamlanan / Katilinan KADEME Projeleri",
+      [
+        verifiedProjects.length === 0 ? "<p>Kayitli KADEME proje katilimi bulunamadi.</p>" : "",
+        ...verifiedProjects.map((project) =>
+          exportEntry({
+            title: project.name,
+            subtitle: [project.type, project.period, project.graduation_status || project.status].filter(Boolean).join(" | "),
+            date: formatDate(project.graduated_at),
+            description: [project.description, project.credit != null ? `Kredi: ${project.credit}` : null].filter(Boolean).join(" "),
+          }),
+        ),
+        ...manualProjects.map((item) => exportEntry(item)),
+      ].join(""),
+    ),
+    exportSection(
+      "Yetkinlikler ve Diller",
+      [
+        skills.length > 0 ? `<p><strong>Yetkinlikler:</strong> ${skills.map(escapeHtml).join(", ")}</p>` : "",
+        languages.length > 0 ? `<p><strong>Diller:</strong> ${languages.map(escapeHtml).join(", ")}</p>` : "",
+      ].join(""),
+    ),
+    exportSection(
+      "Rozetler ve Sertifikalar",
+      [
+        ...badges.map((badge) =>
+          exportEntry({
+            title: badge.title_label || badge.name,
+            subtitle: [badge.project, badge.tier].filter(Boolean).join(" | "),
+            date: formatDate(badge.awarded_at),
+            description: badge.description ?? "",
+          }),
+        ),
+        ...certificates.map((certificate) =>
+          exportEntry({
+            title: certificate.type || "Sertifika",
+            subtitle: [certificate.project, certificate.period].filter(Boolean).join(" | "),
+            date: formatDate(certificate.issued_at),
+            description: certificate.verification_code ? `Dogrulama kodu: ${certificate.verification_code}` : "",
+          }),
+        ),
+        ...manualCertificates.map((item) => exportEntry(item)),
+      ].join(""),
+    ),
+    exportSection(
+      "Kredi Gecmisi Ozeti",
+      creditHistory
+        .slice(0, 8)
+        .map((log) =>
+          exportEntry({
+            title: `${log.amount > 0 ? "+" : ""}${log.amount} kredi`,
+            subtitle: [log.project, log.program, log.type].filter(Boolean).join(" | "),
+            date: formatDate(log.created_at),
+            description: log.reason ?? "",
+          }),
+        )
+        .join(""),
+    ),
+  ].join("");
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${escapeHtml(fullName)} - KADEME Dijital CV</title>
+    <style>
+      @page { size: A4; margin: 14mm; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: #0f172a;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 11pt;
+        line-height: 1.45;
+      }
+      article { width: 100%; max-width: 190mm; margin: 0 auto; }
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        border-bottom: 1px solid #cbd5e1;
+        padding-bottom: 14px;
+        margin-bottom: 18px;
+      }
+      h1 { margin: 0 0 7px; font-size: 24pt; line-height: 1.1; }
+      h2 {
+        margin: 0 0 8px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 4px;
+        color: #111827;
+        font-size: 10pt;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+      }
+      section { break-inside: avoid; margin: 0 0 16px; }
+      p { margin: 4px 0 0; color: #334155; }
+      .muted, .date, .contact, .links { color: #475569; }
+      .badge {
+        border: 1px solid #cbd5e1;
+        padding: 7px 10px;
+        text-align: right;
+        white-space: nowrap;
+      }
+      .badge small {
+        display: block;
+        color: #64748b;
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .metrics span {
+        border: 1px solid #e2e8f0;
+        padding: 8px;
+      }
+      .metrics strong { display: block; font-size: 15pt; }
+      .entry { break-inside: avoid; margin-bottom: 10px; }
+      .entry-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .date {
+        flex: 0 0 auto;
+        font-size: 9pt;
+        font-weight: 700;
+        text-align: right;
+      }
+      @media print {
+        html, body { background: #ffffff !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <article>
+      <header>
+        <div>
+          <h1>${escapeHtml(fullName)}</h1>
+          ${contact ? `<div class="contact">${contact}</div>` : ""}
+          ${links ? `<div class="links">${links}</div>` : ""}
+        </div>
+        <div class="badge">
+          <small>KADEME Onayli</small>
+          <strong>Dijital CV</strong>
+        </div>
+      </header>
+      ${sections}
+    </article>
+  </body>
+</html>`;
+}
+
+function printCvDocument(html: string) {
+  const iframe = document.createElement("iframe");
+  let printed = false;
+
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-10000px";
+  iframe.style.top = "0";
+  iframe.style.width = "210mm";
+  iframe.style.height = "297mm";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const frameWindow = iframe.contentWindow;
+  const frameDocument = iframe.contentDocument ?? frameWindow?.document;
+
+  if (!frameWindow || !frameDocument) {
+    iframe.remove();
+    window.print();
+    return;
+  }
+
+  const cleanup = () => window.setTimeout(() => iframe.remove(), 500);
+  const runPrint = () => {
+    if (printed) return;
+    printed = true;
+    frameWindow.focus();
+    frameWindow.print();
+    cleanup();
+  };
+
+  frameWindow.onafterprint = cleanup;
+  iframe.onload = runPrint;
+  frameDocument.open();
+  frameDocument.write(html);
+  frameDocument.close();
+  window.setTimeout(runPrint, 250);
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function buildAtsText({

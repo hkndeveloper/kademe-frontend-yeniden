@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Download, FileText, FileVideo, FileCode, Search, Loader2 } from "lucide-react";
 import api from "@/lib/api/axios";
+import { downloadBlobResponse } from "@/lib/download";
 
 interface BohcaItem {
   id: number;
@@ -55,22 +56,7 @@ export default function StudentBohcaPage() {
 
     const endpoint = item.download_url ?? `/digital-bohca/${item.id}/download`;
     const response = await api.get(endpoint, { responseType: "blob" });
-    const contentType = String(response.headers["content-type"] ?? "");
-
-    if (contentType.includes("application/json")) {
-      const payload = JSON.parse(await response.data.text()) as { download_url?: string };
-      if (payload.download_url) window.open(payload.download_url, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    const blobUrl = window.URL.createObjectURL(response.data);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = item.title.replace(/\s+/g, "_");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(blobUrl);
+    await downloadBlobResponse(response.data, response.headers, item.title);
   };
 
   return (

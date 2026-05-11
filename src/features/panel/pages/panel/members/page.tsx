@@ -30,16 +30,16 @@ export default function StaffMembersPage() {
   const [unit, setUnit] = useState("");
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!hasPermission("staff.view")) {
-      setLoading(false);
       return;
     }
 
     const loadMembers = async () => {
       try {
+        setLoading(true);
         const response = await api.get<{ members: PaginatedMembers; unit?: string | null; message?: string }>("/panel/members");
         setMembers(response.data.members?.data ?? []);
         setUnit(response.data.unit ?? "");

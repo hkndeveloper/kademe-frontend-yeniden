@@ -26,6 +26,11 @@ interface PasswordForm {
   password_confirmation: string;
 }
 
+interface VerificationState {
+  tc: boolean;
+  yok: boolean;
+}
+
 const emptyProfile: ProfileForm = {
   phone: "",
   address: "",
@@ -55,12 +60,17 @@ export default function StudentProfilePage() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [verification, setVerification] = useState<VerificationState>({ tc: false, yok: false });
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const response = await api.get("/user/profile");
         const nextUser = response.data.user;
+        setVerification({
+          tc: Boolean(nextUser.tc_verified),
+          yok: Boolean(nextUser.yok_verified),
+        });
         setForm({
           phone: nextUser.phone ?? "",
           address: nextUser.address ?? "",
@@ -150,12 +160,8 @@ export default function StudentProfilePage() {
                 </p>
               </div>
               <div className="flex flex-col gap-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[10px] font-bold text-green-500">
-                  <CheckCircle className="h-3 w-3" /> TC dogrulandi
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[10px] font-bold text-green-500">
-                  <CheckCircle className="h-3 w-3" /> YOK dogrulandi
-                </div>
+                <VerificationPill label="TC" verified={verification.tc} />
+                <VerificationPill label="YOK" verified={verification.yok} />
               </div>
             </div>
 
@@ -166,6 +172,19 @@ export default function StudentProfilePage() {
               <input value={form.department} onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-primary" placeholder="Bolum" />
               <input value={form.class_year} onChange={(e) => setForm((prev) => ({ ...prev, class_year: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-primary" placeholder="Sinif / mezuniyet yili" />
               <input value={form.hometown} onChange={(e) => setForm((prev) => ({ ...prev, hometown: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-primary" placeholder="Memleket" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <LockedVerificationField
+                label="T.C. Kimlik No"
+                value={verification.tc ? "Sistemde dogrulandi" : "Dogrulama bekliyor"}
+                verified={verification.tc}
+              />
+              <LockedVerificationField
+                label="YOK Ogrenci Bilgisi"
+                value={verification.yok ? "Sistemde dogrulandi" : "Dogrulama bekliyor"}
+                verified={verification.yok}
+              />
             </div>
 
             <textarea value={form.address} onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))} className="min-h-[96px] w-full rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-primary" placeholder="Adres" />
@@ -249,6 +268,30 @@ export default function StudentProfilePage() {
             </p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function VerificationPill({ label, verified }: { label: string; verified: boolean }) {
+  return (
+    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold ${verified ? "border-green-500/20 bg-green-500/10 text-green-600" : "border-amber-500/20 bg-amber-500/10 text-amber-600"}`}>
+      {verified ? <CheckCircle className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+      {label} {verified ? "dogrulandi" : "bekliyor"}
+    </div>
+  );
+}
+
+function LockedVerificationField({ label, value, verified }: { label: string; value: string; verified: boolean }) {
+  return (
+    <div className="rounded-xl border border-border bg-muted/40 p-4">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+        <Lock className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="font-semibold text-slate-900">{value}</div>
+      <div className={`mt-2 text-xs font-semibold ${verified ? "text-green-600" : "text-amber-600"}`}>
+        {verified ? "Bu alan kullanici tarafindan degistirilemez." : "Entegrasyon tamamlandiginda sistem tarafindan dogrulanacak."}
       </div>
     </div>
   );

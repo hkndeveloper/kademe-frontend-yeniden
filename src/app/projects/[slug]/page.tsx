@@ -164,6 +164,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [guestApplicant, setGuestApplicant] = useState({
     name: "",
@@ -212,6 +213,7 @@ export default function ProjectDetailPage() {
         payload: {
           project_id: project?.id,
           period_id: project?.active_period?.id,
+          program_id: selectedProgramId,
           form_data: formValues,
           consent_accepted: consentAccepted,
           applicant: {
@@ -228,6 +230,7 @@ export default function ProjectDetailPage() {
     const data = new FormData();
     data.append("project_id", String(project?.id ?? ""));
     data.append("period_id", String(project?.active_period?.id ?? ""));
+    if (selectedProgramId) data.append("program_id", String(selectedProgramId));
     data.append("consent_accepted", consentAccepted ? "1" : "0");
 
     for (const [key, value] of Object.entries(formValues)) {
@@ -251,11 +254,13 @@ export default function ProjectDetailPage() {
     };
   };
 
-  const handleApply = async () => {
+  const handleApply = async (programId?: number | null) => {
     if (!project) return;
 
     setMessage(null);
     setErrorMessage(null);
+    const nextProgramId = programId !== undefined ? programId : selectedProgramId;
+    setSelectedProgramId(nextProgramId ?? null);
 
     if (!project.active_period) {
       setErrorMessage("Bu proje icin aktif donem bulunmuyor.");
@@ -282,6 +287,7 @@ export default function ProjectDetailPage() {
         await api.post("/applications", payload instanceof FormData ? payload : {
           project_id: project.id,
           period_id: project.active_period.id,
+          program_id: nextProgramId,
           form_data: formValues,
           consent_accepted: consentAccepted,
         }, config);
@@ -487,6 +493,15 @@ export default function ProjectDetailPage() {
         ) : null}
       </div>
       {program.description ? <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{program.description}</p> : null}
+      {project?.is_application_open && program.status !== "completed" ? (
+        <button
+          type="button"
+          onClick={() => void handleApply(program.id)}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary transition hover:bg-primary hover:text-primary-foreground"
+        >
+          Programa Basvur
+        </button>
+      ) : null}
     </div>
   );
 
@@ -862,7 +877,7 @@ export default function ProjectDetailPage() {
                 )}
 
                 <button
-                  onClick={handleApply}
+                  onClick={() => void handleApply(null)}
                   disabled={applying}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70"
                 >
@@ -988,7 +1003,7 @@ export default function ProjectDetailPage() {
                 Vazgec
               </button>
               <button
-                onClick={handleApply}
+                onClick={() => void handleApply(selectedProgramId)}
                 disabled={applying}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70"
               >

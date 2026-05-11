@@ -6,6 +6,7 @@ import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
+import { downloadBlobResponse } from "@/lib/download";
 
 type Paginated<T> = {
   data: T[];
@@ -168,25 +169,7 @@ export default function PanelKpdPage() {
 
     try {
       const response = await api.get(endpoint, { responseType: "blob" });
-      const contentType = String(response.headers["content-type"] ?? "");
-
-      if (contentType.includes("application/json")) {
-        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
-        if (payload.download_url) {
-          window.open(payload.download_url, "_blank", "noopener,noreferrer");
-          return;
-        }
-        throw new Error(payload.message ?? "Rapor indirilemedi.");
-      }
-
-      const blobUrl = window.URL.createObjectURL(response.data);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = `kpd_raporu_${report.id}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(blobUrl);
+      await downloadBlobResponse(response.data, response.headers, `kpd_raporu_${report.id}`);
     } catch (error) {
       console.error("KPD raporu indirilemedi", error);
       setFeedback("KPD raporu indirilemedi.");

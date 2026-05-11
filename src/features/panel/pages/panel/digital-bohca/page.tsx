@@ -7,6 +7,7 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
+import { downloadBlobResponse } from "@/lib/download";
 
 type Project = {
   id: number;
@@ -116,25 +117,7 @@ export default function PanelDigitalBohcaPage() {
   async function handleDownload(material: Material) {
     const endpoint = material.download_url ?? `/panel/digital-bohca/${material.id}/download`;
     const response = await api.get(endpoint, { responseType: "blob" });
-    const contentType = String(response.headers["content-type"] ?? "");
-
-    if (contentType.includes("application/json")) {
-      const payload = JSON.parse(await response.data.text()) as { download_url?: string };
-      if (payload.download_url) {
-        window.open(payload.download_url, "_blank", "noopener,noreferrer");
-      }
-      return;
-    }
-
-    const blobUrl = window.URL.createObjectURL(response.data);
-    const link = document.createElement("a");
-    const extension = material.file_type ? `.${material.file_type.replace(/^\./, "")}` : "";
-    link.href = blobUrl;
-    link.download = `${material.title.replace(/\s+/g, "_")}${extension}`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(blobUrl);
+    await downloadBlobResponse(response.data, response.headers, material.title);
   }
 
   return (
