@@ -2,6 +2,6 @@
 
 import { MyProjectPortalPage } from "@/features/participant-portal/MyProjectPortalPage";
 
-export default function StudentMyProjectPage() {
-  return <MyProjectPortalPage portal="student" />;
+export default function AlumniMyProjectPage() {
+  return <MyProjectPortalPage portal="alumni" />;
 }

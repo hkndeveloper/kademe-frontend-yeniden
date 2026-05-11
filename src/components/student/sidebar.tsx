@@ -11,6 +11,8 @@ import {
   FileCheck,
   FileText,
   FileUser,
+  MessagesSquare,
+  Handshake,
   HeartHandshake,
   HeartPulse,
   LayoutDashboard,
@@ -18,6 +20,7 @@ import {
   Star,
   UserCircle,
   LifeBuoy,
+  Megaphone,
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,6 +39,9 @@ const menuItems = [
   { icon: HeartPulse, label: "KPD", href: "/student/kpd" },
   { icon: Award, label: "Sertifikalarim", href: "/student/certificates" },
   { icon: HeartHandshake, label: "Gonullu Basvurusu", href: "/student/volunteer" },
+  { icon: Handshake, label: "Kariyer Firsatlari", href: "/student/opportunities" },
+  { icon: Megaphone, label: "Mesaj Kutusu", href: "/student/inbox" },
+  { icon: MessagesSquare, label: "Forum", href: "/student/forum" },
   { icon: BrainCircuit, label: "Kisilik Analizi", href: "/student/personality" },
   { icon: LifeBuoy, label: "Destek Taleplerim", href: "/student/tickets" },
   { icon: UserCircle, label: "Profilim", href: "/student/profile" },

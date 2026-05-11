@@ -25,6 +25,7 @@ interface DashboardSummaryResponse {
   earned_badges: DashboardBadge[];
   monthly_titles?: string[];
   total_score: number;
+  profile_badge_frame?: string | null;
 }
 
 interface ProgramItem {
@@ -48,6 +49,7 @@ export default function StudentDashboardPage() {
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [materials, setMaterials] = useState<BohcaMaterial[]>([]);
   const [monthlyTitles, setMonthlyTitles] = useState<string[]>([]);
+  const [profileBadgeFrame, setProfileBadgeFrame] = useState<string | null>(null);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -62,6 +64,7 @@ export default function StudentDashboardPage() {
         setParticipations(summaryResponse.data.participations ?? []);
         setBadges(summaryResponse.data.earned_badges ?? []);
         setMonthlyTitles(summaryResponse.data.monthly_titles ?? []);
+        setProfileBadgeFrame(summaryResponse.data.profile_badge_frame ?? null);
         setPrograms((programsResponse.data.programs ?? []).slice(0, 3));
         setMaterials((bohcaResponse.data.materials ?? []).slice(0, 3));
       } catch (error) {
@@ -86,8 +89,9 @@ export default function StudentDashboardPage() {
     <div className="space-y-10">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-black text-slate-900">Merhaba, {user?.name?.toUpperCase()}!</h1>
+          <h1 className={`text-3xl font-black text-slate-900 ${profileBadgeFrame ?? ""}`.trim()}>Merhaba, {user?.name?.toUpperCase()}!</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Ogrenci portali gelisim ozeti</p>
+          {profileBadgeFrame ? <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-primary">KADEME+ rozet cercevesi aktif</p> : null}
         </div>
         <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-2 text-primary">
           <Star className="h-5 w-5 fill-current" />

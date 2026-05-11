@@ -8,6 +8,7 @@ import {
   CreditCard,
   Database,
   FileStack,
+  Handshake,
   HeartPulse,
   Layers,
   LifeBuoy,
@@ -257,6 +258,15 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     order: 20,
   },
   {
+    id: "inbox",
+    label: "Mesaj Kutusu",
+    href: "/panel/inbox",
+    icon: Bell,
+    permission: "announcements.view",
+    sectionId: "content",
+    order: 25,
+  },
+  {
     id: "announcements",
     label: "Duyurular",
     href: "/panel/announcements",
@@ -264,6 +274,15 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     permission: "announcements.view",
     sectionId: "content",
     order: 30,
+  },
+  {
+    id: "alumni-opportunities",
+    label: "Kariyer firsatlari",
+    href: "/panel/alumni-opportunities",
+    icon: Handshake,
+    permission: "announcements.view",
+    sectionId: "content",
+    order: 35,
   },
   {
     id: "content",
@@ -300,6 +319,15 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     permission: "chatbot.view",
     sectionId: "system",
     order: 20,
+  },
+  {
+    id: "kvkk-forget",
+    label: "KVKK Unutulma",
+    href: "/panel/kvkk-forget",
+    icon: ShieldAlert,
+    permission: "users.update",
+    sectionId: "system",
+    order: 25,
   },
   {
     id: "settings",
@@ -349,6 +377,7 @@ function itemIsVisible(
     );
   }
   if (item.id === "newsletter") return user?.permission_scopes?.["newsletter.view"]?.scope_type === "all";
+  if (item.id === "kvkk-forget") return user?.permission_scopes?.["users.update"]?.scope_type === "all";
   if (item.id === "assistant") return user?.permission_scopes?.["chatbot.view"]?.scope_type === "all" || user?.permission_scopes?.["chatbot.manage"]?.scope_type === "all";
   if (item.id === "kpd") {
     return (

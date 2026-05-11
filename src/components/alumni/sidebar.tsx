@@ -5,15 +5,18 @@ import { usePathname } from "next/navigation";
 import {
   Award,
   BookOpen,
+  Briefcase,
   CalendarDays,
   ChevronRight,
   FileCheck,
   FileSpreadsheet,
   HeartHandshake,
+  Handshake,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
   Megaphone,
+  MessagesSquare,
   UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,8 +25,11 @@ import { PanelBrandBlock } from "@/components/shared/PanelBrandBlock";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Panel Ozet", href: "/alumni/dashboard" },
+  { icon: Briefcase, label: "Mezun Projem", href: "/alumni/my-project" },
   { icon: CalendarDays, label: "Program Gecmisim", href: "/alumni/programs" },
-  { icon: Megaphone, label: "Duyurular", href: "/alumni/announcements" },
+  { icon: Megaphone, label: "Mesaj Kutusu", href: "/alumni/inbox" },
+  { icon: Handshake, label: "Kariyer Firsatlari", href: "/alumni/opportunities" },
+  { icon: MessagesSquare, label: "Forum", href: "/alumni/forum" },
   { icon: FileSpreadsheet, label: "Ozgecmis Havuzu", href: "/alumni/resume" },
   { icon: BookOpen, label: "Dijital Bohca", href: "/alumni/bohca" },
   { icon: FileCheck, label: "Odevlerim", href: "/alumni/assignments" },

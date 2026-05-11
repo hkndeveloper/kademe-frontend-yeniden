@@ -76,6 +76,8 @@ export default function PanelParticipantsPage() {
   });
   const [cvParticipant, setCvParticipant] = useState<ParticipantItem | null>(null);
   const [graduationLoadingId, setGraduationLoadingId] = useState<number | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [message, setMessage] = useState("");
   const [summary, setSummary] = useState({
     total: 0,
@@ -139,6 +141,27 @@ export default function PanelParticipantsPage() {
     });
   }, [participants, projectFilter, searchTerm, statusFilter]);
 
+  const manageableIdsInView = useMemo(() => {
+    return filteredParticipants
+      .filter(
+        (p) =>
+          hasPermission("projects.participants.manage") && canAccessProject("projects.participants.manage", p.project.id),
+      )
+      .map((p) => p.id);
+  }, [filteredParticipants, hasPermission, canAccessProject]);
+
+  useEffect(() => {
+    setSelectedIds((prev) => prev.filter((id) => participants.some((p) => p.id === id)));
+  }, [participants]);
+
+  const toggleSelected = (id: number) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const selectAllManageableInView = () => setSelectedIds([...manageableIdsInView]);
+
+  const clearSelection = () => setSelectedIds([]);
+
   const refreshParticipants = async () => {
     const response = await api.get<ParticipantsResponse>("/panel/participants", {
       params: {
@@ -183,6 +206,50 @@ export default function PanelParticipantsPage() {
       setGraduationLoadingId(null);
     }
   };
+
+  const bulkUpdateGraduation = async (graduationStatus: "completed" | "graduated" | "not_completed") => {
+    if (selectedIds.length === 0) return;
+
+    let graduationNote: string | undefined;
+    if (graduationStatus === "not_completed") {
+      const note = window.prompt("Secili tum katilimcilar icin tamamlayamama gerekcesini yazin")?.trim();
+      if (!note) {
+        setMessage("Tamamlayamadi durumu icin gerekce zorunludur.");
+        return;
+      }
+      graduationNote = note;
+    }
+
+    setBulkLoading(true);
+    setMessage("");
+    try {
+      const response = await api.post<{
+        message?: string;
+        results?: Array<{ participant_id: number; ok: boolean; error?: string }>;
+      }>("/panel/participants/bulk-graduation", {
+        participant_ids: selectedIds,
+        graduation_status: graduationStatus,
+        graduation_note: graduationNote,
+      });
+      const results = response.data?.results ?? [];
+      const failed = results.filter((r) => !r.ok);
+      const baseMsg = response.data?.message ?? "Toplu guncelleme tamamlandi.";
+      setMessage(
+        failed.length === 0
+          ? baseMsg
+          : `${baseMsg} ${failed.length} kayit basarisiz.`,
+      );
+      clearSelection();
+      await refreshParticipants();
+    } catch (error) {
+      console.error("Toplu mezuniyet guncellenemedi", error);
+      setMessage("Toplu mezuniyet guncellenemedi.");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const rowActionDisabled = bulkLoading || graduationLoadingId !== null;
 
   return (
     <PermissionGate
@@ -287,6 +354,65 @@ export default function PanelParticipantsPage() {
             <option value="completed">Tamamladi</option>
           </select>
         </div>
+
+        {hasPermission("projects.participants.manage") && manageableIdsInView.length > 0 ? (
+          <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span className="font-semibold text-slate-900">
+                {selectedIds.length > 0 ? `${selectedIds.length} katilimci secili` : "Toplu mezuniyet"}
+              </span>
+              <button
+                type="button"
+                disabled={bulkLoading}
+                onClick={() => selectAllManageableInView()}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-slate-900 hover:bg-muted disabled:opacity-50"
+              >
+                Filtredeki tumunu sec ({manageableIdsInView.length})
+              </button>
+              {selectedIds.length > 0 ? (
+                <button
+                  type="button"
+                  disabled={bulkLoading}
+                  onClick={() => clearSelection()}
+                  className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-slate-900 hover:bg-muted disabled:opacity-50"
+                >
+                  Secimi temizle
+                </button>
+              ) : null}
+            </div>
+            {selectedIds.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={rowActionDisabled}
+                  onClick={() => void bulkUpdateGraduation("completed")}
+                  className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-800 disabled:opacity-60"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Secilenleri tamamladi
+                </button>
+                <button
+                  type="button"
+                  disabled={rowActionDisabled}
+                  onClick={() => void bulkUpdateGraduation("graduated")}
+                  className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/15 px-3 py-2 text-xs font-bold text-indigo-800 disabled:opacity-60"
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  Secilenleri mezun yap
+                </button>
+                <button
+                  type="button"
+                  disabled={rowActionDisabled}
+                  onClick={() => void bulkUpdateGraduation("not_completed")}
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/15 px-3 py-2 text-xs font-bold text-red-800 disabled:opacity-60"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Secilenleri tamamlayamadi
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {loading ? (
@@ -301,6 +427,18 @@ export default function PanelParticipantsPage() {
             <div key={participant.id} className="glass-panel rounded-3xl p-6">
               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
+                  {hasPermission("projects.participants.manage") &&
+                  canAccessProject("projects.participants.manage", participant.project.id) ? (
+                    <label className="mt-1 flex cursor-pointer items-center">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border accent-accent"
+                        checked={selectedIds.includes(participant.id)}
+                        disabled={bulkLoading}
+                        onChange={() => toggleSelected(participant.id)}
+                      />
+                    </label>
+                  ) : null}
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-white/5">
                     {participant.user.profile_photo ? (
                       <Image src={participant.user.profile_photo} alt={`${participant.user.name} ${participant.user.surname}`} fill unoptimized className="object-cover" />
@@ -355,7 +493,7 @@ export default function PanelParticipantsPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    disabled={graduationLoadingId === participant.id}
+                    disabled={graduationLoadingId === participant.id || bulkLoading}
                     onClick={() => void updateGraduationStatus(participant, "completed")}
                     className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-500 hover:text-white disabled:opacity-60"
                   >
@@ -364,7 +502,7 @@ export default function PanelParticipantsPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={graduationLoadingId === participant.id}
+                    disabled={graduationLoadingId === participant.id || bulkLoading}
                     onClick={() => void updateGraduationStatus(participant, "graduated")}
                     className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-500 hover:text-white disabled:opacity-60"
                   >
@@ -373,7 +511,7 @@ export default function PanelParticipantsPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={graduationLoadingId === participant.id}
+                    disabled={graduationLoadingId === participant.id || bulkLoading}
                     onClick={() => void updateGraduationStatus(participant, "not_completed")}
                     className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-500 hover:text-white disabled:opacity-60"
                   >

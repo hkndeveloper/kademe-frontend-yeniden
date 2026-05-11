@@ -1,0 +1,148 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Bell, Loader2, Pin, Star } from "lucide-react";
+import api from "@/lib/api/axios";
+
+type InboxMessage = {
+  source_type: string;
+  source_id: number;
+  type: string;
+  title: string;
+  content?: string | null;
+  category?: string | null;
+  timestamp?: string | null;
+  project?: { id: number; name: string } | null;
+  state: {
+    is_read: boolean;
+    is_starred: boolean;
+    is_pinned: boolean;
+    read_at?: string | null;
+  };
+};
+
+export default function PanelInboxPage() {
+  const [items, setItems] = useState<InboxMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [starredOnly, setStarredOnly] = useState(false);
+  const [pinnedOnly, setPinnedOnly] = useState(false);
+  const [projectFilter, setProjectFilter] = useState("all");
+
+  const projects = Array.from(
+    new Map(
+      items
+        .filter((item) => item.project?.id != null)
+        .map((item) => [item.project!.id, item.project!]),
+    ).values(),
+  );
+
+  useEffect(() => {
+    const fetchInbox = async () => {
+      try {
+        const response = await api.get<{ messages: InboxMessage[] }>("/panel/inbox/messages", {
+          params: {
+            unread_only: unreadOnly || undefined,
+            starred_only: starredOnly || undefined,
+            pinned_only: pinnedOnly || undefined,
+            project_id: projectFilter !== "all" ? Number(projectFilter) : undefined,
+          },
+        });
+        setItems(response.data.messages ?? []);
+      } catch (error) {
+        console.error("Panel inbox yuklenemedi", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchInbox();
+  }, [unreadOnly, starredOnly, pinnedOnly, projectFilter]);
+
+  const updateState = async (item: InboxMessage, partial: { is_read?: boolean; is_starred?: boolean; is_pinned?: boolean }) => {
+    try {
+      await api.put("/panel/inbox/messages/state", {
+        source_type: item.source_type,
+        source_id: item.source_id,
+        ...partial,
+      });
+      const refresh = await api.get<{ messages: InboxMessage[] }>("/panel/inbox/messages", {
+        params: {
+          unread_only: unreadOnly || undefined,
+          starred_only: starredOnly || undefined,
+          pinned_only: pinnedOnly || undefined,
+          project_id: projectFilter !== "all" ? Number(projectFilter) : undefined,
+        },
+      });
+      setItems(refresh.data.messages ?? []);
+    } catch (error) {
+      console.error("Panel inbox state guncellenemedi", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Bell className="h-6 w-6 text-primary" />
+        <h1 className="text-2xl font-bold text-slate-900">Mesaj / Duyuru Kutusu</h1>
+      </div>
+      <div className="glass-panel rounded-3xl p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="rounded-xl border border-border bg-input px-3 py-2 text-sm">
+            <option value="all">Tum projeler</option>
+            {projects.map((project) => (
+              <option key={project.id} value={String(project.id)}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+          <label className="inline-flex items-center gap-2 text-xs"><input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} /> Okunmamis</label>
+          <label className="inline-flex items-center gap-2 text-xs"><input type="checkbox" checked={starredOnly} onChange={(e) => setStarredOnly(e.target.checked)} /> Yildizli</label>
+          <label className="inline-flex items-center gap-2 text-xs"><input type="checkbox" checked={pinnedOnly} onChange={(e) => setPinnedOnly(e.target.checked)} /> Sabit</label>
+        </div>
+      </div>
+      {items.length === 0 ? (
+        <div className="glass-panel rounded-3xl p-12 text-center text-muted-foreground">Kutuda duyuru bulunmuyor.</div>
+      ) : (
+        items.map((item) => (
+          <div key={`${item.source_type}:${item.source_id}`} className="glass-panel rounded-3xl p-6">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {item.type}
+                  {item.project?.name ? ` · ${item.project.name}` : ""}
+                  {item.category ? ` · ${item.category}` : ""}
+                </p>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {new Date(item.timestamp ?? "1970-01-01").toLocaleDateString("tr-TR")}
+              </span>
+            </div>
+            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{item.content ?? "-"}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" onClick={() => void updateState(item, { is_read: !item.state.is_read })} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
+                {item.state.is_read ? "Okunmamis yap" : "Okundu yap"}
+              </button>
+              <button type="button" onClick={() => void updateState(item, { is_starred: !item.state.is_starred })} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
+                <Star className={`h-3.5 w-3.5 ${item.state.is_starred ? "fill-current" : ""}`} /> {item.state.is_starred ? "Yildizi kaldir" : "Yildizla"}
+              </button>
+              <button type="button" onClick={() => void updateState(item, { is_pinned: !item.state.is_pinned })} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
+                <Pin className={`h-3.5 w-3.5 ${item.state.is_pinned ? "fill-current" : ""}`} /> {item.state.is_pinned ? "Sabiti kaldir" : "Sabitle"}
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+

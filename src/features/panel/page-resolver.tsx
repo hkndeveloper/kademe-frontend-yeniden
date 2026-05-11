@@ -18,6 +18,8 @@ import PanelUnifiedProjectDetailPage from "@/features/panel/pages/panel/projects
 import PanelUnifiedProjectContentPage from "@/features/panel/pages/panel/projects/[id]/content/page";
 import PanelProjectSpecialModulesPage from "@/features/panel/pages/panel/projects/[id]/special-modules/page";
 import PanelAnnouncementsPage from "@/features/panel/pages/panel/announcements/page";
+import PanelAlumniOpportunitiesPage from "@/features/panel/pages/panel/alumni-opportunities/page";
+import PanelInboxPage from "@/features/panel/pages/panel/inbox/page";
 import PanelSupportPage from "@/features/panel/pages/panel/support/page";
 import PanelContentPage from "@/features/panel/pages/panel/content/page";
 import PanelSettingsPage from "@/features/panel/pages/panel/settings/page";
@@ -32,6 +34,7 @@ import PanelProjectsPage from "@/features/panel/pages/panel/projects/page";
 import PanelDigitalBohcaPage from "@/features/panel/pages/panel/digital-bohca/page";
 import PanelAssignmentsPage from "@/features/panel/pages/panel/assignments/page";
 import PanelKpdPage from "@/features/panel/pages/panel/kpd/page";
+import PanelKvkkForgetPage from "@/features/panel/pages/panel/kvkk-forget/page";
 import AdminPeriodFormBuilderPage from "@/features/panel/pages/admin/periods/form-builder/page";
 
 function NotFoundPanelPage() {
@@ -55,6 +58,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   "digital-bohca": PanelDigitalBohcaPage,
   assignments: PanelAssignmentsPage,
   kpd: PanelKpdPage,
+  "kvkk-forget": PanelKvkkForgetPage,
   requests: PanelSharedRequestsPage,
   support: PanelSupportPage,
   users: AdminUsersPage,
@@ -65,6 +69,8 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   periods: AdminPeriodsPage,
   "periods/form-builder": AdminPeriodFormBuilderPage,
   announcements: PanelAnnouncementsPage,
+  "alumni-opportunities": PanelAlumniOpportunitiesPage,
+  inbox: PanelInboxPage,
   content: PanelContentPage,
   newsletter: AdminNewsletterPage,
   logs: AdminLogsPage,

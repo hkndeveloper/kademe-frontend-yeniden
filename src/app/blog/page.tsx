@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Calendar, User, ArrowRight, Loader2, Search } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import api from "@/lib/api/axios";
 
 interface Blog {
@@ -107,7 +108,11 @@ export default function BlogPage() {
                 className="glass-panel flex flex-col overflow-hidden rounded-[32px] border border-border/60 shadow-sm transition-all hover:border-primary/40"
               >
                 <div className="relative h-56 overflow-hidden bg-muted">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20"></div>
+                  {blog.cover_image ? (
+                    <Image src={blog.cover_image} alt={blog.title} fill unoptimized className="object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20"></div>
+                  )}
                 </div>
                 <div className="flex flex-1 flex-col p-8">
                   <div className="mb-4 flex items-center gap-4 text-xs font-bold uppercase tracking-tighter text-muted-foreground">

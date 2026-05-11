@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, BriefcaseBusiness, Edit2, Gift, Handshake, Loader2, Plus, Save, Trash2, Upload, Users, X } from "lucide-react";
+import { ArrowLeft, BookMarked, BriefcaseBusiness, Edit2, Gift, Handshake, Loader2, Plus, Save, Trash2, Upload, Users, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 
@@ -73,6 +73,34 @@ type RewardAward = {
   awarded_at?: string | null;
 };
 
+type KademeModuleEnrollment = {
+  id: number;
+  user_id: number;
+  status: string;
+  consented_at?: string | null;
+  reviewed_at?: string | null;
+  note?: string | null;
+  user?: { name?: string; email?: string | null } | null;
+};
+
+type KademeModule = {
+  id: number;
+  title: string;
+  description?: string | null;
+  sort_order: number;
+  is_active: boolean;
+  application_open: boolean;
+  requires_consent: boolean;
+  consent_checkbox_label?: string | null;
+  warning_text?: string | null;
+  requires_coordinator_approval: boolean;
+  outcomes?: string[];
+  instructors?: Array<{ name: string; bio?: string | null; photo_path?: string | null }>;
+  faq_items?: Array<{ question: string; answer: string }>;
+  enrollments?: KademeModuleEnrollment[];
+  enrollments_count?: number;
+};
+
 type ResponsePayload = {
   project: { id: number; name: string; type?: string | null };
   access: AccessMap;
@@ -84,6 +112,7 @@ type ResponsePayload = {
   reward_tiers: RewardTier[];
   reward_eligible_participants?: RewardEligibleParticipant[];
   reward_awards?: RewardAward[];
+  kademe_modules?: KademeModule[];
 };
 
 const initialInternship = { participant_id: "", company_name: "", position: "", start_date: "", end_date: "", description: "", document_path: "" };
@@ -91,9 +120,23 @@ const initialMentor = { name: "", expertise: "", bio: "", photo_path: "" };
 const initialEurodesk = { title: "", partner_organizations: "", grant_amount: "", grant_status: "applied", start_date: "", end_date: "" };
 const initialReward = { name: "", description: "", min_badges: "0", min_credits: "0", reward_description: "" };
 const initialRewardAward = { participant_id: "", reward_tier_id: "", reward_name: "", status: "given", note: "" };
+const initialKademeModule = {
+  title: "",
+  description: "",
+  sort_order: "0",
+  warning_text: "",
+  consent_checkbox_label: "Okudum, kabul ediyorum.",
+  requires_consent: true,
+  requires_coordinator_approval: false,
+  application_open: true,
+  is_active: true,
+  outcomesText: "",
+  instructorsJson: "[]",
+  faqJson: "[]",
+};
 const inputClass = "rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none focus:border-accent";
 const buttonClass = "inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white";
-const editableEndpoints = new Set(["internships", "mentors", "eurodesk-projects", "reward-tiers"]);
+const editableEndpoints = new Set(["internships", "mentors", "eurodesk-projects", "reward-tiers", "kademe-modules"]);
 
 export default function PanelProjectSpecialModulesPage() {
   const params = useParams();
@@ -110,6 +153,7 @@ export default function PanelProjectSpecialModulesPage() {
   const [eurodeskForm, setEurodeskForm] = useState(initialEurodesk);
   const [rewardForm, setRewardForm] = useState(initialReward);
   const [rewardAwardForm, setRewardAwardForm] = useState(initialRewardAward);
+  const [kademeModuleForm, setKademeModuleForm] = useState(initialKademeModule);
   const [editing, setEditing] = useState<{ endpoint: string; id: number } | null>(null);
 
   const loadData = useCallback(async () => {
@@ -199,6 +243,51 @@ export default function PanelProjectSpecialModulesPage() {
       console.error("Ozel modul kaydi silinemedi", error);
       setFeedback("Kayit silinemedi.");
     }
+  }
+
+  async function updateKademeEnrollment(enrollmentId: number, status: "pending" | "approved" | "rejected") {
+    setFeedback(null);
+    try {
+      await api.put(`/panel/projects/${projectId}/special-modules/kademe-module-enrollments/${enrollmentId}`, { status });
+      await loadData();
+      setFeedback("Kayit durumu guncellendi.");
+    } catch (error) {
+      console.error("Kayit guncellenemedi", error);
+      setFeedback("Kayit guncellenemedi.");
+    }
+  }
+
+  function parseKademePayload() {
+    const outcomes = kademeModuleForm.outcomesText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    let instructors: Array<{ name: string; bio?: string; photo_path?: string }> = [];
+    let faq_items: Array<{ question: string; answer: string }> = [];
+    try {
+      instructors = JSON.parse(kademeModuleForm.instructorsJson || "[]");
+    } catch {
+      throw new Error("Egitmen JSON gecersiz.");
+    }
+    try {
+      faq_items = JSON.parse(kademeModuleForm.faqJson || "[]");
+    } catch {
+      throw new Error("SSS JSON gecersiz.");
+    }
+    return {
+      title: kademeModuleForm.title,
+      description: kademeModuleForm.description || null,
+      sort_order: Number(kademeModuleForm.sort_order) || 0,
+      warning_text: kademeModuleForm.warning_text || null,
+      consent_checkbox_label: kademeModuleForm.consent_checkbox_label || null,
+      requires_consent: Boolean(kademeModuleForm.requires_consent),
+      requires_coordinator_approval: Boolean(kademeModuleForm.requires_coordinator_approval),
+      application_open: Boolean(kademeModuleForm.application_open),
+      is_active: Boolean(kademeModuleForm.is_active),
+      outcomes,
+      instructors,
+      faq_items,
+    };
   }
 
   if (loading) {
@@ -483,6 +572,160 @@ export default function PanelProjectSpecialModulesPage() {
                   <div className="text-sm text-muted-foreground">Hediye kaydi yok.</div>
                 ) : (
                   <RecordList items={data.reward_awards ?? []} render={(item) => `${item.name || item.email || "Katilimci"} - ${item.reward_name} (${item.status})`} onDelete={access["projects.rewards.manage"] ? (id) => destroy("reward-awards", id) : undefined} />
+                )}
+              </div>
+            </ModuleCard>
+          ) : null}
+
+          {(data.applicable_modules?.includes("participants_by_module") ?? false) && (access["projects.rewards.view"] || access["projects.rewards.manage"]) ? (
+            <ModuleCard icon={<BookMarked className="h-5 w-5" />} title="KADEME+ Modulleri (kazanim, egitmen, SSS, uyari, kayit)">
+              {access["projects.rewards.manage"] ? (
+                <form
+                  className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void (async () => {
+                      setFeedback(null);
+                      try {
+                        const payload = parseKademePayload();
+                        const isEditing = editing?.endpoint === "kademe-modules";
+                        if (isEditing && editing) {
+                          await api.put(`/panel/projects/${projectId}/special-modules/kademe-modules/${editing.id}`, payload);
+                        } else {
+                          await api.post(`/panel/projects/${projectId}/special-modules/kademe-modules`, payload);
+                        }
+                        setKademeModuleForm(initialKademeModule);
+                        setEditing(null);
+                        await loadData();
+                        setFeedback(isEditing ? "Modul guncellendi." : "Modul eklendi.");
+                      } catch (err) {
+                        console.error("KADEME+ modulu kaydedilemedi", err);
+                        setFeedback(err instanceof Error && err.message.includes("JSON") ? err.message : "Modul kaydedilemedi. JSON alanlarini ve yetkileri kontrol edin.");
+                      }
+                    })();
+                  }}
+                >
+                  <input value={kademeModuleForm.title} onChange={(event) => setKademeModuleForm((current) => ({ ...current, title: event.target.value }))} placeholder="Modul basligi" className={inputClass} required />
+                  <input type="number" value={kademeModuleForm.sort_order} onChange={(event) => setKademeModuleForm((current) => ({ ...current, sort_order: event.target.value }))} placeholder="Sira" className={inputClass} />
+                  <textarea value={kademeModuleForm.description} onChange={(event) => setKademeModuleForm((current) => ({ ...current, description: event.target.value }))} placeholder="Aciklama" className={`${inputClass} md:col-span-2 min-h-[72px]`} />
+                  <textarea value={kademeModuleForm.outcomesText} onChange={(event) => setKademeModuleForm((current) => ({ ...current, outcomesText: event.target.value }))} placeholder="Kazanumlar (her satira bir madde)" className={`${inputClass} md:col-span-2 min-h-[80px]`} />
+                  <textarea value={kademeModuleForm.warning_text} onChange={(event) => setKademeModuleForm((current) => ({ ...current, warning_text: event.target.value }))} placeholder="Uyari / yaptirim metni" className={`${inputClass} md:col-span-2 min-h-[64px]`} />
+                  <input value={kademeModuleForm.consent_checkbox_label} onChange={(event) => setKademeModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} placeholder="Onay kutusu metni" className={`${inputClass} md:col-span-2`} />
+                  <textarea value={kademeModuleForm.instructorsJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, instructorsJson: event.target.value }))} placeholder='Egitmenler JSON ornek: [{"name":"Ad Soyad","bio":"..."}]' className={`${inputClass} md:col-span-2 min-h-[64px] font-mono text-xs`} />
+                  <textarea value={kademeModuleForm.faqJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, faqJson: event.target.value }))} placeholder='SSS JSON ornek: [{"question":"?","answer":"..."}]' className={`${inputClass} md:col-span-2 min-h-[64px] font-mono text-xs`} />
+                  <label className="flex items-center gap-2 text-sm text-white">
+                    <input type="checkbox" checked={kademeModuleForm.requires_consent} onChange={(event) => setKademeModuleForm((current) => ({ ...current, requires_consent: event.target.checked }))} />
+                    Katilimci onayi zorunlu
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-white">
+                    <input type="checkbox" checked={kademeModuleForm.requires_coordinator_approval} onChange={(event) => setKademeModuleForm((current) => ({ ...current, requires_coordinator_approval: event.target.checked }))} />
+                    Koordinator onayi gerekli
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-white">
+                    <input type="checkbox" checked={kademeModuleForm.application_open} onChange={(event) => setKademeModuleForm((current) => ({ ...current, application_open: event.target.checked }))} />
+                    Basvuru acik
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-white">
+                    <input type="checkbox" checked={kademeModuleForm.is_active} onChange={(event) => setKademeModuleForm((current) => ({ ...current, is_active: event.target.checked }))} />
+                    Modul aktif
+                  </label>
+                  <div className="flex flex-wrap gap-2 md:col-span-2">
+                    <button className={buttonClass} type="submit">
+                      {editing?.endpoint === "kademe-modules" ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                      {editing?.endpoint === "kademe-modules" ? "Modulu guncelle" : "Modul ekle"}
+                    </button>
+                    {editing?.endpoint === "kademe-modules" ? (
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-white/[0.06] hover:text-white"
+                        onClick={() => {
+                          setEditing(null);
+                          setKademeModuleForm(initialKademeModule);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                        Vazgec
+                      </button>
+                    ) : null}
+                  </div>
+                </form>
+              ) : null}
+              <div className="space-y-4">
+                {(data.kademe_modules ?? []).length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Tanimli KADEME+ modulu yok.</div>
+                ) : (
+                  (data.kademe_modules ?? []).map((mod) => (
+                    <div key={mod.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="font-bold text-white">{mod.title}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {mod.is_active ? "Aktif" : "Pasif"} · {mod.application_open ? "Basvuru acik" : "Basvuru kapali"}
+                            {typeof mod.enrollments_count === "number" ? ` · ${mod.enrollments_count} kayit` : ""}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {access["projects.rewards.manage"] ? (
+                            <>
+                              <button
+                                type="button"
+                                className="rounded-lg border border-white/10 p-2 text-muted-foreground hover:bg-white/[0.06] hover:text-white"
+                                title="Duzenle"
+                                onClick={() => {
+                                  setEditing({ endpoint: "kademe-modules", id: mod.id });
+                                  setKademeModuleForm({
+                                    title: mod.title,
+                                    description: mod.description ?? "",
+                                    sort_order: String(mod.sort_order ?? 0),
+                                    warning_text: mod.warning_text ?? "",
+                                    consent_checkbox_label: mod.consent_checkbox_label ?? "Okudum, kabul ediyorum.",
+                                    requires_consent: mod.requires_consent,
+                                    requires_coordinator_approval: mod.requires_coordinator_approval,
+                                    application_open: mod.application_open,
+                                    is_active: mod.is_active,
+                                    outcomesText: (mod.outcomes ?? []).join("\n"),
+                                    instructorsJson: JSON.stringify(mod.instructors ?? [], null, 0),
+                                    faqJson: JSON.stringify(mod.faq_items ?? [], null, 0),
+                                  });
+                                }}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10"
+                                title="Sil"
+                                onClick={() => destroy("kademe-modules", mod.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                      {access["projects.rewards.manage"] && (mod.enrollments?.length ?? 0) > 0 ? (
+                        <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                          <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Kayitlar</div>
+                          {(mod.enrollments ?? []).map((en) => (
+                            <div key={en.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-black/20 p-2 text-sm">
+                              <span className="text-white">{en.user?.name || en.user?.email || `Kullanici #${en.user_id}`}</span>
+                              <span className="text-xs text-muted-foreground">{en.status}</span>
+                              {en.status === "pending" ? (
+                                <div className="flex gap-1">
+                                  <button type="button" className="rounded-md bg-emerald-600/80 px-2 py-1 text-xs font-bold text-white" onClick={() => void updateKademeEnrollment(en.id, "approved")}>
+                                    Onayla
+                                  </button>
+                                  <button type="button" className="rounded-md bg-red-600/80 px-2 py-1 text-xs font-bold text-white" onClick={() => void updateKademeEnrollment(en.id, "rejected")}>
+                                    Reddet
+                                  </button>
+                                </div>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))
                 )}
               </div>
             </ModuleCard>
