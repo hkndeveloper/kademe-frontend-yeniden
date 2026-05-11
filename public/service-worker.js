@@ -1,4 +1,4 @@
-const CACHE_NAME = "kademe-pwa-v1";
+const CACHE_NAME = "kademe-pwa-v2";
 const OFFLINE_URL = "/offline";
 const STATIC_ASSETS = ["/", OFFLINE_URL, "/manifest.webmanifest"];
 
@@ -27,6 +27,16 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") {
+    return;
+  }
+
+  const url = new URL(request.url);
+  const sameOrigin = url.origin === self.location.origin;
+  const isApiRequest = url.pathname.startsWith("/api/");
+  const expectsJson = request.headers.get("accept")?.includes("application/json");
+
+  // API/JSON isteklerini cache katmanina sokmayalim; dogrudan ağa birakalim.
+  if (!sameOrigin || isApiRequest || expectsJson) {
     return;
   }
 
