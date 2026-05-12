@@ -369,23 +369,23 @@ function itemIsVisible(
   if (item.id === "staff") return user?.permission_scopes?.["staff.view"]?.scope_type === "all";
   if (item.id === "members") return user?.permission_scopes?.["staff.view"]?.scope_type !== "all";
   if (item.id === "permission-matrix") return user?.permission_scopes?.["permissions.matrix.view"]?.scope_type === "all";
-  if (item.id === "content") return user?.permission_scopes?.["content.view"]?.scope_type === "all";
+  if (item.id === "content") return !!user?.permission_scopes?.["content.view"];
   if (item.id === "settings") {
     return (
       user?.permission_scopes?.["settings.view"]?.scope_type === "all" ||
       user?.permission_scopes?.["content.site_settings.update"]?.scope_type === "all"
     );
   }
-  if (item.id === "newsletter") return user?.permission_scopes?.["newsletter.view"]?.scope_type === "all";
+  if (item.id === "newsletter") return !!user?.permission_scopes?.["newsletter.view"];
   if (item.id === "kvkk-forget") return user?.permission_scopes?.["users.update"]?.scope_type === "all";
-  if (item.id === "assistant") return user?.permission_scopes?.["chatbot.view"]?.scope_type === "all" || user?.permission_scopes?.["chatbot.manage"]?.scope_type === "all";
+  if (item.id === "assistant") return !!user?.permission_scopes?.["chatbot.view"] || !!user?.permission_scopes?.["chatbot.manage"];
   if (item.id === "kpd") {
     return (
-      user?.permission_scopes?.["kpd.appointments.view"]?.scope_type === "all" ||
-      user?.permission_scopes?.["kpd.reports.view"]?.scope_type === "all" ||
-      user?.permission_scopes?.["kpd.appointments.manage"]?.scope_type === "all" ||
-      user?.permission_scopes?.["kpd.reports.create"]?.scope_type === "all" ||
-      user?.permission_scopes?.["kpd.reports.delete"]?.scope_type === "all"
+      !!user?.permission_scopes?.["kpd.appointments.view"] ||
+      !!user?.permission_scopes?.["kpd.reports.view"] ||
+      !!user?.permission_scopes?.["kpd.appointments.manage"] ||
+      !!user?.permission_scopes?.["kpd.reports.create"] ||
+      !!user?.permission_scopes?.["kpd.reports.delete"]
     );
   }
   return true;

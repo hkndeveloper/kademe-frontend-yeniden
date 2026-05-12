@@ -12,6 +12,7 @@ interface BlogDetail {
   slug: string;
   summary: string | null;
   content: string | null;
+  cover_image: string | null;
   published_at: string;
 }
 
@@ -62,6 +63,17 @@ export default function BlogDetailPage() {
             <BookOpen className="h-4 w-4" />
             Blog Detayı
           </div>
+
+          {blog.cover_image && (
+            <div className="mb-8 overflow-hidden rounded-2xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={blog.cover_image}
+                alt={blog.title}
+                className="h-auto w-full rounded-2xl object-cover shadow-md"
+              />
+            </div>
+          )}
 
           <h1 className="mb-4 text-4xl font-black leading-tight md:text-5xl">{blog.title}</h1>
 

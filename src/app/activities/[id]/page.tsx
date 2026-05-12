@@ -14,6 +14,10 @@ interface ActivityDetail {
   start_at: string;
   end_at?: string | null;
   status: string;
+  period?: {
+    id: number;
+    name: string;
+  } | null;
   project?: {
     id: number;
     name: string;
@@ -78,11 +82,19 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               {new Date(program.start_at).toLocaleString("tr-TR")}
+              {program.end_at && (
+                <span className="text-muted-foreground/70"> — {new Date(program.end_at).toLocaleString("tr-TR")}</span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               {program.location || "Konum bilgisi yok"}
             </div>
+            {program.period?.name && (
+              <div className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary shadow-sm">
+                {program.period.name}
+              </div>
+            )}
             <div className="rounded-xl border border-border bg-muted/40 px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground shadow-sm">
               {program.status}
             </div>

@@ -75,6 +75,7 @@ interface ProjectDetail {
     name: string;
     university?: string | null;
     department?: string | null;
+    class_year?: number | string | null;
     image?: string | null;
   }>;
   alumni?: Alumni[];
@@ -789,6 +790,7 @@ export default function ProjectDetailPage() {
                       <p className="text-xs text-muted-foreground">
                         {student.university || "Universite bilgisi yok"}
                         {student.department ? ` / ${student.department}` : ""}
+                        {student.class_year ? ` / ${student.class_year}. Sinif` : ""}
                       </p>
                     </div>
                   </div>
@@ -900,7 +902,7 @@ export default function ProjectDetailPage() {
                   <p className="text-center text-xs text-amber-500">
                     Bir sonraki basvuru tarihi:
                     <br />
-                    <strong className="text-amber-400">{project.next_application_date}</strong>
+                    <strong className="text-amber-400">{formatDate(project.next_application_date)}</strong>
                   </p>
                 ) : (
                   <p className="text-center text-xs text-muted-foreground">Bir sonraki basvuru tarihi henuz belirtilmemis.</p>

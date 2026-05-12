@@ -140,7 +140,7 @@ export default function AlumniDashboardPage() {
               <h2 className="text-lg font-black text-slate-900">Mezun Oldugum Projeler</h2>
               <p className="mt-1 text-sm text-muted-foreground">KADEME gecmisin ve mezuniyet kayitlarin.</p>
             </div>
-            <Link href="/alumni/portfolio" className="rounded-xl border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
+            <Link href="/alumni/bohca" className="rounded-xl border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
               Portfolyo
             </Link>
           </div>

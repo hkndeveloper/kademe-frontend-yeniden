@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Calendar, CheckCircle2, Loader2, MapPin, Pencil, Play, Search, SquareCheckBig, X } from "lucide-react";
+import { BarChart3, Calendar, CheckCircle2, Loader2, MapPin, MessageSquareText, Pencil, Play, Search, SquareCheckBig, X } from "lucide-react";
 import { motion } from "framer-motion";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
@@ -69,6 +69,31 @@ interface AttendanceSummary {
   feedback_count: number;
   deduction_count?: number;
   restore_count?: number;
+}
+
+interface FeedbackQuestionStat {
+  label: string;
+  count: number;
+  average: number | null;
+  min: number | null;
+  max: number | null;
+  distribution: Record<number, number>;
+}
+
+interface FeedbackResponse {
+  id: number;
+  content_quality: number | null;
+  speaker_quality: number | null;
+  organization_quality: number | null;
+  comment: string | null;
+  submitted_at: string | null;
+}
+
+interface FeedbackStatsData {
+  program: { id: number; title: string; project: string | null; period: string | null };
+  summary: { total_feedback: number; with_comment: number; overall_average: number | null };
+  question_stats: Record<string, FeedbackQuestionStat>;
+  responses: FeedbackResponse[];
 }
 
 interface ProgramFormState {
@@ -154,6 +179,9 @@ export default function PanelProgramsPage() {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
   const [attendanceActionLoading, setAttendanceActionLoading] = useState<number | null>(null);
+  const [feedbackModalProgram, setFeedbackModalProgram] = useState<Program | null>(null);
+  const [feedbackStats, setFeedbackStats] = useState<FeedbackStatsData | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
   const canViewAttendanceStats = hasPermission("programs.attendance.view");
   const canManageAttendance = hasPermission("programs.attendance.manage");
   const canUpdatePrograms = hasPermission("programs.update");
@@ -401,6 +429,21 @@ export default function PanelProgramsPage() {
       setErrorMessage("Manuel yoklama guncellenemedi.");
     } finally {
       setAttendanceActionLoading(null);
+    }
+  };
+
+  const openFeedbackModal = async (program: Program) => {
+    setFeedbackModalProgram(program);
+    setFeedbackLoading(true);
+    setFeedbackStats(null);
+    try {
+      const response = await api.get<FeedbackStatsData>(`/panel/programs/${program.id}/feedback-stats`);
+      setFeedbackStats(response.data);
+    } catch (error) {
+      console.error("Degerlendirme istatistikleri yuklenemedi", error);
+      setErrorMessage("Degerlendirme istatistikleri yuklenemedi.");
+    } finally {
+      setFeedbackLoading(false);
     }
   };
 
@@ -691,6 +734,15 @@ export default function PanelProgramsPage() {
                       Yoklama Detayi
                     </button>
                   ) : null}
+                  {programStatus === "completed" && canAccessProject("programs.view", program.project_id) ? (
+                    <button
+                      onClick={() => void openFeedbackModal(program)}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      Degerlendirmeler
+                    </button>
+                  ) : null}
                   {canUpdatePrograms && canAccessProject("programs.update", program.project_id) ? (
                     <button
                       onClick={() => openEditForm(program)}
@@ -839,6 +891,119 @@ export default function PanelProgramsPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {feedbackModalProgram ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  Degerlendirme Istatistikleri
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">{feedbackModalProgram.title}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <ExportButtons
+                  endpoint={`/panel/programs/${feedbackModalProgram.id}/feedback-stats/export`}
+                  filename={`program_${feedbackModalProgram.id}_degerlendirmeler`}
+                  buttonLabel="Disa Aktar"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFeedbackModalProgram(null)}
+                  className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {feedbackLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : !feedbackStats || feedbackStats.summary.total_feedback === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center text-sm text-muted-foreground">
+                Bu program icin henuz degerlendirme gonderilmemis.
+              </div>
+            ) : (
+              <div className="max-h-[70vh] space-y-6 overflow-y-auto">
+                {/* Ozet */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="rounded-2xl bg-blue-50 p-4 text-center">
+                    <p className="text-3xl font-black text-blue-700">{feedbackStats.summary.total_feedback}</p>
+                    <p className="text-xs font-semibold text-blue-600">Toplam Degerlendirme</p>
+                  </div>
+                  <div className="rounded-2xl bg-emerald-50 p-4 text-center">
+                    <p className="text-3xl font-black text-emerald-700">{feedbackStats.summary.overall_average ?? "-"}</p>
+                    <p className="text-xs font-semibold text-emerald-600">Genel Ortalama (5 uzerinden)</p>
+                  </div>
+                  <div className="rounded-2xl bg-amber-50 p-4 text-center">
+                    <p className="text-3xl font-black text-amber-700">{feedbackStats.summary.with_comment}</p>
+                    <p className="text-xs font-semibold text-amber-600">Yorumlu Degerlendirme</p>
+                  </div>
+                </div>
+
+                {/* Soru bazli istatistikler */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Soru Bazli Puanlar</h3>
+                  {Object.entries(feedbackStats.question_stats).map(([key, stat]) => (
+                    <div key={key} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="font-bold text-slate-900">{stat.label}</span>
+                        <span className="text-lg font-black text-blue-700">{stat.average ?? "-"} / 5</span>
+                      </div>
+                      <div className="flex items-end gap-2">
+                        {[1, 2, 3, 4, 5].map((score) => {
+                          const count = stat.distribution[score] ?? 0;
+                          const maxCount = Math.max(...Object.values(stat.distribution), 1);
+                          const heightPercent = (count / maxCount) * 100;
+                          return (
+                            <div key={score} className="flex flex-1 flex-col items-center gap-1">
+                              <span className="text-xs font-bold text-slate-600">{count}</span>
+                              <div className="w-full rounded-t bg-slate-200" style={{ height: "60px" }}>
+                                <div
+                                  className="w-full rounded-t bg-blue-500 transition-all"
+                                  style={{ height: `${heightPercent}%`, marginTop: `${100 - heightPercent}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-semibold text-slate-500">{score}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Yorumlar */}
+                {feedbackStats.responses.filter((r) => r.comment).length > 0 ? (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Yazili Yorumlar</h3>
+                    {feedbackStats.responses
+                      .filter((r) => r.comment)
+                      .map((r) => (
+                        <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                          <div className="mb-2 flex items-center gap-3">
+                            <MessageSquareText className="h-4 w-4 text-blue-500" />
+                            <span className="text-xs text-muted-foreground">
+                              Icerik: {r.content_quality} | Konusmaci: {r.speaker_quality} | Organizasyon: {r.organization_quality}
+                            </span>
+                            <span className="ml-auto text-xs text-muted-foreground">
+                              {r.submitted_at ? new Date(r.submitted_at).toLocaleString("tr-TR") : ""}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed text-slate-700">{r.comment}</p>
+                        </div>
+                      ))}
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
       ) : null}

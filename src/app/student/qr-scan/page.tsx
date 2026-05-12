@@ -62,16 +62,26 @@ export default function QrScanPage() {
       setStatus("success");
       setMessage(response.data.message || "Yoklamanız başarıyla alındı!");
     } catch (error: unknown) {
+      const axiosErr = error as { response?: { status?: number; data?: { message?: string; redirect_to?: string } } };
+      const httpStatus = axiosErr?.response?.status;
+      const responseData = axiosErr?.response?.data;
+
+      // 423: Bekleyen değerlendirme var — önce formu doldurması lazım
+      if (httpStatus === 423) {
+        setStatus("error");
+        setMessage(responseData?.message || "Yoklama öncesi bekleyen bir değerlendirme formunuz var. Lütfen önce değerlendirmenizi tamamlayın.");
+        const redirectTo = responseData?.redirect_to || "/student/evaluate";
+        setTimeout(() => { window.location.href = redirectTo; }, 3000);
+        return;
+      }
+
       const nextMessage =
-        typeof error === "object" &&
-        error !== null &&
-        "response" in error &&
-        typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        typeof responseData?.message === "string"
+          ? responseData.message
           : "Yoklama işlemi başarısız oldu.";
 
       setStatus("error");
-      setMessage(nextMessage ?? "Yoklama işlemi başarısız oldu.");
+      setMessage(nextMessage);
       submittedRef.current = false;
     }
   }, [extractToken]);
