@@ -13,6 +13,7 @@ export interface SiteSettingsPayload {
     twitter_url: string;
     youtube_url: string;
     linkedin_url: string;
+    sharing_webhook_url?: string;
   };
   navigation: {
     header_links: Array<{ label: string; href: string }>;
@@ -74,6 +75,7 @@ export interface SiteSettingsPayload {
     footer_description: string;
     footer_copyright: string;
     stats: Array<{ label: string; value: string; icon: string }>;
+    monthly_motivation_message: string;
   };
   about: {
     hero_title: string;
@@ -115,14 +117,17 @@ export const defaultSiteSettings: SiteSettingsPayload = {
     twitter_url: "",
     youtube_url: "",
     linkedin_url: "",
+    sharing_webhook_url: "",
   },
   navigation: {
     header_links: [
       { label: "Ana Sayfa", href: "/" },
       { label: "Hakkimizda", href: "/about" },
       { label: "Faaliyetler", href: "/activities" },
+      { label: "Blog", href: "/blog" },
       { label: "SSS", href: "/faq" },
       { label: "Iletisim", href: "/contact" },
+      { label: "Sertifika Sorgula", href: "/certificates/verify" },
     ],
     header_login_label: "Giris Yap",
     header_register_label: "Basvur",
@@ -208,6 +213,7 @@ export const defaultSiteSettings: SiteSettingsPayload = {
       { label: "Yillik Etkinlik", value: "1,200+", icon: "calendar" },
       { label: "Sehir", value: "81", icon: "globe" },
     ],
+    monthly_motivation_message: "Gelecek, bugunden ona hazirlananlara aittir. KADEME'deki her adim, seni daha guclu bir vizyona tasir.",
   },
   about: {
     hero_title: "Biz Kimiz?",

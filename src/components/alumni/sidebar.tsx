@@ -4,10 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Award,
+  Bell,
   BookOpen,
+  BrainCircuit,
   Briefcase,
   CalendarDays,
   ChevronRight,
+  ClipboardList,
   FileCheck,
   FileSpreadsheet,
   HeartHandshake,
@@ -17,6 +20,7 @@ import {
   LogOut,
   Megaphone,
   MessagesSquare,
+  Star,
   UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,15 +31,19 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Panel Ozet", href: "/alumni/dashboard" },
   { icon: Briefcase, label: "Mezun Projem", href: "/alumni/my-project" },
   { icon: CalendarDays, label: "Program Gecmisim", href: "/alumni/programs" },
+  { icon: ClipboardList, label: "Basvurularim", href: "/alumni/applications" },
   { icon: Megaphone, label: "Mesaj Kutusu", href: "/alumni/inbox" },
+  { icon: Bell, label: "Duyurular", href: "/alumni/announcements" },
   { icon: Handshake, label: "Kariyer Firsatlari", href: "/alumni/opportunities" },
   { icon: MessagesSquare, label: "Forum", href: "/alumni/forum" },
   { icon: FileSpreadsheet, label: "Ozgecmis Havuzu", href: "/alumni/resume" },
   { icon: BookOpen, label: "Dijital Bohca", href: "/alumni/bohca" },
   { icon: FileCheck, label: "Odevlerim", href: "/alumni/assignments" },
+  { icon: Star, label: "Degerlendirme", href: "/alumni/evaluate" },
   { icon: Award, label: "Sertifikalarim", href: "/alumni/certificates" },
   { icon: HeartHandshake, label: "Gonullu Basvurusu", href: "/alumni/volunteer" },
   { icon: LifeBuoy, label: "Destek Talebi", href: "/alumni/support" },
+  { icon: BrainCircuit, label: "Kisilik Analizi", href: "/alumni/personality" },
   { icon: UserCircle, label: "Profilim", href: "/alumni/profile" },
 ];
 

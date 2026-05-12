@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Calendar, Clock, CreditCard, Download, Loader2, Quote, Star, Zap } from "lucide-react";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
+import { defaultSiteSettings, SiteSettingsResponse } from "@/lib/site-config";
 
 interface DashboardParticipation {
   id: number;
@@ -50,14 +51,16 @@ export default function StudentDashboardPage() {
   const [materials, setMaterials] = useState<BohcaMaterial[]>([]);
   const [monthlyTitles, setMonthlyTitles] = useState<string[]>([]);
   const [profileBadgeFrame, setProfileBadgeFrame] = useState<string | null>(null);
+  const [motivationMessage, setMotivationMessage] = useState<string>(defaultSiteSettings.homepage.monthly_motivation_message);
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [summaryResponse, programsResponse, bohcaResponse] = await Promise.all([
+        const [summaryResponse, programsResponse, bohcaResponse, configResponse] = await Promise.all([
           api.get<DashboardSummaryResponse>("/dashboard/summary"),
           api.get<{ programs: ProgramItem[] }>("/programs"),
           api.get<{ materials: BohcaMaterial[] }>("/digital-bohca"),
+          api.get<SiteSettingsResponse>("/site-config").catch(() => null),
         ]);
 
         setTotalScore(summaryResponse.data.total_score ?? 0);
@@ -67,6 +70,8 @@ export default function StudentDashboardPage() {
         setProfileBadgeFrame(summaryResponse.data.profile_badge_frame ?? null);
         setPrograms((programsResponse.data.programs ?? []).slice(0, 3));
         setMaterials((bohcaResponse.data.materials ?? []).slice(0, 3));
+        const msg = configResponse?.data?.settings?.homepage?.monthly_motivation_message;
+        if (msg) setMotivationMessage(msg);
       } catch (error) {
         console.error("Ogrenci dashboard verileri cekilemedi", error);
       } finally {
@@ -259,7 +264,7 @@ export default function StudentDashboardPage() {
           <div className="glass-panel relative flex h-full flex-col justify-center overflow-hidden rounded-[40px] border-primary/20 bg-gradient-to-br from-primary/10 to-transparent p-8 text-center">
             <Quote className="mx-auto mb-8 h-12 w-12 text-primary/20" />
             <p className="mb-8 text-xl font-bold italic leading-relaxed text-slate-900">
-              &quot;Gelecek, bugunden ona hazirlananlara aittir. KADEME&apos;deki her adim, seni daha guclu bir vizyona tasir.&quot;
+              &quot;{motivationMessage}&quot;
             </p>
             <div className="mx-auto mb-6 h-px w-20 bg-primary/30" />
             <p className="text-[10px] font-black uppercase tracking-widest text-primary">Aylik motivasyon notu</p>

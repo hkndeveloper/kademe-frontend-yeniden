@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Award, Bell, BookOpen, Briefcase, Calendar, HeartHandshake, Loader2 } from "lucide-react";
+import { Award, Bell, BookOpen, Briefcase, Calendar, HeartHandshake, Loader2, Quote } from "lucide-react";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
+import { defaultSiteSettings, SiteSettingsResponse } from "@/lib/site-config";
 
 interface BohcaMaterial {
   id: number;
@@ -50,17 +51,19 @@ export default function AlumniDashboardPage() {
   const [certificates, setCertificates] = useState<CertificateItem[]>([]);
   const [projects, setProjects] = useState<AlumniProject[]>([]);
   const [monthlyTitles, setMonthlyTitles] = useState<string[]>([]);
+  const [motivationMessage, setMotivationMessage] = useState<string>(defaultSiteSettings.homepage.monthly_motivation_message);
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [bohcaResponse, ticketsResponse, annResponse, certResponse, projectResponse, summaryResponse] = await Promise.all([
+        const [bohcaResponse, ticketsResponse, annResponse, certResponse, projectResponse, summaryResponse, configResponse] = await Promise.all([
           api.get<{ materials: BohcaMaterial[] }>("/digital-bohca").catch(() => ({ data: { materials: [] } })),
           api.get<{ tickets: TicketItem[] }>("/tickets").catch(() => ({ data: { tickets: [] } })),
           api.get<{ announcements: Announcement[] }>("/announcements").catch(() => ({ data: { announcements: [] } })),
           api.get<{ certificates: CertificateItem[] }>("/certificates").catch(() => ({ data: { certificates: [] } })),
           api.get<{ projects: AlumniProject[] }>("/dashboard/projects").catch(() => ({ data: { projects: [] } })),
           api.get<SummaryResponse>("/dashboard/summary").catch(() => ({ data: { monthly_titles: [] } })),
+          api.get<SiteSettingsResponse>("/site-config").catch(() => null),
         ]);
 
         setMaterials(bohcaResponse.data.materials ?? []);
@@ -69,6 +72,8 @@ export default function AlumniDashboardPage() {
         setCertificates(certResponse.data.certificates ?? []);
         setProjects(projectResponse.data.projects ?? []);
         setMonthlyTitles(summaryResponse.data.monthly_titles ?? []);
+        const msg = configResponse?.data?.settings?.homepage?.monthly_motivation_message;
+        if (msg) setMotivationMessage(msg);
       } catch (error) {
         console.error("Mezun dashboard verileri cekilemedi", error);
       } finally {
@@ -183,7 +188,7 @@ export default function AlumniDashboardPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="glass-panel rounded-3xl p-7">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
@@ -212,6 +217,14 @@ export default function AlumniDashboardPage() {
               cta="Bohcayi ac"
             />
           </div>
+        </div>
+
+        <div className="glass-panel relative flex flex-col justify-center overflow-hidden rounded-3xl border-primary/20 bg-gradient-to-br from-primary/10 to-transparent p-7 text-center">
+          <Quote className="mx-auto mb-6 h-10 w-10 text-primary/20" />
+          <p className="mb-6 text-lg font-bold italic leading-relaxed text-slate-900">&quot;{motivationMessage}&quot;</p>
+          <div className="mx-auto mb-4 h-px w-16 bg-primary/30" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary">Aylik Motivasyon Notu</p>
+          <div className="absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-[80px]" />
         </div>
 
         <div className="glass-panel rounded-3xl p-7">

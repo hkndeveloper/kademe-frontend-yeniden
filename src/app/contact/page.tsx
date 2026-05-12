@@ -29,6 +29,9 @@ export default function ContactPage() {
     project_id: "",
     message: "",
   });
+  const [attachment, setAttachment] = useState<File | null>(null);
+
+  const requiresAttachment = form.category === "official_document";
 
   useEffect(() => {
     const loadPageData = async () => {
@@ -60,24 +63,32 @@ export default function ContactPage() {
     setSuccess("");
     setError("");
 
+    if (requiresAttachment && !attachment) {
+      setError("Resmi evrak kategorisi icin dosya eki zorunludur.");
+      setLoading(false);
+      return;
+    }
+
     try {
       if (isAuthenticated) {
-        await api.post("/tickets", {
-          subject: form.subject || "Iletisim Formu",
-          category: form.category,
-          project_id: form.project_id ? Number(form.project_id) : null,
-          message: form.message,
-        });
+        const formData = new FormData();
+        formData.append("subject", form.subject || "Iletisim Formu");
+        formData.append("category", form.category);
+        if (form.project_id) formData.append("project_id", form.project_id);
+        formData.append("message", form.message);
+        if (attachment) formData.append("attachment", attachment);
+        await api.post("/tickets", formData, { headers: { "Content-Type": "multipart/form-data" } });
         setSuccess("Mesajiniz destek talebi olarak alindi.");
       } else {
-        await api.post("/contact", {
-          name: form.name,
-          email: form.email,
-          subject: form.subject || "Iletisim Formu",
-          category: form.category,
-          project_id: form.project_id ? Number(form.project_id) : null,
-          message: form.message,
-        });
+        const formData = new FormData();
+        formData.append("name", form.name);
+        formData.append("email", form.email);
+        formData.append("subject", form.subject || "Iletisim Formu");
+        formData.append("category", form.category);
+        if (form.project_id) formData.append("project_id", form.project_id);
+        formData.append("message", form.message);
+        if (attachment) formData.append("attachment", attachment);
+        await api.post("/contact", formData, { headers: { "Content-Type": "multipart/form-data" } });
         setSuccess("Mesajiniz basariyla alindi.");
       }
 
@@ -88,6 +99,7 @@ export default function ContactPage() {
         project_id: "",
         message: "",
       }));
+      setAttachment(null);
     } catch (submitError) {
       console.error("Iletisim formu gonderilemedi", submitError);
       setError("Mesaj gonderilirken bir hata olustu.");
@@ -192,7 +204,9 @@ export default function ContactPage() {
                   <select value={form.category} onChange={(event) => handleChange("category", event.target.value)} className="w-full appearance-none rounded-2xl border border-border bg-input px-6 py-4 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md">
                     <option value="general">Genel Bilgi</option>
                     <option value="applications">Basvurular Hakkinda</option>
+                    <option value="official_document">Resmi Evrak Talebi</option>
                     <option value="technical">Hata Bildirimi</option>
+                    <option value="accommodation">Konaklama / Ulasim</option>
                     <option value="other">Diger</option>
                   </select>
                 </div>
@@ -212,6 +226,18 @@ export default function ContactPage() {
               <div className="space-y-2">
                 <label className="ml-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Mesajiniz</label>
                 <textarea required rows={5} value={form.message} onChange={(event) => handleChange("message", event.target.value)} className="w-full resize-none rounded-2xl border border-border bg-input px-6 py-4 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md" placeholder="Size nasil yardimci olabiliriz?" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="ml-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Dosya Eki {requiresAttachment ? <span className="text-red-500">*</span> : <span className="text-muted-foreground">(Opsiyonel)</span>}
+                </label>
+                <label className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-border bg-input px-6 py-4 transition-all hover:border-primary hover:bg-primary/5">
+                  <input type="file" className="hidden" onChange={(event) => setAttachment(event.target.files?.[0] ?? null)} />
+                  <span className="text-sm text-muted-foreground">
+                    {attachment ? attachment.name : requiresAttachment ? "Resmi evrak icin dosya ekleyin..." : "Dosya sec (opsiyonel)"}
+                  </span>
+                </label>
               </div>
 
               <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-primary py-5 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70">

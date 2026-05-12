@@ -7,6 +7,7 @@ import { useAuth } from "@/store/useAuth";
 import { cn } from "@/lib/utils";
 import { getVisiblePanelMenuGrouped } from "@/lib/panel-menu";
 import { PanelBrandBlock } from "@/components/shared/PanelBrandBlock";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 
 const navItemBase =
   "group relative flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-medium outline-none transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:ring-2 focus-visible:ring-[#FF6B00]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 active:scale-[0.98]";
@@ -61,6 +62,9 @@ export function UnifiedPanelSidebar() {
       </nav>
 
       <div className="border-t border-white/[0.08] bg-black/15 p-3 backdrop-blur-[2px]">
+        <div className="mb-2 flex justify-center group-hover/sidebar:justify-end group-focus-within/sidebar:justify-end">
+          <NotificationBell />
+        </div>
         <div className="mb-3 flex items-center justify-center gap-3 rounded-xl bg-white/[0.05] p-2.5 ring-1 ring-white/[0.06] transition-shadow duration-300 hover:bg-white/[0.07] group-hover/sidebar:justify-start group-focus-within/sidebar:justify-start">
           <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/10 text-xs font-bold text-white transition-transform duration-300 hover:scale-105">
             {user?.name?.[0]}

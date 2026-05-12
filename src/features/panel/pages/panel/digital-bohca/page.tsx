@@ -14,6 +14,15 @@ type Project = {
   name: string;
 };
 
+const BOHCA_CATEGORIES: Record<string, string> = {
+  general: "Genel",
+  internship_documents: "Staj Belgeleri",
+  assignment: "Odev",
+  certificate: "Sertifika",
+  kpd_report: "KPD Raporu",
+  other: "Diger",
+};
+
 type Material = {
   id: number;
   title: string;
@@ -22,6 +31,8 @@ type Material = {
   file_url?: string | null;
   download_url?: string | null;
   file_type?: string | null;
+  category?: string | null;
+  category_label?: string | null;
   visible_to_student: boolean;
   project?: Project | null;
   user?: { id: number; name: string; surname: string; email: string } | null;
@@ -43,6 +54,7 @@ export default function PanelDigitalBohcaPage() {
     project_id: "",
     title: "",
     description: "",
+    category: "general",
     visible_to_student: true,
   });
   const [file, setFile] = useState<File | null>(null);
@@ -90,6 +102,7 @@ export default function PanelDigitalBohcaPage() {
       if (form.project_id) formData.append("project_id", form.project_id);
       formData.append("title", form.title);
       formData.append("description", form.description);
+      formData.append("category", form.category);
       formData.append("visible_to_student", form.visible_to_student ? "1" : "0");
       formData.append("file", file);
       const response = await api.post<{ message: string; material: Material }>("/panel/digital-bohca", formData, {
@@ -97,7 +110,7 @@ export default function PanelDigitalBohcaPage() {
       });
       setMaterials((current) => [response.data.material, ...current]);
       setFeedback(response.data.message);
-      setForm({ project_id: "", title: "", description: "", visible_to_student: true });
+      setForm({ project_id: "", title: "", description: "", category: "general", visible_to_student: true });
       setFile(null);
     } catch (error) {
       const message = isAxiosError(error)
@@ -143,7 +156,7 @@ export default function PanelDigitalBohcaPage() {
 
       <PermissionGate permission="digital_bohca.create">
         <form onSubmit={handleSubmit} className="glass-panel rounded-3xl p-6">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_auto]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_auto]">
             <select
               value={form.project_id}
               onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))}
@@ -153,6 +166,15 @@ export default function PanelDigitalBohcaPage() {
               {!hasGlobalScope("digital_bohca.create") && uploadProjects.length === 0 ? <option value="">Yetkili proje yok</option> : null}
               {uploadProjects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </select>
+            <select
+              value={form.category}
+              onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+            >
+              {Object.entries(BOHCA_CATEGORIES).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
             <input
@@ -195,8 +217,13 @@ export default function PanelDigitalBohcaPage() {
                 <div key={material.id} className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="text-base font-bold text-slate-900">{material.title}</div>
-                    <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      {material.project?.name ?? "Genel"} / {material.file_type ?? "dosya"}
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      <span>{material.project?.name ?? "Genel"}</span>
+                      <span className="text-slate-300">/</span>
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] ${material.category === "internship_documents" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
+                        {material.category_label ?? BOHCA_CATEGORIES[material.category ?? "general"] ?? "Genel"}
+                      </span>
+                      {material.file_type ? <span className="text-slate-400">{material.file_type}</span> : null}
                     </div>
                     {material.description ? <p className="mt-2 text-sm text-muted-foreground">{material.description}</p> : null}
                   </div>

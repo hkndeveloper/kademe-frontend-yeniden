@@ -3,15 +3,11 @@
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  Briefcase,
   Calendar,
-  Camera,
   ChevronRight,
   Globe,
   Loader2,
   MapPin,
-  PlayCircle,
-  Send,
   ShieldCheck,
   Trophy,
   Users,
@@ -613,99 +609,7 @@ export default function HomePage() {
       {visibleBlockOrder.map((block) => (
         <div key={block}>{sectionMap[block]}</div>
       ))}
-
-      <footer className="border-t border-slate-200/90 bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(241,245,249,0.95))] py-20 text-slate-800">
-        <div className="container mx-auto mb-20 grid grid-cols-1 gap-12 px-6 md:grid-cols-4">
-          <div>
-            <div className="mb-6 flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/branding/kademe-logo-turuncu.svg"
-                alt="KADEME"
-                className="h-10 w-auto"
-                width={140}
-                height={40}
-              />
-              <span className="text-2xl font-bold tracking-tight text-slate-900">{resolvedSettings.general.site_name}</span>
-            </div>
-            <p className="mb-8 text-sm leading-relaxed text-slate-600">{resolvedSettings.homepage.footer_description}</p>
-            <div className="flex gap-4">
-              {resolvedSettings.social_media.instagram_url ? (
-                <Link
-                  href={resolvedSettings.social_media.instagram_url}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-md"
-                >
-                  <Camera className="h-5 w-5" />
-                </Link>
-              ) : null}
-              {resolvedSettings.social_media.twitter_url ? (
-                <Link
-                  href={resolvedSettings.social_media.twitter_url}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-md"
-                >
-                  <Send className="h-5 w-5" />
-                </Link>
-              ) : null}
-              {resolvedSettings.social_media.youtube_url ? (
-                <Link
-                  href={resolvedSettings.social_media.youtube_url}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-md"
-                >
-                  <PlayCircle className="h-5 w-5" />
-                </Link>
-              ) : null}
-              {resolvedSettings.social_media.linkedin_url ? (
-                <Link
-                  href={resolvedSettings.social_media.linkedin_url}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-md"
-                >
-                  <Briefcase className="h-5 w-5" />
-                </Link>
-              ) : null}
-            </div>
-          </div>
-
-          <div>
-            <h5 className="mb-6 text-xs font-bold uppercase tracking-widest text-primary">KURUMSAL</h5>
-            <ul className="space-y-4 text-sm text-slate-600">
-              {resolvedSettings.navigation.footer_quick_links.map((link) => (
-                <li key={`${link.label}-${link.href}`}>
-                  <Link href={link.href} className="transition-colors hover:text-primary">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h5 className="mb-6 text-xs font-bold uppercase tracking-widest text-primary">PROJELER</h5>
-            <ul className="space-y-4 text-sm text-slate-600">
-              {footerProjectLinks.length > 0 ? (
-                footerProjectLinks.map((link) => (
-                  <li key={`${link.label}-${link.href}`}>
-                    <Link href={link.href} className="transition-colors hover:text-primary">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))
-              ) : (
-                <li>Proje listesi yakinda guncellenecek.</li>
-              )}
-            </ul>
-          </div>
-
-          <div>
-            <h5 className="mb-6 text-xs font-bold uppercase tracking-widest text-primary">ILETISIM</h5>
-            <p className="mb-4 text-sm text-slate-600">{resolvedSettings.contact.contact_address}</p>
-            <p className="mb-2 text-sm font-bold text-slate-900">{resolvedSettings.contact.contact_email}</p>
-            <p className="text-sm font-bold text-slate-900">{resolvedSettings.contact.contact_phone}</p>
-          </div>
-        </div>
-        <div className="container mx-auto border-t border-slate-200/80 px-6 pt-10 text-center text-xs font-medium uppercase tracking-widest text-slate-500">
-          {resolvedSettings.homepage.footer_copyright}
-        </div>
-      </footer>
     </div>
   );
 }
+

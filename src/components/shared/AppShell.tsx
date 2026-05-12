@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Header, isPanelPath } from "@/components/shared/Header";
+import { Footer } from "@/components/shared/Footer";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -12,6 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <Header />
       <main className={cn("flex-1", panel ? "pt-0" : "pt-20")}>{children}</main>
+      {!panel && <Footer />}
     </>
   );
 }

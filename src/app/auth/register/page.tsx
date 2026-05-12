@@ -33,7 +33,7 @@ export default function RegisterPage() {
     setError("");
 
     if (formData.password !== formData.password_confirmation) {
-      setError("Åifreler eÅŸleÅŸmiyor.");
+      setError("Şifreler eşleşmiyor.");
       setLoading(false);
       return;
     }
@@ -44,9 +44,9 @@ export default function RegisterPage() {
       router.push("/auth/login?registered=true");
     } catch (err: unknown) {
       if (isAxiosError(err)) {
-        setError(err.response?.data?.message || "KayÄ±t iÅŸlemi baÅŸarÄ±sÄ±z. LÃ¼tfen bilgilerinizi kontrol edin.");
+        setError(err.response?.data?.message || "Kayıt işlemi başarısız. Lütfen bilgilerinizi kontrol edin.");
       } else {
-        setError("KayÄ±t iÅŸlemi baÅŸarÄ±sÄ±z. LÃ¼tfen bilgilerinizi kontrol edin.");
+        setError("Kayıt işlemi başarısız. Lütfen bilgilerinizi kontrol edin.");
       }
     } finally {
       setLoading(false);
@@ -68,8 +68,8 @@ export default function RegisterPage() {
           <div className="absolute top-0 left-1/2 h-1 w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-primary to-transparent" />
 
           <div className="mb-10 text-center">
-            <h2 className="text-3xl font-bold tracking-tight">Hesap OluÅŸtur</h2>
-            <p className="mt-2 text-muted-foreground">KADEME sistemine dahil olmak iÃ§in formu doldurun.</p>
+            <h2 className="text-3xl font-bold tracking-tight">Hesap Oluştur</h2>
+            <p className="mt-2 text-muted-foreground">KADEME sistemine dahil olmak için formu doldurun.</p>
           </div>
 
           {error && (
@@ -85,7 +85,7 @@ export default function RegisterPage() {
           <form onSubmit={handleRegister} className="space-y-5">
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="ml-1 text-sm font-medium text-foreground">AdÄ±nÄ±z</label>
+                <label className="ml-1 text-sm font-medium text-foreground">Adınız</label>
                 <div className="relative">
                   <User className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <input
@@ -95,13 +95,13 @@ export default function RegisterPage() {
                     value={formData.name}
                     onChange={handleChange}
                     className="w-full rounded-xl border border-border bg-input py-3 pr-4 pl-12 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
-                    placeholder="AdÄ±nÄ±z"
+                    placeholder="Adınız"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="ml-1 text-sm font-medium text-foreground">SoyadÄ±nÄ±z</label>
+                <label className="ml-1 text-sm font-medium text-foreground">Soyadınız</label>
                 <div className="relative">
                   <User className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <input
@@ -111,7 +111,7 @@ export default function RegisterPage() {
                     value={formData.surname}
                     onChange={handleChange}
                     className="w-full rounded-xl border border-border bg-input py-3 pr-4 pl-12 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
-                    placeholder="SoyadÄ±nÄ±z"
+                    placeholder="Soyadınız"
                   />
                 </div>
               </div>
@@ -161,13 +161,13 @@ export default function RegisterPage() {
                     value={formData.password}
                     onChange={handleChange}
                     className="w-full rounded-xl border border-border bg-input py-3 pr-4 pl-12 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="ml-1 text-sm font-medium text-foreground">Parola DoÄŸrula</label>
+                <label className="ml-1 text-sm font-medium text-foreground">Parola Doğrula</label>
                 <div className="relative">
                   <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <input
@@ -177,7 +177,7 @@ export default function RegisterPage() {
                     value={formData.password_confirmation}
                     onChange={handleChange}
                     className="w-full rounded-xl border border-border bg-input py-3 pr-4 pl-12 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••"
                   />
                 </div>
               </div>
@@ -192,7 +192,7 @@ export default function RegisterPage() {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  HesabÄ±mÄ± OluÅŸtur
+                  Hesabımı Oluştur
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </>
               )}
@@ -200,9 +200,9 @@ export default function RegisterPage() {
           </form>
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
-            Zaten hesabÄ±nÄ±z var mÄ±?{" "}
+            Zaten hesabınız var mı?{" "}
             <Link href="/auth/login" className="font-medium text-primary hover:underline">
-              GiriÅŸ YapÄ±n
+              Giriş Yapın
             </Link>
           </div>
         </div>

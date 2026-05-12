@@ -411,6 +411,11 @@ export default function AdminSettingsPage() {
               <input value={settings.social_media.twitter_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, twitter_url: event.target.value } }))} placeholder="X / Twitter URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
               <input value={settings.social_media.youtube_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, youtube_url: event.target.value } }))} placeholder="YouTube URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
               <input value={settings.social_media.linkedin_url} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, linkedin_url: event.target.value } }))} placeholder="LinkedIn URL" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Sosyal Medya Otomasyon Webhook (Buffer / Make.com / Zapier)</label>
+                <input value={settings.social_media.sharing_webhook_url ?? ""} onChange={(event) => setSettings((current) => ({ ...current, social_media: { ...current.social_media, sharing_webhook_url: event.target.value } }))} placeholder="https://hook.make.com/... veya https://hooks.zapier.com/..." className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+                <p className="mt-1 text-xs text-muted-foreground">Duyuru veya etkinlik panelinden &quot;Sosyal Medyada Paylas&quot; butonuyla bu URL tetiklenir.</p>
+              </div>
             </div>
           ) : null}
         </div>
@@ -630,6 +635,16 @@ export default function AdminSettingsPage() {
           <textarea value={settings.homepage.newsletter_description} onChange={(event) => setSettings((current) => ({ ...current, homepage: { ...current.homepage, newsletter_description: event.target.value } }))} rows={3} placeholder="E-bulten aciklama" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
           <textarea value={settings.homepage.footer_description} onChange={(event) => setSettings((current) => ({ ...current, homepage: { ...current.homepage, footer_description: event.target.value } }))} rows={3} placeholder="Footer aciklama" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
           <textarea value={settings.homepage.footer_copyright} onChange={(event) => setSettings((current) => ({ ...current, homepage: { ...current.homepage, footer_copyright: event.target.value } }))} rows={2} placeholder="Footer telif metni" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" />
+          <div>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Aylik Motivasyon Mesaji (Ogrenci/Mezun Dashboard)</label>
+            <textarea
+              value={settings.homepage.monthly_motivation_message ?? ""}
+              onChange={(event) => setSettings((current) => ({ ...current, homepage: { ...current.homepage, monthly_motivation_message: event.target.value } }))}
+              rows={3}
+              placeholder="Bu ay ogrencilere ve mezunlara gosterilecek motivasyon mesaji..."
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900"
+            />
+          </div>
           </div>
           ) : null}
         </div>

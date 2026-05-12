@@ -7,6 +7,7 @@ import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
+import { homePathForUser } from "@/lib/role-home";
 
 export default function KvkkConsentPage() {
   const router = useRouter();
@@ -21,12 +22,13 @@ export default function KvkkConsentPage() {
     try {
       await api.post("/user/consent-kvkk");
       await fetchProfile();
-      router.push("/student/dashboard");
+      const { user } = useAuth.getState();
+      router.push(homePathForUser(user));
     } catch (err: unknown) {
       if (isAxiosError(err)) {
-        setError(err.response?.data?.message || "Onay iÅŸlemi sÄ±rasÄ±nda bir hata oluÅŸtu. LÃ¼tfen tekrar deneyin.");
+        setError(err.response?.data?.message || "Onay işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.");
       } else {
-        setError("Onay iÅŸlemi sÄ±rasÄ±nda bir hata oluÅŸtu. LÃ¼tfen tekrar deneyin.");
+        setError("Onay işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.");
       }
     } finally {
       setLoading(false);
@@ -48,9 +50,9 @@ export default function KvkkConsentPage() {
               <ShieldCheck className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">KVKK AydÄ±nlatma Metni</h1>
+              <h1 className="text-2xl font-bold">KVKK Aydınlatma Metni</h1>
               <p className="text-sm text-muted-foreground">
-                KiÅŸisel verilerinizin korunmasÄ± hakkÄ±nda bilgilendirme.
+                Kişisel verilerinizin korunması hakkında bilgilendirme.
               </p>
             </div>
           </div>
@@ -58,34 +60,34 @@ export default function KvkkConsentPage() {
           <div className="mb-8 h-80 space-y-4 overflow-y-auto rounded-2xl border border-border/50 bg-input/30 p-6 text-sm leading-relaxed text-muted-foreground">
             <p className="font-bold text-foreground">1. Veri Sorumlusu</p>
             <p>
-              T3 VakfÄ± KADEME YÃ¶netim Sistemi olarak, kiÅŸisel verilerinizin gÃ¼venliÄŸi hususuna azami hassasiyet
-              gÃ¶stermekteyiz.
+              T3 Vakfı KADEME Yönetim Sistemi olarak, kişisel verilerinizin güvenliği hususuna azami hassasiyet
+              göstermekteyiz.
             </p>
 
-            <p className="font-bold text-foreground">2. KiÅŸisel Verilerin Ä°ÅŸlenme AmacÄ±</p>
+            <p className="font-bold text-foreground">2. Kişisel Verilerin İşlenme Amacı</p>
             <p>
-              KiÅŸisel verileriniz; eÄŸitim sÃ¼reÃ§lerinin yÃ¼rÃ¼tÃ¼lmesi, yoklama takibi, kredi ve rozet sisteminin
-              iÅŸletilmesi, kariyer danÄ±ÅŸmanlÄ±ÄŸÄ± hizmetlerinin sunulmasÄ± ve vakÄ±f duyurularÄ±nÄ±n tarafÄ±nÄ±za
-              ulaÅŸtÄ±rÄ±lmasÄ± amaÃ§larÄ±yla iÅŸlenmektedir.
+              Kişisel verileriniz; eğitim süreçlerinin yürütülmesi, yoklama takibi, kredi ve rozet sisteminin
+              işletilmesi, kariyer danışmanlığı hizmetlerinin sunulması ve vakıf duyurularının tarafınıza
+              ulaştırılması amaçlarıyla işlenmektedir.
             </p>
 
-            <p className="font-bold text-foreground">3. Ä°ÅŸlenen Veriler</p>
+            <p className="font-bold text-foreground">3. İşlenen Veriler</p>
             <p>
-              Ad, soyad, T.C. kimlik numarasÄ±, iletiÅŸim bilgileri, Ã¼niversite ve bÃ¶lÃ¼m bilgileri, GPS tabanlÄ±
-              konum verileri yalnÄ±zca yoklama anÄ±nda iÅŸlenmektedir.
+              Ad, soyad, T.C. kimlik numarası, iletişim bilgileri, üniversite ve bölüm bilgileri, GPS tabanlı
+              konum verileri yalnızca yoklama anında işlenmektedir.
             </p>
 
-            <p className="font-bold text-foreground">4. HaklarÄ±nÄ±z</p>
+            <p className="font-bold text-foreground">4. Haklarınız</p>
             <p>
-              6698 sayÄ±lÄ± KVKK uyarÄ±nca verilerinizin silinmesini, gÃ¼ncellenmesini veya iÅŸlenip iÅŸlenmediÄŸini
-              Ã¶ÄŸrenme hakkÄ±na sahipsiniz.
+              6698 sayılı KVKK uyarınca verilerinizin silinmesini, güncellenmesini veya işlenip işlenmediğini
+              öğrenme hakkına sahipsiniz.
             </p>
 
             <div className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/10 p-4 text-primary">
               <Info className="mt-0.5 h-5 w-5 shrink-0" />
               <p className="text-xs">
-                Bu metni onaylayarak sistemin tÃ¼m fonksiyonlarÄ±nÄ± kullanmayÄ± ve verilerinizin belirtilen amaÃ§larla
-                iÅŸlenmesini kabul etmiÅŸ sayÄ±lÄ±rsÄ±nÄ±z.
+                Bu metni onaylayarak sistemin tüm fonksiyonlarını kullanmayı ve verilerinizin belirtilen amaçlarla
+                işlenmesini kabul etmiş sayılırsınız.
               </p>
             </div>
           </div>
@@ -101,7 +103,7 @@ export default function KvkkConsentPage() {
               onClick={() => router.push("/auth/login")}
               className="flex-1 rounded-xl border border-border py-4 font-semibold transition-colors hover:bg-muted"
             >
-              VazgeÃ§ ve Ã‡Ä±kÄ±ÅŸ Yap
+              Vazgeç ve Çıkış Yap
             </button>
             <button
               onClick={handleConsent}
@@ -112,7 +114,7 @@ export default function KvkkConsentPage() {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  Okudum, OnaylÄ±yorum
+                  Okudum, Onaylıyorum
                   <ArrowRight className="h-5 w-5" />
                 </>
               )}

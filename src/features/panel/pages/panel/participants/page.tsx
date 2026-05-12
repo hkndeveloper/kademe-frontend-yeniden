@@ -42,6 +42,7 @@ interface ParticipantItem {
     status?: string | null;
     profile_photo?: string | null;
     cv?: {
+      has_digital_cv?: boolean;
       digital_cv_data?: Record<string, unknown> | null;
       linkedin_url?: string | null;
       github_url?: string | null;
@@ -75,6 +76,7 @@ export default function PanelParticipantsPage() {
     return new URLSearchParams(window.location.search).get("status") ?? "all";
   });
   const [cvParticipant, setCvParticipant] = useState<ParticipantItem | null>(null);
+  const [cvLoadingId, setCvLoadingId] = useState<number | null>(null);
   const [graduationLoadingId, setGraduationLoadingId] = useState<number | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -92,6 +94,7 @@ export default function PanelParticipantsPage() {
     const fetchParticipants = async () => {
       try {
         const response = await api.get<ParticipantsResponse>("/panel/participants", {
+          timeout: 30000,
           params: {
             project_id: initialProjectId !== "all" ? initialProjectId : undefined,
           },
@@ -150,9 +153,11 @@ export default function PanelParticipantsPage() {
       .map((p) => p.id);
   }, [filteredParticipants, hasPermission, canAccessProject]);
 
-  useEffect(() => {
-    setSelectedIds((prev) => prev.filter((id) => participants.some((p) => p.id === id)));
-  }, [participants]);
+  const participantIds = useMemo(() => new Set(participants.map((participant) => participant.id)), [participants]);
+  const selectedIdsInDataset = useMemo(
+    () => selectedIds.filter((id) => participantIds.has(id)),
+    [participantIds, selectedIds],
+  );
 
   const toggleSelected = (id: number) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -162,8 +167,32 @@ export default function PanelParticipantsPage() {
 
   const clearSelection = () => setSelectedIds([]);
 
+  const openCvDetails = async (participant: ParticipantItem) => {
+    setCvLoadingId(participant.id);
+    setMessage("");
+    try {
+      const response = await api.get<{ participant: ParticipantItem }>(`/panel/participants/${participant.id}/cv`, {
+        timeout: 30000,
+      });
+      setCvParticipant({
+        ...participant,
+        user: {
+          ...participant.user,
+          ...(response.data.participant?.user ?? {}),
+          cv: response.data.participant?.user?.cv ?? participant.user.cv,
+        },
+      });
+    } catch (error) {
+      console.error("CV bilgisi yuklenemedi", error);
+      setMessage("CV bilgisi yuklenemedi.");
+    } finally {
+      setCvLoadingId(null);
+    }
+  };
+
   const refreshParticipants = async () => {
     const response = await api.get<ParticipantsResponse>("/panel/participants", {
+      timeout: 30000,
       params: {
         project_id: projectFilter !== "all" ? projectFilter : undefined,
         status: !["all", "graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
@@ -208,7 +237,7 @@ export default function PanelParticipantsPage() {
   };
 
   const bulkUpdateGraduation = async (graduationStatus: "completed" | "graduated" | "not_completed") => {
-    if (selectedIds.length === 0) return;
+    if (selectedIdsInDataset.length === 0) return;
 
     let graduationNote: string | undefined;
     if (graduationStatus === "not_completed") {
@@ -227,7 +256,7 @@ export default function PanelParticipantsPage() {
         message?: string;
         results?: Array<{ participant_id: number; ok: boolean; error?: string }>;
       }>("/panel/participants/bulk-graduation", {
-        participant_ids: selectedIds,
+        participant_ids: selectedIdsInDataset,
         graduation_status: graduationStatus,
         graduation_note: graduationNote,
       });
@@ -359,7 +388,7 @@ export default function PanelParticipantsPage() {
           <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <span className="font-semibold text-slate-900">
-                {selectedIds.length > 0 ? `${selectedIds.length} katilimci secili` : "Toplu mezuniyet"}
+                {selectedIdsInDataset.length > 0 ? `${selectedIdsInDataset.length} katilimci secili` : "Toplu mezuniyet"}
               </span>
               <button
                 type="button"
@@ -369,7 +398,7 @@ export default function PanelParticipantsPage() {
               >
                 Filtredeki tumunu sec ({manageableIdsInView.length})
               </button>
-              {selectedIds.length > 0 ? (
+              {selectedIdsInDataset.length > 0 ? (
                 <button
                   type="button"
                   disabled={bulkLoading}
@@ -380,7 +409,7 @@ export default function PanelParticipantsPage() {
                 </button>
               ) : null}
             </div>
-            {selectedIds.length > 0 ? (
+            {selectedIdsInDataset.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -480,11 +509,12 @@ export default function PanelParticipantsPage() {
                 <div className="mt-4">
                   <button
                     type="button"
-                    onClick={() => setCvParticipant(participant)}
+                    disabled={cvLoadingId === participant.id}
+                    onClick={() => void openCvDetails(participant)}
                     className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-muted"
                   >
-                    <FileText className="h-4 w-4" />
-                    CV Bilgilerini Gor
+                    {cvLoadingId === participant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                    {cvLoadingId === participant.id ? "CV Yukleniyor" : "CV Bilgilerini Gor"}
                   </button>
                 </div>
               ) : null}
