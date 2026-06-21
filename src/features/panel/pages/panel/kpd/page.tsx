@@ -126,7 +126,7 @@ export default function PanelKpdPage() {
           ? api.get<AppointmentsResponse>("/panel/kpd/appointments", {
               params: { period_id: periodFilter !== "all" ? periodFilter : undefined },
             })
-          : Promise.resolve({ data: { appointments: { data: [] as KpdAppointment[] }, counselees: [], counselors: [], rooms: [] } satisfies AppointmentsResponse }),
+          : Promise.resolve({ data: { appointments: { data: [] as KpdAppointment[] }, counselees: [], counselors: [], rooms: [], room_schedule: [] } satisfies AppointmentsResponse }),
         canCreateReports
           ? api.get<KpdOptionsResponse>("/panel/kpd/options", { params: { permission: "kpd.reports.create" } })
           : Promise.resolve({ data: { counselees: [] as UserOption[] } }),
