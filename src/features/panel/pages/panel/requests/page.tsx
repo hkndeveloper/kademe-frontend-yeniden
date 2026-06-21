@@ -6,11 +6,14 @@ import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { useAuth } from "@/store/useAuth";
 
 interface Project {
   id: number;
   name: string;
+  periods?: PeriodOption[];
+  active_period?: PeriodOption | null;
 }
 
 interface TargetUser {
@@ -29,6 +32,7 @@ interface RequestItem {
   response_file_url?: string | null;
   response_file_download_url?: string | null;
   status: "pending" | "in_progress" | "completed" | "rejected";
+  period?: PeriodOption | null;
   target_user?: {
     id: number;
     name: string;
@@ -56,6 +60,15 @@ const typeLabels: Record<string, string> = {
   other: "Diger",
 };
 
+const targetUnitLabels: Record<string, string> = {
+  media: "Medya / Tasarim",
+  operations: "Operasyon",
+  program: "Program / Proje",
+  finance: "Finans",
+  official_affairs: "Resmi Evrak",
+  general: "Genel",
+};
+
 export default function PanelSharedRequestsPage() {
   const { hasPermission } = useAuth();
 
@@ -71,22 +84,40 @@ export default function PanelSharedRequestsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
   const [form, setForm] = useState({
     type: "",
     target_unit: "",
     target_user_id: "",
     project_id: "",
+    period_id: "",
     description: "",
   });
 
   const canUpdateRequestStatus = hasPermission("requests.update_status");
   const canUploadRequestResponse = hasPermission("requests.upload_response");
   const isResponder = canUpdateRequestStatus || canUploadRequestResponse;
+  const filterProject = useMemo(
+    () => projects.find((project) => String(project.id) === projectFilter),
+    [projectFilter, projects]
+  );
+  const formProject = useMemo(
+    () => projects.find((project) => String(project.id) === form.project_id),
+    [form.project_id, projects]
+  );
+  const filterPeriods = useMemo(() => periodsForProject(filterProject), [filterProject]);
+  const formPeriods = useMemo(() => periodsForProject(formProject), [formProject]);
 
   useEffect(() => {
     const loadRequests = async () => {
       try {
-        const response = await api.get<RequestsResponse>("/panel/requests");
+        const response = await api.get<RequestsResponse>("/panel/requests", {
+          params: {
+            status: statusFilter || undefined,
+            project_id: projectFilter || undefined,
+            period_id: periodFilter !== "all" ? periodFilter : undefined,
+          },
+        });
         setRequests(response.data.requests ?? []);
         setProjects(response.data.projects ?? []);
         setTargetUsers(response.data.target_users ?? []);
@@ -100,15 +131,16 @@ export default function PanelSharedRequestsPage() {
       }
     };
     void loadRequests();
-  }, []);
+  }, [periodFilter, projectFilter, statusFilter]);
 
   const visibleRequests = useMemo(() => {
     return requests.filter((request) => {
       const statusMatches = !statusFilter || request.status === statusFilter;
       const projectMatches = !projectFilter || String(request.project?.id ?? "") === projectFilter;
-      return statusMatches && projectMatches;
+      const periodMatches = periodFilter === "all" || String(request.period?.id ?? "") === periodFilter;
+      return statusMatches && projectMatches && periodMatches;
     });
-  }, [projectFilter, requests, statusFilter]);
+  }, [periodFilter, projectFilter, requests, statusFilter]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -122,12 +154,13 @@ export default function PanelSharedRequestsPage() {
         target_unit: form.target_unit || null,
         target_user_id: form.target_user_id ? Number(form.target_user_id) : null,
         project_id: form.project_id ? Number(form.project_id) : null,
+        period_id: form.period_id ? Number(form.period_id) : null,
         description: form.description,
       });
 
       setRequests((current) => [response.data.request_item, ...current]);
       setFeedback(response.data.message);
-      setForm({ type: "", target_unit: "", target_user_id: "", project_id: "", description: "" });
+      setForm({ type: "", target_unit: "", target_user_id: "", project_id: "", period_id: "", description: "" });
     } catch (error) {
       console.error("Talep olusturulamadi", error);
       setErrorMessage("Talep olusturulamadi.");
@@ -233,7 +266,16 @@ export default function PanelSharedRequestsPage() {
           </div>
         </div>
         <PermissionGate permission="requests.export">
-          <ExportButtons endpoint="/panel/requests/export" filename={exportName} buttonLabel="Talepleri Disa Aktar" />
+          <ExportButtons
+            endpoint="/panel/requests/export"
+            filename={exportName}
+            params={{
+              status: statusFilter || undefined,
+              project_id: projectFilter || undefined,
+              period_id: periodFilter !== "all" ? periodFilter : undefined,
+            }}
+            buttonLabel="Talepleri Disa Aktar"
+          />
         </PermissionGate>
       </div>
 
@@ -254,13 +296,39 @@ export default function PanelSharedRequestsPage() {
                   <option value="">Talep tipi sec</option>
                   {requestTypes.map((type) => <option key={type} value={type}>{typeLabels[type] || type}</option>)}
                 </select>
-                <select value={form.project_id} onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900">
+                <select
+                  value={form.project_id}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    const project = projects.find((item) => String(item.id) === value);
+                    setForm((current) => ({
+                      ...current,
+                      project_id: value,
+                      period_id: value ? defaultPeriodIdForProject(project) : "",
+                    }));
+                  }}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900"
+                >
                   <option value="">Proje sec</option>
                   {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
                 </select>
+                <select
+                  value={form.period_id}
+                  onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))}
+                  disabled={!form.project_id || formPeriods.length === 0}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <option value="">{form.project_id ? "Donem secmeden gonder" : "Proje secince donem"}</option>
+                  {formPeriods.map((period) => (
+                    <option key={period.id} value={period.id}>
+                      {period.name}
+                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                    </option>
+                  ))}
+                </select>
                 <select value={form.target_unit} onChange={(event) => setForm((current) => ({ ...current, target_unit: event.target.value }))} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900">
                   <option value="">Hedef birim sec</option>
-                  {targetUnits.map((targetUnit) => <option key={targetUnit} value={targetUnit}>{targetUnit}</option>)}
+                  {targetUnits.map((targetUnit) => <option key={targetUnit} value={targetUnit}>{targetUnitLabels[targetUnit] || targetUnit}</option>)}
                 </select>
                 <select value={form.target_user_id} onChange={(event) => setForm((current) => ({ ...current, target_user_id: event.target.value }))} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900">
                   <option value="">Hedef kisi sec</option>
@@ -290,7 +358,7 @@ export default function PanelSharedRequestsPage() {
               <h2 className="mb-4 text-lg font-bold text-slate-900">
                 {isResponder ? "Bana Dusebilecek Talepler" : "Talepler"}
               </h2>
-              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
                 <select
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
@@ -304,13 +372,32 @@ export default function PanelSharedRequestsPage() {
                 </select>
                 <select
                   value={projectFilter}
-                  onChange={(event) => setProjectFilter(event.target.value)}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    const project = projects.find((item) => String(item.id) === value);
+                    setProjectFilter(value);
+                    setPeriodFilter(value ? defaultPeriodIdForProject(project) || "all" : "all");
+                  }}
                   className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-900"
                 >
                   <option value="">Tum projeler</option>
                   {projects.map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={periodFilter}
+                  onChange={(event) => setPeriodFilter(event.target.value)}
+                  disabled={!projectFilter || filterPeriods.length === 0}
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <option value="all">{projectFilter ? "Tum donemler" : "Proje secince donem"}</option>
+                  {filterPeriods.map((period) => (
+                    <option key={period.id} value={period.id}>
+                      {period.name}
+                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
                     </option>
                   ))}
                 </select>
@@ -346,9 +433,11 @@ export default function PanelSharedRequestsPage() {
                         )}
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground">
-                        {isResponder
-                          ? (request.target_user ? `${request.target_user.name} ${request.target_user.surname}` : "Hedef kisi yok")
-                          : `${request.project?.name || "Genel"}${request.target_user ? ` -> ${request.target_user.name} ${request.target_user.surname}` : ""}`}
+                        {request.project?.name || "Genel"}
+                        {request.period?.name ? ` / ${request.period.name}` : ""}
+                        {request.target_unit ? ` -> ${targetUnitLabels[request.target_unit] || request.target_unit}` : ""}
+                        {request.target_user ? ` -> ${request.target_user.name} ${request.target_user.surname}` : ""}
+                        {isResponder && !request.target_user ? " -> Birim havuzu" : ""}
                       </div>
                       <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
                         <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-accent" />

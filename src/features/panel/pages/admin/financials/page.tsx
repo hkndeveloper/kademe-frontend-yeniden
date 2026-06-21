@@ -14,8 +14,22 @@ import {
   Upload,
   XCircle,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
+import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -24,10 +38,8 @@ import { downloadBlobResponse } from "@/lib/download";
 interface Project {
   id: number;
   name: string;
-  active_period?: {
-    id: number;
-    name?: string | null;
-  } | null;
+  active_period?: PeriodOption | null;
+  periods?: PeriodOption[];
 }
 
 interface FinancialTransaction {
@@ -37,11 +49,16 @@ interface FinancialTransaction {
   submitter?: { id: number; name: string; surname: string };
   approver?: { id: number; name: string; surname: string };
   type: "expense" | "payment";
-  category: "transport" | "food" | "print" | "education" | "other";
+  category: string;
+  spending_unit?: string | null;
   payee_name: string;
   amount: number;
   status: "pending" | "approved" | "rejected" | "paid";
   invoice_path?: string | null;
+  invoice_no?: string | null;
+  payment_date?: string | null;
+  payment_method?: string | null;
+  accounting_code?: string | null;
   submitted_at: string;
 }
 
@@ -50,6 +67,17 @@ const categoryLabels: Record<string, string> = {
   food: "Yemek",
   print: "Baski",
   education: "Egitim",
+  lodging: "Konaklama",
+  ticket: "Bilet",
+  official_document: "Resmi Evrak",
+  media_design: "Medya / Tasarim",
+  other: "Diger",
+};
+
+const paymentMethodLabels: Record<string, string> = {
+  bank_transfer: "Banka Havalesi",
+  cash: "Nakit",
+  card: "Kart",
   other: "Diger",
 };
 
@@ -86,6 +114,7 @@ export default function AdminFinancialsPage() {
   const [projectStats, setProjectStats] = useState<Array<{ project?: { name: string }; total: number }>>([]);
   const [statusStats, setStatusStats] = useState<Array<{ status: string; total: number; count: number }>>([]);
   const [projectId, setProjectId] = useState("");
+  const [periodId, setPeriodId] = useState("all");
   const [status, setStatus] = useState("");
   const [category, setCategory] = useState("");
   const [transactionType, setTransactionType] = useState("");
@@ -98,9 +127,15 @@ export default function AdminFinancialsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [formProjectId, setFormProjectId] = useState("");
-  const [formCategory, setFormCategory] = useState<FinancialTransaction["category"]>("food");
+  const [formPeriodId, setFormPeriodId] = useState("");
+  const [formCategory, setFormCategory] = useState("food");
+  const [formSpendingUnit, setFormSpendingUnit] = useState("");
   const [formPayee, setFormPayee] = useState("");
   const [formAmount, setFormAmount] = useState("");
+  const [formInvoiceNo, setFormInvoiceNo] = useState("");
+  const [formPaymentDate, setFormPaymentDate] = useState("");
+  const [formPaymentMethod, setFormPaymentMethod] = useState("");
+  const [formAccountingCode, setFormAccountingCode] = useState("");
   const [formFile, setFormFile] = useState<File | null>(null);
   const canViewFinancials = hasPermission("financial.view");
   const canCreateFinancials = hasPermission("financial.create");
@@ -121,6 +156,7 @@ export default function AdminFinancialsPage() {
               params: {
                 page: targetPage,
                 project_id: projectId || undefined,
+                period_id: periodId !== "all" ? periodId : undefined,
                 status: status || undefined,
                 category: category || undefined,
                 type: transactionType || undefined,
@@ -172,6 +208,7 @@ export default function AdminFinancialsPage() {
     category,
     page,
     projectId,
+    periodId,
     search,
     status,
     transactionType,
@@ -249,9 +286,15 @@ export default function AdminFinancialsPage() {
 
   const resetForm = () => {
     setFormProjectId("");
+    setFormPeriodId("");
     setFormCategory("food");
+    setFormSpendingUnit("");
     setFormPayee("");
     setFormAmount("");
+    setFormInvoiceNo("");
+    setFormPaymentDate("");
+    setFormPaymentMethod("");
+    setFormAccountingCode("");
     setFormFile(null);
   };
 
@@ -276,13 +319,18 @@ export default function AdminFinancialsPage() {
     try {
       const formData = new FormData();
       formData.append("project_id", formProjectId);
-      if (selectedProject.active_period?.id) {
-        formData.append("period_id", String(selectedProject.active_period.id));
+      if (formPeriodId || selectedProject.active_period?.id) {
+        formData.append("period_id", formPeriodId || String(selectedProject.active_period?.id));
       }
       formData.append("type", "expense");
       formData.append("category", formCategory);
+      if (formSpendingUnit.trim()) formData.append("spending_unit", formSpendingUnit.trim());
       formData.append("payee_name", formPayee.trim());
       formData.append("amount", formAmount);
+      if (formInvoiceNo.trim()) formData.append("invoice_no", formInvoiceNo.trim());
+      if (formPaymentDate) formData.append("payment_date", formPaymentDate);
+      if (formPaymentMethod) formData.append("payment_method", formPaymentMethod);
+      if (formAccountingCode.trim()) formData.append("accounting_code", formAccountingCode.trim());
       formData.append("invoice", formFile);
 
       await api.post("/panel/financials", formData, {
@@ -316,6 +364,7 @@ export default function AdminFinancialsPage() {
             filename={`finansal_islemler_${new Date().toISOString().slice(0, 10)}`}
             params={{
               project_id: projectId || undefined,
+              period_id: periodId !== "all" ? periodId : undefined,
               status: status || undefined,
               category: category || undefined,
               type: transactionType || undefined,
@@ -430,6 +479,78 @@ export default function AdminFinancialsPage() {
         })}
       </div>
 
+      {canViewFinancials && (categoryStats.some((s) => Number(s.total) > 0) || projectStats.some((s) => Number(s.total) > 0)) ? (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {categoryStats.some((s) => Number(s.total) > 0) ? (
+            <div className="glass-panel rounded-3xl p-6">
+              <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                Kategori — Pasta grafik
+              </h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={categoryStats
+                      .filter((s) => Number(s.total) > 0)
+                      .map((s) => ({
+                        name: categoryLabels[s.category] || s.category,
+                        value: Number(s.total),
+                      }))}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={({ name, percent }) =>
+                      `${String(name ?? "")} ${(((percent ?? 0) as number) * 100).toFixed(0)}%`
+                    }
+                  >
+                    {categoryStats
+                      .filter((s) => Number(s.total) > 0)
+                      .map((_, i) => (
+                        <Cell key={`fin-pie-${i}`} fill={["#6366f1", "#10b981", "#f97316", "#a855f7", "#0ea5e9"][i % 5]} />
+                      ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(v: number) =>
+                      `${v.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`
+                    }
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : null}
+          {projectStats.some((s) => Number(s.total) > 0) ? (
+            <div className="glass-panel rounded-3xl p-6">
+              <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                Proje — Bar grafik
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={projectStats
+                    .filter((s) => Number(s.total) > 0)
+                    .map((s) => ({
+                      name: (s.project?.name || "Proje").slice(0, 20),
+                      value: Number(s.total),
+                    }))}
+                  margin={{ top: 8, right: 8, left: 8, bottom: 48 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#33415522" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={68} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip
+                    formatter={(v: number) =>
+                      `${v.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`
+                    }
+                  />
+                  <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 0, 0]} name="Tutar" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="glass-panel rounded-3xl p-6">
           <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-muted-foreground">
@@ -495,7 +616,7 @@ export default function AdminFinancialsPage() {
       </div>
 
       <div className="glass-panel flex flex-col gap-4 rounded-3xl p-6">
-        <div className="flex flex-col gap-4 md:flex-row">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_440px_180px_180px_180px]">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -507,18 +628,19 @@ export default function AdminFinancialsPage() {
             />
           </div>
 
-          <select
-            value={projectId}
-            onChange={(event) => setProjectId(event.target.value)}
-            className="min-w-[200px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
-          >
-            <option value="">Tum projeler</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
+          <ProjectPeriodFilters
+            projects={projects}
+            selectedProjectId={projectId || "all"}
+            selectedPeriodId={periodId}
+            onProjectChange={(value) => {
+              const project = projects.find((item) => String(item.id) === value);
+              setProjectId(value === "all" ? "" : value);
+              setPeriodId(value === "all" ? "all" : defaultPeriodIdForProject(project) || "all");
+            }}
+            onPeriodChange={setPeriodId}
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            selectClassName="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+          />
 
           <select
             value={status}
@@ -622,8 +744,19 @@ export default function AdminFinancialsPage() {
                       <div className="text-xs">
                         {categoryLabels[transaction.category] || transaction.category}
                       </div>
+                      {transaction.spending_unit ? (
+                        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                          Birim: {transaction.spending_unit}
+                        </div>
+                      ) : null}
                     </td>
-                    <td className="px-6 py-4 font-bold text-slate-900">{transaction.payee_name}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-900">{transaction.payee_name}</div>
+                      <div className="mt-1 space-y-0.5 text-[10px] text-slate-400">
+                        {transaction.invoice_no ? <p>Fatura: {transaction.invoice_no}</p> : null}
+                        {transaction.accounting_code ? <p>Kod: {transaction.accounting_code}</p> : null}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 font-black text-indigo-300">
                       {transaction.amount.toLocaleString("tr-TR", {
                         minimumFractionDigits: 2,
@@ -642,6 +775,12 @@ export default function AdminFinancialsPage() {
                       >
                         {statusLabels[transaction.status] || transaction.status}
                       </span>
+                      {transaction.payment_date ? (
+                        <div className="mt-1 text-[10px] text-slate-400">
+                          {new Date(transaction.payment_date).toLocaleDateString("tr-TR")}
+                          {transaction.payment_method ? ` / ${paymentMethodLabels[transaction.payment_method] || transaction.payment_method}` : ""}
+                        </div>
+                      ) : null}
                     </td>
                     <td className="space-x-2 px-6 py-4 text-right">
                       {canDownloadInvoice &&
@@ -752,7 +891,12 @@ export default function AdminFinancialsPage() {
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Proje</label>
               <select
                 value={formProjectId}
-                onChange={(event) => setFormProjectId(event.target.value)}
+                onChange={(event) => {
+                  const nextProjectId = event.target.value;
+                  const project = createProjects.find((item) => String(item.id) === nextProjectId);
+                  setFormProjectId(nextProjectId);
+                  setFormPeriodId(defaultPeriodIdForProject(project));
+                }}
                 required
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
               >
@@ -771,10 +915,25 @@ export default function AdminFinancialsPage() {
             </div>
 
             <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Donem</label>
+              <select
+                value={formPeriodId}
+                onChange={(event) => setFormPeriodId(event.target.value)}
+                disabled={!formProjectId}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              >
+                <option value="">Aktif donem</option>
+                {(createProjects.find((project) => String(project.id) === formProjectId)?.periods ?? []).map((period) => (
+                  <option key={period.id} value={period.id}>{period.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kategori</label>
               <select
                 value={formCategory}
-                onChange={(event) => setFormCategory(event.target.value as FinancialTransaction["category"])}
+                onChange={(event) => setFormCategory(event.target.value)}
                 required
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
               >
@@ -784,6 +943,18 @@ export default function AdminFinancialsPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Harcamayi Yapan Birim
+              </label>
+              <input
+                value={formSpendingUnit}
+                onChange={(event) => setFormSpendingUnit(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                placeholder="Orn: Medya Birimi, Pergel Ekibi"
+              />
             </div>
           </div>
 
@@ -801,6 +972,56 @@ export default function AdminFinancialsPage() {
               />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Fatura No</label>
+              <input
+                value={formInvoiceNo}
+                onChange={(event) => setFormInvoiceNo(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                placeholder="Orn: FAT-2026-001"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Odeme Tarihi</label>
+              <input
+                type="date"
+                value={formPaymentDate}
+                onChange={(event) => setFormPaymentDate(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Odeme Yontemi</label>
+              <select
+                value={formPaymentMethod}
+                onChange={(event) => setFormPaymentMethod(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              >
+                <option value="">Secilmedi</option>
+                {Object.entries(paymentMethodLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Muhasebe Kodu</label>
+              <input
+                value={formAccountingCode}
+                onChange={(event) => setFormAccountingCode(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                placeholder="Orn: 770.01"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tutar (TL)</label>
               <input

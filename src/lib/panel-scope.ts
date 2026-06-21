@@ -6,7 +6,11 @@
 export type PanelNavUser = {
   role?: string;
   permission_scopes?: Record<string, { scope_type: string; scope_payload: Record<string, unknown> }>;
-  authorization_context?: { manageable_project_ids?: number[] };
+  authorization_context?: {
+    manageable_project_ids?: number[];
+    project_ids_by_special_module?: Record<string, number[]>;
+    user_special_modules?: string[];
+  };
 };
 
 export function manageableProjectCount(user: PanelNavUser | null | undefined): number {

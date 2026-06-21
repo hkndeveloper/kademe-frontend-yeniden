@@ -17,9 +17,12 @@ if (isProduction && !rawApiUrl && typeof window !== 'undefined') {
     console.warn('NEXT_PUBLIC_API_URL tanimli degil; API cagrilari mevcut origin /api uzerinden yapilacak.');
 }
 
+/** Dev'de `php artisan serve` tek istek alır; paralel çağrılar sıraya girer. DB yavaşsa 15s yetmeyebilir. */
+const apiTimeoutMs = isProduction ? 15_000 : 60_000;
+
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 15000,
+    timeout: apiTimeoutMs,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',

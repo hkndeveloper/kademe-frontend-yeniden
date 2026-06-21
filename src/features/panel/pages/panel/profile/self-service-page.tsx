@@ -1,10 +1,17 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { CheckCircle, Loader2, Lock, Save, UserCircle, Calendar, Send } from "lucide-react";
+import { Calendar, ExternalLink, Loader2, Lock, Save, Send, UserCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { useAuth } from "@/store/useAuth";
+import {
+  ProfileCard,
+  ProfileFieldLabel,
+  ProfileHero,
+  ProfileMessageBanner,
+  profileInputClass,
+} from "@/components/profile/profile-page-ui";
 
 interface ProfileForm {
   phone: string;
@@ -54,18 +61,21 @@ export default function ProfileSelfServicePage() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"success" | "error" | "neutral">("neutral");
 
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [leaveForm, setLeaveForm] = useState({ start_date: "", end_date: "", reason: "" });
   const [savingLeave, setSavingLeave] = useState(false);
   const [leaveMessage, setLeaveMessage] = useState("");
+  const [leaveTone, setLeaveTone] = useState<"success" | "error" | "neutral">("neutral");
+  const [passwordMessageTone, setPasswordMessageTone] = useState<"success" | "error" | "neutral">("neutral");
 
   const loadLeaves = async () => {
     try {
       const response = await api.get("/my-leave-requests");
-      setLeaves(response.data.leave_requests ?? []);
+      setLeaves(Array.isArray(response.data.leave_requests) ? response.data.leave_requests : []);
     } catch (error) {
-      console.error("İzinler yüklenemedi", error);
+      console.error("Izinler yuklenemedi", error);
     }
   };
 
@@ -85,6 +95,7 @@ export default function ProfileSelfServicePage() {
       } catch (error) {
         console.error("Profil yuklenemedi", error);
         setMessage("Profil bilgileri yuklenemedi.");
+        setMessageTone("error");
       } finally {
         setLoading(false);
       }
@@ -94,44 +105,47 @@ export default function ProfileSelfServicePage() {
   }, []);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      if (hasPermission("staff.leave.request")) {
-        void loadLeaves();
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
+    if (hasPermission("staff.leave.request")) {
+      void loadLeaves();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadLeaves stabil; hasPermission yeterli tetikleyici
   }, [hasPermission]);
 
   const handleProfileSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSavingProfile(true);
     setMessage("");
+    setMessageTone("neutral");
 
     try {
       await api.put("/user/profile", form);
       await fetchProfile();
       setMessage("Profil bilgileri guncellendi.");
+      setMessageTone("success");
     } catch (error) {
       console.error("Profil kaydedilemedi", error);
       setMessage("Profil bilgileri kaydedilemedi.");
+      setMessageTone("error");
     } finally {
       setSavingProfile(false);
     }
   };
 
-  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handlePasswordSubmitInner = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSavingPassword(true);
     setPasswordMessage("");
+    setPasswordMessageTone("neutral");
 
     try {
       await api.post("/user/change-password", passwordForm);
       setPasswordForm(emptyPassword);
       setPasswordMessage("Sifre guncellendi.");
+      setPasswordMessageTone("success");
     } catch (error) {
       console.error("Sifre guncellenemedi", error);
       setPasswordMessage("Sifre guncellenemedi.");
+      setPasswordMessageTone("error");
     } finally {
       setSavingPassword(false);
     }
@@ -141,15 +155,18 @@ export default function ProfileSelfServicePage() {
     event.preventDefault();
     setSavingLeave(true);
     setLeaveMessage("");
+    setLeaveTone("neutral");
 
     try {
       const response = await api.post("/leave-requests", leaveForm);
       setLeaves((prev) => [response.data.leave_request, ...prev]);
       setLeaveForm({ start_date: "", end_date: "", reason: "" });
-      setLeaveMessage("İzin talebi oluşturuldu.");
+      setLeaveMessage("Izin talebi olusturuldu.");
+      setLeaveTone("success");
     } catch (error) {
-      console.error("İzin talebi oluşturulamadı", error);
-      setLeaveMessage("İzin talebi oluşturulamadı. Tarihleri kontrol edin.");
+      console.error("Izin talebi olusturulamadi", error);
+      setLeaveMessage("Izin talebi olusturulamadi. Tarihleri kontrol edin.");
+      setLeaveTone("error");
     } finally {
       setSavingLeave(false);
     }
@@ -158,177 +175,273 @@ export default function ProfileSelfServicePage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-amber-500" />
+        <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-500">
-          <UserCircle className="h-7 w-7" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-black text-slate-900">Profilim</h1>
-          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Profil, sifre ve yetkiniz varsa izin talebi yonetimi
-          </p>
-        </div>
-      </div>
+    <div className="space-y-8 pb-8">
+      <ProfileHero
+        title="Profilim"
+        subtitle="Kisisel iletisim bilgileri, sifre ve yetkiniz varsa izin talepleri. Panel yetkileri action + scope ile yonetilir; bu sayfa dogrudan kullanici kaydini gunceller."
+        icon={UserCircle}
+        accent="amber"
+        actions={
+          <a
+            href="https://kademepuantaj.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-900 shadow-sm transition hover:bg-blue-100"
+          >
+            <Calendar className="h-4 w-4" aria-hidden />
+            Aylik puantaj
+            <ExternalLink className="h-3.5 w-3.5 opacity-70" aria-hidden />
+          </a>
+        }
+      />
 
-      <div className="flex items-center gap-4">
-        <a 
-          href="http://kademepuantaj.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-colors"
-        >
-          <Calendar className="h-5 w-5" />
-          Aylık Puantaj Sistemi
-        </a>
-      </div>
+      {message ? <ProfileMessageBanner type={messageTone}>{message}</ProfileMessageBanner> : null}
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
         <form onSubmit={handleProfileSubmit} className="xl:col-span-2">
-          <div className="glass-panel space-y-6 rounded-3xl p-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">Temel Bilgiler</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {user?.name} {user?.surname} ({user?.email})
-                </p>
-              </div>
-              <div className="rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-green-500">
-                <CheckCircle className="mr-1 inline h-3 w-3" />
+          <ProfileCard
+            title="Temel bilgiler"
+            description={`${user?.name ?? ""} ${user?.surname ?? ""} · ${user?.email ?? ""}`}
+          >
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
                 Hesap aktif
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div>
+                <ProfileFieldLabel label="Telefon" />
+                <input
+                  value={form.phone}
+                  onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  className={profileInputClass}
+                  placeholder="+90..."
+                />
+              </div>
+              <div>
+                <ProfileFieldLabel label="Dogum tarihi" />
+                <input
+                  value={form.birth_date}
+                  onChange={(e) => setForm((prev) => ({ ...prev, birth_date: e.target.value }))}
+                  type="date"
+                  className={profileInputClass}
+                />
+              </div>
+              <div>
+                <ProfileFieldLabel label="Birim / rol alani" hint="Personel kartindaki departman bilgisinden farkli olabilir." />
+                <input
+                  value={form.department}
+                  onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
+                  className={profileInputClass}
+                  placeholder="Birim"
+                />
+              </div>
+              <div>
+                <ProfileFieldLabel label="Sehir / memleket" />
+                <input
+                  value={form.hometown}
+                  onChange={(e) => setForm((prev) => ({ ...prev, hometown: e.target.value }))}
+                  className={profileInputClass}
+                  placeholder="Sehir"
+                />
+              </div>
+              <div>
+                <ProfileFieldLabel label="Universite" />
+                <input
+                  value={form.university}
+                  onChange={(e) => setForm((prev) => ({ ...prev, university: e.target.value }))}
+                  className={profileInputClass}
+                  placeholder="Universite"
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <input value={form.phone} onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500" placeholder="Telefon" />
-              <input value={form.birth_date} onChange={(e) => setForm((prev) => ({ ...prev, birth_date: e.target.value }))} type="date" className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500" />
-              <input value={form.department} onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500" placeholder="Birim" />
-              <input value={form.hometown} onChange={(e) => setForm((prev) => ({ ...prev, hometown: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500" placeholder="Sehir" />
-              <input value={form.university} onChange={(e) => setForm((prev) => ({ ...prev, university: e.target.value }))} className="rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500" placeholder="Universite" />
+            <div className="mt-5">
+              <ProfileFieldLabel label="Adres" />
+              <textarea
+                value={form.address}
+                onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+                className={`${profileInputClass} min-h-[120px]`}
+                placeholder="Acik adres"
+              />
             </div>
 
-            <textarea value={form.address} onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))} className="min-h-[120px] w-full rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500" placeholder="Adres" />
-
-            {message && <p className="text-sm text-muted-foreground">{message}</p>}
-
-            <button type="submit" disabled={savingProfile} className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 font-bold text-white">
+            <button
+              type="submit"
+              disabled={savingProfile}
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-amber-500/25 disabled:opacity-60"
+            >
               {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Profili Kaydet
+              Profili kaydet
             </button>
-          </div>
+          </ProfileCard>
         </form>
 
-        <form onSubmit={handlePasswordSubmit}>
-          <div className="glass-panel space-y-6 rounded-3xl p-8">
-            <div className="flex items-center gap-3">
-              <Lock className="h-5 w-5 text-amber-500" />
-              <h2 className="text-lg font-bold text-slate-900">Sifre Guncelle</h2>
+        <form onSubmit={handlePasswordSubmitInner}>
+          <ProfileCard title="Sifre guncelle" description="Mevcut sifrenizi dogrulayarak yeni sifre belirleyin.">
+            <div className="space-y-4">
+              <div>
+                <ProfileFieldLabel label="Mevcut sifre" />
+                <input
+                  type="password"
+                  value={passwordForm.current_password}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, current_password: e.target.value }))}
+                  className={profileInputClass}
+                  autoComplete="current-password"
+                />
+              </div>
+              <div>
+                <ProfileFieldLabel label="Yeni sifre" />
+                <input
+                  type="password"
+                  value={passwordForm.password}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, password: e.target.value }))}
+                  className={profileInputClass}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div>
+                <ProfileFieldLabel label="Yeni sifre tekrar" />
+                <input
+                  type="password"
+                  value={passwordForm.password_confirmation}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, password_confirmation: e.target.value }))}
+                  className={profileInputClass}
+                  autoComplete="new-password"
+                />
+              </div>
             </div>
 
-            <input
-              type="password"
-              value={passwordForm.current_password}
-              onChange={(e) => setPasswordForm((prev) => ({ ...prev, current_password: e.target.value }))}
-              className="w-full rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500"
-              placeholder="Mevcut sifre"
-            />
-            <input
-              type="password"
-              value={passwordForm.password}
-              onChange={(e) => setPasswordForm((prev) => ({ ...prev, password: e.target.value }))}
-              className="w-full rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500"
-              placeholder="Yeni sifre"
-            />
-            <input
-              type="password"
-              value={passwordForm.password_confirmation}
-              onChange={(e) => setPasswordForm((prev) => ({ ...prev, password_confirmation: e.target.value }))}
-              className="w-full rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500"
-              placeholder="Yeni sifre tekrar"
-            />
+            {passwordMessage ? (
+              <div className="mt-4">
+                <ProfileMessageBanner type={passwordMessageTone}>{passwordMessage}</ProfileMessageBanner>
+              </div>
+            ) : null}
 
-            {passwordMessage && <p className="text-sm text-muted-foreground">{passwordMessage}</p>}
-
-            <button type="submit" disabled={savingPassword} className="inline-flex items-center gap-2 rounded-xl border border-border px-6 py-3 font-bold transition-colors hover:bg-muted">
+            <button
+              type="submit"
+              disabled={savingPassword}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-60"
+            >
               {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-              Sifreyi Guncelle
+              Sifreyi guncelle
             </button>
-          </div>
+          </ProfileCard>
         </form>
       </div>
 
-      {/* LEAVE REQUESTS SECTION */}
       <PermissionGate
         permission="staff.leave.request"
         fallback={
-          <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 px-6 py-6 text-sm text-amber-100">
-            Izin talebi olusturma yetkiniz bulunmuyor.
-          </div>
+          <ProfileMessageBanner type="neutral">
+            Izin talebi olusturma yetkiniz yok (<code className="text-xs">staff.leave.request</code>).
+          </ProfileMessageBanner>
         }
       >
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-        <form onSubmit={handleLeaveSubmit} className="glass-panel space-y-6 rounded-3xl p-8 xl:col-span-1 h-max">
-          <div className="flex items-center gap-3">
-            <Calendar className="h-5 w-5 text-amber-500" />
-            <h2 className="text-lg font-bold text-slate-900">İzin Talep Et</h2>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Başlangıç</label>
-              <input type="date" required value={leaveForm.start_date} onChange={(e) => setLeaveForm(prev => ({ ...prev, start_date: e.target.value }))} className="w-full rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Bitiş</label>
-              <input type="date" required value={leaveForm.end_date} onChange={(e) => setLeaveForm(prev => ({ ...prev, end_date: e.target.value }))} className="w-full rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Gerekçe (İsteğe Bağlı)</label>
-              <textarea value={leaveForm.reason} onChange={(e) => setLeaveForm(prev => ({ ...prev, reason: e.target.value }))} className="h-24 w-full rounded-xl border border-border bg-input p-4 outline-none focus:ring-1 focus:ring-amber-500" placeholder="İzin gerekçesi..." />
-            </div>
-          </div>
-          {leaveMessage && <p className="text-sm text-amber-500">{leaveMessage}</p>}
-          <button type="submit" disabled={savingLeave} className="inline-flex w-full justify-center items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 font-bold text-black transition-colors hover:bg-amber-400">
-            {savingLeave ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Talep Gönder
-          </button>
-        </form>
-
-        <div className="glass-panel rounded-3xl p-8 xl:col-span-2">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">İzin Taleplerim</h2>
-          {leaves.length === 0 ? (
-            <div className="text-sm text-muted-foreground text-center py-8 border border-dashed border-white/10 rounded-2xl">Geçmiş izin talebiniz bulunmuyor.</div>
-          ) : (
-            <div className="space-y-4">
-              {leaves.map((leave) => (
-                <div key={leave.id} className="flex flex-col md:flex-row md:items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-4 gap-4">
-                  <div>
-                    <div className="font-bold text-slate-900">
-                      {new Date(leave.start_date).toLocaleDateString('tr-TR')} - {new Date(leave.end_date).toLocaleDateString('tr-TR')}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1 max-w-sm truncate" title={leave.reason || ''}>{leave.reason || 'Gerekçe belirtilmemiş'}</div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
-                      leave.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
-                      leave.status === 'approved' ? 'bg-green-500/10 text-green-500' :
-                      'bg-red-500/10 text-red-500'
-                    }`}>
-                      {leave.status === 'pending' ? 'Bekliyor' : leave.status === 'approved' ? 'Onaylandı' : 'Reddedildi'}
-                    </span>
-                    {leave.approver && <div className="text-[10px] text-muted-foreground">İşlem: {leave.approver.name} {leave.approver.surname}</div>}
-                  </div>
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+          <form onSubmit={handleLeaveSubmit} className="xl:col-span-1">
+            <ProfileCard title="Izin talep et" description="Tarih araligi ve istege bagli gerekce.">
+              <div className="space-y-4">
+                <div>
+                  <ProfileFieldLabel label="Baslangic" />
+                  <input
+                    type="date"
+                    required
+                    value={leaveForm.start_date}
+                    onChange={(e) => setLeaveForm((prev) => ({ ...prev, start_date: e.target.value }))}
+                    className={profileInputClass}
+                  />
                 </div>
-              ))}
-            </div>
-          )}
+                <div>
+                  <ProfileFieldLabel label="Bitis" />
+                  <input
+                    type="date"
+                    required
+                    value={leaveForm.end_date}
+                    onChange={(e) => setLeaveForm((prev) => ({ ...prev, end_date: e.target.value }))}
+                    className={profileInputClass}
+                  />
+                </div>
+                <div>
+                  <ProfileFieldLabel label="Gerekce (istege bagli)" />
+                  <textarea
+                    value={leaveForm.reason}
+                    onChange={(e) => setLeaveForm((prev) => ({ ...prev, reason: e.target.value }))}
+                    className={`${profileInputClass} min-h-[96px]`}
+                    placeholder="Izin gerekcesi..."
+                  />
+                </div>
+              </div>
+              {leaveMessage ? (
+                <div className="mt-4">
+                  <ProfileMessageBanner type={leaveTone}>{leaveMessage}</ProfileMessageBanner>
+                </div>
+              ) : null}
+              <button
+                type="submit"
+                disabled={savingLeave}
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-md disabled:opacity-60"
+              >
+                {savingLeave ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Talep gonder
+              </button>
+            </ProfileCard>
+          </form>
+
+          <div className="xl:col-span-2">
+            <ProfileCard title="Izin taleplerim" description="Son talepler listenin basinda.">
+              {leaves.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500">
+                  Gecmis izin talebiniz bulunmuyor.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {leaves.map((leave) => (
+                    <div
+                      key={leave.id}
+                      className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div>
+                        <div className="font-semibold text-slate-900">
+                          {new Date(leave.start_date).toLocaleDateString("tr-TR")} –{" "}
+                          {new Date(leave.end_date).toLocaleDateString("tr-TR")}
+                        </div>
+                        <div className="mt-1 max-w-xl truncate text-xs text-slate-500" title={leave.reason ?? ""}>
+                          {leave.reason || "Gerekce belirtilmemis"}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-start gap-1 md:items-end">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${
+                            leave.status === "pending"
+                              ? "bg-amber-100 text-amber-900"
+                              : leave.status === "approved"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {leave.status === "pending" ? "Bekliyor" : leave.status === "approved" ? "Onaylandi" : "Reddedildi"}
+                        </span>
+                        {leave.approver ? (
+                          <span className="text-[10px] text-slate-500">
+                            Islem: {leave.approver.name} {leave.approver.surname}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ProfileCard>
+          </div>
         </div>
-      </div>
       </PermissionGate>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   Download,
@@ -15,6 +15,7 @@ import {
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface TicketReply {
@@ -37,6 +38,8 @@ interface Ticket {
   category: string;
   status: "open" | "in_progress" | "resolved" | "closed";
   created_at: string;
+  attachment_path?: string | null;
+  attachment_download_url?: string | null;
   user?: {
     name: string;
     surname: string;
@@ -50,7 +53,15 @@ interface Ticket {
     role: string;
   };
   project?: { id: number; name?: string } | null;
+  period?: PeriodOption | null;
   replies?: TicketReply[];
+}
+
+interface Project {
+  id: number;
+  name: string;
+  periods?: PeriodOption[];
+  active_period?: PeriodOption | null;
 }
 
 interface StaffUser {
@@ -78,9 +89,18 @@ export default function AdminSupportPage() {
   const { hasPermission, canAccessProject } = usePermissions();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [staff, setStaff] = useState<StaffUser[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [filterProjectId, setFilterProjectId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("project_id") ?? "";
+  });
+  const [filterPeriodId, setFilterPeriodId] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("period_id") ?? "all";
+  });
   const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [messageByTicket, setMessageByTicket] = useState<Record<number, string>>({});
@@ -88,6 +108,11 @@ export default function AdminSupportPage() {
   const [assigneeByTicket, setAssigneeByTicket] = useState<Record<number, string>>({});
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const filterProject = useMemo(
+    () => projects.find((project) => String(project.id) === filterProjectId),
+    [filterProjectId, projects]
+  );
+  const filterPeriods = useMemo(() => periodsForProject(filterProject), [filterProject]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -98,8 +123,13 @@ export default function AdminSupportPage() {
         params: {
           status: statusFilter || undefined,
           category: categoryFilter || undefined,
+          project_id: filterProjectId || undefined,
+          period_id: filterPeriodId !== "all" ? filterPeriodId : undefined,
           search: search || undefined,
         },
+      });
+      const projectPromise = api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+        params: { permission: "support.view" },
       });
       const staffPromise = hasPermission("users.view")
         ? api.get("/panel/users")
@@ -107,9 +137,10 @@ export default function AdminSupportPage() {
           ? api.get<{ users: StaffUser[] }>("/panel/support/assignable-users")
           : Promise.resolve({ data: { users: [] as StaffUser[] } });
 
-      const [ticketResponse, staffResponse] = await Promise.all([ticketPromise, staffPromise]);
+      const [ticketResponse, projectResponse, staffResponse] = await Promise.all([ticketPromise, projectPromise, staffPromise]);
 
       setTickets(ticketResponse.data.tickets?.data ?? []);
+      setProjects(projectResponse.data.projects ?? []);
       const staffPayload = staffResponse.data.users;
       setStaff(
         Array.isArray(staffPayload)
@@ -122,7 +153,7 @@ export default function AdminSupportPage() {
     } finally {
       setLoading(false);
     }
-  }, [categoryFilter, hasPermission, search, statusFilter]);
+  }, [categoryFilter, filterPeriodId, filterProjectId, hasPermission, search, statusFilter]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -150,7 +181,7 @@ export default function AdminSupportPage() {
         formData.append("attachment", attachmentByTicket[ticketId] as File);
       }
 
-      await api.post(`/tickets/${ticketId}/reply`, formData, {
+      await api.post(`/panel/support/tickets/${ticketId}/reply`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMessageByTicket((current) => ({ ...current, [ticketId]: "" }));
@@ -192,6 +223,36 @@ export default function AdminSupportPage() {
     } catch (error) {
       console.error("Ek dosya indirilemedi", error);
       setErrorMessage("Ek dosya indirilemedi.");
+    }
+  };
+
+  const handleDownloadTicketAttachment = async (ticket: Ticket) => {
+    if (!ticket.attachment_download_url) return;
+
+    try {
+      const response = await api.get(ticket.attachment_download_url, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Talep eki indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `destek_talebi_ek_${ticket.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Talep eki indirilemedi", error);
+      setErrorMessage("Talep eki indirilemedi.");
     }
   };
 
@@ -255,6 +316,8 @@ export default function AdminSupportPage() {
             params={{
               status: statusFilter || undefined,
               category: categoryFilter || undefined,
+              project_id: filterProjectId || undefined,
+              period_id: filterPeriodId !== "all" ? filterPeriodId : undefined,
               search: search || undefined,
             }}
             buttonLabel="Kayitlari Disa Aktar"
@@ -274,7 +337,7 @@ export default function AdminSupportPage() {
         </div>
       )}
 
-      <div className="glass-panel flex flex-col gap-4 rounded-3xl p-6 md:flex-row">
+      <div className="glass-panel grid grid-cols-1 gap-4 rounded-3xl p-6 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.8fr_0.8fr_auto]">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -285,6 +348,39 @@ export default function AdminSupportPage() {
             placeholder="Konu, mesaj, ad veya e-posta ara"
           />
         </div>
+
+        <select
+          value={filterProjectId}
+          onChange={(event) => {
+            const value = event.target.value;
+            const project = projects.find((item) => String(item.id) === value);
+            setFilterProjectId(value);
+            setFilterPeriodId(value ? defaultPeriodIdForProject(project) || "all" : "all");
+          }}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+        >
+          <option value="">Tum projeler</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={filterPeriodId}
+          onChange={(event) => setFilterPeriodId(event.target.value)}
+          disabled={!filterProjectId || filterPeriods.length === 0}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <option value="all">{filterProjectId ? "Tum donemler" : "Proje secince donem"}</option>
+          {filterPeriods.map((period) => (
+            <option key={period.id} value={period.id}>
+              {period.name}
+              {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+            </option>
+          ))}
+        </select>
 
         <select
           value={categoryFilter}
@@ -358,11 +454,28 @@ export default function AdminSupportPage() {
                         <span className="font-bold text-emerald-300/90">{ticket.project.name}</span>
                       </>
                     ) : null}
+                    {ticket.period?.name ? (
+                      <>
+                        <span className="mx-2">•</span>
+                        <span className="font-bold text-amber-300/90">{ticket.period.name}</span>
+                      </>
+                    ) : null}
                   </div>
 
                   <div className="rounded-2xl border border-white/5 bg-black/30 p-4 text-sm text-gray-300">
                     {ticket.message}
                   </div>
+
+                  {ticket.attachment_download_url ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadTicketAttachment(ticket)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Talep Eki
+                    </button>
+                  ) : null}
 
                   {!!ticket.replies?.length && (
                     <div className="space-y-3 border-l-2 border-white/10 pl-4">

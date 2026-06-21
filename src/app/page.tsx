@@ -16,8 +16,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import api from "@/lib/api/axios";
+import { getCachedHomepage, getCachedPublicProjects, getCachedSiteConfig } from "@/lib/public-api-cache";
 import { homePathForUser } from "@/lib/role-home";
-import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
+import { defaultSiteSettings, SiteSettingsPayload } from "@/lib/site-config";
 import { useAuth } from "@/store/useAuth";
 
 interface HomeProject {
@@ -73,22 +74,34 @@ export default function HomePage() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        try {
+          const homepageResponse = await getCachedHomepage();
+          setProjects((Array.isArray(homepageResponse.projects) ? homepageResponse.projects : []) as HomeProject[]);
+          setBlogs((Array.isArray(homepageResponse.blogs) ? homepageResponse.blogs : []) as HomeBlog[]);
+          setActivities((Array.isArray(homepageResponse.programs) ? homepageResponse.programs : []) as HomeProgram[]);
+          setSiteSettings(homepageResponse.settings ?? null);
+          setComputedStats(homepageResponse.computed_homepage_stats ?? []);
+          return;
+        } catch (homepageError) {
+          console.error("Anasayfa toplu verileri cekilemedi, eski akis deneniyor", homepageError);
+        }
+
         const [projectResponse, blogResponse, activitiesResponse, configResponse] = await Promise.all([
-          api.get<{ projects: HomeProject[] }>("/projects").catch(() => ({ data: { projects: [] as HomeProject[] } })),
+          getCachedPublicProjects().catch(() => [] as HomeProject[]),
           api.get<{ blogs: HomeBlog[] | { data?: HomeBlog[] } }>("/blogs").catch(() => ({ data: { blogs: [] as HomeBlog[] } })),
           api.get<{ programs: HomeProgram[] | { data?: HomeProgram[] } }>("/activities", { params: { per_page: 6 } }).catch(() => ({ data: { programs: [] as HomeProgram[] } })),
-          api.get<SiteSettingsResponse>("/site-config"),
+          getCachedSiteConfig(),
         ]);
 
-        setProjects(projectResponse.data.projects ?? []);
+        setProjects(projectResponse);
 
         const rawBlogs = blogResponse.data.blogs;
         setBlogs(Array.isArray(rawBlogs) ? rawBlogs : rawBlogs?.data ?? []);
 
         const rawActivities = activitiesResponse.data.programs;
         setActivities(Array.isArray(rawActivities) ? rawActivities : rawActivities?.data ?? []);
-        setSiteSettings(configResponse.data.settings ?? null);
-        setComputedStats(configResponse.data.computed_homepage_stats ?? []);
+        setSiteSettings(configResponse.settings ?? null);
+        setComputedStats(configResponse.computed_homepage_stats ?? []);
       } catch (error) {
         console.error("Anasayfa verileri cekilemedi", error);
       } finally {
@@ -146,13 +159,6 @@ export default function HomePage() {
           )
           .slice(0, 3)
       : blogs.slice(0, 3);
-  const footerProjectLinks =
-    resolvedSettings.navigation.footer_project_links.length > 0
-      ? resolvedSettings.navigation.footer_project_links
-      : featuredProjects.map((project) => ({
-          label: project.name,
-          href: `/projects/${project.slug}`,
-        }));
   const visibleBlockOrder = resolvedSettings.homepage.block_order.filter((block) => resolvedSettings.homepage.block_visibility[block]);
 
   if (loading) {
@@ -190,7 +196,7 @@ export default function HomePage() {
 
   const sectionMap: Record<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify", ReactNode> = {
     hero: (
-      <section className="relative flex min-h-[92vh] items-center justify-center overflow-hidden pt-20">
+      <section className="relative flex min-h-[calc(100svh-4rem)] items-center justify-center overflow-hidden px-0 py-16 pt-20 sm:min-h-[92vh]">
         {resolvedSettings.homepage.hero_background_image_url ? (
           <Image
             src={resolvedSettings.homepage.hero_background_image_url}
@@ -203,11 +209,11 @@ export default function HomePage() {
         ) : null}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_28%,oklch(0.74_0.18_45/0.16),transparent_42%),radial-gradient(circle_at_80%_76%,oklch(0.56_0.12_255/0.12),transparent_48%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/78 to-background" />
-        <div className="container relative z-10 mx-auto px-6 text-center">
+        <div className="container relative z-10 mx-auto px-4 text-center sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary"
+            className="mb-6 inline-flex max-w-full items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-bold text-primary sm:mb-8 sm:text-sm"
           >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
@@ -220,7 +226,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-8 text-5xl font-black leading-[1.03] tracking-[-0.03em] md:text-8xl"
+            className="mb-6 text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl md:mb-8 md:text-8xl"
           >
             {resolvedSettings.homepage.hero_title_line_1}
             <br />
@@ -233,7 +239,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mx-auto mb-12 max-w-3xl text-lg leading-relaxed text-muted-foreground md:text-xl"
+            className="mx-auto mb-8 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg md:mb-12 md:text-xl"
           >
             {resolvedSettings.homepage.hero_description}
           </motion.p>
@@ -242,12 +248,12 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex flex-wrap justify-center gap-4"
+            className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4"
           >
             {isAuthenticated ? (
               <Link
                 href={dashboardLink}
-                className="group flex items-center gap-2 rounded-2xl bg-primary px-10 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30"
+                className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 sm:px-10"
               >
                 Panelime Git
                 <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
@@ -256,14 +262,14 @@ export default function HomePage() {
               <>
                 <Link
                   href={resolvedSettings.homepage.hero_primary_href}
-                  className="group flex items-center gap-2 rounded-2xl bg-primary px-10 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30"
+                  className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 sm:px-10"
                 >
                   {resolvedSettings.homepage.hero_primary_label}
                   <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
                 <Link
                   href={resolvedSettings.homepage.hero_secondary_href}
-                  className="rounded-2xl border border-border/80 bg-card px-10 py-4 font-bold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/50 hover:shadow-md"
+                  className="inline-flex items-center justify-center rounded-2xl border border-border/80 bg-card px-8 py-4 font-bold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/50 hover:shadow-md sm:px-10"
                 >
                   {resolvedSettings.homepage.hero_secondary_label}
                 </Link>
@@ -274,8 +280,8 @@ export default function HomePage() {
       </section>
     ),
     intro: (
-      <section className="py-24">
-        <div className="container mx-auto px-6">
+      <section className="py-14 sm:py-24">
+        <div className="container mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {resolvedSettings.homepage.intro_cards.map((card, index) => (
               <motion.div
@@ -284,7 +290,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="glass-panel group overflow-hidden rounded-[32px] border border-border/80 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5"
+                className="glass-panel group overflow-hidden rounded-2xl border border-border/80 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5 sm:rounded-[32px]"
               >
                 <div className="relative h-52 w-full bg-muted/30">
                   {card.image_url ? (
@@ -293,8 +299,8 @@ export default function HomePage() {
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/15 to-accent/15" />
                   )}
                 </div>
-                <div className="space-y-4 p-8">
-                  <h3 className="text-2xl font-black text-foreground">{card.title}</h3>
+                <div className="space-y-4 p-5 sm:p-8">
+                  <h3 className="text-xl font-black text-foreground sm:text-2xl">{card.title}</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">{card.description}</p>
                   <Link href={card.cta_href} className="group/cta inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/30">
                     {card.cta_label}
@@ -308,15 +314,15 @@ export default function HomePage() {
       </section>
     ),
     stats: (
-      <section className="border-y border-border/40 bg-muted/30 py-24">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 gap-12 lg:grid-cols-4">
+      <section className="border-y border-border/40 bg-muted/30 py-14 sm:py-24">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
             {stats.map((stat) => (
-              <motion.div key={stat.label} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="group rounded-3xl border border-border/60 bg-card/60 px-4 py-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg hover:shadow-slate-900/5">
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
-                  <stat.icon className="h-8 w-8" />
+              <motion.div key={stat.label} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="group rounded-2xl border border-border/60 bg-card/60 px-3 py-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg hover:shadow-slate-900/5 sm:rounded-3xl sm:px-4 sm:py-6">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110 sm:mb-6 sm:h-16 sm:w-16">
+                  <stat.icon className="h-6 w-6 sm:h-8 sm:w-8" />
                 </div>
-                <h3 className="mb-2 text-4xl font-black">{stat.value}</h3>
+                <h3 className="mb-2 text-2xl font-black sm:text-4xl">{stat.value}</h3>
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{stat.label}</p>
               </motion.div>
             ))}
@@ -325,13 +331,13 @@ export default function HomePage() {
       </section>
     ),
     projects: (
-      <section className="relative overflow-hidden py-32">
+      <section className="relative overflow-hidden py-16 sm:py-32">
         <div className="absolute inset-0 origin-right -skew-y-3 transform bg-primary/5" />
-        <div className="container relative mx-auto px-6">
-          <div className="mb-20 flex flex-col justify-between gap-8 md:flex-row md:items-end">
+        <div className="container relative mx-auto px-4 sm:px-6">
+          <div className="mb-10 flex flex-col justify-between gap-5 md:mb-20 md:flex-row md:items-end">
             <div className="max-w-2xl">
-              <h2 className="mb-6 text-4xl font-black md:text-6xl">{resolvedSettings.homepage.projects_title}</h2>
-              <p className="text-lg text-muted-foreground">{resolvedSettings.homepage.projects_description}</p>
+              <h2 className="mb-4 text-3xl font-black sm:text-4xl md:mb-6 md:text-6xl">{resolvedSettings.homepage.projects_title}</h2>
+              <p className="text-base text-muted-foreground sm:text-lg">{resolvedSettings.homepage.projects_description}</p>
             </div>
             <Link href="/projects" className="flex items-center gap-2 font-bold text-primary hover:underline">
               Tumunu Gor
@@ -354,7 +360,7 @@ export default function HomePage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: index * 0.1 }}
-                    className="glass-panel group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[32px] border border-border/70 p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-900/10"
+                    className="glass-panel group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/70 p-5 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-900/10 sm:rounded-[32px] sm:p-8"
                   >
                     <div className={`absolute right-0 top-0 h-32 w-32 bg-gradient-to-br ${projectColors[index % projectColors.length]} opacity-0 blur-3xl transition-opacity group-hover:opacity-10`} />
                     <h3 className="mb-4 text-2xl font-bold">{project.name}</h3>
@@ -373,11 +379,11 @@ export default function HomePage() {
       </section>
     ),
     activities: (
-      <section className="bg-muted/20 py-32">
-        <div className="container mx-auto px-6">
-          <div className="mb-16 flex flex-col justify-between gap-8 md:flex-row md:items-end">
+      <section className="bg-muted/20 py-16 sm:py-32">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="mb-10 flex flex-col justify-between gap-5 md:mb-16 md:flex-row md:items-end">
             <div className="max-w-2xl">
-              <h2 className="mb-4 text-4xl font-black">{resolvedSettings.homepage.activities_title}</h2>
+              <h2 className="mb-4 text-3xl font-black sm:text-4xl">{resolvedSettings.homepage.activities_title}</h2>
               <p className="text-muted-foreground">{resolvedSettings.homepage.activities_description}</p>
             </div>
             <Link href="/activities" className="flex items-center gap-2 font-bold text-primary hover:underline">
@@ -420,29 +426,29 @@ export default function HomePage() {
       </section>
     ),
     about: (
-      <section className="relative overflow-hidden py-32">
-        <div className="container mx-auto grid grid-cols-1 gap-10 px-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <section className="relative overflow-hidden py-16 sm:py-32">
+        <div className="container mx-auto grid grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-6">
-            <div className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Hakkimizda</div>
-            <h2 className="text-4xl font-black md:text-6xl">{resolvedSettings.homepage.about_teaser_title}</h2>
-            <p className="max-w-3xl text-lg leading-relaxed text-muted-foreground">
+            <div className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Hakkımızda</div>
+            <h2 className="text-3xl font-black sm:text-4xl md:text-6xl">{resolvedSettings.homepage.about_teaser_title}</h2>
+            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               {resolvedSettings.homepage.about_teaser_description}
             </p>
             <div className="flex flex-wrap gap-4">
               <Link href="/about" className="group flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-primary/30">
-                Bizi Taniyin
+                Bizi Tanıyın
                 <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
               <Link
                 href="/contact"
                 className="rounded-2xl border border-border/80 bg-card px-8 py-4 font-bold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md"
               >
-                Iletisime Gecin
+                İletişime Geçin
               </Link>
             </div>
           </div>
 
-          <div className="glass-panel overflow-hidden rounded-[40px] border border-border/40">
+          <div className="glass-panel overflow-hidden rounded-3xl border border-border/40 sm:rounded-[40px]">
             <div className="relative h-56 w-full bg-muted/30">
               {resolvedSettings.homepage.about_teaser_image_url ? (
                 <Image
@@ -475,12 +481,12 @@ export default function HomePage() {
       </section>
     ),
     blog: (
-      <section className="bg-muted/20 py-32">
-        <div className="container mx-auto mb-16 px-6 text-center">
-          <h2 className="mb-4 text-4xl font-black">{resolvedSettings.homepage.blog_title}</h2>
-          <p className="text-muted-foreground">{resolvedSettings.homepage.blog_description}</p>
+      <section className="bg-muted/20 py-16 sm:py-32">
+        <div className="container mx-auto mb-10 px-4 text-center sm:mb-16 sm:px-6">
+          <h2 className="mb-4 text-3xl font-black sm:text-4xl">{resolvedSettings.homepage.blog_title}</h2>
+        <p className="text-muted-foreground">{resolvedSettings.homepage.blog_description}</p>
         </div>
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-4 sm:px-6">
           {loading ? (
             <div className="flex justify-center py-10">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -534,18 +540,18 @@ export default function HomePage() {
       </section>
     ),
     newsletter: (
-      <section className="py-28">
-        <div className="container mx-auto px-6">
-          <div className="glass-panel rounded-[40px] border border-primary/20 p-10 md:p-14">
+      <section className="py-16 sm:py-28">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="glass-panel rounded-3xl border border-primary/20 p-5 sm:rounded-[40px] sm:p-10 md:p-14">
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_0.9fr] lg:items-center">
               <div>
                 <div className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">E-Bulten</div>
-                <h2 className="text-4xl font-black md:text-5xl">{resolvedSettings.homepage.newsletter_title}</h2>
-                <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+                <h2 className="text-3xl font-black sm:text-4xl md:text-5xl">{resolvedSettings.homepage.newsletter_title}</h2>
+                <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
                   {resolvedSettings.homepage.newsletter_description}
                 </p>
               </div>
-              <div className="space-y-4 rounded-[32px] border border-border/80 bg-muted/30 p-6">
+              <div className="space-y-4 rounded-2xl border border-border/80 bg-muted/30 p-4 sm:rounded-[32px] sm:p-6">
                 <input
                   value={newsletterName}
                   onChange={(event) => setNewsletterName(event.target.value)}
@@ -578,9 +584,9 @@ export default function HomePage() {
       </section>
     ),
     certificate_verify: (
-      <section className="pb-28">
-        <div className="container mx-auto px-6">
-          <div className="glass-panel rounded-[34px] border border-primary/20 p-8 md:p-10">
+      <section className="pb-16 sm:pb-28">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="glass-panel rounded-3xl border border-primary/20 p-5 sm:rounded-[34px] sm:p-8 md:p-10">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div className="max-w-3xl">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">

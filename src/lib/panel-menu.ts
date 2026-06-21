@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { shouldShowMyProjectNav, shouldShowProjectsListNav, type PanelNavUser } from "@/lib/panel-scope";
+import type { PanelModule } from "@/store/useAuth";
 
 /**
  * Panel menü tek kaynağı. Görünürlük `useAuth().hasPermission` ile belirlenir; bu liste
@@ -54,11 +55,14 @@ export type PanelMenuItem = {
 
 export const PANEL_MENU_SECTIONS: PanelMenuSectionDef[] = [
   { id: "overview", label: "Ozet", order: 0 },
-  { id: "operations", label: "Operasyon", order: 1 },
-  { id: "organization", label: "Yonetim ve kisiler", order: 2 },
-  { id: "content", label: "Icerik ve iletisim", order: 3 },
-  { id: "system", label: "Sistem", order: 4 },
-  { id: "account", label: "Hesap", order: 5 },
+  { id: "projects", label: "Projeler ve programlar", order: 1 },
+  { id: "operations", label: "Operasyon", order: 2 },
+  { id: "people", label: "Yonetim ve kisiler", order: 3 },
+  { id: "organization", label: "Yonetim ve kisiler", order: 3 },
+  { id: "communication", label: "Icerik ve iletisim", order: 4 },
+  { id: "content", label: "Icerik ve iletisim", order: 4 },
+  { id: "system", label: "Sistem", order: 5 },
+  { id: "account", label: "Hesap", order: 6 },
 ];
 
 export const unifiedPanelMenu: PanelMenuItem[] = [
@@ -294,6 +298,15 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     order: 40,
   },
   {
+    id: "motivation",
+    label: "Motivasyon",
+    href: "/panel/motivation",
+    icon: Sparkles,
+    anyPermissions: ["motivation.view", "motivation.manage"],
+    sectionId: "content",
+    order: 45,
+  },
+  {
     id: "newsletter",
     label: "E-Bulten",
     href: "/panel/newsletter",
@@ -365,11 +378,12 @@ function itemIsVisible(
 
   if (!allowed) return false;
   if (item.id === "projects") return shouldShowProjectsListNav(user, hasPermission);
-  if (item.id === "my-project") return shouldShowMyProjectNav(user, hasPermission);
+  if (item.id === "my-project" || item.id === "my_project") return shouldShowMyProjectNav(user, hasPermission);
   if (item.id === "staff") return user?.permission_scopes?.["staff.view"]?.scope_type === "all";
   if (item.id === "members") return user?.permission_scopes?.["staff.view"]?.scope_type !== "all";
-  if (item.id === "permission-matrix") return user?.permission_scopes?.["permissions.matrix.view"]?.scope_type === "all";
+  if (item.id === "permission-matrix" || item.id === "permission_matrix") return user?.permission_scopes?.["permissions.matrix.view"]?.scope_type === "all";
   if (item.id === "content") return !!user?.permission_scopes?.["content.view"];
+  if (item.id === "motivation") return !!user?.permission_scopes?.["motivation.view"] || !!user?.permission_scopes?.["motivation.manage"];
   if (item.id === "settings") {
     return (
       user?.permission_scopes?.["settings.view"]?.scope_type === "all" ||
@@ -377,27 +391,107 @@ function itemIsVisible(
     );
   }
   if (item.id === "newsletter") return !!user?.permission_scopes?.["newsletter.view"];
-  if (item.id === "kvkk-forget") return user?.permission_scopes?.["users.update"]?.scope_type === "all";
-  if (item.id === "assistant") return !!user?.permission_scopes?.["chatbot.view"] || !!user?.permission_scopes?.["chatbot.manage"];
+  if (item.id === "kvkk-forget" || item.id === "kvkk_forget") return user?.permission_scopes?.["users.update"]?.scope_type === "all";
+  if (item.id === "assistant" || item.id === "chatbot") return !!user?.permission_scopes?.["chatbot.view"] || !!user?.permission_scopes?.["chatbot.manage"];
   if (item.id === "kpd") {
+    const kpdProjectIds = user?.authorization_context?.project_ids_by_special_module?.kpd_appointments ?? [];
+    const hasGlobalKpdScope =
+      user?.permission_scopes?.["kpd.appointments.view"]?.scope_type === "all" ||
+      user?.permission_scopes?.["kpd.reports.view"]?.scope_type === "all" ||
+      user?.permission_scopes?.["kpd.appointments.manage"]?.scope_type === "all" ||
+      user?.permission_scopes?.["kpd.reports.create"]?.scope_type === "all" ||
+      user?.permission_scopes?.["kpd.reports.delete"]?.scope_type === "all";
+    const hasKpdProjectScope =
+      hasGlobalKpdScope ||
+      (user?.authorization_context?.manageable_project_ids ?? []).some((projectId) => kpdProjectIds.includes(Number(projectId)));
+
     return (
-      !!user?.permission_scopes?.["kpd.appointments.view"] ||
-      !!user?.permission_scopes?.["kpd.reports.view"] ||
-      !!user?.permission_scopes?.["kpd.appointments.manage"] ||
-      !!user?.permission_scopes?.["kpd.reports.create"] ||
-      !!user?.permission_scopes?.["kpd.reports.delete"]
+      hasKpdProjectScope &&
+      (
+        !!user?.permission_scopes?.["kpd.appointments.view"] ||
+        !!user?.permission_scopes?.["kpd.reports.view"] ||
+        !!user?.permission_scopes?.["kpd.appointments.manage"] ||
+        !!user?.permission_scopes?.["kpd.reports.create"] ||
+        !!user?.permission_scopes?.["kpd.reports.delete"]
+      )
     );
   }
   return true;
 }
 
 /** Sidebar: izinlere göre filtrelenmiş, bölüm ve sıraya göre gruplanmış menü */
+const iconByManifestName: Record<string, LucideIcon> = {
+  "layout-dashboard": Activity,
+  "folder-kanban": Layers,
+  "calendar-range": Database,
+  "calendar-days": CalendarDays,
+  calendar: CalendarDays,
+  "clipboard-list": FileStack,
+  "heart-handshake": Handshake,
+  wallet: CreditCard,
+  inbox: Mail,
+  "life-buoy": LifeBuoy,
+  "file-check": FileStack,
+  archive: Database,
+  "badge-check": Award,
+  megaphone: Bell,
+  newspaper: Database,
+  users: Users,
+  "user-cog": UserCog,
+  "shield-check": ShieldAlert,
+  settings: Settings,
+  "list-checks": ScrollText,
+  bot: Sparkles,
+  stethoscope: HeartPulse,
+  "briefcase-business": Briefcase,
+  "folder-open": Layers,
+  "id-card": UserCircle,
+  mail: Mail,
+  "messages-square": Mail,
+  "shield-alert": ShieldAlert,
+  sparkles: Sparkles,
+  "user-circle": UserCircle,
+};
+
+function sectionForManifest(section: string): PanelMenuSectionDef {
+  return PANEL_MENU_SECTIONS.find((item) => item.id === section) ?? {
+    id: section,
+    label: section.replaceAll("_", " "),
+    order: 99,
+  };
+}
+
+function panelModuleToMenuItem(module: PanelModule): PanelMenuItem | null {
+  if (module.panel_type !== "authority" || !module.href) {
+    return null;
+  }
+
+  const viewPermissions = module.view_permissions ?? [];
+
+  return {
+    id: module.id,
+    label: module.label,
+    href: module.href,
+    icon: iconByManifestName[module.icon ?? ""] ?? Activity,
+    permission: viewPermissions.length === 1 ? viewPermissions[0] : undefined,
+    anyPermissions: viewPermissions.length > 1 ? viewPermissions : undefined,
+    sectionId: module.section,
+    order: module.order,
+  };
+}
+
 export function getVisiblePanelMenuGrouped(
   hasPermission: (permission: string) => boolean,
   hasAnyPermission: (permissions: string[]) => boolean,
-  user: PanelNavUser | null
+  user: PanelNavUser | null,
+  panelModules?: PanelModule[]
 ): Array<{ section: PanelMenuSectionDef; items: PanelMenuItem[] }> {
-  const visible = unifiedPanelMenu.filter((item) => itemIsVisible(item, hasPermission, hasAnyPermission, user));
+  const sourceItems = panelModules
+    ? panelModules
+        .map(panelModuleToMenuItem)
+        .filter((item): item is PanelMenuItem => item !== null)
+    : unifiedPanelMenu;
+  const visible = sourceItems.filter((item) => itemIsVisible(item, hasPermission, hasAnyPermission, user));
 
   const bySection = new Map<string, PanelMenuItem[]>();
   for (const item of visible) {
@@ -411,11 +505,12 @@ export function getVisiblePanelMenuGrouped(
   }
 
   const sectionById = new Map(PANEL_MENU_SECTIONS.map((s) => [s.id, s]));
+  const sections = Array.from(bySection.keys())
+    .map((sectionId) => sectionById.get(sectionId) ?? sectionForManifest(sectionId))
+    .sort((a, b) => a.order - b.order);
 
-  return PANEL_MENU_SECTIONS.filter((s) => bySection.has(s.id))
-    .sort((a, b) => a.order - b.order)
-    .map((section) => ({
-      section: sectionById.get(section.id) ?? section,
-      items: bySection.get(section.id) ?? [],
-    }));
+  return sections.map((section) => ({
+    section: sectionById.get(section.id) ?? section,
+    items: bySection.get(section.id) ?? [],
+  }));
 }

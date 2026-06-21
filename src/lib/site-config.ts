@@ -95,6 +95,26 @@ export interface SiteSettingsPayload {
     journey_title: string;
     journey_text: string;
   };
+  blog_page: {
+    badge_label: string;
+    title: string;
+    description: string;
+    search_placeholder: string;
+    empty_text: string;
+    read_more_label: string;
+    detail_badge_label: string;
+    detail_back_label: string;
+    detail_empty_content: string;
+  };
+  faq_page: {
+    title: string;
+    description: string;
+    empty_text: string;
+    contact_title: string;
+    contact_description: string;
+    contact_cta_label: string;
+    contact_cta_href: string;
+  };
 }
 
 export interface SiteSettingsResponse {
@@ -105,7 +125,7 @@ export interface SiteSettingsResponse {
 export const defaultSiteSettings: SiteSettingsPayload = {
   general: {
     site_name: "KADEME",
-    site_tagline: "Gelecegin Liderlik Okulu",
+    site_tagline: "Geleceğin Liderlik Okulu",
   },
   contact: {
     contact_email: "info@kademe.org",
@@ -122,20 +142,20 @@ export const defaultSiteSettings: SiteSettingsPayload = {
   navigation: {
     header_links: [
       { label: "Ana Sayfa", href: "/" },
-      { label: "Hakkimizda", href: "/about" },
+      { label: "Hakkımızda", href: "/about" },
       { label: "Faaliyetler", href: "/activities" },
       { label: "Blog", href: "/blog" },
       { label: "SSS", href: "/faq" },
-      { label: "Iletisim", href: "/contact" },
+      { label: "İletişim", href: "/contact" },
       { label: "Sertifika Sorgula", href: "/certificates/verify" },
     ],
-    header_login_label: "Giris Yap",
-    header_register_label: "Basvur",
+    header_login_label: "Giriş Yap",
+    header_register_label: "Başvur",
     footer_quick_links: [
-      { label: "Hakkimizda", href: "/about" },
+      { label: "Hakkımızda", href: "/about" },
       { label: "Projelerimiz", href: "/projects" },
       { label: "SSS", href: "/faq" },
-      { label: "Iletisim", href: "/contact" },
+      { label: "İletişim", href: "/contact" },
     ],
     footer_project_links: [],
   },
@@ -152,30 +172,30 @@ export const defaultSiteSettings: SiteSettingsPayload = {
       newsletter: true,
       certificate_verify: true,
     },
-    hero_badge: "KADEME: Gelecegin Liderlik Okulu",
-    hero_title_line_1: "YETENEGINI",
-    hero_title_line_2: "KESFET",
-    hero_title_line_3: "GELECEGI",
-    hero_title_line_4: "YONET",
-    hero_description: "T3 Vakfi bunyesinde, Turkiye ekosisteminde kapsamli kariyer ve yetenek gelisim programlarina dahil olun.",
+    hero_badge: "KADEME: Geleceğin Liderlik Okulu",
+    hero_title_line_1: "YETENEĞİNİ",
+    hero_title_line_2: "KEŞFET",
+    hero_title_line_3: "GELECEĞİ",
+    hero_title_line_4: "YÖNET",
+    hero_description: "T3 Vakfı bünyesinde, Türkiye ekosisteminde kapsamlı kariyer ve yetenek gelişim programlarına dahil olun.",
     hero_background_image_url: "",
-    hero_primary_label: "Hemen Basvur",
+    hero_primary_label: "Hemen Başvur",
     hero_primary_href: "/auth/register",
-    hero_secondary_label: "Giris Yap",
+    hero_secondary_label: "Giriş Yap",
     hero_secondary_href: "/auth/login",
     intro_cards: [
       {
-        title: "Kariyer ve Liderlik Gelisimi",
-        description: "KADEME, ogrencilerin ve mezunlarin farkli proje akislari icinde yeteneklerini gelistirebildigi cok katmanli bir ekosistem sunar.",
+        title: "Kariyer ve Liderlik Gelişimi",
+        description: "KADEME, öğrencilerin ve mezunların farklı proje akışları içinde yeteneklerini geliştirebildiği çok katmanlı bir ekosistem sunar.",
         image_url: "",
-        cta_label: "Hakkimizda",
+        cta_label: "Hakkımızda",
         cta_href: "/about",
       },
       {
-        title: "Proje Bazli Yolculuk",
-        description: "Diplomasi360, KADEME+, Pergel Fellowship, KPD ve Eurodesk gibi alan odakli projeler tek merkezden yonetilir.",
+        title: "Proje Bazlı Yolculuk",
+        description: "Diplomasi360, KADEME+, Pergel Fellowship, KPD ve Eurodesk gibi alan odaklı projeler tek merkezden yönetilir.",
         image_url: "",
-        cta_label: "Projeleri Incele",
+        cta_label: "Projeleri İncele",
         cta_href: "/projects",
       },
       {
@@ -206,7 +226,7 @@ export const defaultSiteSettings: SiteSettingsPayload = {
     certificate_verify_cta_label: "Dogrulama Ekranina Git",
     certificate_verify_cta_href: "/certificates/verify",
     footer_description: "T3 Vakfi Kariyer Gelisim Merkezi. Gelecegin liderlerini bugunden yetistiriyoruz.",
-    footer_copyright: "© 2026 KADEME YONETIM SISTEMI | T3 VAKFI. TUM HAKLARI SAKLIDIR.",
+    footer_copyright: "© 2026 KADEME YÖNETİM SİSTEMİ | T3 VAKFI. TÜM HAKLARI SAKLIDIR.",
     stats: [
       { label: "Aktif Ogrenci", value: "2,500+", icon: "users" },
       { label: "Tamamlanan Proje", value: "450+", icon: "trophy" },
@@ -225,12 +245,32 @@ export const defaultSiteSettings: SiteSettingsPayload = {
     ecosystem_title: "KADEME ve Proje Ekosistemi",
     ecosystem_description: "Diplomasi, mentorluk, psikolojik danismanlik, rozet sistemi, dijital bohca ve proje bazli etkinlik akislariyla farkli alanlara dokunan cok katmanli bir yapi kuruyoruz.",
     faq_teaser_title: "SSS ve Blog",
-    faq_teaser_text: "Sik sorulan sorular ve icerik akisi public tarafta erisilebilir.",
+    faq_teaser_text: "Sık sorulan sorular ve içerik akışı public tarafta erişilebilir.",
     blog_teaser_title: "Blog Yazilari",
-    blog_teaser_text: "KADEME dunyasindan secili yazilar ve guncel icerikler burada yer alir.",
+    blog_teaser_text: "KADEME dünyasından seçili yazılar ve güncel içerikler burada yer alır.",
     activities_teaser_title: "Faaliyetler",
     activities_teaser_text: "Program ve etkinlik akislarimiz proje bazli ilerler.",
     journey_title: "Gelisim Yolculugu",
-    journey_text: "Projeler, faaliyetler, blog, SSS ve iletisim akislari birlikte KADEME'nin public katmanini olusturur.",
+    journey_text: "Projeler, faaliyetler, blog, SSS ve iletişim akışları birlikte KADEME'nin public katmanını oluşturur.",
+  },
+  blog_page: {
+    badge_label: "KADEME Rehberi",
+    title: "Blog & Haberler",
+    description: "Geleceğin yetenekleri için hazırladığımız makaleleri ve KADEME dünyasındaki son gelişmeleri takip edin.",
+    search_placeholder: "Blog yazısı ara...",
+    empty_text: "Seçili arama kriterleriyle blog yazısı bulunamadı.",
+    read_more_label: "Devamını Oku",
+    detail_badge_label: "Blog Detayı",
+    detail_back_label: "Tüm blog yazılarına dön",
+    detail_empty_content: "Bu yazı için henüz içerik eklenmemiş.",
+  },
+  faq_page: {
+    title: "Sıkça Sorulan Sorular",
+    description: "KADEME süreçleri hakkında merak ettiğiniz temel konular burada toplanır.",
+    empty_text: "Henüz soru-cevap eklenmemiş.",
+    contact_title: "Başka bir sorunuz mu var?",
+    contact_description: "Aradığınız cevabı bulamadıysanız iletişim veya destek kanalına geçebilirsiniz.",
+    contact_cta_label: "İletişime Geç",
+    contact_cta_href: "/contact",
   },
 };

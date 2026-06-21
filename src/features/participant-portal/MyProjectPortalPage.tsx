@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import Link from "next/link";
-import { Award, BookOpen, BookMarked, Briefcase, Calendar, ChevronRight, Clock, FileCheck, FileText, Gift, Handshake, Loader2, Trophy, Users } from "lucide-react";
+import { Award, BookOpen, BookMarked, Briefcase, Calendar, ChevronRight, Clock, Download, FileCheck, FileText, Gift, Handshake, Loader2, Trophy, Users } from "lucide-react";
 import api from "@/lib/api/axios";
+import { downloadBlobResponse } from "@/lib/download";
 
 interface Participation {
   id: number;
@@ -77,6 +78,7 @@ interface ProjectSpecial {
   modules: string[];
   internships: Array<{ id: number; company_name: string; position: string; has_document?: boolean }>;
   mentors: Array<{ id: number; name: string; expertise?: string | null; bio?: string | null }>;
+  uploaded_files?: Array<{ id: number; title: string; description?: string | null; file_type?: string | null; download_url: string }>;
   eurodesk_projects: Array<{ id: number; title: string; partner_organizations?: string[]; grant_amount?: string | number | null; grant_status: string }>;
   reward_tiers: Array<{ id: number; name: string; min_badges: number; min_credits: number; reward_description: string; eligible: boolean }>;
   reward_progress?: { badge_count: number; credit: number; eligible_count: number } | null;
@@ -218,6 +220,11 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
           <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
             {portal === "alumni" ? "Mezun proje ozetin ve KADEME araclari" : "Proje detaylari ve araclar"}
           </p>
+          {activeParticipation?.period?.name ? (
+            <p className="mt-2 text-xs font-black uppercase tracking-widest text-primary">
+              {portal === "alumni" ? "Mezuniyet donemi" : "Katilim donemi"}: {activeParticipation.period.name}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -398,6 +405,15 @@ function ProjectSpecialSection({
   const pid = special.project.id;
   const mods = special.kademe_modules ?? [];
 
+  async function downloadUploadedFile(item: NonNullable<ProjectSpecial["uploaded_files"]>[number]) {
+    try {
+      const response = await api.get(item.download_url, { responseType: "blob" });
+      await downloadBlobResponse(response.data, response.headers, item.title || `dosya-${item.id}`);
+    } catch (error) {
+      console.error("Proje dosyasi indirilemedi", error);
+    }
+  }
+
   return (
     <div className="mt-8 rounded-3xl border border-white/40 bg-white/60 p-6">
       <h4 className="mb-4 text-lg font-bold text-slate-900">Projeye Ozel Icerikler</h4>
@@ -430,6 +446,26 @@ function ProjectSpecialSection({
                   <div className="font-bold text-slate-900">{item.name}</div>
                   <div>{item.expertise || "Uzmanlik girilmemis"}</div>
                 </div>
+              ))
+            )}
+          </SpecialBox>
+        ) : null}
+
+        {special.modules.includes("uploaded_files") ? (
+          <SpecialBox icon={<Download className="h-5 w-5" />} title="Yuklenen Dosyalar">
+            {(special.uploaded_files ?? []).length === 0 ? (
+              <p>Bu projeye ait gorunur dosya bulunmuyor.</p>
+            ) : (
+              (special.uploaded_files ?? []).slice(0, 4).map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => void downloadUploadedFile(item)}
+                  className="block w-full rounded-2xl bg-slate-100 p-3 text-left transition hover:bg-slate-200"
+                >
+                  <div className="font-bold text-slate-900">{item.title}</div>
+                  <div>{item.file_type || "dosya"}</div>
+                </button>
               ))
             )}
           </SpecialBox>
@@ -480,48 +516,78 @@ function ProjectSpecialSection({
           </div>
           <div className="space-y-6">
             {mods.map((mod) => (
-              <div key={mod.id} className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-sm">
-                <div className="font-bold text-slate-900">{mod.title}</div>
-                {mod.description ? <p className="mt-1 text-muted-foreground">{mod.description}</p> : null}
+              <div key={mod.id} className="rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="font-black text-slate-900">{mod.title}</div>
+                    {mod.description ? <p className="mt-1 max-w-2xl text-muted-foreground">{mod.description}</p> : null}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${mod.application_open ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
+                      {mod.application_open ? "Basvuru acik" : "Basvuru kapali"}
+                    </span>
+                    {mod.requires_coordinator_approval ? (
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700">Onayli kayit</span>
+                    ) : null}
+                  </div>
+                </div>
                 {(mod.outcomes ?? []).length > 0 ? (
-                  <ul className="mt-2 list-inside list-disc text-muted-foreground">
+                  <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {(mod.outcomes ?? []).map((o) => (
-                      <li key={o}>{o}</li>
+                      <div key={o} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">{o}</div>
                     ))}
-                  </ul>
+                  </div>
                 ) : null}
                 {(mod.instructors ?? []).length > 0 ? (
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    <span className="font-semibold text-slate-700">Egitmenler: </span>
-                    {(mod.instructors ?? []).map((i) => i.name).join(", ")}
+                  <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                    <div className="mb-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Egitmenler</div>
+                    <div className="space-y-2">
+                      {(mod.instructors ?? []).map((instructor, idx) => (
+                        <div key={`${instructor.name}-${idx}`} className="text-xs text-slate-700">
+                          <span className="font-black text-slate-900">{instructor.name}</span>
+                          {instructor.bio ? <span className="text-muted-foreground"> - {instructor.bio}</span> : null}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
                 {(mod.faq_items ?? []).length > 0 ? (
-                  <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
-                    <div className="text-xs font-bold uppercase text-slate-600">Sik sorulanlar</div>
+                  <div className="mt-4 space-y-2">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sik sorulanlar</div>
                     {(mod.faq_items ?? []).map((f, idx) => (
-                      <div key={`${f.question}-${idx}`} className="rounded-lg bg-white p-2">
-                        <div className="font-semibold text-slate-800">{f.question}</div>
-                        <div className="text-muted-foreground">{f.answer}</div>
-                      </div>
+                      <details key={`${f.question}-${idx}`} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                        <summary className="cursor-pointer text-xs font-black text-slate-800">{f.question}</summary>
+                        <div className="mt-2 text-xs text-muted-foreground">{f.answer}</div>
+                      </details>
                     ))}
                   </div>
                 ) : null}
                 {mod.warning_text ? (
-                  <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-950">
-                    <div className="text-xs font-bold uppercase">Uyari</div>
-                    <p className="mt-1 whitespace-pre-wrap">{mod.warning_text}</p>
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-950">
+                    <div className="text-[10px] font-black uppercase tracking-widest">Uyari ve yaptirimlar</div>
+                    <p className="mt-1 whitespace-pre-wrap text-xs leading-5">{mod.warning_text}</p>
                   </div>
                 ) : null}
-                <div className="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-3">
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
                   {mod.enrollment ? (
-                    <div className="text-xs font-semibold text-slate-700">
-                      Kayit durumu: <span className="text-primary">{mod.enrollment.status}</span>
+                    <div className="space-y-2">
+                      <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${moduleEnrollmentClass(mod.enrollment.status)}`}>
+                        {moduleEnrollmentLabel(mod.enrollment.status)}
+                      </span>
+                      <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                        <span>Basvuru: {formatDate(mod.enrollment.consented_at)}</span>
+                        <span>Inceleme: {formatDate(mod.enrollment.reviewed_at)}</span>
+                      </div>
+                      {mod.enrollment.note ? <div className="rounded-lg bg-white px-3 py-2 text-xs text-slate-700">{mod.enrollment.note}</div> : null}
                     </div>
                   ) : mod.application_open ? (
-                    <>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <FileCheck className="mt-0.5 h-4 w-4 text-primary" />
+                        <span>{mod.requires_coordinator_approval ? "Basvurunuz gonderildikten sonra koordinator onayina dusecek." : "Basvurunuz gonderildiginde modul kaydiniz otomatik onaylanacak."}</span>
+                      </div>
                       {mod.requires_consent ? (
-                        <label className="flex cursor-pointer items-start gap-2 text-xs text-slate-700">
+                        <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
                           <input
                             type="checkbox"
                             className="mt-0.5"
@@ -540,13 +606,16 @@ function ProjectSpecialSection({
                         type="button"
                         disabled={Boolean(enrolling && enrolling.projectId === pid && enrolling.moduleId === mod.id) || (mod.requires_consent && !consentByModule[`${pid}-${mod.id}`])}
                         onClick={() => onEnroll(pid, mod)}
-                        className="inline-flex w-fit items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"
+                        className="inline-flex w-fit items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {enrolling && enrolling.projectId === pid && enrolling.moduleId === mod.id ? "Kaydediliyor..." : "Module kayit ol"}
+                        {enrolling && enrolling.projectId === pid && enrolling.moduleId === mod.id ? "Kaydediliyor..." : mod.requires_coordinator_approval ? "Basvuruyu gonder" : "Module kayit ol"}
                       </button>
-                    </>
+                    </div>
                   ) : (
-                    <div className="text-xs text-muted-foreground">Bu modul icin basvuru kapali.</div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      Bu modul icin basvuru kapali.
+                    </div>
                   )}
                 </div>
               </div>

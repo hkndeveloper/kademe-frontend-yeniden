@@ -87,6 +87,10 @@ interface CvCreditLog {
 
 interface DigitalCvPayload {
   profile?: DigitalCvProfile;
+  saved_draft?: {
+    form?: Partial<CvForm>;
+    saved_at?: string;
+  } | null;
   approved?: ApprovedCv;
   projects?: CvProject[];
   badges?: CvBadge[];
@@ -152,8 +156,8 @@ const emptyForm: CvForm = {
 
 const localKey = (mode: CvMode, userId?: number | string | null) => `kademe-digital-cv-${mode}-${userId ?? "guest"}`;
 
-const splitList = (value: string) =>
-  value
+const splitList = (value?: string | null) =>
+  (value ?? "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
@@ -202,26 +206,30 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
       const profile = nextPayload.profile ?? {};
       const stored = window.localStorage.getItem(localKey(mode, userId));
       const storedForm = stored ? (JSON.parse(stored) as Partial<CvForm>) : {};
+      const savedForm = nextPayload.saved_draft?.form ?? {};
+      const draftForm = Object.keys(storedForm).length > 0 ? storedForm : savedForm;
 
       setPayload(nextPayload);
       setForm({
         ...emptyForm,
-        ...storedForm,
-        fullName: storedForm.fullName ?? profile.full_name ?? "",
-        email: storedForm.email ?? profile.email ?? "",
-        phone: storedForm.phone ?? profile.phone ?? "",
-        location: storedForm.location ?? profile.location ?? "",
-        summary: storedForm.summary ?? profile.summary ?? "",
-        university: storedForm.university ?? profile.university ?? "",
-        department: storedForm.department ?? profile.department ?? "",
-        classYear: storedForm.classYear ?? profile.class_year ?? "",
-        linkedin: storedForm.linkedin ?? profile.linkedin_url ?? "",
-        github: storedForm.github ?? profile.github_url ?? "",
-        instagram: storedForm.instagram ?? profile.instagram_url ?? "",
-        experience: storedForm.experience?.length ? storedForm.experience : [emptyItem()],
-        education: storedForm.education ?? [],
-        projects: storedForm.projects ?? [],
-        certificates: storedForm.certificates ?? [],
+        ...draftForm,
+        fullName: draftForm.fullName ?? profile.full_name ?? "",
+        email: draftForm.email ?? profile.email ?? "",
+        phone: draftForm.phone ?? profile.phone ?? "",
+        location: draftForm.location ?? profile.location ?? "",
+        summary: draftForm.summary ?? profile.summary ?? "",
+        university: draftForm.university ?? profile.university ?? "",
+        department: draftForm.department ?? profile.department ?? "",
+        classYear: draftForm.classYear ?? profile.class_year ?? "",
+        linkedin: draftForm.linkedin ?? profile.linkedin_url ?? "",
+        github: draftForm.github ?? profile.github_url ?? "",
+        instagram: draftForm.instagram ?? profile.instagram_url ?? "",
+        skills: draftForm.skills ?? "",
+        languages: draftForm.languages ?? "",
+        experience: draftForm.experience?.length ? draftForm.experience : [emptyItem()],
+        education: draftForm.education ?? [],
+        projects: draftForm.projects ?? [],
+        certificates: draftForm.certificates ?? [],
       });
     } catch (error) {
       console.error("Dijital CV verileri yuklenemedi", error);
@@ -262,9 +270,20 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
     setForm((prev) => ({ ...prev, [section]: prev[section].filter((item) => item.id !== id) }));
   };
 
-  const saveDraft = () => {
+  const saveDraft = async (notify = true) => {
     window.localStorage.setItem(localKey(mode, userId), JSON.stringify(form));
-    setMessage("CV taslagi bu cihazda kaydedildi.");
+    try {
+      const response = await api.put<{ saved_draft?: DigitalCvPayload["saved_draft"] }>("/dashboard/digital-cv", { form });
+      setPayload((current) => ({ ...current, saved_draft: response.data.saved_draft ?? current.saved_draft }));
+      if (notify) {
+        setMessage("CV taslagi kaydedildi ve profil verilerine baglandi.");
+      }
+    } catch (error) {
+      console.error("CV taslagi backend'e kaydedilemedi", error);
+      if (notify) {
+        setMessage("CV taslagi bu cihazda kaydedildi; backend kaydi yapilamadi.");
+      }
+    }
   };
 
   const syncProfile = async () => {
@@ -287,22 +306,42 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
     }
   };
 
-  const exportPdf = () => {
-    saveDraft();
-    printCvDocument(buildCvHtmlDocument({
-      form,
-      approved,
-      verifiedProjects,
-      badges,
-      certificates,
-      creditHistory,
-      skills,
-      languages,
-    }));
+  const exportPdf = async () => {
+    await saveDraft(false);
+    setMessage("PDF hazirlaniyor...");
+    try {
+      const response = await api.post(
+        "/dashboard/digital-cv/pdf",
+        {
+          form,
+          approved,
+          projects: verifiedProjects,
+          badges,
+          certificates,
+          credit_history: creditHistory,
+        },
+        { responseType: "blob" },
+      );
+      downloadBlob(response.data, `${sanitizeFileName(form.fullName)}-kademe-cv.pdf`);
+      setMessage("PDF ciktisi indirildi.");
+    } catch (error) {
+      console.error("PDF ciktisi alinamadi", error);
+      setMessage("PDF ciktisi alinamadi. Yazdirma penceresi aciliyor.");
+      printCvDocument(buildCvHtmlDocument({
+        form,
+        approved,
+        verifiedProjects,
+        badges,
+        certificates,
+        creditHistory,
+        skills,
+        languages,
+      }));
+    }
   };
 
   const exportWord = () => {
-    saveDraft();
+    void saveDraft(false);
     const html = buildCvHtmlDocument({
       form,
       approved,
@@ -318,6 +357,7 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
   };
 
   const exportText = () => {
+    void saveDraft(false);
     const lines = buildAtsText({
       form,
       approved,
@@ -389,7 +429,7 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button onClick={saveDraft} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-slate-50">
+          <button onClick={() => void saveDraft()} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-slate-50">
             <Save className="h-4 w-4" />
             Taslagi Kaydet
           </button>
@@ -405,9 +445,9 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
             <Download className="h-4 w-4" />
             Word CV
           </button>
-          <button onClick={exportPdf} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700">
+          <button onClick={() => void exportPdf()} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700">
             <Download className="h-4 w-4" />
-            ATS PDF Indir
+            PDF Indir
           </button>
         </div>
       </div>

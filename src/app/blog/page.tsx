@@ -6,6 +6,7 @@ import { BookOpen, Calendar, User, ArrowRight, Loader2, Search } from "lucide-re
 import Link from "next/link";
 import Image from "next/image";
 import api from "@/lib/api/axios";
+import { defaultSiteSettings, type SiteSettingsResponse } from "@/lib/site-config";
 
 interface Blog {
   id: number;
@@ -30,6 +31,20 @@ export default function BlogPage() {
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [copy, setCopy] = useState(defaultSiteSettings.blog_page);
+
+  useEffect(() => {
+    const fetchCopy = async () => {
+      try {
+        const response = await api.get<SiteSettingsResponse>("/site-config");
+        setCopy(response.data.settings?.blog_page ?? defaultSiteSettings.blog_page);
+      } catch (error) {
+        console.error("Blog sayfa metinleri yuklenemedi", error);
+      }
+    };
+
+    void fetchCopy();
+  }, []);
 
   useEffect(() => {
     const fetchBlogs = async () => {
@@ -67,13 +82,13 @@ export default function BlogPage() {
       <div className="container mx-auto px-6">
         <div className="mb-16 text-center">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary">
-            <BookOpen className="h-4 w-4" /> KADEME Rehberi
+            <BookOpen className="h-4 w-4" /> {copy.badge_label}
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6 text-4xl font-black text-foreground md:text-6xl">
-            Blog & Haberler
+            {copy.title}
           </motion.h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Geleceğin yetenekleri için hazırladığımız makaleleri ve KADEME dünyasındaki son gelişmeleri takip edin.
+            {copy.description}
           </p>
         </div>
 
@@ -87,7 +102,7 @@ export default function BlogPage() {
                 setSearchTerm(event.target.value);
                 setPage(1);
               }}
-              placeholder="Blog yazisi ara..."
+              placeholder={copy.search_placeholder}
               className="w-full rounded-2xl border border-border bg-input py-4 pl-12 pr-6 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -99,7 +114,11 @@ export default function BlogPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {blogs.map((blog, index) => (
+            {blogs.length === 0 ? (
+              <div className="col-span-full rounded-2xl border border-border bg-card/60 p-8 text-center text-sm text-muted-foreground">
+                {copy.empty_text}
+              </div>
+            ) : blogs.map((blog, index) => (
               <motion.div
                 key={blog.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -129,7 +148,7 @@ export default function BlogPage() {
 
                   <div className="mt-auto flex items-center justify-between border-t border-border/60 pt-6">
                     <Link href={`/blog/${blog.slug}`} className="flex items-center gap-2 text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-                      Devamını Oku <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      {copy.read_more_label} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </div>
                 </div>

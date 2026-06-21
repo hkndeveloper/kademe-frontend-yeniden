@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -21,6 +21,7 @@ import {
   UserCog,
   Users,
 } from "lucide-react";
+import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 
@@ -66,6 +67,8 @@ type ProjectModulesResponse = {
     quota?: number | null;
     application_open?: boolean;
     active_period?: { id?: number; name?: string; status?: string } | null;
+    selected_period?: { id?: number; name?: string; status?: string; start_date?: string | null; end_date?: string | null } | null;
+    periods?: Array<{ id: number; name: string; status?: string; start_date?: string | null; end_date?: string | null }>;
   };
   access: AccessMap;
   summary: {
@@ -110,6 +113,10 @@ export default function PanelUnifiedProjectDetailPage() {
   const [loading, setLoading] = useState(!invalidProjectId);
   const [data, setData] = useState<ProjectModulesResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPeriodId, setSelectedPeriodId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("period_id") ?? "";
+  });
 
   useEffect(() => {
     if (invalidProjectId) {
@@ -119,10 +126,39 @@ export default function PanelUnifiedProjectDetailPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const response = await api.get<ProjectModulesResponse>(`/panel/projects/${projectId}/modules`);
-        if (!cancelled) setData(response.data);
-      } catch {
-        if (!cancelled) setError("Proje modul bilgileri alinamadi.");
+        const response = await api.get<ProjectModulesResponse>(`/panel/projects/${projectId}/modules`, {
+          params: {
+            period_id: selectedPeriodId || undefined,
+          },
+        });
+        if (!cancelled) {
+          setData(response.data);
+          if (!selectedPeriodId && response.data.project.selected_period?.id) {
+            setSelectedPeriodId(String(response.data.project.selected_period.id));
+          }
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (isAxiosError(err)) {
+          const status = err.response?.status;
+          if (status === 403) {
+            setError("Bu proje icin modul ozetini goruntuleme yetkiniz yok veya proje kapsaminiz disinda.");
+            return;
+          }
+          if (status === 404) {
+            setError("Proje bulunamadi.");
+            return;
+          }
+          if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+            setError("API yanit vermedi (zaman asimi). Laravel sunucusunun (or. :8000) calistigini kontrol edin.");
+            return;
+          }
+          if (!err.response) {
+            setError("API'ye baglanilamadi. `php artisan serve` / backend ayarlarini ve NEXT_PUBLIC_API_URL degerini kontrol edin.");
+            return;
+          }
+        }
+        setError("Proje modul bilgileri alinamadi.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -131,15 +167,23 @@ export default function PanelUnifiedProjectDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [invalidProjectId, projectId]);
+  }, [invalidProjectId, projectId, selectedPeriodId]);
 
   const access = useMemo(() => data?.access ?? {}, [data?.access]);
+  const withPeriod = useCallback((href: string) => {
+    if (!selectedPeriodId) return href;
+    const [pathname, query = ""] = href.split("?");
+    const params = new URLSearchParams(query);
+    params.set("period_id", selectedPeriodId);
+    const nextQuery = params.toString();
+    return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+  }, [selectedPeriodId]);
   const cards = useMemo(
     () => [
       {
         key: "content",
         visible: access["projects.content.update"] || access["projects.view"],
-        href: `/panel/projects/${projectId}/content`,
+        href: withPeriod(`/panel/projects/${projectId}/content`),
         icon: PencilLine,
         label: "Icerik ve galeri",
         value: data?.project.application_open ? "Basvuru acik" : "Basvuru kapali",
@@ -148,7 +192,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "form",
         visible: access["projects.application_form.update"],
-        href: `/panel/projects/${projectId}/content?tab=form`,
+        href: withPeriod(`/panel/projects/${projectId}/content?tab=form`),
         icon: FormInput,
         label: "Basvuru formu",
         value: "Dinamik alanlar",
@@ -157,7 +201,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "programs",
         visible: access["programs.view"],
-        href: `/panel/programs?project_id=${projectId}`,
+        href: withPeriod(`/panel/programs?project_id=${projectId}`),
         icon: CalendarDays,
         label: "Programlar",
         value: `${statValue(data?.summary.programs?.total)} kayit`,
@@ -166,7 +210,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "attendance",
         visible: access["projects.attendance.view"] || access["programs.attendance.view"],
-        href: `/panel/programs?project_id=${projectId}`,
+        href: withPeriod(`/panel/programs?project_id=${projectId}`),
         icon: QrCode,
         label: "Yoklama ve kredi",
         value: `${statValue(data?.summary.programs?.valid_attendances)} gecerli`,
@@ -175,7 +219,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "participants",
         visible: access["projects.participants.view"],
-        href: `/panel/participants?project_id=${projectId}`,
+        href: withPeriod(`/panel/participants?project_id=${projectId}`),
         icon: Users,
         label: "Katilimcilar",
         value: `${statValue(data?.summary.participants?.active)} aktif`,
@@ -184,7 +228,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "alumni",
         visible: access["projects.alumni.view"],
-        href: `/panel/participants?project_id=${projectId}&status=graduated`,
+        href: withPeriod(`/panel/participants?project_id=${projectId}&status=graduated`),
         icon: GraduationCap,
         label: "Mezunlar",
         value: `${statValue(data?.summary.participants?.graduates)} mezun`,
@@ -193,7 +237,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "student-cv",
         visible: access["projects.student_cv.view"],
-        href: `/panel/participants?project_id=${projectId}`,
+        href: withPeriod(`/panel/participants?project_id=${projectId}`),
         icon: FileStack,
         label: "Ogrenci CV'leri",
         value: `${data?.previews.student_cvs?.length ?? 0} onizleme`,
@@ -210,7 +254,7 @@ export default function PanelUnifiedProjectDetailPage() {
           access["projects.eurodesk.manage"] ||
           access["projects.rewards.manage"] ||
           access["projects.rewards.view"],
-        href: `/panel/projects/${projectId}/special-modules`,
+        href: withPeriod(`/panel/projects/${projectId}/special-modules`),
         icon: Layers,
         label: "Projeye ozel moduller",
         value: "Staj, mentor, hibe",
@@ -225,7 +269,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "applications",
         visible: access["applications.view"],
-        href: `/panel/applications?project_id=${projectId}`,
+        href: withPeriod(`/panel/applications?project_id=${projectId}`),
         icon: ClipboardCheck,
         label: "Basvurular",
         value: `${statValue(data?.summary.applications?.pending)} bekleyen`,
@@ -234,7 +278,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "volunteer",
         visible: access["volunteer.view"],
-        href: `/panel/volunteer?project_id=${projectId}`,
+        href: withPeriod(`/panel/volunteer?project_id=${projectId}`),
         icon: UserCog,
         label: "Gonullu basvurulari",
         value: "Firsatlar",
@@ -243,7 +287,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "bohca",
         visible: access["digital_bohca.view"],
-        href: `/panel/digital-bohca?project_id=${projectId}`,
+        href: withPeriod(`/panel/digital-bohca?project_id=${projectId}`),
         icon: Database,
         label: "Dijital Bohca",
         value: `${statValue(data?.summary.digital_bohca?.total)} dosya`,
@@ -252,7 +296,7 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "assignments",
         visible: access["assignments.view"],
-        href: `/panel/assignments?project_id=${projectId}`,
+        href: withPeriod(`/panel/assignments?project_id=${projectId}`),
         icon: FileStack,
         label: "Odevler",
         value: `${statValue(data?.summary.assignments?.submissions)} teslim`,
@@ -261,14 +305,14 @@ export default function PanelUnifiedProjectDetailPage() {
       {
         key: "certificates",
         visible: access["certificates.view"],
-        href: `/panel/certificates?project_id=${projectId}`,
+        href: withPeriod(`/panel/certificates?project_id=${projectId}`),
         icon: Award,
         label: "Sertifikalar",
         value: `${statValue(data?.summary.certificates?.total)} sertifika`,
         permission: "certificates.view",
       },
     ],
-    [access, data, projectId]
+    [access, data, projectId, withPeriod]
   );
 
   if (loading) {
@@ -291,7 +335,7 @@ export default function PanelUnifiedProjectDetailPage() {
     <div className="space-y-8">
       <Link
         href="/panel/projects"
-        className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-white"
+        className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-slate-900"
       >
         <ArrowLeft className="h-4 w-4" />
         Proje listesine don
@@ -300,22 +344,37 @@ export default function PanelUnifiedProjectDetailPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="text-xs font-bold uppercase tracking-widest text-accent">{data.project.type || "Proje"}</div>
-          <h1 className="mt-2 text-3xl font-black text-white">{data.project.name}</h1>
+          <h1 className="mt-2 text-3xl font-black text-slate-900">{data.project.name}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {data.project.active_period?.name ? `Aktif donem: ${data.project.active_period.name}` : "Aktif donem baglantisi yok"}
+            {data.project.selected_period?.name ? `Secili donem: ${data.project.selected_period.name}` : data.project.active_period?.name ? `Aktif donem: ${data.project.active_period.name}` : "Aktif donem baglantisi yok"}
             {typeof data.project.quota === "number" ? ` · Kontenjan: ${data.project.quota}` : ""}
           </p>
         </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {data.project.periods?.length ? (
+            <select
+              value={selectedPeriodId}
+              onChange={(event) => setSelectedPeriodId(event.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-accent/60"
+            >
+              {data.project.periods.map((period) => (
+                <option key={period.id} value={period.id}>
+                  {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (gecmis)" : ""}
+                </option>
+              ))}
+            </select>
+          ) : null}
         {data.project.slug ? (
           <Link
             href={`/projects/${data.project.slug}`}
-            className="inline-flex items-center justify-center rounded-2xl border border-white/10 px-5 py-3 text-sm font-bold text-white/90 transition hover:border-white/30"
+            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-800 transition hover:border-slate-300"
             target="_blank"
             rel="noreferrer"
           >
             Halka acik sayfa
           </Link>
         ) : null}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -327,7 +386,7 @@ export default function PanelUnifiedProjectDetailPage() {
               <PermissionGate key={card.key} requireProjectAccess={{ permission: card.permission, projectId }}>
                 <Link
                   href={card.href}
-                  className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-accent/60 hover:bg-white/[0.07]"
+                  className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-accent/60 hover:bg-slate-50"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/15 text-accent">
@@ -335,7 +394,7 @@ export default function PanelUnifiedProjectDetailPage() {
                     </div>
                     <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{card.value}</span>
                   </div>
-                  <div className="mt-5 text-base font-black text-white group-hover:text-accent">{card.label}</div>
+                  <div className="mt-5 text-base font-black text-slate-900 group-hover:text-accent">{card.label}</div>
                 </Link>
               </PermissionGate>
             );
@@ -344,21 +403,21 @@ export default function PanelUnifiedProjectDetailPage() {
 
       {data.summary.participants ? (
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Toplam katilimci</div>
-            <div className="mt-3 text-3xl font-black text-white">{data.summary.participants.total}</div>
+            <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.total}</div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Aktif ogrenci</div>
-            <div className="mt-3 text-3xl font-black text-white">{data.summary.participants.active}</div>
+            <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.active}</div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Mezun</div>
-            <div className="mt-3 text-3xl font-black text-white">{data.summary.participants.graduates}</div>
+            <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.graduates}</div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Ortalama kredi</div>
-            <div className="mt-3 text-3xl font-black text-white">{data.summary.participants.average_credit}</div>
+            <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.average_credit}</div>
           </div>
         </section>
       ) : null}
@@ -369,7 +428,7 @@ export default function PanelUnifiedProjectDetailPage() {
             title="Aktif katilimcilar"
             icon={<Users className="h-5 w-5" />}
             items={data.previews.participants}
-            footerHref={`/panel/participants?project_id=${projectId}`}
+            footerHref={withPeriod(`/panel/participants?project_id=${projectId}`)}
             footerLabel="Tum katilimcilari ac"
           />
         ) : null}
@@ -379,7 +438,7 @@ export default function PanelUnifiedProjectDetailPage() {
             title="Mezunlar"
             icon={<GraduationCap className="h-5 w-5" />}
             items={data.previews.alumni}
-            footerHref={`/panel/participants?project_id=${projectId}&status=graduated`}
+            footerHref={withPeriod(`/panel/participants?project_id=${projectId}&status=graduated`)}
             footerLabel="Mezun listesini ac"
           />
         ) : null}
@@ -390,28 +449,28 @@ export default function PanelUnifiedProjectDetailPage() {
             icon={<FileStack className="h-5 w-5" />}
             items={data.previews.student_cvs}
             showCv
-            footerHref={`/panel/participants?project_id=${projectId}`}
+            footerHref={withPeriod(`/panel/participants?project_id=${projectId}`)}
             footerLabel="CV detaylarini ac"
           />
         ) : null}
 
         {data.previews.attendance?.length ? (
-          <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="mb-4 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 text-lg font-black text-white">
+              <div className="flex items-center gap-2 text-lg font-black text-slate-900">
                 <QrCode className="h-5 w-5 text-accent" />
                 Yoklama ozeti
               </div>
-              <Link href={`/panel/programs?project_id=${projectId}`} className="text-xs font-bold uppercase tracking-widest text-accent">
+              <Link href={withPeriod(`/panel/programs?project_id=${projectId}`)} className="text-xs font-bold uppercase tracking-widest text-accent">
                 Programlari ac
               </Link>
             </div>
             <div className="space-y-3">
               {data.previews.attendance.map((program) => (
-                <div key={program.id} className="rounded-2xl bg-white/[0.04] p-4">
+                <div key={program.id} className="rounded-2xl bg-white p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="font-bold text-white">{program.title}</div>
+                      <div className="font-bold text-slate-900">{program.title}</div>
                       <div className="mt-1 text-xs text-muted-foreground">{formatDate(program.start_at)}</div>
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
@@ -448,9 +507,9 @@ function PreviewList({
   footerLabel: string;
 }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5">
       <div className="mb-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-lg font-black text-white">
+        <div className="flex items-center gap-2 text-lg font-black text-slate-900">
           <span className="text-accent">{icon}</span>
           {title}
         </div>
@@ -460,10 +519,10 @@ function PreviewList({
       </div>
       <div className="space-y-3">
         {items.map((participant) => (
-          <div key={participant.id} className="rounded-2xl bg-white/[0.04] p-4">
+          <div key={participant.id} className="rounded-2xl bg-white p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="font-bold text-white">{fullName(participant)}</div>
+                <div className="font-bold text-slate-900">{fullName(participant)}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
                   {[participant.user?.university, participant.user?.department].filter(Boolean).join(" · ") || participant.user?.email || "Profil bilgisi yok"}
                 </div>

@@ -18,6 +18,14 @@ interface PeriodItem {
   name: string;
 }
 
+interface ProgramItem {
+  id: number;
+  period_id?: number | null;
+  title: string;
+  start_at?: string | null;
+  status?: string | null;
+}
+
 interface Question {
   id: string;
   type: "text" | "longtext" | "select" | "radio" | "checkbox" | "file";
@@ -26,15 +34,25 @@ interface Question {
   options?: string[];
 }
 
+interface AutoRejectRule {
+  field_id: string;
+  operator: "equals" | "not_equals" | "contains" | "gt" | "lt" | "gte" | "lte";
+  value: string;
+  reason: string;
+}
+
 interface ApplicationFormResponse {
   project: Project;
   periods: PeriodItem[];
+  programs: ProgramItem[];
   application_form?: {
     id: number;
     period_id?: number | null;
+    program_id?: number | null;
     fields: Question[];
     require_consent?: boolean;
     consent_text?: string | null;
+    auto_reject_rules?: AutoRejectRule[] | null;
     is_active: boolean;
   } | null;
 }
@@ -51,15 +69,28 @@ const questionTypes: Array<{ type: Question["type"]; label: string; icon: typeof
   { type: "file", label: "Dosya Yukleme", icon: Upload },
 ];
 
+const autoRejectOperators: Array<{ value: AutoRejectRule["operator"]; label: string }> = [
+  { value: "equals", label: "Esitse" },
+  { value: "not_equals", label: "Esit degilse" },
+  { value: "contains", label: "Iceriyorsa" },
+  { value: "gt", label: "Buyukse" },
+  { value: "lt", label: "Kucukse" },
+  { value: "gte", label: "Buyuk/esitse" },
+  { value: "lte", label: "Kucuk/esitse" },
+];
+
 export default function FormBuilderPage() {
   const searchParams = useSearchParams();
   const initialProjectId = searchParams.get("project_id") ?? "";
   const initialPeriodId = searchParams.get("period_id") ?? "";
+  const initialProgramId = searchParams.get("program_id") ?? "";
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [periods, setPeriods] = useState<PeriodItem[]>([]);
+  const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [projectId, setProjectId] = useState(initialProjectId);
   const [periodId, setPeriodId] = useState(initialPeriodId);
+  const [programId, setProgramId] = useState(initialProgramId);
   const [questionSeed, setQuestionSeed] = useState(1);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,11 +99,33 @@ export default function FormBuilderPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [requireConsent, setRequireConsent] = useState(false);
   const [consentText, setConsentText] = useState(defaultConsentText);
+  const [autoRejectRules, setAutoRejectRules] = useState<AutoRejectRule[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { canAccessProject } = usePermissions();
   const projectIdNum = projectId ? Number(projectId) : NaN;
   const canEditForm = Number.isFinite(projectIdNum) && canAccessProject("projects.application_form.update", projectIdNum);
+
+  const selectedProject = useMemo(
+    () => projects.find((project) => String(project.id) === projectId) ?? null,
+    [projectId, projects]
+  );
+
+  const filteredPrograms = useMemo(
+    () => programs.filter((program) => !periodId || String(program.period_id ?? "") === periodId),
+    [periodId, programs],
+  );
+
+  const selectedPeriod = useMemo(
+    () => periods.find((period) => String(period.id) === periodId) ?? null,
+    [periodId, periods],
+  );
+
+  const selectedProgram = useMemo(
+    () => filteredPrograms.find((program) => String(program.id) === programId) ?? null,
+    [filteredPrograms, programId],
+  );
+  const effectiveProgramId = programs.length === 0 || selectedProgram ? programId : "";
 
   useEffect(() => {
     const loadProjects = async () => {
@@ -101,6 +154,7 @@ export default function FormBuilderPage() {
     const loadApplicationForm = async () => {
       if (!projectId) {
         setPeriods([]);
+        setPrograms([]);
         setQuestions([]);
         return;
       }
@@ -112,16 +166,20 @@ export default function FormBuilderPage() {
         const response = await api.get<ApplicationFormResponse>(`/panel/projects/${projectId}/application-form`, {
           params: {
             period_id: periodId || undefined,
+            program_id: effectiveProgramId || undefined,
           },
         });
         const nextPeriods = response.data.periods ?? [];
+        const nextPrograms = response.data.programs ?? [];
         const nextQuestions = response.data.application_form?.fields ?? [];
         const nextForm = response.data.application_form;
 
         setPeriods(nextPeriods);
+        setPrograms(nextPrograms);
         setQuestions(nextQuestions);
         setRequireConsent(Boolean(nextForm?.require_consent));
         setConsentText(nextForm?.consent_text || defaultConsentText);
+        setAutoRejectRules(nextForm?.auto_reject_rules ?? []);
         setQuestionSeed(Math.max(1, nextQuestions.length + 1));
 
         if (response.data.application_form?.period_id) {
@@ -129,12 +187,20 @@ export default function FormBuilderPage() {
         } else if (!initialPeriodId && !periodId) {
           setPeriodId("");
         }
+
+        if (response.data.application_form?.program_id) {
+          setProgramId(String(response.data.application_form.program_id));
+        } else if (!initialProgramId && !programId) {
+          setProgramId("");
+        }
       } catch (error) {
         console.error("Basvuru formu yuklenemedi", error);
         setQuestions([]);
         setPeriods([]);
+        setPrograms([]);
         setRequireConsent(false);
         setConsentText(defaultConsentText);
+        setAutoRejectRules([]);
         setErrorMessage("Basvuru formu yuklenemedi.");
       } finally {
         setLoading(false);
@@ -142,21 +208,16 @@ export default function FormBuilderPage() {
     };
 
     void loadApplicationForm();
-  }, [projectId, initialPeriodId, periodId]);
-
-  const selectedProject = useMemo(
-    () => projects.find((project) => String(project.id) === projectId) ?? null,
-    [projectId, projects]
-  );
+  }, [projectId, initialPeriodId, initialProgramId, periodId, effectiveProgramId, programId]);
 
   const addQuestion = (type: Question["type"]) => {
     if (!canEditForm) return;
     const nextQuestion: Question = {
       id: `q_${questionSeed}`,
       type,
-      label: "Yeni soru basligi",
+      label: "Yeni soru başlığı",
       required: false,
-      options: type === "select" || type === "radio" || type === "checkbox" ? ["Secenek 1"] : undefined,
+      options: type === "select" || type === "radio" || type === "checkbox" ? ["Seçenek 1"] : undefined,
     };
 
     setQuestions((prev) => [...prev, nextQuestion]);
@@ -173,6 +234,34 @@ export default function FormBuilderPage() {
     setQuestions((prev) => prev.map((question) => (question.id === id ? { ...question, ...updates } : question)));
   };
 
+  const autoRejectFields = useMemo(
+    () => questions.filter((question) => question.type !== "file"),
+    [questions],
+  );
+
+  const addAutoRejectRule = () => {
+    if (!canEditForm) return;
+    setAutoRejectRules((current) => [
+      ...current,
+      {
+        field_id: autoRejectFields[0]?.id ?? "",
+        operator: "equals",
+        value: "",
+        reason: "",
+      },
+    ]);
+  };
+
+  const updateAutoRejectRule = (index: number, updates: Partial<AutoRejectRule>) => {
+    if (!canEditForm) return;
+    setAutoRejectRules((current) => current.map((rule, itemIndex) => (itemIndex === index ? { ...rule, ...updates } : rule)));
+  };
+
+  const removeAutoRejectRule = (index: number) => {
+    if (!canEditForm) return;
+    setAutoRejectRules((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
   const handleSave = async () => {
     if (!projectId || questions.length === 0) {
       setErrorMessage("Kaydetmeden once proje secip en az bir soru ekleyin.");
@@ -186,10 +275,12 @@ export default function FormBuilderPage() {
 
     setSaving(true);
     setErrorMessage(null);
+    const autoRejectFieldIds = new Set(autoRejectFields.map((field) => field.id));
 
     try {
       await api.put(`/panel/projects/${projectId}/application-form`, {
         period_id: periodId ? Number(periodId) : null,
+        program_id: effectiveProgramId ? Number(effectiveProgramId) : null,
         fields: questions.map((question) => ({
           id: question.id,
           type: question.type,
@@ -199,6 +290,14 @@ export default function FormBuilderPage() {
         })),
         require_consent: requireConsent,
         consent_text: requireConsent ? consentText.trim() : null,
+        auto_reject_rules: autoRejectRules
+          .filter((rule) => autoRejectFieldIds.has(rule.field_id) && rule.value.trim())
+          .map((rule) => ({
+            field_id: rule.field_id,
+            operator: rule.operator,
+            value: rule.value.trim(),
+            reason: rule.reason.trim() || null,
+          })),
         is_active: true,
       });
 
@@ -317,8 +416,16 @@ export default function FormBuilderPage() {
       ) : null}
 
       <div className="glass-panel rounded-3xl p-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <select value={projectId} onChange={(event) => setProjectId(event.target.value)} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <select
+            value={projectId}
+            onChange={(event) => {
+              setProjectId(event.target.value);
+              setPeriodId("");
+              setProgramId("");
+            }}
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900"
+          >
             <option value="">Proje secin</option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
@@ -328,7 +435,10 @@ export default function FormBuilderPage() {
           </select>
           <select
             value={periodId}
-            onChange={(event) => setPeriodId(event.target.value)}
+            onChange={(event) => {
+              setPeriodId(event.target.value);
+              setProgramId("");
+            }}
             disabled={!canEditForm}
             className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 disabled:opacity-60"
           >
@@ -339,8 +449,27 @@ export default function FormBuilderPage() {
               </option>
             ))}
           </select>
+          <select
+            value={effectiveProgramId}
+            onChange={(event) => setProgramId(event.target.value)}
+            disabled={!canEditForm || filteredPrograms.length === 0}
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 disabled:opacity-60"
+          >
+            <option value="">Programa ozel form yok</option>
+            {filteredPrograms.map((program) => (
+              <option key={program.id} value={program.id}>
+                {program.title}
+              </option>
+            ))}
+          </select>
         </div>
-        {selectedProject ? <p className="mt-4 text-sm text-muted-foreground">Aktif duzenleme kapsami: {selectedProject.name}{periodId ? ` / ${periods.find((period) => String(period.id) === periodId)?.name ?? "Secili donem"}` : ""}</p> : null}
+        {selectedProject ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Aktif duzenleme kapsami: {selectedProject.name}
+            {selectedPeriod ? ` / ${selectedPeriod.name}` : ""}
+            {selectedProgram ? ` / ${selectedProgram.title}` : ""}
+          </p>
+        ) : null}
       </div>
 
       <div className="glass-panel rounded-3xl p-6">
@@ -367,6 +496,90 @@ export default function FormBuilderPage() {
           rows={4}
           className="mt-4 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 read-only:opacity-70"
         />
+      </div>
+
+      <div className="glass-panel rounded-3xl p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Otomatik Eleme Kurallari</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Basvuru cevabi belirli kosulu sagladiginda basvuru otomatik reddedilir ve gerekce kayda yazilir.</p>
+          </div>
+          <button
+            type="button"
+            disabled={!canEditForm || autoRejectFields.length === 0}
+            onClick={addAutoRejectRule}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Settings2 className="h-4 w-4" />
+            Kural Ekle
+          </button>
+        </div>
+
+        {autoRejectFields.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+            Otomatik eleme icin once dosya disinda en az bir soru ekleyin.
+          </div>
+        ) : autoRejectRules.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+            Henuz otomatik eleme kurali yok.
+          </div>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {autoRejectRules.map((rule, index) => (
+              <div key={`auto-rule-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_160px_1fr_auto]">
+                  <select
+                    disabled={!canEditForm}
+                    value={rule.field_id}
+                    onChange={(event) => updateAutoRejectRule(index, { field_id: event.target.value })}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 disabled:opacity-60"
+                  >
+                    <option value="">Soru secin</option>
+                    {autoRejectFields.map((question) => (
+                      <option key={question.id} value={question.id}>
+                        {question.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    disabled={!canEditForm}
+                    value={rule.operator}
+                    onChange={(event) => updateAutoRejectRule(index, { operator: event.target.value as AutoRejectRule["operator"] })}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 disabled:opacity-60"
+                  >
+                    {autoRejectOperators.map((operator) => (
+                      <option key={operator.value} value={operator.value}>
+                        {operator.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    readOnly={!canEditForm}
+                    value={rule.value}
+                    onChange={(event) => updateAutoRejectRule(index, { value: event.target.value })}
+                    placeholder="Karsilastirilacak cevap"
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 read-only:opacity-60"
+                  />
+                  <button
+                    type="button"
+                    disabled={!canEditForm}
+                    onClick={() => removeAutoRejectRule(index)}
+                    className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 disabled:opacity-40"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <input
+                  readOnly={!canEditForm}
+                  value={rule.reason}
+                  onChange={(event) => updateAutoRejectRule(index, { reason: event.target.value })}
+                  placeholder="Adaya/panele yazilacak gerekce"
+                  className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 read-only:opacity-60"
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -431,7 +644,7 @@ export default function FormBuilderPage() {
 
                     {(question.type === "select" || question.type === "radio" || question.type === "checkbox") && (
                       <div className="space-y-2 border-t border-white/5 pt-2">
-                        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Secenekler</p>
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Seçenekler</p>
                         {question.options?.map((option, index) => (
                           <div key={`${question.id}-${index}`} className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full bg-white/10" />
@@ -450,10 +663,10 @@ export default function FormBuilderPage() {
                         <button
                           type="button"
                           disabled={!canEditForm}
-                          onClick={() => updateQuestion(question.id, { options: [...(question.options || []), "Yeni secenek"] })}
+                          onClick={() => updateQuestion(question.id, { options: [...(question.options || []), "Yeni seçenek"] })}
                           className="pt-2 text-[10px] font-bold uppercase text-indigo-400 transition-colors hover:text-indigo-300 disabled:opacity-40"
                         >
-                          + Secenek Ekle
+                          + Seçenek Ekle
                         </button>
                       </div>
                     )}
@@ -464,7 +677,7 @@ export default function FormBuilderPage() {
 
             {questions.length === 0 && (
               <div className="glass-panel rounded-3xl border border-dashed border-white/10 p-20 text-center font-bold italic text-muted-foreground">
-                Henuz soru eklemediniz. Sag taraftan bir soru tipi secerek baslayin.
+                Henüz soru eklemediniz. Sağ taraftan bir soru tipi seçerek başlayın.
               </div>
             )}
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { StudentSidebar } from "@/components/student/sidebar";
+import { StudentMobileNav, StudentSidebar } from "@/components/student/sidebar";
 import { homePathForUser } from "@/lib/role-home";
 import { useAuth } from "@/store/useAuth";
 import { useRouter } from "next/navigation";
@@ -55,8 +55,9 @@ export default function StudentLayout({
   return (
     <div className="panel-workspace min-h-screen w-full">
       <StudentSidebar />
-      <div className="ml-20 min-h-screen border-l border-slate-200/60 bg-slate-100/95 transition-[margin-left] duration-300 peer-hover:ml-72 peer-focus-within:ml-72">
-        <main className="min-h-screen p-6 sm:p-8 lg:p-10">{children}</main>
+      <StudentMobileNav />
+      <div className="min-h-screen bg-slate-100/95 transition-[margin-left] duration-300 lg:ml-20 lg:border-l lg:border-slate-200/60 lg:peer-hover:ml-72 lg:peer-focus-within:ml-72">
+        <main className="min-h-screen px-4 pb-24 pt-4 sm:px-6 lg:p-10">{children}</main>
       </div>
     </div>
   );

@@ -5,11 +5,14 @@ import { Award, Search, Filter, Loader2, Plus, Trash2, CheckCircle, Upload, Down
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
+import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Project {
   id: number;
   name: string;
+  periods?: PeriodOption[];
+  active_period?: PeriodOption | null;
 }
 
 interface User {
@@ -27,6 +30,7 @@ interface Certificate {
   certificate_path?: string | null;
   download_url?: string | null;
   project?: { id: number; name: string };
+  period?: PeriodOption | null;
   user?: { id: number; name: string; surname: string; email: string };
 }
 
@@ -48,12 +52,16 @@ export default function AdminCertificatesPage() {
     if (typeof window === "undefined") return "";
     return new URLSearchParams(window.location.search).get("project_id") ?? "";
   });
+  const [periodId, setPeriodId] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("period_id") ?? "all";
+  });
   
   // Create Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [form, setForm] = useState({ user_id: "", project_id: "", type: "participation" });
+  const [form, setForm] = useState({ user_id: "", project_id: "", period_id: "", type: "participation" });
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -75,10 +83,19 @@ export default function AdminCertificatesPage() {
         const [viewProjectsRes, createProjectsRes, usersRes] = await Promise.all([viewProjectsReq, createProjectsReq, usersReq]);
         const merged = new Map<number, Project>();
         [...(viewProjectsRes.data.projects ?? []), ...(createProjectsRes.data.projects ?? [])].forEach((project) => {
-          merged.set(project.id, { id: project.id, name: project.name });
+          const existing = merged.get(project.id);
+          const periods = existing?.periods?.length ? existing.periods : project.periods;
+          const activePeriod = existing?.active_period ?? project.active_period ?? periods?.find((period) => period.status === "active") ?? null;
+
+          merged.set(project.id, {
+            id: project.id,
+            name: project.name,
+            periods,
+            active_period: activePeriod,
+          });
         });
         const raw = Array.from(merged.values());
-        setProjects(raw.map((p) => ({ id: p.id, name: p.name })));
+        setProjects(raw);
         setUsers(usersRes.data.users?.data ?? []);
       } catch (error) {
         console.error("Filtre verileri yüklenemedi", error);
@@ -91,7 +108,12 @@ export default function AdminCertificatesPage() {
     setLoading(true);
     try {
       const res = await api.get("/panel/certificates", {
-        params: { page, search, project_id: projectId }
+        params: {
+          page,
+          search,
+          project_id: projectId || undefined,
+          period_id: periodId !== "all" ? periodId : undefined,
+        }
       });
       setCertificates(res.data.certificates.data || []);
       setTotalPages(res.data.certificates.last_page || 1);
@@ -100,7 +122,7 @@ export default function AdminCertificatesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, projectId, search]);
+  }, [page, periodId, projectId, search]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -123,6 +145,7 @@ export default function AdminCertificatesPage() {
       const formData = new FormData();
       formData.append("user_id", form.user_id);
       formData.append("project_id", form.project_id);
+      if (form.period_id) formData.append("period_id", form.period_id);
       formData.append("type", form.type);
       if (certificateFile) {
         formData.append("certificate_file", certificateFile);
@@ -132,7 +155,7 @@ export default function AdminCertificatesPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setIsModalOpen(false);
-      setForm({ user_id: "", project_id: "", type: "participation" });
+      setForm({ user_id: "", project_id: "", period_id: "", type: "participation" });
       setCertificateFile(null);
       applyFilters();
     } catch (error: unknown) {
@@ -213,8 +236,12 @@ export default function AdminCertificatesPage() {
             <ExportButtons
               endpoint="/panel/certificates/export"
               filename="sertifikalar"
-              params={{ search: search || undefined, project_id: projectId || undefined }}
-              buttonLabel="Sertifikalari Disa Aktar"
+              params={{
+                search: search || undefined,
+                project_id: projectId || undefined,
+                period_id: periodId !== "all" ? periodId : undefined,
+              }}
+              buttonLabel="Sertifikaları Dışa Aktar"
             />
           ) : null}
           {canCreate ? (
@@ -243,13 +270,31 @@ export default function AdminCertificatesPage() {
         </div>
         <select 
           value={projectId} 
-          onChange={(e) => setProjectId(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            const project = filterableProjects.find((item) => String(item.id) === value);
+            setProjectId(value);
+            setPeriodId(value ? defaultPeriodIdForProject(project) || "all" : "all");
+          }}
           className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-amber-500 min-w-[200px]"
         >
           <option value="">Tüm Projeler</option>
           {filterableProjects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={periodId}
+          onChange={(e) => setPeriodId(e.target.value)}
+          disabled={!projectId}
+          className="min-w-[200px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-amber-500"
+        >
+          <option value="all">{projectId ? "Tüm Dönemler" : "Proje seçince dönem"}</option>
+          {periodsForProject(filterableProjects.find((project) => String(project.id) === projectId)).map((period) => (
+            <option key={period.id} value={period.id}>
+              {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
             </option>
           ))}
         </select>
@@ -269,6 +314,7 @@ export default function AdminCertificatesPage() {
               <tr>
                 <th className="px-6 py-4">Öğrenci / Alıcı</th>
                 <th className="px-6 py-4">Proje</th>
+                <th className="px-6 py-4">Dönem</th>
                 <th className="px-6 py-4">Tür</th>
                 <th className="px-6 py-4">Doğrulama Kodu</th>
                 <th className="px-6 py-4">Veriliş Tarihi</th>
@@ -278,13 +324,13 @@ export default function AdminCertificatesPage() {
             <tbody className="divide-y divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-amber-500" />
                   </td>
                 </tr>
               ) : certificates.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                     Sertifika bulunamadı.
                   </td>
                 </tr>
@@ -296,6 +342,7 @@ export default function AdminCertificatesPage() {
                       <div className="text-[10px] text-muted-foreground">{cert.user?.email}</div>
                     </td>
                     <td className="px-6 py-4 font-bold text-slate-900">{cert.project?.name || '-'}</td>
+                    <td className="px-6 py-4 text-xs font-semibold text-slate-600">{cert.period?.name || 'Genel'}</td>
                     <td className="px-6 py-4">
                       <span className="inline-flex rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-amber-500">
                         {cert.type}
@@ -357,9 +404,9 @@ export default function AdminCertificatesPage() {
 
       {/* CREATE CERTIFICATE MODAL */}
       {isModalOpen && canCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <form onSubmit={handleCreate} className="w-full max-w-md rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl p-6">
-            <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <form onSubmit={handleCreate} className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h2 className="mb-2 flex items-center gap-2 text-xl font-black text-slate-900">
               <Award className="h-5 w-5 text-amber-500" />
               Sertifika Oluştur
             </h2>
@@ -391,13 +438,33 @@ export default function AdminCertificatesPage() {
                 <select
                   required
                   value={form.project_id}
-                  onChange={(e) => setForm((f) => ({ ...f, project_id: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const project = creatableProjects.find((item) => String(item.id) === value);
+                    setForm((f) => ({ ...f, project_id: value, period_id: defaultPeriodIdForProject(project) }));
+                  }}
                   className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-amber-500"
                 >
                   <option value="">Seçiniz...</option>
                   {creatableProjects.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Dönem</label>
+                <select
+                  value={form.period_id}
+                  onChange={(e) => setForm((f) => ({ ...f, period_id: e.target.value }))}
+                  disabled={!form.project_id}
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-amber-500"
+                >
+                  <option value="">Dönem seçmeden oluştur</option>
+                  {periodsForProject(creatableProjects.find((project) => String(project.id) === form.project_id)).map((period) => (
+                    <option key={period.id} value={period.id}>
+                      {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
                     </option>
                   ))}
                 </select>
@@ -410,18 +477,18 @@ export default function AdminCertificatesPage() {
                   onChange={(e) => setForm(f => ({ ...f, type: e.target.value }))}
                   className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-amber-500"
                 >
-                  <option value="participation">Katilim Belgesi</option>
-                  <option value="achievement">Basari / Onur Belgesi</option>
+                  <option value="participation">Katılım Belgesi</option>
+                  <option value="achievement">Başarı / Onur Belgesi</option>
                   <option value="graduation">Mezuniyet Belgesi</option>
                 </select>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Sertifika Dosyasi
+                  Sertifika Dosyası
                 </label>
                 <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white p-3 text-sm font-bold text-slate-700 transition-colors hover:border-amber-500">
                   <Upload className="h-4 w-4 text-amber-500" />
-                  <span className="truncate">{certificateFile ? certificateFile.name : "PDF veya gorsel sec"}</span>
+                  <span className="truncate">{certificateFile ? certificateFile.name : "PDF veya görsel seç"}</span>
                   <input
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"

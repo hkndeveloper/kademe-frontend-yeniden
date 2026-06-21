@@ -5,13 +5,15 @@ import { Download, FileStack, Loader2, Trash2 } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
 
 type Project = {
   id: number;
   name: string;
-  active_period?: { id: number; name?: string | null } | null;
+  active_period?: PeriodOption | null;
+  periods?: PeriodOption[];
 };
 
 type Submission = {
@@ -50,9 +52,18 @@ export default function PanelAssignmentsPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [form, setForm] = useState({
     project_id: "",
+    period_id: "",
     title: "",
     description: "",
     due_date: "",
+  });
+  const [projectFilter, setProjectFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("project_id") ?? "all";
+  });
+  const [periodFilter, setPeriodFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("period_id") ?? "all";
   });
 
   const createProjects = useMemo(
@@ -60,13 +71,17 @@ export default function PanelAssignmentsPage() {
     [projects, canAccessProject],
   );
   const selectedProject = createProjects.find((project) => String(project.id) === form.project_id);
+  const selectedPeriodId = form.period_id || (selectedProject?.active_period?.id ? String(selectedProject.active_period.id) : "");
 
   useEffect(() => {
     let isActive = true;
     const initialProjectId = new URLSearchParams(window.location.search).get("project_id");
     Promise.all([
       api.get<{ assignments: Paginated<Assignment> }>("/panel/assignments", {
-        params: { project_id: initialProjectId ?? undefined },
+        params: {
+          project_id: initialProjectId ?? undefined,
+          period_id: new URLSearchParams(window.location.search).get("period_id") ?? undefined,
+        },
       }),
       api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "assignments.view" } }),
     ])
@@ -75,7 +90,10 @@ export default function PanelAssignmentsPage() {
         setAssignments(assignmentsResponse.data.assignments?.data ?? []);
         setProjects(projectsResponse.data.projects ?? []);
         if (initialProjectId) {
-          setForm((current) => ({ ...current, project_id: initialProjectId }));
+          const project = projectsResponse.data.projects?.find((item) => String(item.id) === initialProjectId);
+          const nextPeriod = new URLSearchParams(window.location.search).get("period_id") ?? (defaultPeriodIdForProject(project) || "");
+          setForm((current) => ({ ...current, project_id: initialProjectId, period_id: nextPeriod }));
+          setPeriodFilter(nextPeriod || "all");
         }
       })
       .finally(() => {
@@ -87,22 +105,32 @@ export default function PanelAssignmentsPage() {
     };
   }, []);
 
+  async function refreshAssignments(nextProject = projectFilter, nextPeriod = periodFilter) {
+    const response = await api.get<{ assignments: Paginated<Assignment> }>("/panel/assignments", {
+      params: {
+        project_id: nextProject !== "all" ? nextProject : undefined,
+        period_id: nextPeriod !== "all" ? nextPeriod : undefined,
+      },
+    });
+    setAssignments(response.data.assignments?.data ?? []);
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedProject?.active_period?.id) return;
+    if (!selectedProject || !selectedPeriodId) return;
     setSaving(true);
     setFeedback(null);
     try {
       const response = await api.post<{ message: string; assignment: Assignment }>("/panel/assignments", {
         project_id: selectedProject.id,
-        period_id: selectedProject.active_period.id,
+        period_id: Number(selectedPeriodId),
         title: form.title,
         description: form.description || null,
         due_date: form.due_date || null,
       });
       setAssignments((current) => [response.data.assignment, ...current]);
       setFeedback(response.data.message);
-      setForm({ project_id: "", title: "", description: "", due_date: "" });
+      setForm({ project_id: "", period_id: "", title: "", description: "", due_date: "" });
     } finally {
       setSaving(false);
     }
@@ -151,7 +179,15 @@ export default function PanelAssignmentsPage() {
           </div>
         </div>
         <PermissionGate permission="assignments.view">
-          <ExportButtons endpoint="/panel/assignments/export" filename="odevler" buttonLabel="Odevleri Disa Aktar" />
+          <ExportButtons
+            endpoint="/panel/assignments/export"
+            filename="odevler"
+            params={{
+              project_id: projectFilter !== "all" ? projectFilter : undefined,
+              period_id: periodFilter !== "all" ? periodFilter : undefined,
+            }}
+            buttonLabel="Odevleri Disa Aktar"
+          />
         </PermissionGate>
       </div>
 
@@ -159,16 +195,32 @@ export default function PanelAssignmentsPage() {
 
       <PermissionGate permission="assignments.create">
         <form onSubmit={handleSubmit} className="glass-panel rounded-3xl p-6">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_220px]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_220px]">
             <select
               value={form.project_id}
-              onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))}
+              onChange={(event) => {
+                const projectId = event.target.value;
+                const project = createProjects.find((item) => String(item.id) === projectId);
+                setForm((current) => ({ ...current, project_id: projectId, period_id: defaultPeriodIdForProject(project) }));
+              }}
               required
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
             >
               <option value="">Proje sec</option>
               {createProjects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </select>
+            <select
+              value={form.period_id}
+              onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))}
+              disabled={!form.project_id}
+              required
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+            >
+              <option value="">Donem sec</option>
+              {(selectedProject?.periods ?? []).map((period) => (
+                <option key={period.id} value={period.id}>{period.name}</option>
               ))}
             </select>
             <input
@@ -193,7 +245,7 @@ export default function PanelAssignmentsPage() {
             className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
           />
           <div className="mt-4 flex justify-end">
-            <button disabled={saving || !selectedProject} className="rounded-xl bg-violet-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">
+            <button disabled={saving || !selectedProject || !selectedPeriodId} className="rounded-xl bg-violet-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">
               {saving ? "Kaydediliyor..." : "Odev Olustur"}
             </button>
           </div>
@@ -201,6 +253,24 @@ export default function PanelAssignmentsPage() {
       </PermissionGate>
 
       <PermissionGate permission="assignments.view">
+        <div className="glass-panel rounded-3xl p-4">
+          <ProjectPeriodFilters
+            projects={projects}
+            selectedProjectId={projectFilter}
+            selectedPeriodId={periodFilter}
+            onProjectChange={(value) => {
+              const project = projects.find((item) => String(item.id) === value);
+              const nextPeriod = value === "all" ? "all" : defaultPeriodIdForProject(project) || "all";
+              setProjectFilter(value);
+              setPeriodFilter(nextPeriod);
+              void refreshAssignments(value, nextPeriod);
+            }}
+            onPeriodChange={(value) => {
+              setPeriodFilter(value);
+              void refreshAssignments(projectFilter, value);
+            }}
+          />
+        </div>
         <div className="glass-panel overflow-hidden rounded-3xl">
           {loading ? (
             <div className="flex min-h-40 items-center justify-center">

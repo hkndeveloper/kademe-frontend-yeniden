@@ -5,11 +5,14 @@ import { ClipboardList, Loader2, Plus, Trash2, UserCheck } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ExportButtons } from "@/components/shared/ExportButtons";
+import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 
 type Project = {
   id: number;
   name: string;
+  periods?: PeriodOption[];
+  active_period?: PeriodOption | null;
 };
 
 type VolunteerApplication = {
@@ -31,7 +34,9 @@ type Opportunity = {
   quota?: number | null;
   status: "open" | "closed" | "archived";
   project_id: number;
+  period_id?: number | null;
   project?: Project | null;
+  period?: PeriodOption | null;
   applications_count?: number;
   applications?: VolunteerApplication[];
 };
@@ -42,6 +47,7 @@ type Paginated<T> = {
 
 const emptyForm = {
   project_id: "",
+  period_id: "",
   title: "",
   description: "",
   location: "",
@@ -60,6 +66,14 @@ export default function PanelVolunteerPage() {
   const [showForm, setShowForm] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [projectFilter, setProjectFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("project_id") ?? "all";
+  });
+  const [periodFilter, setPeriodFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("period_id") ?? "all";
+  });
 
   const manageableProjects = useMemo(
     () => projects.filter((project) => canAccessProject("volunteer.manage", project.id)),
@@ -71,7 +85,10 @@ export default function PanelVolunteerPage() {
     const initialProjectId = new URLSearchParams(window.location.search).get("project_id");
     Promise.all([
       api.get<{ opportunities: Paginated<Opportunity> }>("/panel/volunteer/opportunities", {
-        params: { project_id: initialProjectId ?? undefined },
+        params: {
+          project_id: initialProjectId ?? undefined,
+          period_id: new URLSearchParams(window.location.search).get("period_id") ?? undefined,
+        },
       }),
       api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "volunteer.view" } }),
       hasPermission("volunteer.manage")
@@ -86,7 +103,13 @@ export default function PanelVolunteerPage() {
         });
         setOpportunities(opportunityResponse.data.opportunities?.data ?? []);
         setProjects(Array.from(mergedProjects.values()));
-        if (initialProjectId) setForm((current) => ({ ...current, project_id: initialProjectId }));
+        const projectItems = Array.from(mergedProjects.values());
+        if (initialProjectId) {
+          const project = projectItems.find((item) => String(item.id) === initialProjectId);
+          const nextPeriod = new URLSearchParams(window.location.search).get("period_id") ?? (defaultPeriodIdForProject(project) || "all");
+          setForm((current) => ({ ...current, project_id: initialProjectId, period_id: nextPeriod === "all" ? "" : nextPeriod }));
+          setPeriodFilter(nextPeriod);
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -97,6 +120,16 @@ export default function PanelVolunteerPage() {
     };
   }, [hasPermission]);
 
+  async function refreshOpportunities(nextProject = projectFilter, nextPeriod = periodFilter) {
+    const response = await api.get<{ opportunities: Paginated<Opportunity> }>("/panel/volunteer/opportunities", {
+      params: {
+        project_id: nextProject !== "all" ? nextProject : undefined,
+        period_id: nextPeriod !== "all" ? nextPeriod : undefined,
+      },
+    });
+    setOpportunities(response.data.opportunities?.data ?? []);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -104,6 +137,7 @@ export default function PanelVolunteerPage() {
     try {
       const response = await api.post<{ message: string; opportunity: Opportunity }>("/panel/volunteer/opportunities", {
         project_id: Number(form.project_id),
+        period_id: form.period_id ? Number(form.period_id) : null,
         title: form.title,
         description: form.description || null,
         location: form.location || null,
@@ -175,6 +209,10 @@ export default function PanelVolunteerPage() {
             <ExportButtons
               endpoint="/panel/volunteer/opportunities/export"
               filename="gonullu_ilanlari"
+              params={{
+                project_id: projectFilter !== "all" ? projectFilter : undefined,
+                period_id: periodFilter !== "all" ? periodFilter : undefined,
+              }}
               buttonLabel="Gonullu Kayitlarini Disa Aktar"
             />
             <PermissionGate permission="volunteer.manage">
@@ -199,12 +237,27 @@ export default function PanelVolunteerPage() {
                 <select
                   required
                   value={form.project_id}
-                  onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))}
+                  onChange={(event) => {
+                    const projectId = event.target.value;
+                    const project = manageableProjects.find((item) => String(item.id) === projectId);
+                    setForm((current) => ({ ...current, project_id: projectId, period_id: defaultPeriodIdForProject(project) }));
+                  }}
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
                 >
                   <option value="">Proje sec</option>
                   {manageableProjects.map((project) => (
                     <option key={project.id} value={project.id}>{project.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={form.period_id}
+                  onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))}
+                  disabled={!form.project_id}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                >
+                  <option value="">Tum donemler / genel</option>
+                  {(manageableProjects.find((project) => String(project.id) === form.project_id)?.periods ?? []).map((period) => (
+                    <option key={period.id} value={period.id}>{period.name}</option>
                   ))}
                 </select>
                 <input
@@ -257,6 +310,25 @@ export default function PanelVolunteerPage() {
           </PermissionGate>
         ) : null}
 
+        <div className="glass-panel rounded-3xl p-4">
+          <ProjectPeriodFilters
+            projects={projects}
+            selectedProjectId={projectFilter}
+            selectedPeriodId={periodFilter}
+            onProjectChange={(value) => {
+              const project = projects.find((item) => String(item.id) === value);
+              const nextPeriod = value === "all" ? "all" : defaultPeriodIdForProject(project) || "all";
+              setProjectFilter(value);
+              setPeriodFilter(nextPeriod);
+              void refreshOpportunities(value, nextPeriod);
+            }}
+            onPeriodChange={(value) => {
+              setPeriodFilter(value);
+              void refreshOpportunities(projectFilter, value);
+            }}
+          />
+        </div>
+
         <div className="glass-panel overflow-hidden rounded-3xl">
           {loading ? (
             <div className="flex min-h-40 items-center justify-center">
@@ -270,7 +342,7 @@ export default function PanelVolunteerPage() {
                     <div>
                       <div className="text-base font-bold text-slate-900">{opportunity.title}</div>
                       <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                        {opportunity.project?.name ?? "-"} / {opportunity.status} / {opportunity.applications_count ?? opportunity.applications?.length ?? 0} basvuru
+                        {opportunity.project?.name ?? "-"} {opportunity.period?.name ? `/ ${opportunity.period.name}` : ""} / {opportunity.status} / {opportunity.applications_count ?? opportunity.applications?.length ?? 0} basvuru
                       </div>
                       {opportunity.description ? <p className="mt-2 text-sm text-muted-foreground">{opportunity.description}</p> : null}
                     </div>

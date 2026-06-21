@@ -1,16 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell, CheckCircle2, Download, FileText, Loader2, Mail, MessageSquare, Send, Users, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Project {
   id: number;
   name: string;
+  periods?: PeriodOption[];
+  active_period?: PeriodOption | null;
 }
 
 interface Announcement {
@@ -19,7 +22,9 @@ interface Announcement {
   content: string;
   category: string | null;
   target_roles: string[] | null;
+  target_units: string[] | null;
   project?: { id: number; name: string } | null;
+  period?: PeriodOption | null;
   creator?: { id: number; name: string; surname: string } | null;
   published_at: string;
 }
@@ -53,6 +58,33 @@ const roleLabels: Record<string, string> = {
   alumni: "Mezun",
 };
 
+const targetUnitLabels: Record<string, string> = {
+  media: "Medya / Tasarim",
+  operations: "Operasyon",
+  program: "Program / Proje",
+  finance: "Finans",
+  official_affairs: "Resmi Evrak",
+};
+
+const targetUnitAliases: Record<string, string[]> = {
+  media: ["media", "medya", "icerik", "content", "tasarim", "design"],
+  operations: ["operations", "operasyon", "lojistik", "logistics"],
+  program: ["program", "proje", "project", "egitim", "education"],
+  finance: ["finance", "finans", "mali", "muhasebe"],
+  official_affairs: ["official_affairs", "official affairs", "resmi", "evrak", "idari"],
+};
+
+const normalizeUnit = (value?: string | null) =>
+  (value ?? "")
+    .toLocaleLowerCase("tr-TR")
+    .replaceAll("ı", "i")
+    .replaceAll("ğ", "g")
+    .replaceAll("ü", "u")
+    .replaceAll("ş", "s")
+    .replaceAll("ö", "o")
+    .replaceAll("ç", "c")
+    .trim();
+
 export default function AdminAnnouncementsPage() {
   const { hasPermission } = useAuth();
   const user = useAuth((state) => state.user);
@@ -82,8 +114,18 @@ export default function AdminAnnouncementsPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Genel");
+  const [filterProjectId, setFilterProjectId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("project_id") ?? "";
+  });
+  const [filterPeriodId, setFilterPeriodId] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("period_id") ?? "all";
+  });
   const [projectId, setProjectId] = useState("");
+  const [periodId, setPeriodId] = useState("");
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
+  const [targetUnits, setTargetUnits] = useState<string[]>([]);
   const [sendSms, setSendSms] = useState(false);
   const [sendEmail, setSendEmail] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -92,12 +134,41 @@ export default function AdminAnnouncementsPage() {
   const canDeleteAnnouncements = hasPermission("announcements.delete");
   const canSendSms = hasPermission("announcements.send_sms");
   const canSendEmail = hasPermission("announcements.send_email");
+  const filterProject = useMemo(
+    () => projects.find((project) => String(project.id) === filterProjectId),
+    [filterProjectId, projects]
+  );
+  const formProject = useMemo(
+    () => projects.find((project) => String(project.id) === projectId),
+    [projectId, projects]
+  );
+  const filterPeriods = useMemo(() => periodsForProject(filterProject), [filterProject]);
+  const formPeriods = useMemo(() => periodsForProject(formProject), [formProject]);
+  const availableTargetUnits = useMemo(() => {
+    const units = Object.keys(targetUnitLabels);
+    if (hasGlobalScope("announcements.create")) return units;
+
+    const manageableUnit = normalizeUnit(user?.authorization_context?.manageable_unit ?? user?.department);
+    if (!manageableUnit) return [];
+
+    return units.filter((unit) =>
+      (targetUnitAliases[unit] ?? [unit]).some((alias) => {
+        const normalizedAlias = normalizeUnit(alias);
+        return manageableUnit.includes(normalizedAlias) || normalizedAlias.includes(manageableUnit);
+      })
+    );
+  }, [hasGlobalScope, user?.authorization_context?.manageable_unit, user?.department]);
 
   const loadAnnouncements = useCallback(async () => {
     setListLoading(true);
     setErrorMessage("");
     try {
-      const res = await api.get("/panel/announcements");
+      const res = await api.get("/panel/announcements", {
+        params: {
+          project_id: filterProjectId || undefined,
+          period_id: filterPeriodId !== "all" ? filterPeriodId : undefined,
+        },
+      });
       const items = Array.isArray(res.data?.announcements?.data) ? res.data.announcements.data : [];
       setAnnouncements(items);
     } catch (error) {
@@ -106,7 +177,7 @@ export default function AdminAnnouncementsPage() {
     } finally {
       setListLoading(false);
     }
-  }, []);
+  }, [filterPeriodId, filterProjectId]);
 
   const loadCommunicationLogs = useCallback(async (page = 1) => {
     if (!canViewAnnouncements) return;
@@ -176,7 +247,9 @@ export default function AdminAnnouncementsPage() {
     setContent("");
     setCategory("Genel");
     setProjectId("");
+    setPeriodId("");
     setTargetRoles([]);
+    setTargetUnits([]);
     setSendSms(false);
     setSendEmail(false);
     setFile(null);
@@ -226,7 +299,11 @@ export default function AdminAnnouncementsPage() {
       formData.append("content", content.trim());
       if (category.trim()) formData.append("category", category.trim());
       if (projectId) formData.append("project_id", projectId);
+      if (periodId) formData.append("period_id", periodId);
       targetRoles.forEach((role, index) => formData.append(`target_roles[${index}]`, role));
+      targetUnits
+        .filter((unit) => availableTargetUnits.includes(unit))
+        .forEach((unit, index) => formData.append(`target_units[${index}]`, unit));
       formData.append("send_sms", sendSms ? "1" : "0");
       formData.append("send_email", sendEmail ? "1" : "0");
       if (file && sendEmail) {
@@ -262,6 +339,10 @@ export default function AdminAnnouncementsPage() {
 
   const toggleRole = (role: string) => {
     setTargetRoles((prev) => (prev.includes(role) ? prev.filter((item) => item !== role) : [...prev, role]));
+  };
+
+  const toggleTargetUnit = (unit: string) => {
+    setTargetUnits((prev) => (prev.includes(unit) ? prev.filter((item) => item !== unit) : [...prev, unit]));
   };
 
   const handleDownloadAttachment = async (log: CommunicationLog) => {
@@ -317,7 +398,15 @@ export default function AdminAnnouncementsPage() {
           </div>
         </div>
         <PermissionGate permission="announcements.export">
-          <ExportButtons endpoint="/panel/announcements/export" filename="duyurular" buttonLabel="Duyurulari Disa Aktar" />
+          <ExportButtons
+            endpoint="/panel/announcements/export"
+            filename="duyurular"
+            params={{
+              project_id: filterProjectId || undefined,
+              period_id: filterPeriodId !== "all" ? filterPeriodId : undefined,
+            }}
+            buttonLabel="Duyurulari Disa Aktar"
+          />
         </PermissionGate>
       </div>
 
@@ -375,6 +464,58 @@ export default function AdminAnnouncementsPage() {
       >
       {activeTab === "list" && canViewAnnouncements ? (
         <div className="space-y-6">
+        <div className="glass-panel rounded-3xl p-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Proje
+              </span>
+              <select
+                value={filterProjectId}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const project = projects.find((item) => String(item.id) === value);
+                  setFilterProjectId(value);
+                  setFilterPeriodId(value ? defaultPeriodIdForProject(project) || "all" : "all");
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+              >
+                <option value="">Tum projeler</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Donem
+              </span>
+              <select
+                value={filterPeriodId}
+                onChange={(e) => setFilterPeriodId(e.target.value)}
+                disabled={!filterProjectId || filterPeriods.length === 0}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <option value="all">{filterProjectId ? "Tum donemler" : "Proje secince donem filtrelenir"}</option>
+                {filterPeriods.map((period) => (
+                  <option key={period.id} value={period.id}>
+                    {period.name}
+                    {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => void loadAnnouncements()}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700"
+            >
+              Yenile
+            </button>
+          </div>
+        </div>
         <div className="glass-panel overflow-hidden rounded-3xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-muted-foreground">
@@ -413,18 +554,34 @@ export default function AdminAnnouncementsPage() {
                         <div className="text-[10px] uppercase text-indigo-400">
                           {announcement.project?.name || "Tumu"}
                         </div>
+                        {announcement.period?.name ? (
+                          <div className="mt-0.5 text-[10px] uppercase text-amber-500">
+                            {announcement.period.name}
+                            {announcement.period.status === "completed" ? " / arsiv" : ""}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
-                          {announcement.target_roles?.length ? (
-                            announcement.target_roles.map((role) => (
+                          {announcement.target_roles?.length || announcement.target_units?.length ? (
+                            <>
+                            {announcement.target_roles?.map((role) => (
                               <span
                                 key={role}
                                 className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase text-slate-900"
                               >
                                 {roleLabels[role] || role}
                               </span>
-                            ))
+                            ))}
+                            {announcement.target_units?.map((unit) => (
+                              <span
+                                key={unit}
+                                className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] uppercase text-indigo-700"
+                              >
+                                {targetUnitLabels[unit] || unit}
+                              </span>
+                            ))}
+                            </>
                           ) : (
                             <span className="text-[10px]">Tumu</span>
                           )}
@@ -662,13 +819,38 @@ export default function AdminAnnouncementsPage() {
                 </label>
                 <select
                   value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const project = projects.find((item) => String(item.id) === value);
+                    setProjectId(value);
+                    setPeriodId(value ? defaultPeriodIdForProject(project) : "");
+                  }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
                 >
                   <option value="">Tum Projeler</option>
                   {projects.filter((project) => canAccessProject("announcements.create", project.id)).map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Donem
+                </label>
+                <select
+                  value={periodId}
+                  onChange={(e) => setPeriodId(e.target.value)}
+                  disabled={!projectId || formPeriods.length === 0}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <option value="">{projectId ? "Donem secmeden gonder" : "Proje secince donem secilebilir"}</option>
+                  {formPeriods.map((period) => (
+                    <option key={period.id} value={period.id}>
+                      {period.name}
+                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
                     </option>
                   ))}
                 </select>
@@ -694,6 +876,34 @@ export default function AdminAnnouncementsPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Birim Bazli Secim
+                </label>
+                {availableTargetUnits.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {availableTargetUnits.map((unit) => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => toggleTargetUnit(unit)}
+                        className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
+                          targetUnits.includes(unit)
+                            ? "border-indigo-500 bg-indigo-500/20 text-white"
+                            : "border-slate-200 bg-white text-muted-foreground hover:bg-white/5"
+                        }`}
+                      >
+                        {targetUnitLabels[unit] || unit}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-xs text-muted-foreground">
+                    Birim hedefi icin global yetki veya tanimli personel birimi gerekir.
+                  </div>
+                )}
               </div>
             </div>
 

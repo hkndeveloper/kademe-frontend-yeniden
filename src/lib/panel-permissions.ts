@@ -1,6 +1,7 @@
 import { unifiedPanelMenu } from "@/lib/panel-menu";
 import type { PanelNavUser } from "@/lib/panel-scope";
 import { shouldShowMyProjectNav, shouldShowProjectsListNav } from "@/lib/panel-scope";
+import type { PanelModule } from "@/store/useAuth";
 
 function normalizePanelPath(pathname: string): string {
   const withoutQuery = pathname.split("?")[0] ?? pathname;
@@ -56,14 +57,62 @@ function hasSettingsAccess(
   );
 }
 
+function hasScopedPermission(
+  user: PanelNavUser | null,
+  hasPermission: (permission: string) => boolean,
+  permission: string
+): boolean {
+  return hasPermission(permission) && !!user?.permission_scopes?.[permission];
+}
+
+function hasAnyScopedPermission(
+  user: PanelNavUser | null,
+  hasPermission: (permission: string) => boolean,
+  permissions: string[]
+): boolean {
+  return permissions.some((permission) => hasScopedPermission(user, hasPermission, permission));
+}
+
+function hasKpdAccess(
+  user: PanelNavUser | null,
+  hasPermission: (permission: string) => boolean
+): boolean {
+  const kpdPermissions = [
+    "kpd.appointments.view",
+    "kpd.reports.view",
+    "kpd.appointments.manage",
+    "kpd.reports.create",
+    "kpd.reports.delete",
+  ];
+
+  if (!hasAnyScopedPermission(user, hasPermission, kpdPermissions)) return false;
+
+  const hasGlobalKpdScope = kpdPermissions.some((permission) => hasGlobalScopeFromUser(user, permission));
+  if (hasGlobalKpdScope) return true;
+
+  const kpdProjectIds = user?.authorization_context?.project_ids_by_special_module?.kpd_appointments ?? [];
+  const manageableProjectIds = user?.authorization_context?.manageable_project_ids ?? [];
+
+  return manageableProjectIds
+    .map((projectId) => Number(projectId))
+    .filter((projectId) => Number.isFinite(projectId))
+    .some((projectId) => kpdProjectIds.map(Number).includes(projectId));
+}
+
 export function canAccessPanelPath(
   pathname: string,
   hasPermission: (permission: string) => boolean,
   hasAnyPermission: (permissions: string[]) => boolean,
-  user: PanelNavUser | null
+  user: PanelNavUser | null,
+  panelModules: PanelModule[] = []
 ): boolean {
   const normalized = normalizePanelPath(pathname);
   if (!normalized.startsWith("/panel")) return true;
+
+  const moduleMatch = panelModules.find((module) => module.panel_type === "authority" && module.href === normalized);
+  if (moduleMatch) {
+    return true;
+  }
 
   if (normalized === "/panel/projects") {
     return shouldShowProjectsListNav(user, hasPermission);
@@ -81,23 +130,29 @@ export function canAccessPanelPath(
     return hasPermission("permissions.matrix.view") && hasGlobalScopeFromUser(user, "permissions.matrix.view");
   }
   if (normalized === "/panel/newsletter") {
-    return hasPermission("newsletter.view") && hasGlobalScopeFromUser(user, "newsletter.view");
+    return hasScopedPermission(user, hasPermission, "newsletter.view");
   }
   if (normalized === "/panel/chatbot") {
-    return (
-      (hasPermission("chatbot.view") && hasGlobalScopeFromUser(user, "chatbot.view")) ||
-      (hasPermission("chatbot.manage") && hasGlobalScopeFromUser(user, "chatbot.manage"))
-    );
+    return hasAnyScopedPermission(user, hasPermission, ["chatbot.view", "chatbot.manage"]);
   }
   if (normalized === "/panel/settings") {
     return hasSettingsAccess(user, hasPermission);
+  }
+  if (normalized === "/panel/content") {
+    return hasScopedPermission(user, hasPermission, "content.view");
+  }
+  if (normalized === "/panel/motivation") {
+    return hasAnyScopedPermission(user, hasPermission, ["motivation.view", "motivation.manage"]);
+  }
+  if (normalized === "/panel/kpd") {
+    return hasKpdAccess(user, hasPermission);
   }
 
   const menuMatch = unifiedPanelMenu.find((item) => item.href === normalized);
   if (menuMatch) {
     if (menuMatch.anyPermissions?.length) return hasAnyPermission(menuMatch.anyPermissions);
     if (!menuMatch.permission) return true;
-    if (["content.view", "permissions.matrix.view", "newsletter.view", "chatbot.view"].includes(menuMatch.permission)) {
+    if (["permissions.matrix.view"].includes(menuMatch.permission)) {
       return hasPermission(menuMatch.permission) && hasGlobalScopeFromUser(user, menuMatch.permission);
     }
     if (menuMatch.permission === "settings.view") {

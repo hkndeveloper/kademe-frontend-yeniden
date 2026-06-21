@@ -20,11 +20,14 @@ import {
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Project {
   id: number;
   name: string;
+  periods?: PeriodOption[];
+  active_period?: PeriodOption | null;
 }
 
 interface Application {
@@ -140,6 +143,48 @@ function applicationActionPermission(status: ActionStatus): string {
   return status === "waitlisted" ? "applications.waitlist.manage" : "applications.update_status";
 }
 
+/** Backend `AdminApplicationController::allowedStatusesFor` ile ayni kurallar (aksiyon butonlari). */
+function computeAvailableActionStatuses(application: Pick<Application, "status" | "hasInterview">): ActionStatus[] {
+  if (!application.hasInterview) {
+    if (application.status === "pending" || application.status === "waitlisted") {
+      return ["accepted", "waitlisted", "rejected"];
+    }
+    return [];
+  }
+
+  switch (application.status) {
+    case "pending":
+    case "waitlisted":
+      return ["interview_planned", "waitlisted", "rejected"];
+    case "interview_planned":
+      return ["interview_passed", "interview_failed", "waitlisted", "rejected"];
+    case "interview_passed":
+      return ["accepted", "waitlisted", "rejected"];
+    case "interview_failed":
+      return ["waitlisted", "rejected"];
+    default:
+      return [];
+  }
+}
+
+/** Backend `nextWorkflowStep` ile uyumlu sonraki adim etiketi (bilgi bandi). */
+function computeWorkflowNextStep(application: Pick<Application, "status" | "hasInterview">): string | null {
+  if (!application.hasInterview) {
+    return application.status === "pending" ? "final_decision" : null;
+  }
+  switch (application.status) {
+    case "pending":
+    case "waitlisted":
+      return "plan_interview";
+    case "interview_planned":
+      return "record_interview_result";
+    case "interview_passed":
+      return "final_decision";
+    default:
+      return null;
+  }
+}
+
 function statusLabel(status: string): string {
   return statusOptions.find((option) => option.value === status)?.label ?? status;
 }
@@ -178,6 +223,10 @@ export default function AdminApplicationsPage() {
     if (typeof window === "undefined") return "all";
     return new URLSearchParams(window.location.search).get("project_id") ?? "all";
   });
+  const [periodFilter, setPeriodFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("period_id") ?? "all";
+  });
   const [statusFilter, setStatusFilter] = useState("pending");
   const [evaluationNote, setEvaluationNote] = useState<Record<number, string>>({});
   const [interviewPlanAt, setInterviewPlanAt] = useState<Record<number, string>>({});
@@ -201,13 +250,17 @@ export default function AdminApplicationsPage() {
           canAccessProject("applications.view", project.id)
         );
         setProjects(projectItems);
+        if (projectFilter !== "all" && periodFilter === "all") {
+          const project = projectItems.find((item) => String(item.id) === projectFilter);
+          setPeriodFilter(defaultPeriodIdForProject(project) || "all");
+        }
       } catch (error) {
         console.error("Yetkili proje listesi yuklenemedi", error);
       }
     };
 
     void fetchManageableProjects();
-  }, [hasPermission, canAccessProject]);
+  }, [hasPermission, canAccessProject, periodFilter, projectFilter]);
 
   const fetchApplications = useCallback(async () => {
     setLoading(true);
@@ -219,6 +272,7 @@ export default function AdminApplicationsPage() {
           page,
           per_page: perPage,
           project_id: projectFilter !== "all" ? projectFilter : undefined,
+          period_id: periodFilter !== "all" ? periodFilter : undefined,
           status: statusFilter !== "all" ? statusFilter : undefined,
           search: searchTerm.trim() || undefined,
         },
@@ -241,7 +295,7 @@ export default function AdminApplicationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, projectFilter, searchTerm, statusFilter]);
+  }, [page, periodFilter, projectFilter, searchTerm, statusFilter]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -251,29 +305,8 @@ export default function AdminApplicationsPage() {
     return () => window.clearTimeout(timer);
   }, [fetchApplications]);
 
-  const availableActionStatuses = (application: Application): ActionStatus[] => {
-    if (application.available_statuses?.length) {
-      return application.available_statuses;
-    }
-
-    if (!application.hasInterview) {
-      return ["accepted", "waitlisted", "rejected"];
-    }
-
-    switch (application.status) {
-      case "pending":
-      case "waitlisted":
-        return ["interview_planned", "waitlisted", "rejected"];
-      case "interview_planned":
-        return ["interview_passed", "interview_failed", "waitlisted", "rejected"];
-      case "interview_passed":
-        return ["accepted", "waitlisted", "rejected"];
-      case "interview_failed":
-        return ["waitlisted", "rejected"];
-      default:
-        return [];
-    }
-  };
+  const availableActionStatuses = (application: Application): ActionStatus[] =>
+    computeAvailableActionStatuses(application);
 
   const handleStatusChange = async (id: number, status: ActionStatus) => {
     const note = evaluationNote[id]?.trim();
@@ -300,18 +333,25 @@ export default function AdminApplicationsPage() {
       }
 
       setApplications((prev) =>
-        prev.map((application) =>
-          application.id === id
-            ? {
-                ...application,
+        prev.map((application) => {
+          if (application.id !== id) return application;
+          const next: Application = {
+            ...application,
+            status,
+            interview_at: status === "interview_planned" && interviewAt ? interviewAt : application.interview_at,
+            evaluation_note: note || application.evaluation_note,
+            rejection_reason:
+              status === "rejected" ? note || application.rejection_reason || "Yonetim degerlendirmesi sonucunda reddedildi." : application.rejection_reason,
+            workflow: {
+              has_interview: application.hasInterview,
+              next_step: computeWorkflowNextStep({
                 status,
-                interview_at: status === "interview_planned" && interviewAt ? interviewAt : application.interview_at,
-                evaluation_note: note || application.evaluation_note,
-                rejection_reason: status === "rejected" ? note || application.rejection_reason : application.rejection_reason,
-                available_statuses: undefined,
-              }
-            : application
-        )
+                hasInterview: application.hasInterview,
+              }),
+            },
+          };
+          return next;
+        })
       );
 
       setMessage("Basvuru durumu basariyla guncellendi.");
@@ -367,7 +407,7 @@ export default function AdminApplicationsPage() {
             <ClipboardCheck className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900">BASVURU YONETIMI</h1>
+            <h1 className="text-3xl font-black text-slate-900">BAŞVURU YÖNETİMİ</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Tek Panel - Scope Tabanli Degerlendirme</p>
           </div>
         </div>
@@ -377,6 +417,7 @@ export default function AdminApplicationsPage() {
             filename="kademe_basvurular"
             params={{
               project_id: projectFilter !== "all" ? projectFilter : undefined,
+              period_id: periodFilter !== "all" ? periodFilter : undefined,
               status: statusFilter !== "all" ? statusFilter : undefined,
               search: searchTerm || undefined,
             }}
@@ -384,7 +425,7 @@ export default function AdminApplicationsPage() {
         </PermissionGate>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr,220px,220px]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr,440px,220px]">
         <div className="relative">
           <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -398,21 +439,23 @@ export default function AdminApplicationsPage() {
             className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white/10"
           />
         </div>
-        <select
-          value={projectFilter}
-          onChange={(event) => {
-            setProjectFilter(event.target.value);
+        <ProjectPeriodFilters
+          projects={projects}
+          selectedProjectId={projectFilter}
+          selectedPeriodId={periodFilter}
+          onProjectChange={(value) => {
+            setProjectFilter(value);
+            const project = projects.find((item) => String(item.id) === value);
+            setPeriodFilter(value === "all" ? "all" : defaultPeriodIdForProject(project) || "all");
             setPage(1);
           }}
-          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition-all focus:border-indigo-500"
-        >
-          <option value="all">Tum Projeler</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
+          onPeriodChange={(value) => {
+            setPeriodFilter(value);
+            setPage(1);
+          }}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+          selectClassName="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition-all focus:border-indigo-500"
+        />
         <select
           value={statusFilter}
           onChange={(event) => {

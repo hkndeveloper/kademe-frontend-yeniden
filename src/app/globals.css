@@ -102,6 +102,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    min-height: 100dvh;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
   }
   
   /* Pürüzsüz Scrollbar (Corporate Chic) */
@@ -127,6 +130,7 @@
   /* Panel (dashboard) alani — acik icerik, sol sidebar ayri koyu */
   .panel-workspace {
     @apply min-h-screen bg-slate-100 text-slate-900 antialiased;
+    min-height: 100dvh;
   }
   .panel-workspace .glass-panel {
     @apply border-slate-200/90 bg-white text-slate-900 shadow-sm backdrop-blur-none;

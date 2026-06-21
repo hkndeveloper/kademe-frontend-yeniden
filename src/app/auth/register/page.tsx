@@ -54,7 +54,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background py-20">
+    <div className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-background px-4 py-8 sm:py-12 md:py-20">
       <div className="absolute top-0 right-0 -z-10 h-full w-1/2 bg-gradient-to-l from-primary/10 to-transparent" />
       <div className="absolute -bottom-32 -left-32 -z-10 h-[500px] w-[500px] animate-pulse rounded-full bg-accent/20 blur-[120px]" />
 
@@ -62,12 +62,12 @@ export default function RegisterPage() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-xl px-4"
+        className="w-full max-w-xl"
       >
-        <div className="glass-panel relative overflow-hidden rounded-3xl p-8 md:p-12">
+        <div className="glass-panel relative overflow-hidden rounded-2xl p-5 shadow-sm sm:rounded-3xl sm:p-8 md:p-12">
           <div className="absolute top-0 left-1/2 h-1 w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-primary to-transparent" />
 
-          <div className="mb-10 text-center">
+          <div className="mb-8 text-center sm:mb-10">
             <h2 className="text-3xl font-bold tracking-tight">Hesap Oluştur</h2>
             <p className="mt-2 text-muted-foreground">KADEME sistemine dahil olmak için formu doldurun.</p>
           </div>
@@ -82,8 +82,8 @@ export default function RegisterPage() {
             </motion.div>
           )}
 
-          <form onSubmit={handleRegister} className="space-y-5">
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <form onSubmit={handleRegister} className="space-y-4 sm:space-y-5">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
               <div className="space-y-2">
                 <label className="ml-1 text-sm font-medium text-foreground">Adınız</label>
                 <div className="relative">
@@ -149,7 +149,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
               <div className="space-y-2">
                 <label className="ml-1 text-sm font-medium text-foreground">Parola</label>
                 <div className="relative">
@@ -186,7 +186,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-semibold text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] disabled:opacity-70"
+              className="group mt-8 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-semibold text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] disabled:opacity-70 sm:py-4"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

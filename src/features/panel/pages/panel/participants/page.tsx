@@ -6,11 +6,14 @@ import { CheckCircle2, FileText, GraduationCap, Loader2, Mail, Phone, Search, St
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Project {
   id: number;
   name: string;
+  periods?: PeriodOption[];
+  active_period?: PeriodOption | null;
 }
 
 interface ParticipantItem {
@@ -41,6 +44,9 @@ interface ParticipantItem {
     hometown?: string | null;
     status?: string | null;
     profile_photo?: string | null;
+    public_profile_visible?: boolean;
+    public_photo_visible?: boolean;
+    public_alumni_visible?: boolean;
     cv?: {
       has_digital_cv?: boolean;
       digital_cv_data?: Record<string, unknown> | null;
@@ -71,6 +77,10 @@ export default function PanelParticipantsPage() {
     if (typeof window === "undefined") return "all";
     return new URLSearchParams(window.location.search).get("project_id") ?? "all";
   });
+  const [periodFilter, setPeriodFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("period_id") ?? "all";
+  });
   const [statusFilter, setStatusFilter] = useState(() => {
     if (typeof window === "undefined") return "all";
     return new URLSearchParams(window.location.search).get("status") ?? "all";
@@ -78,6 +88,7 @@ export default function PanelParticipantsPage() {
   const [cvParticipant, setCvParticipant] = useState<ParticipantItem | null>(null);
   const [cvLoadingId, setCvLoadingId] = useState<number | null>(null);
   const [graduationLoadingId, setGraduationLoadingId] = useState<number | null>(null);
+  const [visibilityLoadingId, setVisibilityLoadingId] = useState<number | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [message, setMessage] = useState("");
@@ -97,9 +108,16 @@ export default function PanelParticipantsPage() {
           timeout: 30000,
           params: {
             project_id: initialProjectId !== "all" ? initialProjectId : undefined,
+            period_id: new URLSearchParams(window.location.search).get("period_id") ?? undefined,
           },
         });
-        setProjects(response.data.projects ?? []);
+        const projectItems = response.data.projects ?? [];
+        setProjects(projectItems);
+        const initialPeriodId = new URLSearchParams(window.location.search).get("period_id");
+        if (initialProjectId !== "all" && !initialPeriodId) {
+          const project = projectItems.find((item) => String(item.id) === initialProjectId);
+          setPeriodFilter(defaultPeriodIdForProject(project) || "all");
+        }
         setParticipants(response.data.participants ?? []);
         setSummary(response.data.summary);
       } catch (error) {
@@ -135,14 +153,15 @@ export default function PanelParticipantsPage() {
       const searchableText = `${fullName} ${participant.user.email ?? ""} ${participant.user.university ?? ""} ${participant.user.department ?? ""}`.toLowerCase();
       const matchesSearch = searchableText.includes(searchTerm.toLowerCase());
       const matchesProject = projectFilter === "all" || String(participant.project.id) === projectFilter;
+      const matchesPeriod = periodFilter === "all" || String(participant.period?.id ?? "") === periodFilter;
       const matchesStatus =
         statusFilter === "all" ||
         participant.status === statusFilter ||
         participant.graduation_status === statusFilter;
 
-      return matchesSearch && matchesProject && matchesStatus;
+      return matchesSearch && matchesProject && matchesPeriod && matchesStatus;
     });
-  }, [participants, projectFilter, searchTerm, statusFilter]);
+  }, [participants, periodFilter, projectFilter, searchTerm, statusFilter]);
 
   const manageableIdsInView = useMemo(() => {
     return filteredParticipants
@@ -195,6 +214,7 @@ export default function PanelParticipantsPage() {
       timeout: 30000,
       params: {
         project_id: projectFilter !== "all" ? projectFilter : undefined,
+        period_id: periodFilter !== "all" ? periodFilter : undefined,
         status: !["all", "graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
         graduation_status: ["graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
         search: searchTerm || undefined,
@@ -233,6 +253,43 @@ export default function PanelParticipantsPage() {
       setMessage("Mezuniyet durumu guncellenemedi.");
     } finally {
       setGraduationLoadingId(null);
+    }
+  };
+
+  const updatePublicVisibility = async (
+    participant: ParticipantItem,
+    patch: Partial<Pick<ParticipantItem["user"], "public_profile_visible" | "public_photo_visible" | "public_alumni_visible">>
+  ) => {
+    if (!hasPermission("projects.participants.manage") || !canAccessProject("projects.participants.manage", participant.project.id)) {
+      setMessage("Public gorunurluk icin katilimci yonetim yetkisi gerekir.");
+      return;
+    }
+
+    const nextVisibility = {
+      public_profile_visible: participant.user.public_profile_visible ?? false,
+      public_photo_visible: participant.user.public_photo_visible ?? false,
+      public_alumni_visible: participant.user.public_alumni_visible ?? false,
+      ...patch,
+    };
+    if (!nextVisibility.public_profile_visible) {
+      nextVisibility.public_photo_visible = false;
+    }
+
+    setVisibilityLoadingId(participant.id);
+    setMessage("");
+    try {
+      await api.patch(`/panel/participants/${participant.id}/public-visibility`, nextVisibility);
+      setParticipants((current) =>
+        current.map((item) =>
+          item.id === participant.id ? { ...item, user: { ...item.user, ...nextVisibility } } : item
+        )
+      );
+      setMessage("Public gorunurluk ayarlari guncellendi.");
+    } catch (error) {
+      console.error("Public gorunurluk guncellenemedi", error);
+      setMessage("Public gorunurluk guncellenemedi.");
+    } finally {
+      setVisibilityLoadingId(null);
     }
   };
 
@@ -317,6 +374,7 @@ export default function PanelParticipantsPage() {
           filename="panel_katilimcilar"
           params={{
             project_id: projectFilter !== "all" ? projectFilter : undefined,
+            period_id: periodFilter !== "all" ? periodFilter : undefined,
             status: !["all", "graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
             graduation_status: ["graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
             search: searchTerm || undefined,
@@ -354,7 +412,7 @@ export default function PanelParticipantsPage() {
       ) : null}
 
       <div className="glass-panel rounded-3xl p-6">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_auto_auto]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_420px_180px]">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -366,14 +424,23 @@ export default function PanelParticipantsPage() {
             />
           </label>
 
-          <select value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)} className="rounded-2xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent">
-            <option value="all">Tum projeler</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
+          <ProjectPeriodFilters
+            projects={projects}
+            selectedProjectId={projectFilter}
+            selectedPeriodId={periodFilter}
+            onProjectChange={(value) => {
+              setProjectFilter(value);
+              const project = projects.find((item) => String(item.id) === value);
+              setPeriodFilter(value === "all" ? "all" : defaultPeriodIdForProject(project) || "all");
+              setSelectedIds([]);
+            }}
+            onPeriodChange={(value) => {
+              setPeriodFilter(value);
+              setSelectedIds([]);
+            }}
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            selectClassName="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+          />
 
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-2xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent">
             <option value="all">Tum durumlar</option>
@@ -548,6 +615,65 @@ export default function PanelParticipantsPage() {
                     <XCircle className="h-4 w-4" />
                     Tamamlayamadi
                   </button>
+                </div>
+              ) : null}
+
+              {hasPermission("projects.participants.manage") && canAccessProject("projects.participants.manage", participant.project.id) ? (
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="mb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                    Public gorunurluk
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={visibilityLoadingId === participant.id}
+                      onClick={() =>
+                        void updatePublicVisibility(participant, {
+                          public_profile_visible: !(participant.user.public_profile_visible ?? false),
+                        })
+                      }
+                      className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                        participant.user.public_profile_visible
+                          ? "border-emerald-500/30 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 bg-slate-50 text-slate-500"
+                      }`}
+                    >
+                      Profil {participant.user.public_profile_visible ? "Acik" : "Kapali"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={visibilityLoadingId === participant.id || !(participant.user.public_profile_visible ?? false)}
+                      onClick={() =>
+                        void updatePublicVisibility(participant, {
+                          public_photo_visible: !(participant.user.public_photo_visible ?? false),
+                        })
+                      }
+                      className={`rounded-xl border px-3 py-2 text-xs font-bold transition disabled:opacity-50 ${
+                        participant.user.public_photo_visible
+                          ? "border-indigo-500/30 bg-indigo-50 text-indigo-700"
+                          : "border-slate-200 bg-slate-50 text-slate-500"
+                      }`}
+                    >
+                      Fotograf {participant.user.public_photo_visible ? "Acik" : "Kapali"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={visibilityLoadingId === participant.id}
+                      onClick={() =>
+                        void updatePublicVisibility(participant, {
+                          public_alumni_visible: !(participant.user.public_alumni_visible ?? false),
+                        })
+                      }
+                      className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                        participant.user.public_alumni_visible
+                          ? "border-amber-500/30 bg-amber-50 text-amber-700"
+                          : "border-slate-200 bg-slate-50 text-slate-500"
+                      }`}
+                    >
+                      Mezun vitrini {participant.user.public_alumni_visible ? "Acik" : "Kapali"}
+                    </button>
+                    {visibilityLoadingId === participant.id ? <Loader2 className="h-5 w-5 animate-spin text-accent" /> : null}
+                  </div>
                 </div>
               ) : null}
 

@@ -14,7 +14,7 @@ function targetPanelPath(pathname: string, query: string): string {
   return query ? `${target}?${query}` : target;
 }
 
-export function LegacyPanelRedirectLayout() {
+export function LegacyPanelRedirectLayout({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -26,6 +26,7 @@ export function LegacyPanelRedirectLayout() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100">
       <Loader2 className="h-10 w-10 animate-spin text-[#FF6B00]" />
+      {children}
     </div>
   );
 }

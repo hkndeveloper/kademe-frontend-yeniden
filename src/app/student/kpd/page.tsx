@@ -56,11 +56,20 @@ interface KpdReport {
   counselor?: CounselorOption | null;
 }
 
+interface KpdMaterial {
+  id: number;
+  title: string;
+  description?: string | null;
+  file_type?: string | null;
+  download_url?: string | null;
+}
+
 interface KpdResponse {
   appointments: KpdAppointment[];
   counselors: CounselorOption[];
   rooms: RoomOption[];
   reports?: KpdReport[];
+  materials?: KpdMaterial[];
 }
 
 interface AppointmentFormState {
@@ -108,6 +117,7 @@ export default function StudentKpdPage() {
   const [hasPersonalityData, setHasPersonalityData] = useState(false);
   const [appointments, setAppointments] = useState<KpdAppointment[]>([]);
   const [reports, setReports] = useState<KpdReport[]>([]);
+  const [materials, setMaterials] = useState<KpdMaterial[]>([]);
   const [counselors, setCounselors] = useState<CounselorOption[]>([]);
   const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [form, setForm] = useState<AppointmentFormState>(defaultFormState);
@@ -129,6 +139,7 @@ export default function StudentKpdPage() {
         setHasPersonalityData(Boolean(profileResponse.data.user.profile?.personality_test_data && Object.keys(profileResponse.data.user.profile?.personality_test_data || {}).length > 0));
         setAppointments(kpdResponse.data.appointments ?? []);
         setReports(kpdResponse.data.reports ?? []);
+        setMaterials(kpdResponse.data.materials ?? []);
         setCounselors(kpdResponse.data.counselors ?? []);
         setRooms(kpdResponse.data.rooms ?? []);
       } catch (error) {
@@ -198,6 +209,18 @@ export default function StudentKpdPage() {
     } catch (error) {
       console.error("KPD raporu indirilemedi", error);
       setErrorMessage("KPD raporu indirilemedi.");
+    }
+  };
+
+  const handleDownloadMaterial = async (material: KpdMaterial) => {
+    const endpoint = material.download_url ?? `/digital-bohca/${material.id}/download`;
+
+    try {
+      const response = await api.get(endpoint, { responseType: "blob" });
+      await downloadBlobResponse(response.data, response.headers, material.title || `kpd_materyal_${material.id}`);
+    } catch (error) {
+      console.error("KPD materyali indirilemedi", error);
+      setErrorMessage("KPD materyali indirilemedi.");
     }
   };
 
@@ -335,6 +358,49 @@ export default function StudentKpdPage() {
                     <button
                       type="button"
                       onClick={() => void handleDownloadReport(report)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
+                    >
+                      <Download className="h-4 w-4" />
+                      Indir
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="glass-panel rounded-3xl p-8">
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">Bos Materyaller</h2>
+                <p className="text-sm text-muted-foreground">Test, envanter ve seans oncesi kullanabilecegin KPD dosyalari.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                {materials.length} dosya
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex min-h-24 items-center justify-center">
+                <Loader2 className="h-7 w-7 animate-spin text-primary" />
+              </div>
+            ) : materials.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-muted-foreground">
+                Henuz indirilebilir KPD materyali yok.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {materials.map((material) => (
+                  <div key={material.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="font-bold text-slate-900">{material.title}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {[material.file_type, material.description].filter(Boolean).join(" / ") || "Materyal"}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadMaterial(material)}
                       className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
                     >
                       <Download className="h-4 w-4" />

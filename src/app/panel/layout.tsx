@@ -7,7 +7,7 @@ import { useAuth } from "@/store/useAuth";
 import { homePathForUser } from "@/lib/role-home";
 import { canAccessPanelPath } from "@/lib/panel-permissions";
 import { shouldShowMyProjectNav } from "@/lib/panel-scope";
-import { UnifiedPanelSidebar } from "@/components/shared/UnifiedPanelSidebar";
+import { MobilePanelNav, UnifiedPanelSidebar } from "@/components/shared/UnifiedPanelSidebar";
 
 export default function UnifiedPanelLayout({
   children,
@@ -32,6 +32,7 @@ export default function UnifiedPanelLayout({
 
       try {
         await fetchProfile();
+        await useAuth.getState().fetchPanelModules();
         const state = useAuth.getState();
         const user = state.user;
         if (!user) {
@@ -39,7 +40,7 @@ export default function UnifiedPanelLayout({
           return;
         }
 
-        const allowed = canAccessPanelPath(pathname, state.hasPermission, state.hasAnyPermission, user);
+        const allowed = canAccessPanelPath(pathname, state.hasPermission, state.hasAnyPermission, user, state.panelModules);
 
         if (!allowed) {
           if (
@@ -115,8 +116,9 @@ export default function UnifiedPanelLayout({
   return (
     <div className="panel-workspace min-h-screen w-full">
       <UnifiedPanelSidebar />
-      <div className="ml-20 min-h-screen border-l border-slate-200/60 bg-slate-100/95 transition-[margin-left] duration-300 peer-hover:ml-72 peer-focus-within:ml-72">
-        <main className="min-h-screen p-6 sm:p-8 lg:p-10">{children}</main>
+      <MobilePanelNav />
+      <div className="min-h-screen bg-slate-100/95 transition-[margin-left] duration-300 lg:ml-20 lg:border-l lg:border-slate-200/60 lg:peer-hover:ml-72 lg:peer-focus-within:ml-72">
+        <main className="min-h-screen px-4 pb-24 pt-4 sm:px-6 lg:p-10">{children}</main>
       </div>
     </div>
   );

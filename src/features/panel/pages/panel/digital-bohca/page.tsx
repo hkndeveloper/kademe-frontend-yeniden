@@ -6,12 +6,15 @@ import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
 
 type Project = {
   id: number;
   name: string;
+  periods?: PeriodOption[];
+  active_period?: PeriodOption | null;
 };
 
 const BOHCA_CATEGORIES: Record<string, string> = {
@@ -35,6 +38,8 @@ type Material = {
   category_label?: string | null;
   visible_to_student: boolean;
   project?: Project | null;
+  period_id?: number | null;
+  period?: PeriodOption | null;
   user?: { id: number; name: string; surname: string; email: string } | null;
   uploader?: { id: number; name: string; surname: string } | null;
 };
@@ -52,12 +57,21 @@ export default function PanelDigitalBohcaPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [form, setForm] = useState({
     project_id: "",
+    period_id: "",
     title: "",
     description: "",
     category: "general",
     visible_to_student: true,
   });
   const [file, setFile] = useState<File | null>(null);
+  const [projectFilter, setProjectFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("project_id") ?? "all";
+  });
+  const [periodFilter, setPeriodFilter] = useState(() => {
+    if (typeof window === "undefined") return "all";
+    return new URLSearchParams(window.location.search).get("period_id") ?? "all";
+  });
 
   const uploadProjects = useMemo(
     () => projects.filter((project) => canAccessProject("digital_bohca.create", project.id)),
@@ -69,18 +83,29 @@ export default function PanelDigitalBohcaPage() {
     const initialProjectId = new URLSearchParams(window.location.search).get("project_id");
     Promise.all([
       api.get<{ materials: Paginated<Material> }>("/panel/digital-bohca", {
-        params: { project_id: initialProjectId ?? undefined },
+        params: {
+          project_id: initialProjectId ?? undefined,
+          period_id: new URLSearchParams(window.location.search).get("period_id") ?? undefined,
+        },
       }),
+      api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "digital_bohca.view" } }),
       api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "digital_bohca.create" } }),
     ])
-      .then(([materialsResponse, projectsResponse]) => {
+      .then(([materialsResponse, viewProjectsResponse, createProjectsResponse]) => {
         if (!isActive) return;
+        const mergedProjects = new Map<number, Project>();
+        [...(viewProjectsResponse.data.projects ?? []), ...(createProjectsResponse.data.projects ?? [])].forEach((project) => {
+          mergedProjects.set(project.id, project);
+        });
+        const projectItems = Array.from(mergedProjects.values());
         setMaterials(materialsResponse.data.materials?.data ?? []);
-        setProjects(projectsResponse.data.projects ?? []);
+        setProjects(projectItems);
         if (initialProjectId) {
           setForm((current) => ({ ...current, project_id: initialProjectId }));
-        } else if (!hasGlobalScope("digital_bohca.create") && projectsResponse.data.projects?.[0]) {
-          setForm((current) => ({ ...current, project_id: String(projectsResponse.data.projects[0].id) }));
+          const project = projectItems.find((item) => String(item.id) === initialProjectId);
+          setPeriodFilter(new URLSearchParams(window.location.search).get("period_id") ?? (defaultPeriodIdForProject(project) || "all"));
+        } else if (!hasGlobalScope("digital_bohca.create") && createProjectsResponse.data.projects?.[0]) {
+          setForm((current) => ({ ...current, project_id: String(createProjectsResponse.data.projects[0].id) }));
         }
       })
       .finally(() => {
@@ -92,14 +117,28 @@ export default function PanelDigitalBohcaPage() {
     };
   }, [hasGlobalScope]);
 
+  async function refreshMaterials(nextProject = projectFilter, nextPeriod = periodFilter) {
+    const response = await api.get<{ materials: Paginated<Material> }>("/panel/digital-bohca", {
+      params: {
+        project_id: nextProject !== "all" ? nextProject : undefined,
+        period_id: nextPeriod !== "all" ? nextPeriod : undefined,
+      },
+    });
+    setMaterials(response.data.materials?.data ?? []);
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!file) return;
+    if (!file) {
+      setFeedback("Lutfen yuklemek icin bir dosya secin.");
+      return;
+    }
     setSaving(true);
     setFeedback(null);
     try {
       const formData = new FormData();
       if (form.project_id) formData.append("project_id", form.project_id);
+      if (form.period_id) formData.append("period_id", form.period_id);
       formData.append("title", form.title);
       formData.append("description", form.description);
       formData.append("category", form.category);
@@ -110,7 +149,7 @@ export default function PanelDigitalBohcaPage() {
       });
       setMaterials((current) => [response.data.material, ...current]);
       setFeedback(response.data.message);
-      setForm({ project_id: "", title: "", description: "", category: "general", visible_to_student: true });
+      setForm({ project_id: "", period_id: "", title: "", description: "", category: "general", visible_to_student: true });
       setFile(null);
     } catch (error) {
       const message = isAxiosError(error)
@@ -148,7 +187,15 @@ export default function PanelDigitalBohcaPage() {
           </div>
         </div>
         <PermissionGate permission="digital_bohca.view">
-          <ExportButtons endpoint="/panel/digital-bohca/export" filename="digital_bohca" buttonLabel="Materyalleri Disa Aktar" />
+          <ExportButtons
+            endpoint="/panel/digital-bohca/export"
+            filename="digital_bohca"
+            params={{
+              project_id: projectFilter !== "all" ? projectFilter : undefined,
+              period_id: periodFilter !== "all" ? periodFilter : undefined,
+            }}
+            buttonLabel="Materyalleri Disa Aktar"
+          />
         </PermissionGate>
       </div>
 
@@ -156,10 +203,15 @@ export default function PanelDigitalBohcaPage() {
 
       <PermissionGate permission="digital_bohca.create">
         <form onSubmit={handleSubmit} className="glass-panel rounded-3xl p-6">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_auto]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
             <select
+              name="bohca_project_id"
               value={form.project_id}
-              onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))}
+              onChange={(event) => {
+                const projectId = event.target.value;
+                const project = uploadProjects.find((item) => String(item.id) === projectId);
+                setForm((current) => ({ ...current, project_id: projectId, period_id: defaultPeriodIdForProject(project) }));
+              }}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
             >
               {hasGlobalScope("digital_bohca.create") ? <option value="">Genel materyal</option> : null}
@@ -169,6 +221,19 @@ export default function PanelDigitalBohcaPage() {
               ))}
             </select>
             <select
+              name="bohca_period_id"
+              value={form.period_id}
+              onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))}
+              disabled={!form.project_id}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+            >
+              <option value="">Tum donemler / genel</option>
+              {(uploadProjects.find((project) => String(project.id) === form.project_id)?.periods ?? []).map((period) => (
+                <option key={period.id} value={period.id}>{period.name}</option>
+              ))}
+            </select>
+            <select
+              name="bohca_category"
               value={form.category}
               onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
               className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
@@ -178,6 +243,7 @@ export default function PanelDigitalBohcaPage() {
               ))}
             </select>
             <input
+              name="bohca_title"
               value={form.title}
               onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
               required
@@ -187,7 +253,7 @@ export default function PanelDigitalBohcaPage() {
             <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900">
               <Upload className="h-4 w-4" />
               {file ? file.name : "Dosya sec"}
-              <input type="file" required className="hidden" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+              <input name="bohca_file" type="file" className="hidden" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
             </label>
           </div>
           <textarea
@@ -206,6 +272,24 @@ export default function PanelDigitalBohcaPage() {
       </PermissionGate>
 
       <PermissionGate permission="digital_bohca.view">
+        <div className="glass-panel rounded-3xl p-4">
+          <ProjectPeriodFilters
+            projects={projects}
+            selectedProjectId={projectFilter}
+            selectedPeriodId={periodFilter}
+            onProjectChange={(value) => {
+              const project = projects.find((item) => String(item.id) === value);
+              const nextPeriod = value === "all" ? "all" : defaultPeriodIdForProject(project) || "all";
+              setProjectFilter(value);
+              setPeriodFilter(nextPeriod);
+              void refreshMaterials(value, nextPeriod);
+            }}
+            onPeriodChange={(value) => {
+              setPeriodFilter(value);
+              void refreshMaterials(projectFilter, value);
+            }}
+          />
+        </div>
         <div className="glass-panel overflow-hidden rounded-3xl">
           {loading ? (
             <div className="flex min-h-40 items-center justify-center">
@@ -219,6 +303,12 @@ export default function PanelDigitalBohcaPage() {
                     <div className="text-base font-bold text-slate-900">{material.title}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                       <span>{material.project?.name ?? "Genel"}</span>
+                      {material.period?.name ? (
+                        <>
+                          <span className="text-slate-300">/</span>
+                          <span>{material.period.name}</span>
+                        </>
+                      ) : null}
                       <span className="text-slate-300">/</span>
                       <span className={`rounded px-1.5 py-0.5 text-[10px] ${material.category === "internship_documents" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
                         {material.category_label ?? BOHCA_CATEGORIES[material.category ?? "general"] ?? "Genel"}

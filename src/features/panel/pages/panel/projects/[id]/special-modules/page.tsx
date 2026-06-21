@@ -2,11 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, BookMarked, BriefcaseBusiness, Edit2, Gift, Handshake, Loader2, Plus, Save, Trash2, Upload, Users, X } from "lucide-react";
+import { ArrowLeft, BookMarked, BriefcaseBusiness, CheckCircle2, Edit2, Gift, Handshake, Loader2, Plus, Save, Trash2, Upload, Users, X } from "lucide-react";
 import api from "@/lib/api/axios";
+import {
+  formatProjectTypeBadge,
+  eurodeskSectionTitle,
+  internshipsSectionTitle,
+  kademeModulesSectionTitle,
+  mentorsSectionTitle,
+  rewardsSectionTitle,
+  specialModulesIntroCopy,
+} from "@/lib/project-special-module-labels";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import type { PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 
 type AccessMap = Record<string, boolean>;
 
@@ -18,6 +28,7 @@ type Participant = {
 
 type Internship = {
   id: number;
+  participant_id?: number | null;
   company_name: string;
   position: string;
   start_date: string;
@@ -33,16 +44,46 @@ type Mentor = {
   expertise?: string | null;
   bio?: string | null;
   photo_path?: string | null;
+  assigned_participants?: Array<{
+    id: number;
+    name: string;
+    email?: string | null;
+    period_id?: number | null;
+    note?: string | null;
+  }>;
+};
+
+type EurodeskPartnership = {
+  id: number;
+  organization_name: string;
+  country?: string | null;
+  contact_info?: string | null;
 };
 
 type EurodeskProject = {
   id: number;
+  period_id?: number | null;
+  period?: PeriodOption | null;
   title: string;
+  partnerships?: EurodeskPartnership[];
   partner_organizations?: string[] | null;
   grant_amount?: string | number | null;
   grant_status: string;
   start_date?: string | null;
   end_date?: string | null;
+};
+
+type EurodeskSummary = {
+  total_projects: number;
+  applied_projects: number;
+  approved_projects: number;
+  completed_projects: number;
+  rejected_projects: number;
+  total_grant_amount: number;
+  approved_grant_amount: number;
+  partnership_count: number;
+  country_count: number;
+  countries: string[];
 };
 
 type RewardTier = {
@@ -66,11 +107,18 @@ type RewardEligibleParticipant = {
 
 type RewardAward = {
   id: number;
+  participant_id?: number | null;
+  reward_tier_id?: number | null;
   name?: string | null;
   email?: string | null;
   reward_name: string;
   status: string;
   awarded_at?: string | null;
+  delivered_at?: string | null;
+  note?: string | null;
+  tier?: { id: number; name: string; reward_description?: string | null } | null;
+  awarder?: string | null;
+  deliverer?: string | null;
 };
 
 type KademeModuleEnrollment = {
@@ -109,6 +157,7 @@ type ResponsePayload = {
   internships: Internship[];
   mentors: Mentor[];
   eurodesk_projects: EurodeskProject[];
+  eurodesk_summary?: EurodeskSummary | null;
   reward_tiers: RewardTier[];
   reward_eligible_participants?: RewardEligibleParticipant[];
   reward_awards?: RewardAward[];
@@ -117,7 +166,9 @@ type ResponsePayload = {
 
 const initialInternship = { participant_id: "", company_name: "", position: "", start_date: "", end_date: "", description: "", document_path: "" };
 const initialMentor = { name: "", expertise: "", bio: "", photo_path: "" };
+const initialMentorAssignment = { mentor_id: "", participant_id: "", note: "" };
 const initialEurodesk = { title: "", partner_organizations: "", grant_amount: "", grant_status: "applied", start_date: "", end_date: "" };
+const initialPartnership = { eurodesk_project_id: "", organization_name: "", country: "", contact_info: "" };
 const initialReward = { name: "", description: "", min_badges: "0", min_credits: "0", reward_description: "" };
 const initialRewardAward = { participant_id: "", reward_tier_id: "", reward_name: "", status: "given", note: "" };
 const initialKademeModule = {
@@ -134,23 +185,40 @@ const initialKademeModule = {
   instructorsJson: "[]",
   faqJson: "[]",
 };
-const inputClass = "rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none focus:border-accent";
+const inputClass = "rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-accent";
 const buttonClass = "inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white";
+const eurodeskStatusMeta: Record<string, { label: string; className: string }> = {
+  applied: { label: "Basvuruldu", className: "border-sky-200 bg-sky-50 text-sky-700" },
+  approved: { label: "Onaylandi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  rejected: { label: "Reddedildi", className: "border-red-200 bg-red-50 text-red-700" },
+  completed: { label: "Tamamlandi", className: "border-violet-200 bg-violet-50 text-violet-700" },
+};
+const rewardStatusMeta: Record<string, { label: string; className: string }> = {
+  planned: { label: "Planlandi", className: "border-amber-200 bg-amber-50 text-amber-700" },
+  given: { label: "Verildi", className: "border-sky-200 bg-sky-50 text-sky-700" },
+  delivered: { label: "Teslim edildi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  cancelled: { label: "Iptal", className: "border-red-200 bg-red-50 text-red-700" },
+};
 const editableEndpoints = new Set(["internships", "mentors", "eurodesk-projects", "reward-tiers", "kademe-modules"]);
 
 export default function PanelProjectSpecialModulesPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const rawId = params?.id;
   const projectId = typeof rawId === "string" ? Number(rawId) : Number(Array.isArray(rawId) ? rawId[0] : NaN);
   const invalidProjectId = !Number.isFinite(projectId) || projectId <= 0;
 
   const [data, setData] = useState<ResponsePayload | null>(null);
+  const [periods, setPeriods] = useState<PeriodOption[]>([]);
+  const [periodId, setPeriodId] = useState(() => searchParams.get("period_id") ?? "all");
   const [loading, setLoading] = useState(!invalidProjectId);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [internshipForm, setInternshipForm] = useState(initialInternship);
   const [mentorForm, setMentorForm] = useState(initialMentor);
+  const [mentorAssignmentForm, setMentorAssignmentForm] = useState(initialMentorAssignment);
   const [eurodeskForm, setEurodeskForm] = useState(initialEurodesk);
+  const [partnershipForm, setPartnershipForm] = useState(initialPartnership);
   const [rewardForm, setRewardForm] = useState(initialReward);
   const [rewardAwardForm, setRewardAwardForm] = useState(initialRewardAward);
   const [kademeModuleForm, setKademeModuleForm] = useState(initialKademeModule);
@@ -160,7 +228,11 @@ export default function PanelProjectSpecialModulesPage() {
     if (invalidProjectId) return;
     setLoading(true);
     try {
-      const response = await api.get<ResponsePayload>(`/panel/projects/${projectId}/special-modules`);
+      const response = await api.get<ResponsePayload>(`/panel/projects/${projectId}/special-modules`, {
+        params: {
+          period_id: periodId !== "all" ? periodId : undefined,
+        },
+      });
       setData(response.data);
     } catch (error) {
       console.error("Ozel modul verileri yuklenemedi", error);
@@ -168,6 +240,17 @@ export default function PanelProjectSpecialModulesPage() {
     } finally {
       setLoading(false);
     }
+  }, [invalidProjectId, periodId, projectId]);
+
+  useEffect(() => {
+    if (invalidProjectId) return;
+    const timer = window.setTimeout(() => {
+      void api.get<{ periods: PeriodOption[] }>("/panel/periods", { params: { project_id: projectId } })
+        .then((response) => setPeriods(response.data.periods ?? []))
+        .catch(() => setPeriods([]));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [invalidProjectId, projectId]);
 
   useEffect(() => {
@@ -187,6 +270,15 @@ export default function PanelProjectSpecialModulesPage() {
       access["projects.rewards.manage"],
     [access]
   );
+  const rewardAwardStats = useMemo(() => {
+    const awards = data?.reward_awards ?? [];
+    return {
+      total: awards.length,
+      delivered: awards.filter((award) => award.status === "delivered").length,
+      pending: awards.filter((award) => award.status === "planned" || award.status === "given").length,
+      cancelled: awards.filter((award) => award.status === "cancelled").length,
+    };
+  }, [data?.reward_awards]);
 
   function resetEditing(reset?: () => void) {
     setEditing(null);
@@ -245,6 +337,18 @@ export default function PanelProjectSpecialModulesPage() {
     }
   }
 
+  async function markRewardDelivered(id: number) {
+    setFeedback(null);
+    try {
+      await api.patch(`/panel/projects/${projectId}/special-modules/reward-awards/${id}/deliver`);
+      await loadData();
+      setFeedback("Hediye teslim edildi olarak isaretlendi.");
+    } catch (error) {
+      console.error("Hediye teslim durumu guncellenemedi", error);
+      setFeedback("Hediye teslim durumu guncellenemedi. Yetki ve donem durumunu kontrol edin.");
+    }
+  }
+
   async function updateKademeEnrollment(enrollmentId: number, status: "pending" | "approved" | "rejected") {
     setFeedback(null);
     try {
@@ -254,6 +358,66 @@ export default function PanelProjectSpecialModulesPage() {
     } catch (error) {
       console.error("Kayit guncellenemedi", error);
       setFeedback("Kayit guncellenemedi.");
+    }
+  }
+
+  async function assignMentor() {
+    if (!mentorAssignmentForm.mentor_id || !mentorAssignmentForm.participant_id) return;
+    setFeedback(null);
+    try {
+      await api.post(`/panel/projects/${projectId}/special-modules/mentors/${mentorAssignmentForm.mentor_id}/participants`, {
+        participant_id: Number(mentorAssignmentForm.participant_id),
+        period_id: periodId !== "all" ? Number(periodId) : null,
+        note: mentorAssignmentForm.note || null,
+      });
+      setMentorAssignmentForm(initialMentorAssignment);
+      await loadData();
+      setFeedback("Mentor-katilimci eslestirmesi kaydedildi.");
+    } catch (error) {
+      console.error("Mentor eslestirmesi kaydedilemedi", error);
+      setFeedback("Mentor eslestirmesi kaydedilemedi. Donem ve katilimci kapsamlarini kontrol edin.");
+    }
+  }
+
+  async function unassignMentor(mentorId: number, participantId: number) {
+    setFeedback(null);
+    try {
+      await api.delete(`/panel/projects/${projectId}/special-modules/mentors/${mentorId}/participants/${participantId}`);
+      await loadData();
+      setFeedback("Mentor eslestirmesi kaldirildi.");
+    } catch (error) {
+      console.error("Mentor eslestirmesi kaldirilamadi", error);
+      setFeedback("Mentor eslestirmesi kaldirilamadi.");
+    }
+  }
+
+  async function savePartnership() {
+    if (!partnershipForm.eurodesk_project_id || !partnershipForm.organization_name.trim()) return;
+    setFeedback(null);
+    try {
+      await api.post(`/panel/projects/${projectId}/special-modules/eurodesk-projects/${partnershipForm.eurodesk_project_id}/partnerships`, {
+        organization_name: partnershipForm.organization_name,
+        country: partnershipForm.country || null,
+        contact_info: partnershipForm.contact_info || null,
+      });
+      setPartnershipForm(initialPartnership);
+      await loadData();
+      setFeedback("Eurodesk ortakligi kaydedildi.");
+    } catch (error) {
+      console.error("Eurodesk ortakligi kaydedilemedi", error);
+      setFeedback("Eurodesk ortakligi kaydedilemedi.");
+    }
+  }
+
+  async function destroyPartnership(eurodeskProjectId: number, partnershipId: number) {
+    setFeedback(null);
+    try {
+      await api.delete(`/panel/projects/${projectId}/special-modules/eurodesk-projects/${eurodeskProjectId}/partnerships/${partnershipId}`);
+      await loadData();
+      setFeedback("Eurodesk ortakligi silindi.");
+    } catch (error) {
+      console.error("Eurodesk ortakligi silinemedi", error);
+      setFeedback("Eurodesk ortakligi silinemedi.");
     }
   }
 
@@ -284,6 +448,7 @@ export default function PanelProjectSpecialModulesPage() {
       requires_coordinator_approval: Boolean(kademeModuleForm.requires_coordinator_approval),
       application_open: Boolean(kademeModuleForm.application_open),
       is_active: Boolean(kademeModuleForm.is_active),
+      period_id: periodId !== "all" ? Number(periodId) : null,
       outcomes,
       instructors,
       faq_items,
@@ -318,29 +483,47 @@ export default function PanelProjectSpecialModulesPage() {
       fallback={<div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-8 text-amber-100">Projeye ozel modul yetkiniz yok.</div>}
     >
       <div className="space-y-8">
-        <Link href={`/panel/projects/${projectId}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white">
+        <Link href={`/panel/projects/${projectId}${periodId !== "all" ? `?period_id=${periodId}` : ""}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-slate-900">
           <ArrowLeft className="h-4 w-4" />
           Proje detayina don
         </Link>
 
         <div>
-          <div className="text-xs font-bold uppercase tracking-widest text-accent">{data.project.type || "Proje"}</div>
-          <h1 className="mt-2 text-3xl font-black text-white">{data.project.name} - Ozel Moduller</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Staj, mentor, Eurodesk hibe ve Kademe Plus hediye kademelerini tek panelden yonetin.</p>
+          <div className="text-xs font-bold uppercase tracking-widest text-accent">{formatProjectTypeBadge(data.project.type)}</div>
+          <h1 className="mt-2 text-3xl font-black text-slate-900">{data.project.name} - Ozel Moduller</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{specialModulesIntroCopy(data.project.type)}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {(data.applicable_modules ?? ["digital_bohca"]).map((module) => (
-              <span key={module} className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <span key={module} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 {module.replaceAll("_", " ")}
               </span>
             ))}
           </div>
         </div>
 
-        {feedback ? <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-sm text-white">{feedback}</div> : null}
+        <div className="glass-panel rounded-3xl p-4">
+          <label className="block max-w-md">
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Donem</span>
+            <select
+              value={periodId}
+              onChange={(event) => setPeriodId(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-accent"
+            >
+              <option value="all">Tum donemler</option>
+              {periods.map((period) => (
+                <option key={period.id} value={period.id}>
+                  {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {feedback ? <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-900">{feedback}</div> : null}
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           {access["projects.internships.view"] || access["projects.internships.manage"] ? (
-            <ModuleCard icon={<BriefcaseBusiness className="h-5 w-5" />} title="Diplomasi360 Staj Bilgileri">
+            <ModuleCard icon={<BriefcaseBusiness className="h-5 w-5" />} title={internshipsSectionTitle(data.project.type)}>
               {access["projects.internships.manage"] ? (
                 <form
                   className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2"
@@ -387,7 +570,7 @@ export default function PanelProjectSpecialModulesPage() {
                 onEdit={access["projects.internships.manage"] ? (item) => {
                   setEditing({ endpoint: "internships", id: item.id });
                   setInternshipForm({
-                    participant_id: "",
+                    participant_id: item.participant_id ? String(item.participant_id) : "",
                     company_name: item.company_name,
                     position: item.position,
                     start_date: toDateInput(item.start_date),
@@ -402,7 +585,7 @@ export default function PanelProjectSpecialModulesPage() {
           ) : null}
 
           {access["projects.mentors.view"] || access["projects.mentors.manage"] ? (
-            <ModuleCard icon={<Users className="h-5 w-5" />} title="Pergel Mentor Bilgileri">
+            <ModuleCard icon={<Users className="h-5 w-5" />} title={mentorsSectionTitle(data.project.type)}>
               {access["projects.mentors.manage"] ? (
                 <SimpleForm isEditing={editing?.endpoint === "mentors"} label="Mentor" onCancel={() => resetEditing(() => setMentorForm(initialMentor))} onSubmit={() => submit("mentors", mentorForm, () => setMentorForm(initialMentor))}>
                   <input value={mentorForm.name} onChange={(event) => setMentorForm((current) => ({ ...current, name: event.target.value }))} placeholder="Mentor adi" className={inputClass} required />
@@ -439,14 +622,64 @@ export default function PanelProjectSpecialModulesPage() {
                 } : undefined}
                 onDelete={access["projects.mentors.manage"] ? (id) => destroy("mentors", id) : undefined}
               />
+              <div className="mt-5 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+                <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Mentor-katilimci eslestirmeleri</h3>
+                {access["projects.mentors.manage"] ? (
+                  <form
+                    className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void assignMentor();
+                    }}
+                  >
+                    <select value={mentorAssignmentForm.mentor_id} onChange={(event) => setMentorAssignmentForm((current) => ({ ...current, mentor_id: event.target.value }))} className={inputClass} required>
+                      <option value="">Mentor sec</option>
+                      {data.mentors.map((mentor) => <option key={mentor.id} value={mentor.id}>{mentor.name}</option>)}
+                    </select>
+                    <select value={mentorAssignmentForm.participant_id} onChange={(event) => setMentorAssignmentForm((current) => ({ ...current, participant_id: event.target.value }))} className={inputClass} required>
+                      <option value="">Katilimci sec</option>
+                      {data.participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}</option>)}
+                    </select>
+                    <input value={mentorAssignmentForm.note} onChange={(event) => setMentorAssignmentForm((current) => ({ ...current, note: event.target.value }))} placeholder="Eslestirme notu" className={`${inputClass} md:col-span-2`} />
+                    <button className={`${buttonClass} md:col-span-2`} type="submit"><Users className="h-4 w-4" /> Eslestir</button>
+                  </form>
+                ) : null}
+                {data.mentors.every((mentor) => (mentor.assigned_participants?.length ?? 0) === 0) ? (
+                  <div className="text-sm text-muted-foreground">Bu donemde mentor eslestirmesi yok.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {data.mentors.map((mentor) => (mentor.assigned_participants?.length ?? 0) > 0 ? (
+                      <div key={mentor.id} className="rounded-xl bg-slate-100 p-3">
+                        <div className="mb-2 text-sm font-bold text-slate-900">{mentor.name}</div>
+                        <div className="space-y-2">
+                          {(mentor.assigned_participants ?? []).map((participant) => (
+                            <div key={participant.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm">
+                              <div>
+                                <div className="font-semibold text-slate-900">{participant.name || participant.email || "Katilimci"}</div>
+                                {participant.note ? <div className="text-xs text-muted-foreground">{participant.note}</div> : null}
+                              </div>
+                              {access["projects.mentors.manage"] ? (
+                                <button type="button" className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10" onClick={() => void unassignMentor(mentor.id, participant.id)} title="Eslestirmeyi kaldir">
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null)}
+                  </div>
+                )}
+              </div>
             </ModuleCard>
           ) : null}
 
           {access["projects.eurodesk.view"] || access["projects.eurodesk.manage"] ? (
-            <ModuleCard icon={<Handshake className="h-5 w-5" />} title="Eurodesk Hibe ve Ortakliklar">
+            <ModuleCard icon={<Handshake className="h-5 w-5" />} title={eurodeskSectionTitle(data.project.type)}>
               {access["projects.eurodesk.manage"] ? (
                 <SimpleForm isEditing={editing?.endpoint === "eurodesk-projects"} label="Eurodesk proje" onCancel={() => resetEditing(() => setEurodeskForm(initialEurodesk))} onSubmit={() => submit("eurodesk-projects", {
                   ...eurodeskForm,
+                  period_id: periodId !== "all" ? Number(periodId) : null,
                   partner_organizations: eurodeskForm.partner_organizations.split(",").map((item) => item.trim()).filter(Boolean),
                   grant_amount: eurodeskForm.grant_amount ? Number(eurodeskForm.grant_amount) : null,
                   start_date: eurodeskForm.start_date || null,
@@ -463,27 +696,116 @@ export default function PanelProjectSpecialModulesPage() {
                   </select>
                 </SimpleForm>
               ) : null}
-              <RecordList
-                items={data.eurodesk_projects}
-                render={(item) => `${item.title} - ${item.grant_status}${item.grant_amount ? ` - ${item.grant_amount}` : ""}`}
-                onEdit={access["projects.eurodesk.manage"] ? (item) => {
-                  setEditing({ endpoint: "eurodesk-projects", id: item.id });
-                  setEurodeskForm({
-                    title: item.title,
-                    partner_organizations: (item.partner_organizations ?? []).join(", "),
-                    grant_amount: item.grant_amount ? String(item.grant_amount) : "",
-                    grant_status: item.grant_status,
-                    start_date: toDateInput(item.start_date),
-                    end_date: toDateInput(item.end_date),
-                  });
-                } : undefined}
-                onDelete={access["projects.eurodesk.manage"] ? (id) => destroy("eurodesk-projects", id) : undefined}
-              />
+              <EurodeskSummaryPanel summary={data.eurodesk_summary} />
+              {data.eurodesk_projects.length === 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-white/[0.03] p-4 text-sm text-muted-foreground">Eurodesk proje kaydi yok.</div>
+              ) : (
+                <div className="space-y-3">
+                  {data.eurodesk_projects.map((item) => {
+                    const status = eurodeskStatusMeta[item.grant_status] ?? eurodeskStatusMeta.applied;
+                    const partners = item.partner_organizations ?? [];
+                    const partnershipCount = item.partnerships?.length ?? 0;
+
+                    return (
+                      <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-black text-slate-900">{item.title}</div>
+                            <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                              {item.period?.name ? <span>{item.period.name}</span> : null}
+                              {item.start_date ? <span>{toDateInput(item.start_date)}{item.end_date ? ` - ${toDateInput(item.end_date)}` : ""}</span> : null}
+                            </div>
+                          </div>
+                          <span className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-widest ${status.className}`}>{status.label}</span>
+                        </div>
+                        <div className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
+                          <EurodeskMetric label="Hibe" value={formatCurrency(item.grant_amount)} />
+                          <EurodeskMetric label="Ortak kaydi" value={String(partnershipCount)} />
+                          <EurodeskMetric label="Ortak listesi" value={partners.length ? partners.join(", ") : "-"} />
+                        </div>
+                        {access["projects.eurodesk.manage"] ? (
+                          <div className="mt-4 flex flex-wrap justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditing({ endpoint: "eurodesk-projects", id: item.id });
+                                setEurodeskForm({
+                                  title: item.title,
+                                  partner_organizations: (item.partner_organizations ?? []).join(", "),
+                                  grant_amount: item.grant_amount ? String(item.grant_amount) : "",
+                                  grant_status: item.grant_status,
+                                  start_date: toDateInput(item.start_date),
+                                  end_date: toDateInput(item.end_date),
+                                });
+                              }}
+                              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-muted-foreground hover:bg-slate-50 hover:text-slate-900"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                              Duzenle
+                            </button>
+                            <button type="button" onClick={() => void destroy("eurodesk-projects", item.id)} className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-black text-red-500 hover:bg-red-50">
+                              <Trash2 className="h-4 w-4" />
+                              Sil
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="mt-5 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+                <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Ortak kuruluslar</h3>
+                {access["projects.eurodesk.manage"] ? (
+                  <form
+                    className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void savePartnership();
+                    }}
+                  >
+                    <select value={partnershipForm.eurodesk_project_id} onChange={(event) => setPartnershipForm((current) => ({ ...current, eurodesk_project_id: event.target.value }))} className={inputClass} required>
+                      <option value="">Eurodesk projesi sec</option>
+                      {data.eurodesk_projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
+                    </select>
+                    <input value={partnershipForm.organization_name} onChange={(event) => setPartnershipForm((current) => ({ ...current, organization_name: event.target.value }))} placeholder="Kurulus adi" className={inputClass} required />
+                    <input value={partnershipForm.country} onChange={(event) => setPartnershipForm((current) => ({ ...current, country: event.target.value }))} placeholder="Ulke" className={inputClass} />
+                    <input value={partnershipForm.contact_info} onChange={(event) => setPartnershipForm((current) => ({ ...current, contact_info: event.target.value }))} placeholder="Iletisim / not" className={inputClass} />
+                    <button className={`${buttonClass} md:col-span-2`} type="submit"><Handshake className="h-4 w-4" /> Ortaklik ekle</button>
+                  </form>
+                ) : null}
+                {data.eurodesk_projects.every((project) => (project.partnerships?.length ?? 0) === 0) ? (
+                  <div className="text-sm text-muted-foreground">Ortaklik kaydi yok.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {data.eurodesk_projects.map((project) => (project.partnerships?.length ?? 0) > 0 ? (
+                      <div key={project.id} className="rounded-xl bg-slate-100 p-3">
+                        <div className="mb-2 text-sm font-bold text-slate-900">{project.title}</div>
+                        <div className="space-y-2">
+                          {(project.partnerships ?? []).map((partnership) => (
+                            <div key={partnership.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm">
+                              <div>
+                                <div className="font-semibold text-slate-900">{partnership.organization_name}</div>
+                                <div className="text-xs text-muted-foreground">{[partnership.country, partnership.contact_info].filter(Boolean).join(" - ") || "Detay girilmemis"}</div>
+                              </div>
+                              {access["projects.eurodesk.manage"] ? (
+                                <button type="button" className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10" onClick={() => void destroyPartnership(project.id, partnership.id)} title="Ortakligi sil">
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null)}
+                  </div>
+                )}
+              </div>
             </ModuleCard>
           ) : null}
 
           {access["projects.rewards.view"] || access["projects.rewards.manage"] ? (
-            <ModuleCard icon={<Gift className="h-5 w-5" />} title="Kademe Plus Rozet ve Hediye Kademeleri">
+            <ModuleCard icon={<Gift className="h-5 w-5" />} title={rewardsSectionTitle(data.project.type)}>
               {access["projects.rewards.manage"] ? (
                 <SimpleForm isEditing={editing?.endpoint === "reward-tiers"} label="Hediye kademesi" onCancel={() => resetEditing(() => setRewardForm(initialReward))} onSubmit={() => submit("reward-tiers", {
                   ...rewardForm,
@@ -514,14 +836,14 @@ export default function PanelProjectSpecialModulesPage() {
                 } : undefined}
                 onDelete={access["projects.rewards.manage"] ? (id) => destroy("reward-tiers", id) : undefined}
               />
-              <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="mt-5 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
                 <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Hediye hakki kazananlar</h3>
                 {(data.reward_eligible_participants ?? []).length === 0 ? (
                   <div className="text-sm text-muted-foreground">Su an kosullari saglayan katilimci yok.</div>
                 ) : (
                   <div className="space-y-2">
                     {(data.reward_eligible_participants ?? []).map((participant) => (
-                      <div key={participant.participant_id} className="rounded-lg bg-black/10 p-3 text-sm text-white">
+                      <div key={participant.participant_id} className="rounded-lg bg-slate-100 p-3 text-sm text-slate-900">
                         <div className="font-bold">{participant.name || participant.email || "Katilimci"}</div>
                         <div className="text-xs text-muted-foreground">
                           {participant.badge_count} rozet / {participant.credit} kredi - {participant.eligible_rewards.map((reward) => reward.reward_description).join(", ")}
@@ -566,19 +888,70 @@ export default function PanelProjectSpecialModulesPage() {
                   <button className={`${buttonClass} md:col-span-2`}><Gift className="h-4 w-4" /> Hediye kaydi ekle</button>
                 </form>
               ) : null}
-              <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Verilen hediyeler</h3>
+              <div className="mt-5 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Verilen hediyeler</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">Teslim bekleyen ve tamamlanan hediye kayitlari donem filtresine gore listelenir.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                    <RewardStat label="Toplam" value={rewardAwardStats.total} />
+                    <RewardStat label="Teslim" value={rewardAwardStats.delivered} />
+                    <RewardStat label="Bekleyen" value={rewardAwardStats.pending} />
+                    <RewardStat label="Iptal" value={rewardAwardStats.cancelled} />
+                  </div>
+                </div>
                 {(data.reward_awards ?? []).length === 0 ? (
                   <div className="text-sm text-muted-foreground">Hediye kaydi yok.</div>
                 ) : (
-                  <RecordList items={data.reward_awards ?? []} render={(item) => `${item.name || item.email || "Katilimci"} - ${item.reward_name} (${item.status})`} onDelete={access["projects.rewards.manage"] ? (id) => destroy("reward-awards", id) : undefined} />
+                  <div className="space-y-3">
+                    {(data.reward_awards ?? []).map((item) => {
+                      const status = rewardStatusMeta[item.status] ?? rewardStatusMeta.given;
+                      const participantName = item.name || item.email || "Katilimci";
+                      const canMarkDelivered = access["projects.rewards.manage"] && item.status !== "delivered" && item.status !== "cancelled";
+
+                      return (
+                        <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-black text-slate-900">{participantName}</div>
+                              <div className="mt-1 text-sm text-muted-foreground">{item.reward_name}</div>
+                              {item.tier ? <div className="mt-1 text-xs text-muted-foreground">Kademe: {item.tier.name}</div> : null}
+                            </div>
+                            <span className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-widest ${status.className}`}>{status.label}</span>
+                          </div>
+                          <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-muted-foreground sm:grid-cols-2">
+                            <RewardDetail label="Kayit" value={formatPanelDateTime(item.awarded_at)} />
+                            <RewardDetail label="Kaydeden" value={item.awarder || "-"} />
+                            <RewardDetail label="Teslim" value={formatPanelDateTime(item.delivered_at)} />
+                            <RewardDetail label="Teslim eden" value={item.deliverer || "-"} />
+                          </div>
+                          {item.note ? <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">{item.note}</div> : null}
+                          {access["projects.rewards.manage"] ? (
+                            <div className="mt-4 flex flex-wrap justify-end gap-2">
+                              {canMarkDelivered ? (
+                                <button type="button" onClick={() => void markRewardDelivered(item.id)} className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-100">
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  Teslim edildi
+                                </button>
+                              ) : null}
+                              <button type="button" onClick={() => void destroy("reward-awards", item.id)} className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-black text-red-500 hover:bg-red-50">
+                                <Trash2 className="h-4 w-4" />
+                                Sil
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </ModuleCard>
           ) : null}
 
           {(data.applicable_modules?.includes("participants_by_module") ?? false) && (access["projects.rewards.view"] || access["projects.rewards.manage"]) ? (
-            <ModuleCard icon={<BookMarked className="h-5 w-5" />} title="KADEME+ Modulleri (kazanim, egitmen, SSS, uyari, kayit)">
+            <ModuleCard icon={<BookMarked className="h-5 w-5" />} title={kademeModulesSectionTitle(data.project.type)}>
               {access["projects.rewards.manage"] ? (
                 <form
                   className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2"
@@ -613,19 +986,19 @@ export default function PanelProjectSpecialModulesPage() {
                   <input value={kademeModuleForm.consent_checkbox_label} onChange={(event) => setKademeModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} placeholder="Onay kutusu metni" className={`${inputClass} md:col-span-2`} />
                   <textarea value={kademeModuleForm.instructorsJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, instructorsJson: event.target.value }))} placeholder='Egitmenler JSON ornek: [{"name":"Ad Soyad","bio":"..."}]' className={`${inputClass} md:col-span-2 min-h-[64px] font-mono text-xs`} />
                   <textarea value={kademeModuleForm.faqJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, faqJson: event.target.value }))} placeholder='SSS JSON ornek: [{"question":"?","answer":"..."}]' className={`${inputClass} md:col-span-2 min-h-[64px] font-mono text-xs`} />
-                  <label className="flex items-center gap-2 text-sm text-white">
+                  <label className="flex items-center gap-2 text-sm text-slate-900">
                     <input type="checkbox" checked={kademeModuleForm.requires_consent} onChange={(event) => setKademeModuleForm((current) => ({ ...current, requires_consent: event.target.checked }))} />
                     Katilimci onayi zorunlu
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-white">
+                  <label className="flex items-center gap-2 text-sm text-slate-900">
                     <input type="checkbox" checked={kademeModuleForm.requires_coordinator_approval} onChange={(event) => setKademeModuleForm((current) => ({ ...current, requires_coordinator_approval: event.target.checked }))} />
                     Koordinator onayi gerekli
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-white">
+                  <label className="flex items-center gap-2 text-sm text-slate-900">
                     <input type="checkbox" checked={kademeModuleForm.application_open} onChange={(event) => setKademeModuleForm((current) => ({ ...current, application_open: event.target.checked }))} />
                     Basvuru acik
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-white">
+                  <label className="flex items-center gap-2 text-sm text-slate-900">
                     <input type="checkbox" checked={kademeModuleForm.is_active} onChange={(event) => setKademeModuleForm((current) => ({ ...current, is_active: event.target.checked }))} />
                     Modul aktif
                   </label>
@@ -637,7 +1010,7 @@ export default function PanelProjectSpecialModulesPage() {
                     {editing?.endpoint === "kademe-modules" ? (
                       <button
                         type="button"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-white/[0.06] hover:text-white"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-slate-50 hover:text-slate-900"
                         onClick={() => {
                           setEditing(null);
                           setKademeModuleForm(initialKademeModule);
@@ -655,13 +1028,13 @@ export default function PanelProjectSpecialModulesPage() {
                   <div className="text-sm text-muted-foreground">Tanimli KADEME+ modulu yok.</div>
                 ) : (
                   (data.kademe_modules ?? []).map((mod) => (
-                    <div key={mod.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <div key={mod.id} className="rounded-xl border border-slate-200 bg-white/[0.03] p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <div className="font-bold text-white">{mod.title}</div>
+                          <div className="font-bold text-slate-900">{mod.title}</div>
                           <div className="text-xs text-muted-foreground">
-                            {mod.is_active ? "Aktif" : "Pasif"} · {mod.application_open ? "Basvuru acik" : "Basvuru kapali"}
-                            {typeof mod.enrollments_count === "number" ? ` · ${mod.enrollments_count} kayit` : ""}
+                            {mod.is_active ? "Aktif" : "Pasif"} · {mod.application_open ? "Başvuru açık" : "Başvuru kapalı"}
+                            {typeof mod.enrollments_count === "number" ? ` · ${mod.enrollments_count} kayıt` : ""}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -669,7 +1042,7 @@ export default function PanelProjectSpecialModulesPage() {
                             <>
                               <button
                                 type="button"
-                                className="rounded-lg border border-white/10 p-2 text-muted-foreground hover:bg-white/[0.06] hover:text-white"
+                                className="rounded-lg border border-slate-200 p-2 text-muted-foreground hover:bg-slate-50 hover:text-slate-900"
                                 title="Duzenle"
                                 onClick={() => {
                                   setEditing({ endpoint: "kademe-modules", id: mod.id });
@@ -704,11 +1077,11 @@ export default function PanelProjectSpecialModulesPage() {
                         </div>
                       </div>
                       {access["projects.rewards.manage"] && (mod.enrollments?.length ?? 0) > 0 ? (
-                        <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                        <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
                           <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Kayitlar</div>
                           {(mod.enrollments ?? []).map((en) => (
                             <div key={en.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-black/20 p-2 text-sm">
-                              <span className="text-white">{en.user?.name || en.user?.email || `Kullanici #${en.user_id}`}</span>
+                              <span className="text-slate-900">{en.user?.name || en.user?.email || `Kullanici #${en.user_id}`}</span>
                               <span className="text-xs text-muted-foreground">{en.status}</span>
                               {en.status === "pending" ? (
                                 <div className="flex gap-1">
@@ -740,8 +1113,8 @@ export default function PanelProjectSpecialModulesPage() {
 
 function ModuleCard({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-      <div className="mb-5 flex items-center gap-2 text-lg font-black text-white">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="mb-5 flex items-center gap-2 text-lg font-black text-slate-900">
         <span className="text-accent">{icon}</span>
         {title}
       </div>
@@ -766,13 +1139,69 @@ function SimpleForm({ children, isEditing, label, onCancel, onSubmit }: { childr
           {isEditing ? `${label ?? "Kayit"} guncelle` : "Kaydet"}
         </button>
         {isEditing && onCancel ? (
-          <button type="button" onClick={onCancel} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-white/[0.06] hover:text-white">
+          <button type="button" onClick={onCancel} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-slate-50 hover:text-slate-900">
             <X className="h-4 w-4" />
             Vazgec
           </button>
         ) : null}
       </div>
     </form>
+  );
+}
+
+function EurodeskSummaryPanel({ summary }: { summary?: EurodeskSummary | null }) {
+  if (!summary) return null;
+
+  return (
+    <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Eurodesk ozeti</h3>
+        {summary.countries.length > 0 ? <span className="text-xs font-semibold text-slate-600">Ulkeler: {summary.countries.join(", ")}</span> : null}
+      </div>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <RewardStat label="Proje" value={summary.total_projects} />
+        <RewardStat label="Onayli" value={summary.approved_projects} />
+        <RewardStat label="Ortak" value={summary.partnership_count} />
+        <RewardStat label="Ulke" value={summary.country_count} />
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+        <EurodeskMetric label="Toplam hibe" value={formatCurrency(summary.total_grant_amount)} />
+        <EurodeskMetric label="Onayli hibe" value={formatCurrency(summary.approved_grant_amount)} />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
+        <span className="rounded-full bg-sky-100 px-3 py-1 text-sky-700">Basvuruldu {summary.applied_projects}</span>
+        <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">Onaylandi {summary.approved_projects}</span>
+        <span className="rounded-full bg-violet-100 px-3 py-1 text-violet-700">Tamamlandi {summary.completed_projects}</span>
+        <span className="rounded-full bg-red-100 px-3 py-1 text-red-700">Reddedildi {summary.rejected_projects}</span>
+      </div>
+    </div>
+  );
+}
+
+function EurodeskMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+      <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="mt-1 break-words font-semibold text-slate-800">{value}</div>
+    </div>
+  );
+}
+
+function RewardStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+      <div className="text-base font-black text-slate-900">{value}</div>
+      <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function RewardDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-slate-50 px-3 py-2">
+      <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="mt-1 font-semibold text-slate-800">{value}</div>
+    </div>
   );
 }
 
@@ -784,7 +1213,7 @@ function FormActions({ isEditing, label, onCancel }: { isEditing?: boolean; labe
         {isEditing ? `${label} guncelle` : `${label} ekle`}
       </button>
       {isEditing ? (
-        <button type="button" onClick={onCancel} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-white/[0.06] hover:text-white">
+        <button type="button" onClick={onCancel} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-slate-50 hover:text-slate-900">
           <X className="h-4 w-4" />
           Vazgec
         </button>
@@ -808,16 +1237,16 @@ function RecordList<T extends { id: number }>({
   onEdit?: (item: T) => void;
   onDelete?: (id: number) => void;
 }) {
-  if (items.length === 0) return <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-muted-foreground">Kayit yok.</div>;
+  if (items.length === 0) return <div className="rounded-xl border border-slate-200 bg-white/[0.03] p-4 text-sm text-muted-foreground">Kayit yok.</div>;
 
   return (
     <div className="space-y-2">
       {items.map((item) => (
-        <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-          <div className="text-sm font-semibold text-white">{render(item)}</div>
+        <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+          <div className="text-sm font-semibold text-slate-900">{render(item)}</div>
           <div className="flex shrink-0 items-center gap-2">
             {onEdit && (canEdit ? canEdit(item) : true) ? (
-              <button type="button" onClick={() => onEdit(item)} className="rounded-lg border border-white/10 p-2 text-muted-foreground hover:bg-white/[0.06] hover:text-white" title="Duzenle">
+              <button type="button" onClick={() => onEdit(item)} className="rounded-lg border border-slate-200 p-2 text-muted-foreground hover:bg-slate-50 hover:text-slate-900" title="Duzenle">
                 <Edit2 className="h-4 w-4" />
               </button>
             ) : null}
@@ -833,7 +1262,21 @@ function RecordList<T extends { id: number }>({
   );
 }
 
+function formatCurrency(value?: string | number | null): string {
+  const amount = Number(value ?? 0);
+  if (!Number.isFinite(amount) || amount === 0) return "-";
+  return new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(amount);
+}
+
+function formatPanelDateTime(value?: string | null): string {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
 function toDateInput(value?: string | null): string {
   if (!value) return "";
   return value.slice(0, 10);
 }
+

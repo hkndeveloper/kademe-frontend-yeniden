@@ -48,7 +48,7 @@ export default function AboutPage() {
             .slice(0, 3),
         );
       } catch (error) {
-        console.error("Hakkimizda verileri cekilemedi", error);
+        console.error("Hakkımızda verileri çekilemedi", error);
       } finally {
         setSettingsLoading(false);
       }

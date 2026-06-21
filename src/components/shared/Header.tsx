@@ -5,9 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/store/useAuth";
-import api from "@/lib/api/axios";
 import { homePathForUser } from "@/lib/role-home";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
+import { getCachedPublicProjects, getCachedSiteConfig } from "@/lib/public-api-cache";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,17 +34,15 @@ export function Header() {
   useEffect(() => {
     const loadSiteConfig = async () => {
       try {
-        const configResponse = await api.get<SiteSettingsResponse>("/site-config");
-        setSiteSettings(configResponse.data.settings ?? null);
+        const configResponse: SiteSettingsResponse = await getCachedSiteConfig();
+        setSiteSettings(configResponse.settings ?? null);
 
         if (isPanelPath(pathname)) {
           return;
         }
 
-        const projectsResponse = await api
-          .get<{ projects: HeaderProject[] }>("/projects")
-          .catch(() => ({ data: { projects: [] as HeaderProject[] } }));
-        setProjects(projectsResponse.data.projects ?? []);
+        const projectsResponse = await getCachedPublicProjects().catch(() => [] as HeaderProject[]);
+        setProjects(projectsResponse);
       } catch (error) {
         console.error("Header verileri yuklenemedi", error);
       }
@@ -55,7 +53,8 @@ export function Header() {
 
   // Sayfa değiştiğinde mobil menüyü kapat
   useEffect(() => {
-    setMobileMenuOpen(false);
+    const timer = window.setTimeout(() => setMobileMenuOpen(false), 0);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   const getDashboardLink = () => homePathForUser(user);
@@ -73,8 +72,8 @@ export function Header() {
         "border-slate-200/90 bg-white/90 shadow-md shadow-slate-900/5 backdrop-blur-xl supports-[backdrop-filter]:bg-white/85",
       )}
     >
-      <div className="container mx-auto flex h-20 items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-3">
+      <div className="container mx-auto flex h-16 items-center justify-between gap-3 px-4 sm:h-20 sm:px-6">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/branding/kademe-logo-turuncu.svg"
@@ -83,7 +82,7 @@ export function Header() {
             width={120}
             height={36}
           />
-          <span className="text-xl font-bold tracking-tight text-slate-800">{siteSettings?.general.site_name || "KADEME"}</span>
+          <span className="truncate text-lg font-bold tracking-tight text-slate-800 sm:text-xl">{siteSettings?.general.site_name || "KADEME"}</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -171,7 +170,7 @@ export function Header() {
         </nav>
 
         {/* Desktop Auth Buttons + Mobile Hamburger */}
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-4">
           {/* Mobile hamburger button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -224,7 +223,7 @@ export function Header() {
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="border-t border-slate-200/80 bg-white/95 backdrop-blur-xl md:hidden">
+        <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-xl backdrop-blur-xl md:hidden">
           <nav className="container mx-auto flex flex-col gap-1 px-6 py-4">
             {navLinks.map((item) => (
               <Link

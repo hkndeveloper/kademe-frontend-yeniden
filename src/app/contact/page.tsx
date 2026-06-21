@@ -109,22 +109,22 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <section className="relative overflow-hidden border-b border-border/40 py-24">
+    <div className="min-h-screen bg-background pb-16 sm:pb-24">
+      <section className="relative overflow-hidden border-b border-border/40 py-14 sm:py-20 md:py-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_25%,oklch(0.74_0.18_45/0.13),transparent_42%),radial-gradient(circle_at_85%_75%,oklch(0.56_0.12_255/0.1),transparent_45%)]" />
-        <div className="container relative z-10 mx-auto px-6 text-center">
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 text-4xl font-black md:text-6xl">
+        <div className="container relative z-10 mx-auto px-4 text-center sm:px-6">
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 text-3xl font-black sm:mb-6 md:text-6xl">
             Iletisim
           </motion.h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+          <p className="mx-auto max-w-2xl text-sm leading-6 text-muted-foreground sm:text-lg">
             Merak ettiginiz her sey icin bize ulasabilir veya ofisimizde bizi ziyaret edebilirsiniz.
           </p>
         </div>
       </section>
 
-      <div className="container mx-auto mt-20 grid grid-cols-1 gap-12 px-6 lg:grid-cols-3">
-        <div className="space-y-8 lg:col-span-1">
-          <div className="glass-panel space-y-10 rounded-3xl border border-border/60 p-8 shadow-sm">
+      <div className="container mx-auto mt-10 grid grid-cols-1 gap-8 px-4 sm:mt-14 sm:px-6 lg:mt-20 lg:grid-cols-3 lg:gap-12">
+        <div className="space-y-6 lg:col-span-1 lg:space-y-8">
+          <div className="glass-panel space-y-7 rounded-2xl border border-border/60 p-5 shadow-sm sm:space-y-10 sm:rounded-3xl sm:p-8">
             <div className="flex items-start gap-5">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <MapPin className="h-6 w-6" />
@@ -162,7 +162,7 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <div className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm">
+          <div className="glass-panel rounded-2xl border border-border/60 p-5 shadow-sm sm:rounded-3xl sm:p-8">
             <h4 className="mb-6 font-bold">Sosyal Medya</h4>
             <div className="flex gap-4">
               {siteSettings?.social_media.instagram_url ? <Link href={siteSettings.social_media.instagram_url} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/10 hover:text-primary hover:shadow-md"><Camera className="h-6 w-6" /></Link> : null}
@@ -175,14 +175,14 @@ export default function ContactPage() {
         </div>
 
         <div className="lg:col-span-2">
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="glass-panel rounded-[40px] border border-border/60 p-8 shadow-sm md:p-12">
-            <h2 className="mb-8 text-3xl font-black">Bize Mesaj Gonderin</h2>
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="glass-panel rounded-2xl border border-border/60 p-5 shadow-sm sm:p-8 md:rounded-[32px] md:p-12">
+            <h2 className="mb-6 text-2xl font-black sm:mb-8 sm:text-3xl">Bize Mesaj Gonderin</h2>
 
             {success ? <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">{success}</div> : null}
             {error ? <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div> : null}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
                 <div className="space-y-2">
                   <label className="ml-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Ad Soyad</label>
                   <input required type="text" value={form.name} onChange={(event) => handleChange("name", event.target.value)} className="w-full rounded-2xl border border-border bg-input px-6 py-4 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md" placeholder="Adiniz Soyadiniz" />
@@ -198,7 +198,7 @@ export default function ContactPage() {
                 <input type="text" value={form.subject} onChange={(event) => handleChange("subject", event.target.value)} className="w-full rounded-2xl border border-border bg-input px-6 py-4 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md" placeholder="Mesaj basligi" />
               </div>
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
                 <div className="space-y-2">
                   <label className="ml-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Konu</label>
                   <select value={form.category} onChange={(event) => handleChange("category", event.target.value)} className="w-full appearance-none rounded-2xl border border-border bg-input px-6 py-4 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md">

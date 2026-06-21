@@ -35,6 +35,7 @@ import PanelDigitalBohcaPage from "@/features/panel/pages/panel/digital-bohca/pa
 import PanelAssignmentsPage from "@/features/panel/pages/panel/assignments/page";
 import PanelKpdPage from "@/features/panel/pages/panel/kpd/page";
 import PanelKvkkForgetPage from "@/features/panel/pages/panel/kvkk-forget/page";
+import PanelMotivationPage from "@/features/panel/pages/panel/motivation/page";
 import AdminPeriodFormBuilderPage from "@/features/panel/pages/admin/periods/form-builder/page";
 
 function NotFoundPanelPage() {
@@ -58,6 +59,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   "digital-bohca": PanelDigitalBohcaPage,
   assignments: PanelAssignmentsPage,
   kpd: PanelKpdPage,
+  motivation: PanelMotivationPage,
   "kvkk-forget": PanelKvkkForgetPage,
   requests: PanelSharedRequestsPage,
   support: PanelSupportPage,

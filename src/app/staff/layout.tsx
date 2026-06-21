@@ -1,5 +1,5 @@
-import { LegacyPanelRedirectLayout } from "@/components/shared/LegacyPanelRedirectLayout";
+import { LegacyRedirectRootLayout } from "@/components/shared/LegacyRedirectRootLayout";
 
-export default function StaffLegacyLayout() {
-  return <LegacyPanelRedirectLayout />;
+export default function StaffLegacyLayout({ children }: { children: React.ReactNode }) {
+  return <LegacyRedirectRootLayout>{children}</LegacyRedirectRootLayout>;
 }

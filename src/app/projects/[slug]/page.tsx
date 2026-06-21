@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -19,14 +20,17 @@ import {
   MessageSquareText,
   Sparkles,
   Users,
+  ZoomIn,
 } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
+import { PublicBreadcrumbs } from "@/components/shared/PublicBreadcrumbs";
 import { useAuth } from "@/store/useAuth";
 
 interface ActivePeriod {
   id: number;
   name: string;
+  status?: string;
 }
 
 interface Alumni {
@@ -34,8 +38,28 @@ interface Alumni {
   year: string;
   name: string;
   university: string;
+  department?: string | null;
+  class_year?: number | string | null;
   job?: string;
   image?: string;
+  period_name?: string | null;
+  period?: ActivePeriod | null;
+}
+
+interface PublicStudent {
+  id: number;
+  name: string;
+  university?: string | null;
+  department?: string | null;
+  class_year?: number | string | null;
+  image?: string | null;
+  period_name?: string | null;
+  period?: ActivePeriod | null;
+}
+
+interface PublicStudentGroup<TStudent extends PublicStudent = PublicStudent> {
+  year: string;
+  students: TStudent[];
 }
 
 interface ApplicationField {
@@ -70,15 +94,27 @@ interface ProjectDetail {
   active_period: ActivePeriod | null;
   next_application_date?: string | null;
   gallery?: string[];
-  active_students?: Array<{
-    id: number;
-    name: string;
-    university?: string | null;
-    department?: string | null;
-    class_year?: number | string | null;
-    image?: string | null;
+  gallery_items?: Array<{
+    path?: string;
+    url: string;
+    caption?: string | null;
+    year?: string | null;
+    period_id?: number | null;
+    period_name?: string | null;
   }>;
+  active_students?: PublicStudent[];
+  active_student_groups?: PublicStudentGroup[];
   alumni?: Alumni[];
+  alumni_groups?: PublicStudentGroup<Alumni>[];
+}
+
+interface PublicGalleryItem {
+  path?: string;
+  url: string;
+  caption?: string | null;
+  year?: string | null;
+  period_id?: number | null;
+  period_name?: string | null;
 }
 
 interface PublicProgram {
@@ -101,6 +137,7 @@ interface ProjectProgramsPayload {
   };
   upcoming: PublicProgram[];
   recent_completed: PublicProgram[];
+  calendar_months?: Array<{ key: string; label: string; year?: number; month?: number; count: number }>;
 }
 
 interface ProjectSpecialsPayload {
@@ -152,6 +189,16 @@ interface ProjectResponse {
   project_specials?: ProjectSpecialsPayload;
 }
 
+function programStatusLabel(status: string): string {
+  const map: Record<string, string> = {
+    scheduled: "Planlandi",
+    active: "Aktif",
+    completed: "Tamamlandi",
+    cancelled: "Iptal",
+  };
+  return map[status] ?? status;
+}
+
 export default function ProjectDetailPage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
@@ -175,6 +222,8 @@ export default function ProjectDetailPage() {
   });
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [guestApplySuccess, setGuestApplySuccess] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -184,6 +233,8 @@ export default function ProjectDetailPage() {
         setApplicationForm(response.data.application_form ?? null);
         setPrograms(response.data.programs ?? null);
         setProjectSpecials(response.data.project_specials ?? null);
+        setGuestApplySuccess(false);
+        setMessage(null);
 
         const nextFormValues: Record<string, string | string[] | File | null> = {};
         for (const field of response.data.application_form?.fields ?? []) {
@@ -205,6 +256,19 @@ export default function ProjectDetailPage() {
       void fetchProject();
     }
   }, [params.slug, router]);
+
+  useEffect(() => {
+    if (!lightboxUrl) {
+      return;
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setLightboxUrl(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxUrl]);
 
   const buildApplicationPayload = () => {
     const hasFile = Object.values(formValues).some((value) => value instanceof File);
@@ -255,8 +319,41 @@ export default function ProjectDetailPage() {
     };
   };
 
+  const validateApplicationInputs = (): string | null => {
+    if (!isAuthenticated) {
+      if (!guestApplicant.name.trim() || !guestApplicant.surname.trim() || !guestApplicant.email.trim()) {
+        return "Lutfen ad, soyad ve e-posta bilgilerinizi doldurun.";
+      }
+      const email = guestApplicant.email.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return "Gecerli bir e-posta adresi girin.";
+      }
+    }
+    for (const field of applicationForm?.fields ?? []) {
+      const fieldId = field.id ?? field.key;
+      if (!fieldId || !field.required) {
+        continue;
+      }
+      const val = formValues[fieldId];
+      if (field.type === "checkbox") {
+        if (!Array.isArray(val) || val.length === 0) {
+          return `"${field.label}" secenegi zorunludur.`;
+        }
+      } else if (field.type === "file") {
+        if (!val) {
+          return `"${field.label}" icin dosya yuklemeniz gerekir.`;
+        }
+      } else if (!String(val ?? "").trim()) {
+        return `"${field.label}" zorunludur.`;
+      }
+    }
+    return null;
+  };
+
   const handleApply = async (programId?: number | null) => {
-    if (!project) return;
+    if (!project) {
+      return;
+    }
 
     setMessage(null);
     setErrorMessage(null);
@@ -270,7 +367,6 @@ export default function ProjectDetailPage() {
 
     const needsApplicationModal = (applicationForm?.fields?.length ?? 0) > 0 || Boolean(applicationForm?.require_consent);
 
-    // Dinamik alanlar ve basvuru onayi modal icinde acilir.
     if (!showApplicationForm && needsApplicationModal) {
       setShowApplicationForm(true);
       return;
@@ -281,30 +377,38 @@ export default function ProjectDetailPage() {
       return;
     }
 
+    const validationError = validateApplicationInputs();
+    if (validationError) {
+      setErrorMessage(validationError);
+      return;
+    }
+
     setApplying(true);
     try {
       const { payload, config } = buildApplicationPayload();
       if (isAuthenticated) {
-        await api.post("/applications", payload instanceof FormData ? payload : {
-          project_id: project.id,
-          period_id: project.active_period.id,
-          program_id: nextProgramId,
-          form_data: formValues,
-          consent_accepted: consentAccepted,
-        }, config);
-      } else {
-        if (!guestApplicant.name.trim() || !guestApplicant.surname.trim() || !guestApplicant.email.trim()) {
-          setErrorMessage("Lutfen ad, soyad ve e-posta bilgilerinizi doldurun.");
-          return;
-        }
-
-        await api.post("/applications/public", payload, config);
-      }
-      setMessage("Basvurunuz alindi. Durumu ogrenci panelinizde gorebilirsiniz.");
-      if (isAuthenticated) {
+        await api.post(
+          "/applications",
+          payload instanceof FormData
+            ? payload
+            : {
+                project_id: project.id,
+                period_id: project.active_period.id,
+                program_id: nextProgramId,
+                form_data: formValues,
+                consent_accepted: consentAccepted,
+              },
+          config,
+        );
+        setMessage("Basvurunuz alindi. Durumu ogrenci panelinizde gorebilirsiniz.");
         router.push("/student/applications");
       } else {
+        await api.post("/applications/public", payload, config);
+        setGuestApplySuccess(true);
         setShowApplicationForm(false);
+        setMessage(
+          "Basvurunuz alindi. E-posta adresinize bilgilendirme gelebilir. Basvurularinizi takip etmek icin hesap olusturabilirsiniz.",
+        );
       }
     } catch (error: unknown) {
       if (isAxiosError(error)) {
@@ -322,16 +426,62 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const groupedAlumni = useMemo(() => {
-    return (project?.alumni ?? []).reduce((acc, curr) => {
+  const activeStudentGroups = useMemo<PublicStudentGroup[]>(() => {
+    if (project?.active_student_groups?.length) {
+      return project.active_student_groups;
+    }
+
+    const activeStudents = project?.active_students ?? [];
+    return activeStudents.length > 0 ? [{ year: "Aktif", students: activeStudents }] : [];
+  }, [project?.active_student_groups, project?.active_students]);
+
+  const alumniGroups = useMemo<PublicStudentGroup<Alumni>[]>(() => {
+    if (project?.alumni_groups?.length) {
+      return project.alumni_groups;
+    }
+
+    const grouped = (project?.alumni ?? []).reduce((acc, curr) => {
       (acc[curr.year] = acc[curr.year] || []).push(curr);
       return acc;
     }, {} as Record<string, Alumni[]>);
-  }, [project?.alumni]);
 
-  const activeStudents = project?.active_students ?? [];
-  const upcomingPrograms = programs?.upcoming ?? [];
-  const completedPrograms = programs?.recent_completed ?? [];
+    return Object.entries(grouped)
+      .sort((a, b) => Number(b[0]) - Number(a[0]))
+      .map(([year, students]) => ({ year, students }));
+  }, [project]);
+
+  const galleryItems = useMemo<PublicGalleryItem[]>(() => {
+    const detailed = project?.gallery_items?.filter((item) => item.url) ?? [];
+    if (detailed.length > 0) {
+      return detailed;
+    }
+
+    return (project?.gallery ?? []).map((url) => ({
+      url,
+      caption: null,
+      year: null,
+      period_name: null,
+    }));
+  }, [project?.gallery, project?.gallery_items]);
+  const groupedGalleryItems = useMemo(() => {
+    return galleryItems.reduce((acc, item) => {
+      const key = item.period_name || item.year || "Galeri";
+      (acc[key] = acc[key] || []).push(item);
+      return acc;
+    }, {} as Record<string, typeof galleryItems>);
+  }, [galleryItems]);
+  const upcomingPrograms = useMemo(() => programs?.upcoming ?? [], [programs?.upcoming]);
+  const completedPrograms = useMemo(() => programs?.recent_completed ?? [], [programs?.recent_completed]);
+  const calendarMonths = programs?.calendar_months ?? [];
+
+  const selectedProgramTitle = useMemo(() => {
+    if (!selectedProgramId) {
+      return null;
+    }
+    const combined = [...upcomingPrograms, ...completedPrograms];
+    return combined.find((p) => p.id === selectedProgramId)?.title ?? null;
+  }, [selectedProgramId, upcomingPrograms, completedPrograms]);
+
   const hasSpecialContent = Boolean(
     (projectSpecials?.internships && projectSpecials.internships.total > 0) ||
       (projectSpecials?.mentors?.length ?? 0) > 0 ||
@@ -478,7 +628,7 @@ export default function ProjectDetailPage() {
           {program.period?.name ? <p className="mt-1 text-xs text-muted-foreground">{program.period.name}</p> : null}
         </div>
         <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
-          {program.status}
+          {programStatusLabel(program.status)}
         </span>
       </div>
       <div className="space-y-2 text-xs text-muted-foreground">
@@ -516,6 +666,28 @@ export default function ProjectDetailPage() {
 
   if (!project) return null;
 
+  const StudentCard = ({ student, alumni = false }: { student: PublicStudent | Alumni; alumni?: boolean }) => (
+    <div className="flex items-center gap-4 rounded-2xl bg-muted/30 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/50">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
+        {student.image ? <Image src={student.image} alt={student.name} fill unoptimized className="object-cover" /> : null}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate font-bold text-foreground">{student.name}</p>
+        <p className="text-xs text-muted-foreground">
+          {student.university || "Universite bilgisi yok"}
+          {student.department ? ` / ${student.department}` : ""}
+          {student.class_year ? ` / ${student.class_year}. Sinif` : ""}
+        </p>
+        {student.period_name ? (
+          <p className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+            Dönem: {student.period_name}
+          </p>
+        ) : null}
+        {alumni && "job" in student && student.job ? <p className="mt-1 text-[10px] text-primary">{student.job}</p> : null}
+      </div>
+    </div>
+  );
+
   const hasDynamicForm = (applicationForm?.fields?.length ?? 0) > 0;
   const needsApplicationModal = hasDynamicForm || Boolean(applicationForm?.require_consent);
 
@@ -530,13 +702,22 @@ export default function ProjectDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
 
         <div className="container relative z-10 mx-auto px-6 pb-12">
-          <button
-            onClick={() => router.back()}
+          <PublicBreadcrumbs
+            variant="onDark"
+            className="mb-4"
+            items={[
+              { label: "Ana Sayfa", href: "/" },
+              { label: "Projeler", href: "/projects" },
+              { label: project.name },
+            ]}
+          />
+          <Link
+            href="/projects"
             className="mb-6 inline-flex items-center gap-2 text-muted-foreground transition-all duration-300 hover:gap-3 hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Tum Projelere Don
-          </button>
+            Tum projelere don
+          </Link>
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1 text-sm font-bold uppercase tracking-wider text-primary">
             {project.type || "Proje"}
           </div>
@@ -603,6 +784,23 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
             </div>
+
+            {calendarMonths.length > 0 ? (
+              <div className="mb-6 rounded-2xl border border-border/60 bg-muted/20 p-4">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Program yogunlugu (ay)</p>
+                <div className="flex flex-wrap gap-2">
+                  {calendarMonths.map((month) => (
+                    <span
+                      key={month.key}
+                      className="inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm"
+                    >
+                      {month.label}
+                      <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">{month.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
               <div>
@@ -758,11 +956,31 @@ export default function ProjectDetailPage() {
               <ImageIcon className="h-6 w-6 text-primary" />
               Galeri
             </h2>
-            {project.gallery && project.gallery.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {project.gallery.map((img, index) => (
-                  <div key={`${img}-${index}`} className="relative h-32 overflow-hidden rounded-xl md:h-40">
-                    <Image src={img} alt={`${project.name} galeri ${index + 1}`} fill unoptimized className="object-cover transition-transform hover:scale-110" />
+            {galleryItems.length > 0 ? (
+              <div className="space-y-6">
+                {Object.entries(groupedGalleryItems).map(([group, items]) => (
+                  <div key={group}>
+                    <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-muted-foreground">{group}</h3>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                      {items.map((item, index) => (
+                        <button
+                          key={`${item.url}-${index}`}
+                          type="button"
+                          onClick={() => setLightboxUrl(item.url)}
+                          className="group relative h-32 overflow-hidden rounded-xl border border-transparent text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-primary md:h-40"
+                        >
+                          <Image src={item.url} alt={item.caption || `${project.name} galeri ${index + 1}`} fill unoptimized className="object-cover transition-transform group-hover:scale-110" />
+                          <span className="absolute inset-0 flex items-center justify-center bg-slate-950/0 transition-colors group-hover:bg-slate-950/40">
+                            <ZoomIn className="h-8 w-8 text-white opacity-0 drop-shadow-md transition-opacity group-hover:opacity-100" aria-hidden />
+                          </span>
+                          {item.caption ? (
+                            <span className="absolute inset-x-0 bottom-0 bg-slate-950/70 px-3 py-2 text-xs font-semibold text-white">
+                              {item.caption}
+                            </span>
+                          ) : null}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -778,20 +996,16 @@ export default function ProjectDetailPage() {
               <Users className="h-6 w-6 text-primary" />
               Aktif Ogrenciler
             </h2>
-            {activeStudents.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {activeStudents.map((student) => (
-                  <div key={student.id} className="flex items-center gap-4 rounded-2xl bg-muted/30 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/50">
-                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
-                      {student.image ? <Image src={student.image} alt={student.name} fill unoptimized className="object-cover" /> : null}
+            {activeStudentGroups.length > 0 ? (
+              <div className="space-y-8">
+                {activeStudentGroups.map((group) => (
+                  <div key={group.year}>
+                    <div className="mb-4 flex items-center justify-between border-b border-border pb-2">
+                      <h3 className="text-lg font-bold">{group.year}</h3>
+                      <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{group.students.length} kisi</span>
                     </div>
-                    <div>
-                      <p className="font-bold text-foreground">{student.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {student.university || "Universite bilgisi yok"}
-                        {student.department ? ` / ${student.department}` : ""}
-                        {student.class_year ? ` / ${student.class_year}. Sinif` : ""}
-                      </p>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {group.students.map((student) => <StudentCard key={student.id} student={student} />)}
                     </div>
                   </div>
                 ))}
@@ -808,26 +1022,16 @@ export default function ProjectDetailPage() {
               <Users className="h-6 w-6 text-primary" />
               Mezunlar
             </h2>
-            {Object.keys(groupedAlumni).length > 0 ? (
+            {alumniGroups.length > 0 ? (
               <div className="space-y-8">
-                {Object.entries(groupedAlumni)
-                  .sort((a, b) => Number(b[0]) - Number(a[0]))
-                  .map(([year, students]) => (
-                    <div key={year}>
-                      <h3 className="mb-4 border-b border-border pb-2 text-lg font-bold">{year}</h3>
+                {alumniGroups.map((group) => (
+                    <div key={group.year}>
+                      <div className="mb-4 flex items-center justify-between border-b border-border pb-2">
+                        <h3 className="text-lg font-bold">{group.year}</h3>
+                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{group.students.length} mezun</span>
+                      </div>
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        {students.map((student) => (
-                          <div key={student.id} className="flex items-center gap-4 rounded-2xl bg-muted/30 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/50">
-                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
-                              {student.image ? <Image src={student.image} alt={student.name} fill unoptimized className="object-cover" /> : null}
-                            </div>
-                            <div>
-                              <p className="font-bold text-foreground">{student.name}</p>
-                              <p className="text-xs text-muted-foreground">{student.university}</p>
-                              {student.job ? <p className="text-[10px] text-primary">{student.job}</p> : null}
-                            </div>
-                          </div>
-                        ))}
+                        {group.students.map((student) => <StudentCard key={student.id} student={student} alumni />)}
                       </div>
                     </div>
                   ))}
@@ -859,11 +1063,75 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            {message ? <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-300">{message}</div> : null}
-            {errorMessage ? <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{errorMessage}</div> : null}
+            {message ? <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-300">{message}</div> : null}
+            {errorMessage ? <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">{errorMessage}</div> : null}
 
-            {project.is_application_open ? (
+            {guestApplySuccess && !isAuthenticated ? (
+              <div className="space-y-4 rounded-2xl border border-green-500/30 bg-green-500/5 p-5">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-8 w-8 shrink-0 text-green-600 dark:text-green-400" />
+                  <div>
+                    <p className="font-bold text-foreground">Basvurunuz alindi</p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      E-posta kutunuzu kontrol edin. Basvurularinizi izlemek ve panele erismek icin ucretsiz hesap olusturabilirsiniz.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Link
+                    href="/auth/register"
+                    className="inline-flex flex-1 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center text-sm font-bold text-primary-foreground transition hover:opacity-95"
+                  >
+                    Hesap olustur
+                  </Link>
+                  <Link
+                    href="/auth/login"
+                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-center text-sm font-bold text-foreground transition hover:bg-muted"
+                  >
+                    Giris yap
+                  </Link>
+                </div>
+              </div>
+            ) : project.is_application_open ? (
               <div className="space-y-5">
+                {!isAuthenticated && !needsApplicationModal ? (
+                  <div className="space-y-2 rounded-2xl border border-border/70 bg-muted/40 p-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Basvuru iletisimi</p>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <input
+                        value={guestApplicant.name}
+                        onChange={(event) => setGuestApplicant((current) => ({ ...current, name: event.target.value }))}
+                        placeholder="Ad *"
+                        autoComplete="given-name"
+                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
+                      />
+                      <input
+                        value={guestApplicant.surname}
+                        onChange={(event) => setGuestApplicant((current) => ({ ...current, surname: event.target.value }))}
+                        placeholder="Soyad *"
+                        autoComplete="family-name"
+                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
+                      />
+                      <input
+                        value={guestApplicant.email}
+                        onChange={(event) => setGuestApplicant((current) => ({ ...current, email: event.target.value }))}
+                        placeholder="E-posta *"
+                        type="email"
+                        autoComplete="email"
+                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground md:col-span-2"
+                      />
+                      <input
+                        value={guestApplicant.phone}
+                        onChange={(event) => setGuestApplicant((current) => ({ ...current, phone: event.target.value }))}
+                        placeholder="Telefon (opsiyonel)"
+                        type="tel"
+                        autoComplete="tel"
+                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground md:col-span-2"
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
                 {hasDynamicForm ? (
                   <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
                     Basvuru formu &quot;Basvuruyu Gonder&quot; butonuna tikladiginizda popup olarak acilacaktir.
@@ -879,6 +1147,7 @@ export default function ProjectDetailPage() {
                 )}
 
                 <button
+                  type="button"
                   onClick={() => void handleApply(null)}
                   disabled={applying}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70"
@@ -899,10 +1168,10 @@ export default function ProjectDetailPage() {
                   Basvurular Kapali
                 </div>
                 {project.next_application_date ? (
-                  <p className="text-center text-xs text-amber-500">
+                  <p className="text-center text-xs text-amber-600 dark:text-amber-500">
                     Bir sonraki basvuru tarihi:
                     <br />
-                    <strong className="text-amber-400">{formatDate(project.next_application_date)}</strong>
+                    <strong className="text-amber-700 dark:text-amber-400">{formatDate(project.next_application_date)}</strong>
                   </p>
                 ) : (
                   <p className="text-center text-xs text-muted-foreground">Bir sonraki basvuru tarihi henuz belirtilmemis.</p>
@@ -910,8 +1179,12 @@ export default function ProjectDetailPage() {
               </div>
             )}
 
-            {!isAuthenticated && project.is_application_open ? (
-              <p className="mt-4 text-center text-xs text-muted-foreground">Uyelik zorunlu degil; ad, soyad ve e-posta bilgisiyle basvuru yapabilirsiniz.</p>
+            {!isAuthenticated && project.is_application_open && !guestApplySuccess ? (
+              <p className="mt-4 text-center text-xs text-muted-foreground">
+                {needsApplicationModal
+                  ? "Popup icinde iletisim bilgilerinizi girebilirsiniz. Uyelik zorunlu degildir."
+                  : "Uyelik zorunlu degil; yukaridaki bilgilerle basvuru yapabilirsiniz."}
+              </p>
             ) : null}
           </div>
         </div>
@@ -920,15 +1193,22 @@ export default function ProjectDetailPage() {
       {showApplicationForm && needsApplicationModal ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="glass-panel max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border/70 p-6 shadow-2xl md:p-8">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                <FileText className="h-4 w-4 text-primary" />
-                Dinamik Basvuru Formu
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Dinamik Basvuru Formu
+                </div>
+                {selectedProgramTitle ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Secilen program: <span className="font-semibold text-foreground">{selectedProgramTitle}</span>
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"
                 onClick={() => setShowApplicationForm(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all duration-300 hover:bg-muted hover:text-foreground"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all duration-300 hover:bg-muted hover:text-foreground"
                 aria-label="Basvuru formunu kapat"
               >
                 <X className="h-4 w-4" />
@@ -1012,6 +1292,26 @@ export default function ProjectDetailPage() {
                 {applying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Basvuruyu Gonder"}
               </button>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {lightboxUrl ? (
+        <div
+          className="fixed inset-0 z-[90] flex cursor-zoom-out items-center justify-center bg-slate-950/90 p-4 backdrop-blur-sm"
+          role="presentation"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute right-4 top-4 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white transition hover:bg-black/60"
+            aria-label="Galeriyi kapat"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="relative h-[min(85vh,800px)] w-full max-w-5xl cursor-default" onClick={(event) => event.stopPropagation()}>
+            <Image src={lightboxUrl} alt="Galeri buyutulmus" fill unoptimized className="object-contain" sizes="100vw" />
           </div>
         </div>
       ) : null}

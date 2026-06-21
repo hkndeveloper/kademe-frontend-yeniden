@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Briefcase, Camera, PlayCircle, Send } from "lucide-react";
-import api from "@/lib/api/axios";
-import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
+import { defaultSiteSettings, SiteSettingsPayload } from "@/lib/site-config";
+import { getCachedPublicProjects, getCachedSiteConfig } from "@/lib/public-api-cache";
 
 interface FooterProject {
   id: number;
@@ -20,11 +20,11 @@ export function Footer() {
     const load = async () => {
       try {
         const [configRes, projectsRes] = await Promise.all([
-          api.get<SiteSettingsResponse>("/site-config"),
-          api.get<{ projects: FooterProject[] }>("/projects").catch(() => ({ data: { projects: [] as FooterProject[] } })),
+          getCachedSiteConfig(),
+          getCachedPublicProjects().catch(() => [] as FooterProject[]),
         ]);
-        setSettings(configRes.data.settings ?? null);
-        setProjects(projectsRes.data.projects ?? []);
+        setSettings(configRes.settings ?? null);
+        setProjects(projectsRes);
       } catch {
         // fail silently — defaults render
       }

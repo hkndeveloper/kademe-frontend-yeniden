@@ -48,6 +48,8 @@ interface PermissionMatrixResponse {
   permission_groups: Record<string, PermissionItem[]>;
   granular_matrix_groups: Record<string, PermissionItem[]>;
   granular_permission_groups: Record<string, string[]>;
+  permission_domains?: Record<string, { domain: "authority" | "participant"; permissions: Record<string, "authority" | "participant"> }>;
+  role_permission_compatibility?: Record<string, Record<string, boolean>>;
   role_permission_scopes?: Record<string, Record<string, { scope_type: ScopeType; scope_payload: Record<string, unknown> }>>;
   role_scope_storage_ready?: boolean;
   supported_scope_options?: ScopeOptionsMap;
@@ -59,6 +61,7 @@ type ScopeType = "all" | "own_projects" | "assigned_projects" | "own_unit" | "se
 type RoleScopeState = Record<string, Record<string, { scope_type: ScopeType; scope_payload: Record<string, unknown> }>>;
 type ScopeOptionsMap = Record<string, ScopeType[]>;
 type DefaultRoleScopes = Record<string, Record<string, ScopeType>>;
+type PermissionDomainFilter = "all" | "authority" | "participant";
 const VALID_SCOPE_TYPES: ScopeType[] = [
   "all",
   "own_projects",
@@ -86,7 +89,7 @@ function scopeOptionsFor(roleName: string, permissionName: string, supportedScop
     return ["all", "none"];
   }
   if (permissionStartsWith(permissionName, ["dashboard."])) {
-    return ["all", "own_projects", "assigned_projects", "own_unit", "none"];
+    return ["all", "own_projects", "assigned_projects", "selected_projects", "own_unit", "none"];
   }
   return ["all", "own_projects", "assigned_projects", "selected_projects", "none"];
 }
@@ -160,6 +163,46 @@ function defaultScopeForRole(
   return "none";
 }
 
+function scopeLabel(scopeType: string | null | undefined): string {
+  const labels: Record<string, string> = {
+    all: "Tum sistem",
+    own_projects: "Kendi projeleri",
+    assigned_projects: "Atanmis projeler",
+    own_unit: "Kendi birimi",
+    selected_projects: "Secili projeler",
+    self: "Kendi kaydi",
+    none: "Kapali",
+  };
+
+  return scopeType ? labels[scopeType] ?? scopeType : "Scope yok";
+}
+
+function permissionDomainLabel(domain?: "authority" | "participant"): string {
+  return domain === "participant" ? "Ogrenci-Mezun Portali" : "Yetkili Panel";
+}
+
+function isParticipantRole(roleName?: string | null): boolean {
+  return roleName === "student" || roleName === "alumni";
+}
+
+function isPermissionCompatibleForRole(
+  roleName: string | undefined,
+  permissionName: string,
+  rolePermissionCompatibility: Record<string, Record<string, boolean>>,
+  permissionDomainByName: Record<string, "authority" | "participant">
+): boolean {
+  if (!roleName) return false;
+
+  const compatibility = rolePermissionCompatibility[roleName]?.[permissionName];
+  if (compatibility !== undefined) {
+    return compatibility;
+  }
+
+  const domain = permissionDomainByName[permissionName];
+  if (!domain) return true;
+
+  return isParticipantRole(roleName) ? domain === "participant" : domain === "authority";
+}
 interface ManagedUser {
   id: number;
   name: string;
@@ -252,7 +295,10 @@ export default function PermissionsPage() {
   const [roleScopeStorageReady, setRoleScopeStorageReady] = useState(true);
   const [supportedScopeOptions, setSupportedScopeOptions] = useState<ScopeOptionsMap>({});
   const [defaultRoleScopes, setDefaultRoleScopes] = useState<DefaultRoleScopes>({});
+  const [permissionDomains, setPermissionDomains] = useState<PermissionMatrixResponse["permission_domains"]>({});
+  const [rolePermissionCompatibility, setRolePermissionCompatibility] = useState<Record<string, Record<string, boolean>>>({});
   const [activeSection, setActiveSection] = useState<"matrix" | "roles" | "users" | "audit">("matrix");
+  const [domainFilter, setDomainFilter] = useState<PermissionDomainFilter>("all");
 
   const loadAudit = useCallback(async () => {
     if (!canViewAudit) {
@@ -289,10 +335,13 @@ export default function PermissionsPage() {
       const nextRoles = response.data.roles ?? [];
       const nextGranularMatrixGroups = response.data.granular_matrix_groups ?? {};
       const nextGranularGroups = response.data.granular_permission_groups ?? {};
+      const nextCompatibility = response.data.role_permission_compatibility ?? {};
 
       setRoles(nextRoles);
       setGranularMatrixGroups(nextGranularMatrixGroups);
       setGranularPermissionGroups(nextGranularGroups);
+      setPermissionDomains(response.data.permission_domains ?? {});
+      setRolePermissionCompatibility(nextCompatibility);
       setRolePermissionScopes(response.data.role_permission_scopes ?? {});
       setRoleScopeStorageReady(response.data.role_scope_storage_ready ?? true);
       setSupportedScopeOptions(response.data.supported_scope_options ?? {});
@@ -302,7 +351,7 @@ export default function PermissionsPage() {
       setGranularMatrix(
         nextRoles.reduce<MatrixState>((accumulator, role) => {
           const effective = role.granular_effective?.length ? role.granular_effective : role.permissions ?? [];
-          accumulator[role.name] = new Set(effective);
+          accumulator[role.name] = new Set(effective.filter((permission) => nextCompatibility[role.name]?.[permission] ?? true));
           return accumulator;
         }, {})
       );
@@ -365,6 +414,54 @@ export default function PermissionsPage() {
     }, {});
   }, [granularMatrix, permissionCount, roles]);
 
+  const visibleRoles = useMemo(() => {
+    if (domainFilter === "participant") {
+      return roles.filter((role) => role.name === "student" || role.name === "alumni");
+    }
+
+    if (domainFilter === "authority") {
+      return roles.filter((role) => role.name !== "student" && role.name !== "alumni" && role.name !== "visitor");
+    }
+
+    return roles;
+  }, [domainFilter, roles]);
+
+  const domainCounts = useMemo(() => {
+    return Object.entries(granularMatrixGroups).reduce(
+      (acc, [group, permissions]) => {
+        const domain = permissionDomains?.[group]?.domain === "participant" ? "participant" : "authority";
+        acc[domain] += permissions.length;
+        acc.all += permissions.length;
+        return acc;
+      },
+      { all: 0, authority: 0, participant: 0 } as Record<PermissionDomainFilter, number>
+    );
+  }, [granularMatrixGroups, permissionDomains]);
+
+  const permissionDomainByName = useMemo(() => {
+    return Object.values(permissionDomains ?? {}).reduce<Record<string, "authority" | "participant">>((acc, group) => {
+      Object.entries(group.permissions ?? {}).forEach(([permissionName, domain]) => {
+        acc[permissionName] = domain;
+      });
+      return acc;
+    }, {});
+  }, [permissionDomains]);
+
+  const overridePermissionGroups = useMemo(() => {
+    const roleName = selectedUser?.role;
+    return Object.entries(granularPermissionGroups).reduce<Record<string, string[]>>((acc, [group, permissions]) => {
+      const compatiblePermissions = permissions.filter((permissionName) =>
+        isPermissionCompatibleForRole(roleName, permissionName, rolePermissionCompatibility, permissionDomainByName)
+      );
+
+      if (compatiblePermissions.length > 0) {
+        acc[group] = compatiblePermissions;
+      }
+
+      return acc;
+    }, {});
+  }, [granularPermissionGroups, permissionDomainByName, rolePermissionCompatibility, selectedUser?.role]);
+
   const loadUserOverrides = useCallback(async (userId: string) => {
     if (!canViewUserOverrides) {
       setSelectedUser(null);
@@ -420,6 +517,10 @@ export default function PermissionsPage() {
     }
 
     if (roleName === "super_admin") {
+      return;
+    }
+
+    if (rolePermissionCompatibility[roleName]?.[permissionName] === false) {
       return;
     }
 
@@ -494,12 +595,14 @@ export default function PermissionsPage() {
       await api.put("/panel/permissions-matrix", {
         granular_matrix: roles.map((role) => ({
           role: role.name,
-          permissions: Array.from(granularMatrix[role.name] ?? []),
+          permissions: Array.from(granularMatrix[role.name] ?? [])
+            .filter((permission) => rolePermissionCompatibility[role.name]?.[permission] ?? true),
         })),
         granular_scopes: roles.map((role) => ({
           role: role.name,
           scopes: Object.entries(rolePermissionScopes[role.name] ?? {})
             .filter(([permission_name]) => role.name === "super_admin" || (granularMatrix[role.name]?.has(permission_name) ?? false))
+            .filter(([permission_name]) => rolePermissionCompatibility[role.name]?.[permission_name] ?? true)
             .filter(([permission_name, scope]) => scopeOptionsFor(role.name, permission_name, supportedScopeOptions).includes(scope.scope_type))
             .map(([permission_name, scope]) => ({
               permission_name,
@@ -524,15 +627,19 @@ export default function PermissionsPage() {
   const addOverride = () => {
     if (!canUpdateUserOverrides) return;
 
-    const firstPermission = Object.values(granularPermissionGroups)[0]?.[0];
+    const firstPermission = Object.values(overridePermissionGroups)[0]?.[0];
     if (!firstPermission) return;
+
+    const scopeType = selectedUser
+      ? defaultScopeForRole(selectedUser.role, firstPermission, defaultRoleScopes, supportedScopeOptions)
+      : "all";
 
     setUserOverrides((current) => [
       ...current,
       {
         permission_name: firstPermission,
         effect: "allow",
-        scope_type: "all",
+        scope_type: scopeType,
         scope_payload: {},
       },
     ]);
@@ -587,7 +694,15 @@ export default function PermissionsPage() {
             scope_payload: scopePayload,
           };
         })
-        .filter((override) => override.permission_name.length > 0);
+        .filter((override) => override.permission_name.length > 0)
+        .filter((override) =>
+          isPermissionCompatibleForRole(
+            selectedUser?.role,
+            override.permission_name,
+            rolePermissionCompatibility,
+            permissionDomainByName
+          )
+        );
 
       await api.put(`/panel/permissions-matrix/users/${selectedUserId}`, {
         overrides: normalizedOverrides,
@@ -725,6 +840,11 @@ export default function PermissionsPage() {
   const filteredGroups = useMemo(() => {
     const q = permissionSearch.trim().toLowerCase();
     return Object.entries(granularMatrixGroups).reduce<Record<string, PermissionItem[]>>((acc, [group, permissions]) => {
+      const groupDomain = permissionDomains?.[group]?.domain === "participant" ? "participant" : "authority";
+      if (domainFilter !== "all" && groupDomain !== domainFilter) {
+        return acc;
+      }
+
       const inGroup = permissions.filter((permission) => {
         const changed = roles.some((role) => {
           const baseline = role.granular_effective ?? role.permissions ?? [];
@@ -744,7 +864,7 @@ export default function PermissionsPage() {
       }
       return acc;
     }, {});
-  }, [permissionSearch, changedOnly, granularMatrixGroups, roles, granularMatrix]);
+  }, [permissionSearch, changedOnly, granularMatrixGroups, roles, granularMatrix, permissionDomains, domainFilter]);
 
   const allVisibleGroupsExpanded = useMemo(() => {
     const groups = Object.keys(filteredGroups);
@@ -752,8 +872,8 @@ export default function PermissionsPage() {
   }, [expandedGroups, filteredGroups]);
 
   const selectablePermissionNames = useMemo(
-    () => new Set(Object.values(granularPermissionGroups).flat()),
-    [granularPermissionGroups]
+    () => new Set(Object.values(overridePermissionGroups).flat()),
+    [overridePermissionGroups]
   );
 
   if (loading) {
@@ -928,6 +1048,27 @@ export default function PermissionsPage() {
             <p className="text-xs text-slate-500">Roller kolonlarda, izinler satirlarda. Scope secimleri mevcut backend mantigina aynen gider.</p>
           </div>
           <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+            <div className="grid grid-cols-3 rounded-xl border border-slate-200 bg-slate-50 p-1">
+              {[
+                { key: "all", label: "Tumu", count: domainCounts.all },
+                { key: "authority", label: "Yetkili", count: domainCounts.authority },
+                { key: "participant", label: "Ogrenci-Mezun", count: domainCounts.participant },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setDomainFilter(item.key as PermissionDomainFilter)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${
+                    domainFilter === item.key
+                      ? "bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  {item.label}
+                  <span className="ml-1 font-mono text-[10px] opacity-70">{item.count}</span>
+                </button>
+              ))}
+            </div>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -970,10 +1111,13 @@ export default function PermissionsPage() {
               <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-indigo-700">
                 {expandedGroups[group] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 {group} ({permissions.length})
+                <span className="rounded-full bg-white px-2 py-0.5 text-[10px] text-slate-500 ring-1 ring-slate-200">
+                  {permissionDomains?.[group]?.domain === "participant" ? "Ogrenci-Mezun Portali" : "Yetkili Panel"}
+                </span>
               </span>
               <span className="text-xs text-slate-500">
                 {permissions.reduce((total, permission) => {
-                  return total + roles.filter((role) => role.name === "super_admin" || granularMatrix[role.name]?.has(permission.name)).length;
+                  return total + visibleRoles.filter((role) => role.name === "super_admin" || granularMatrix[role.name]?.has(permission.name)).length;
                 }, 0)} aktif secim
               </span>
             </button>
@@ -987,7 +1131,7 @@ export default function PermissionsPage() {
                         <th className="sticky left-0 z-[2] w-80 border-b border-r border-slate-200 bg-slate-100 p-3 text-xs font-black uppercase tracking-widest text-slate-600">
                           Izin
                         </th>
-                        {roles.map((role) => (
+                        {visibleRoles.map((role) => (
                           <th key={`${group}-${role.name}`} className="min-w-56 border-b border-slate-200 p-3 align-top">
                             <div className="text-xs font-black text-slate-900">{role.label}</div>
                             <div className="mt-1 font-mono text-[10px] uppercase text-slate-500">
@@ -1004,8 +1148,9 @@ export default function PermissionsPage() {
                             <div className="font-mono text-xs font-black text-slate-900">{permission.name}</div>
                             {permission.description ? <p className="mt-1 text-xs leading-relaxed text-slate-500">{permission.description}</p> : null}
                           </td>
-                          {roles.map((role) => {
-                            const checked = role.name === "super_admin" || (granularMatrix[role.name]?.has(permission.name) ?? false);
+                          {visibleRoles.map((role) => {
+                            const compatible = rolePermissionCompatibility[role.name]?.[permission.name] ?? true;
+                            const checked = compatible && (role.name === "super_admin" || (granularMatrix[role.name]?.has(permission.name) ?? false));
                             const scope = rolePermissionScopes[role.name]?.[permission.name];
                             const hasStoredScope = Boolean(scope);
                             const scopeType: ScopeType = scope?.scope_type ?? defaultScopeForRole(role.name, permission.name, defaultRoleScopes, supportedScopeOptions);
@@ -1018,32 +1163,36 @@ export default function PermissionsPage() {
 
                             return (
                               <td key={`${permission.name}-${role.name}`} className="min-w-56 p-3 align-top">
-                                <div className={`rounded-xl border p-3 ${checked ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-white"} ${changed ? "ring-2 ring-amber-300" : ""}`}>
+                                <div className={`rounded-xl border p-3 ${checked ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-white"} ${changed ? "ring-2 ring-amber-300" : ""} ${compatible ? "" : "bg-slate-100 opacity-70"}`}>
                                   <label className="flex items-center justify-between gap-2">
                                     <span className={`text-xs font-black uppercase tracking-widest ${checked ? "text-indigo-700" : "text-slate-500"}`}>
-                                      {checked ? "Acik" : "Kapali"}
+                                      {!compatible ? "Alan disi" : checked ? "Acik" : "Kapali"}
                                     </span>
                                     <input
                                       type="checkbox"
                                       checked={checked}
                                       onChange={() => toggleGranularPermission(role.name, permission.name)}
-                                      disabled={role.name === "super_admin" || saving || !canUpdateMatrix}
+                                      disabled={!compatible || role.name === "super_admin" || saving || !canUpdateMatrix}
                                       className="h-4 w-4 rounded border-slate-300 bg-white text-indigo-600 focus:ring-0 focus:ring-offset-0"
                                     />
                                   </label>
                                   <select
                                     value={displayedScopeType}
                                     onChange={(event) => updateRoleScopeType(role.name, permission.name, event.target.value as ScopeType)}
-                                    disabled={!checked || saving || !canUpdateMatrix}
+                                    disabled={!compatible || !checked || saving || !canUpdateMatrix}
                                     className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100 disabled:text-slate-400"
                                   >
                                     {scopeOptions.map((option) => (
                                       <option key={`${permission.name}-${role.name}-${option}`} value={option}>
-                                        {option}
+                                        {scopeLabel(option)}
                                       </option>
                                     ))}
                                   </select>
-                                  {checked ? (
+                                  {!compatible ? (
+                                    <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                      Bu izin bu rol alanina atanamaz
+                                    </div>
+                                  ) : checked ? (
                                     <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                       {hasStoredScope ? "Kayitli scope" : "Varsayilan scope"}
                                     </div>
@@ -1058,7 +1207,7 @@ export default function PermissionsPage() {
                                           .filter((item) => Number.isFinite(item) && item > 0);
                                         updateRoleScopePayload(role.name, permission.name, { project_ids: projectIds });
                                       }}
-                                      disabled={!checked || saving || !canUpdateMatrix}
+                                      disabled={!compatible || !checked || saving || !canUpdateMatrix}
                                       placeholder="Proje ID: 1,2,3"
                                       className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100"
                                     />
@@ -1067,7 +1216,7 @@ export default function PermissionsPage() {
                                     <input
                                       value={unitPayload}
                                       onChange={(event) => updateRoleScopePayload(role.name, permission.name, { unit: event.target.value })}
-                                      disabled={!checked || saving || !canUpdateMatrix}
+                                      disabled={!compatible || !checked || saving || !canUpdateMatrix}
                                       placeholder="Birim"
                                       className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100"
                                     />
@@ -1237,7 +1386,7 @@ export default function PermissionsPage() {
                   <div key={`${override.permission_name}-${index}`} className="grid grid-cols-1 gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto]">
                     <select
                       value={override.permission_name}
-                      onChange={(event) => updateOverride(index, { permission_name: event.target.value })}
+                      onChange={(event) => updateOverride(index, { permission_name: event.target.value, scope_type: selectedUser ? defaultScopeForRole(selectedUser.role, event.target.value, defaultRoleScopes, supportedScopeOptions) : null, scope_payload: {} })}
                       disabled={!canUpdateUserOverrides}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
                     >
@@ -1246,8 +1395,8 @@ export default function PermissionsPage() {
                           {override.permission_name} (legacy)
                         </option>
                       ) : null}
-                      {Object.entries(granularPermissionGroups).map(([group, permissions]) => (
-                        <optgroup key={group} label={group}>
+                      {Object.entries(overridePermissionGroups).map(([group, permissions]) => (
+                        <optgroup key={group} label={`${group} / ${permissionDomainLabel(permissionDomains?.[group]?.domain)}`}>
                           {permissions.map((permission) => (
                             <option key={permission} value={permission}>
                               {permission}
@@ -1276,7 +1425,7 @@ export default function PermissionsPage() {
                       <option value="">scope yok</option>
                       {overrideScopeOptions.map((option) => (
                         <option key={`${override.permission_name}-${option}`} value={option}>
-                          {option}
+                          {scopeLabel(option)}
                         </option>
                       ))}
                     </select>

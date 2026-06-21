@@ -45,6 +45,15 @@ export default function PanelMyProjectPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
+  const hrefWithActivePeriod = (href: string, project: PanelProject) => {
+    if (!project.active_period?.id) return href;
+    const [path, query = ""] = href.split("?");
+    const params = new URLSearchParams(query);
+    params.set("period_id", String(project.active_period.id));
+    const nextQuery = params.toString();
+    return nextQuery ? `${path}?${nextQuery}` : path;
+  };
+
   useEffect(() => {
     const loadProjects = async () => {
       try {
@@ -183,7 +192,7 @@ export default function PanelMyProjectPage() {
                 <div className="flex flex-wrap items-center gap-3">
                   {hasPermission("projects.content.update") && canAccessProject("projects.content.update", project.id) ? (
                     <Link
-                      href={`/panel/projects/${project.id}/content`}
+                      href={hrefWithActivePeriod(`/panel/projects/${project.id}/content`, project)}
                       className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-accent-foreground transition hover:opacity-90"
                     >
                       <FilePenLine className="h-4 w-4" />
@@ -192,7 +201,7 @@ export default function PanelMyProjectPage() {
                   ) : null}
                   {hasPermission("projects.application_form.update") && canAccessProject("projects.application_form.update", project.id) ? (
                     <Link
-                      href={`/panel/periods/form-builder?project_id=${project.id}`}
+                      href={hrefWithActivePeriod(`/panel/periods/form-builder?project_id=${project.id}`, project)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
                     >
                       <Settings2 className="h-4 w-4" />
@@ -201,7 +210,7 @@ export default function PanelMyProjectPage() {
                   ) : null}
                   {hasPermission("programs.view") && canAccessProject("programs.view", project.id) ? (
                     <Link
-                      href={`/panel/programs?project_id=${project.id}`}
+                      href={hrefWithActivePeriod(`/panel/programs?project_id=${project.id}`, project)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
                     >
                       <CalendarDays className="h-4 w-4" />
@@ -210,7 +219,7 @@ export default function PanelMyProjectPage() {
                   ) : null}
                   {hasPermission("projects.participants.view") && canAccessProject("projects.participants.view", project.id) ? (
                     <Link
-                      href={`/panel/participants?project_id=${project.id}`}
+                      href={hrefWithActivePeriod(`/panel/participants?project_id=${project.id}`, project)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
                     >
                       <Users className="h-4 w-4" />
@@ -219,7 +228,7 @@ export default function PanelMyProjectPage() {
                   ) : null}
                   {hasPermission("applications.view") && canAccessProject("applications.view", project.id) ? (
                     <Link
-                      href={`/panel/applications?project_id=${project.id}`}
+                      href={hrefWithActivePeriod(`/panel/applications?project_id=${project.id}`, project)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
                     >
                       <ClipboardCheck className="h-4 w-4" />
@@ -228,7 +237,7 @@ export default function PanelMyProjectPage() {
                   ) : null}
                   {hasPermission("volunteer.view") && canAccessProject("volunteer.view", project.id) ? (
                     <Link
-                      href={`/panel/volunteer?project_id=${project.id}`}
+                      href={hrefWithActivePeriod(`/panel/volunteer?project_id=${project.id}`, project)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
                     >
                       <UserCog className="h-4 w-4" />
@@ -237,7 +246,7 @@ export default function PanelMyProjectPage() {
                   ) : null}
                   {hasPermission("digital_bohca.view") && canAccessProject("digital_bohca.view", project.id) ? (
                     <Link
-                      href={`/panel/digital-bohca?project_id=${project.id}`}
+                      href={hrefWithActivePeriod(`/panel/digital-bohca?project_id=${project.id}`, project)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
                     >
                       <Database className="h-4 w-4" />
@@ -246,7 +255,7 @@ export default function PanelMyProjectPage() {
                   ) : null}
                   {hasPermission("assignments.view") && canAccessProject("assignments.view", project.id) ? (
                     <Link
-                      href={`/panel/assignments?project_id=${project.id}`}
+                      href={hrefWithActivePeriod(`/panel/assignments?project_id=${project.id}`, project)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
                     >
                       <FileStack className="h-4 w-4" />
@@ -255,7 +264,7 @@ export default function PanelMyProjectPage() {
                   ) : null}
                   {hasPermission("certificates.view") && canAccessProject("certificates.view", project.id) ? (
                     <Link
-                      href={`/panel/certificates?project_id=${project.id}`}
+                      href={hrefWithActivePeriod(`/panel/certificates?project_id=${project.id}`, project)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
                     >
                       <FileStack className="h-4 w-4" />

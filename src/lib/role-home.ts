@@ -2,7 +2,10 @@ type HomePathUser = {
   role?: string;
   effective_permissions?: string[];
   permission_scopes?: Record<string, { scope_type: string; scope_payload: Record<string, unknown> }>;
-  authorization_context?: { manageable_project_ids?: number[] };
+  authorization_context?: {
+    manageable_project_ids?: number[];
+    project_ids_by_special_module?: Record<string, number[]>;
+  };
 };
 
 const panelHomePermissions = [
@@ -43,15 +46,19 @@ export function hasPanelHomeAccess(user: HomePathUser | null | undefined): boole
   if (permissions.includes("*")) return true;
   return panelHomePermissions.some((permission) => {
     if (!permissions.includes(permission)) return false;
+    if (permission.startsWith("kpd.")) {
+      const scope = user?.permission_scopes?.[permission]?.scope_type;
+      if (scope === "all") return true;
+      const kpdProjectIds = user?.authorization_context?.project_ids_by_special_module?.kpd_appointments ?? [];
+      return (user?.authorization_context?.manageable_project_ids ?? []).some((projectId) => kpdProjectIds.includes(Number(projectId)));
+    }
     if (
       permission === "content.view" ||
       permission === "settings.view" ||
       permission === "content.site_settings.update" ||
       permission === "permissions.matrix.view" ||
       permission === "newsletter.view" ||
-      permission === "chatbot.view" ||
-      permission === "kpd.appointments.view" ||
-      permission === "kpd.reports.view"
+      permission === "chatbot.view"
     ) {
       return user?.permission_scopes?.[permission]?.scope_type === "all";
     }
@@ -64,6 +71,11 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
   const has = (permission: string) => permissions.includes("*") || permissions.includes(permission);
   const hasAny = (items: string[]) => permissions.includes("*") || items.some((permission) => permissions.includes(permission));
   const hasGlobal = (permission: string) => permissions.includes("*") || user?.permission_scopes?.[permission]?.scope_type === "all";
+  const hasKpdProjectScope = (permission: string) => {
+    if (permissions.includes("*") || hasGlobal(permission)) return true;
+    const kpdProjectIds = user?.authorization_context?.project_ids_by_special_module?.kpd_appointments ?? [];
+    return (user?.authorization_context?.manageable_project_ids ?? []).some((projectId) => kpdProjectIds.includes(Number(projectId)));
+  };
   const hasSettingsAccess = () => (
     (has("settings.view") && hasGlobal("settings.view")) ||
     (has("content.site_settings.update") && hasGlobal("content.site_settings.update"))
@@ -84,11 +96,11 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
   if (has("calendar.view")) return "/panel/calendar";
   if (has("digital_bohca.view")) return "/panel/digital-bohca";
   if (has("assignments.view")) return "/panel/assignments";
-  if (has("kpd.reports.view") && hasGlobal("kpd.reports.view")) return "/panel/kpd";
-  if (has("kpd.appointments.view") && hasGlobal("kpd.appointments.view")) return "/panel/kpd";
-  if (has("kpd.appointments.manage") && hasGlobal("kpd.appointments.manage")) return "/panel/kpd";
-  if (has("kpd.reports.create") && hasGlobal("kpd.reports.create")) return "/panel/kpd";
-  if (has("kpd.reports.delete") && hasGlobal("kpd.reports.delete")) return "/panel/kpd";
+  if (has("kpd.reports.view") && hasKpdProjectScope("kpd.reports.view")) return "/panel/kpd";
+  if (has("kpd.appointments.view") && hasKpdProjectScope("kpd.appointments.view")) return "/panel/kpd";
+  if (has("kpd.appointments.manage") && hasKpdProjectScope("kpd.appointments.manage")) return "/panel/kpd";
+  if (has("kpd.reports.create") && hasKpdProjectScope("kpd.reports.create")) return "/panel/kpd";
+  if (has("kpd.reports.delete") && hasKpdProjectScope("kpd.reports.delete")) return "/panel/kpd";
   if (has("requests.view")) return "/panel/requests";
   if (has("users.view")) return "/panel/users";
   if (has("permissions.matrix.view") && hasGlobal("permissions.matrix.view")) return "/panel/users/permissions";

@@ -14,11 +14,24 @@ interface EditableProjectContent {
   short_description: string;
   description: string;
   cover_image_path: string;
-  gallery_paths: string[];
+  gallery_paths: ProjectGalleryItem[];
   application_open: boolean;
   next_application_date: string;
   has_interview: boolean;
   quota: number | "";
+}
+
+interface ProjectPeriod {
+  id: number;
+  name: string;
+  status?: string;
+}
+
+interface ProjectGalleryItem {
+  path: string;
+  caption: string;
+  year: string;
+  period_id: number | "";
 }
 
 interface ProjectPreview {
@@ -27,6 +40,8 @@ interface ProjectPreview {
   slug: string;
   cover_image?: string | null;
   gallery?: string[];
+  gallery_items?: Array<ProjectGalleryItem & { url?: string | null; period_name?: string | null }>;
+  periods?: ProjectPeriod[];
 }
 
 interface ProjectContentResponse {
@@ -47,6 +62,7 @@ function projectListHref(base: PanelContentBasePath): string {
 interface ProjectContentEditorProps {
   projectId: string;
   panelBasePath: PanelContentBasePath;
+  periodId?: string;
   /** When true, form is view-only (no save, uploads, or field edits). */
   readOnly?: boolean;
 }
@@ -58,12 +74,44 @@ const emptyForm: EditableProjectContent = {
   short_description: "",
   description: "",
   cover_image_path: "",
-  gallery_paths: [""],
+  gallery_paths: [{ path: "", caption: "", year: "", period_id: "" }],
   application_open: false,
   next_application_date: "",
   has_interview: false,
   quota: "",
 };
+
+function emptyGalleryItem(path = ""): ProjectGalleryItem {
+  return {
+    path,
+    caption: "",
+    year: "",
+    period_id: "",
+  };
+}
+
+function normalizeGalleryItems(items: unknown): ProjectGalleryItem[] {
+  if (!Array.isArray(items)) return [emptyGalleryItem()];
+  const normalized = items
+    .map((item) => {
+      if (typeof item === "string") {
+        return emptyGalleryItem(item);
+      }
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+      const value = item as Partial<ProjectGalleryItem> & { url?: string | null };
+      return {
+        path: String(value.path ?? value.url ?? ""),
+        caption: String(value.caption ?? ""),
+        year: String(value.year ?? ""),
+        period_id: value.period_id ? Number(value.period_id) : "",
+      };
+    })
+    .filter((item): item is ProjectGalleryItem => item !== null);
+
+  return normalized.length > 0 ? normalized : [emptyGalleryItem()];
+}
 
 function formatApplicationDate(value: string): string {
   if (!value) return "Belirtilmedi";
@@ -74,7 +122,7 @@ function formatApplicationDate(value: string): string {
   }).format(new Date(value));
 }
 
-export function ProjectContentEditor({ projectId, panelBasePath, readOnly = false }: ProjectContentEditorProps) {
+export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", readOnly = false }: ProjectContentEditorProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [project, setProject] = useState<ProjectPreview | null>(null);
@@ -94,10 +142,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
           short_description: response.data.editable.short_description ?? "",
           description: response.data.editable.description ?? "",
           cover_image_path: response.data.editable.cover_image_path ?? "",
-          gallery_paths:
-            response.data.editable.gallery_paths && response.data.editable.gallery_paths.length > 0
-              ? response.data.editable.gallery_paths
-              : [""],
+          gallery_paths: normalizeGalleryItems(response.data.editable.gallery_paths),
           next_application_date: response.data.editable.next_application_date ?? "",
           quota: response.data.editable.quota ?? "",
         });
@@ -112,11 +157,11 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
     void loadProject();
   }, [projectId, panelBasePath]);
 
-  const updateGalleryItem = (index: number, value: string) => {
+  const updateGalleryItem = (index: number, field: keyof ProjectGalleryItem, value: string | number | "") => {
     if (readOnly) return;
     setForm((current) => ({
       ...current,
-      gallery_paths: current.gallery_paths.map((item, itemIndex) => (itemIndex === index ? value : item)),
+      gallery_paths: current.gallery_paths.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
     }));
   };
 
@@ -124,7 +169,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
     if (readOnly) return;
     setForm((current) => ({
       ...current,
-      gallery_paths: [...current.gallery_paths, ""],
+      gallery_paths: [...current.gallery_paths, emptyGalleryItem()],
     }));
   };
 
@@ -194,16 +239,20 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
         ...form,
         quota: form.quota === "" ? null : Number(form.quota),
         next_application_date: form.application_open ? null : form.next_application_date,
-        gallery_paths: form.gallery_paths.filter(Boolean),
+        gallery_paths: form.gallery_paths
+          .filter((item) => item.path.trim())
+          .map((item) => ({
+            path: item.path.trim(),
+            caption: item.caption.trim() || null,
+            year: item.year.trim() || null,
+            period_id: item.period_id || null,
+          })),
       });
 
       setProject(response.data.project);
       setForm((current) => ({
         ...current,
-        gallery_paths:
-          response.data.editable.gallery_paths && response.data.editable.gallery_paths.length > 0
-            ? response.data.editable.gallery_paths
-            : [""],
+        gallery_paths: normalizeGalleryItems(response.data.editable.gallery_paths),
       }));
       setMessage(response.data.message);
     } catch (error) {
@@ -331,7 +380,10 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
                         (url) =>
                           setForm((current) => ({
                             ...current,
-                            gallery_paths: [...current.gallery_paths.filter(Boolean), url],
+                            gallery_paths: [
+                              ...current.gallery_paths.filter((item) => item.path.trim()),
+                              emptyGalleryItem(url),
+                            ],
                           })),
                         "gallery-new",
                       );
@@ -373,39 +425,68 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
             </label>
             <div className="space-y-3">
               {form.gallery_paths.map((item, index) => (
-                <div key={`gallery-${index}`} className="flex items-center gap-3">
+                <div key={`gallery-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_140px_180px_auto_auto]">
+                    <input
+                      readOnly={readOnly}
+                      value={item.path}
+                      onChange={(event) => updateGalleryItem(index, "path", event.target.value)}
+                      placeholder={`Galeri gorsel URL ${index + 1}`}
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
+                    />
+                    <input
+                      readOnly={readOnly}
+                      value={item.year}
+                      onChange={(event) => updateGalleryItem(index, "year", event.target.value)}
+                      placeholder="Yil"
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
+                    />
+                    <select
+                      disabled={readOnly}
+                      value={item.period_id}
+                      onChange={(event) => updateGalleryItem(index, "period_id", event.target.value ? Number(event.target.value) : "")}
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 disabled:cursor-default disabled:opacity-90"
+                    >
+                      <option value="">Donem yok</option>
+                      {(project?.periods ?? []).map((period) => (
+                        <option key={period.id} value={period.id}>
+                          {period.name}{period.status === "active" ? " (aktif)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <label
+                      className={`inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+                    >
+                      {uploadingField === `gallery-${index}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                      <input
+                        type="file"
+                        disabled={readOnly}
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (!file) return;
+                          void uploadImage(file, "projects", (url) => updateGalleryItem(index, "path", url), `gallery-${index}`);
+                          event.target.value = "";
+                        }}
+                      />
+                    </label>
+                    <button
+                      onClick={() => removeGalleryItem(index)}
+                      type="button"
+                      disabled={readOnly}
+                      className="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 disabled:opacity-40"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                   <input
                     readOnly={readOnly}
-                    value={item}
-                    onChange={(event) => updateGalleryItem(index, event.target.value)}
-                    placeholder={`Galeri gorsel URL ${index + 1}`}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
+                    value={item.caption}
+                    onChange={(event) => updateGalleryItem(index, "caption", event.target.value)}
+                    placeholder="Gorsel basligi veya kisa aciklama"
+                    className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 read-only:cursor-default read-only:opacity-90"
                   />
-                  <label
-                    className={`inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
-                  >
-                    {uploadingField === `gallery-${index}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                    <input
-                      type="file"
-                      disabled={readOnly}
-                      accept="image/png,image/jpeg,image/webp"
-                      className="hidden"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (!file) return;
-                        void uploadImage(file, "projects", (url) => updateGalleryItem(index, url), `gallery-${index}`);
-                        event.target.value = "";
-                      }}
-                    />
-                  </label>
-                  <button
-                    onClick={() => removeGalleryItem(index)}
-                    type="button"
-                    disabled={readOnly}
-                    className="inline-flex items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-200 disabled:opacity-40"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
               ))}
             </div>
@@ -418,7 +499,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
                 <p className="mt-1 text-sm text-muted-foreground">Public proje sayfasindaki basvuru karti ve paneldeki degerlendirme akisi buradan beslenir.</p>
               </div>
               <Link
-                href={`/panel/periods/form-builder?project_id=${projectId}`}
+                href={`/panel/periods/form-builder?project_id=${projectId}${periodId ? `&period_id=${periodId}` : ""}`}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100"
               >
                 <ClipboardList className="h-4 w-4" />
@@ -561,9 +642,9 @@ export function ProjectContentEditor({ projectId, panelBasePath, readOnly = fals
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {form.gallery_paths.filter(Boolean).slice(0, 4).map((item, index) => (
-              <div key={`${item}-${index}`} className="relative h-24 overflow-hidden rounded-2xl bg-muted/30">
-                <Image src={item} alt={`Galeri ${index + 1}`} fill unoptimized className="object-cover" />
+            {form.gallery_paths.filter((item) => item.path.trim()).slice(0, 4).map((item, index) => (
+              <div key={`${item.path}-${index}`} className="relative h-24 overflow-hidden rounded-2xl bg-muted/30">
+                <Image src={item.path} alt={item.caption || `Galeri ${index + 1}`} fill unoptimized className="object-cover" />
               </div>
             ))}
           </div>

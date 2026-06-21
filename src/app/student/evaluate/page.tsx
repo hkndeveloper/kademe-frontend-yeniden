@@ -7,7 +7,8 @@ import api from "@/lib/api/axios";
 interface FeedbackQuestion {
   id: string;
   label: string;
-  type: "rating" | "text";
+  type: "rating" | "text" | "choice";
+  options?: string[] | null;
   min?: number;
   max?: number;
   required?: boolean;
@@ -25,6 +26,7 @@ interface FeedbackProgram {
   credit_restored: boolean;
   feedback_deadline_at?: string | null;
   feedback_open?: boolean;
+  questions?: FeedbackQuestion[];
   project?: {
     id: number;
     name: string;
@@ -67,20 +69,6 @@ interface FeedbackResponse {
   programs: FeedbackProgram[];
 }
 
-interface FeedbackFormState {
-  content_quality: string;
-  speaker_quality: string;
-  organization_quality: string;
-  comment: string;
-}
-
-const initialFormState: FeedbackFormState = {
-  content_quality: "",
-  speaker_quality: "",
-  organization_quality: "",
-  comment: "",
-};
-
 export default function EvaluatePage() {
   const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
   const [programs, setPrograms] = useState<FeedbackProgram[]>([]);
@@ -88,7 +76,7 @@ export default function EvaluatePage() {
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [totalScore, setTotalScore] = useState(0);
   const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
-  const [form, setForm] = useState<FeedbackFormState>(initialFormState);
+  const [form, setForm] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
@@ -120,6 +108,7 @@ export default function EvaluatePage() {
 
   const selectedProgram =
     selectedProgramId === null ? null : programs.find((program) => program.id === selectedProgramId) ?? null;
+  const selectedQuestions = selectedProgram?.questions?.length ? selectedProgram.questions : questions;
 
   const latestNegativeCredit = useMemo(
     () => creditLogs.find((log) => (log.amount ?? 0) < 0),
@@ -144,14 +133,15 @@ export default function EvaluatePage() {
     setErrorMessage(null);
 
     try {
+      const responses = selectedQuestions.reduce<Record<string, string | number | null>>((payload, question) => {
+        const value = form[question.id] ?? "";
+        payload[question.id] = question.type === "rating" ? Number(value) : value.trim() || null;
+        return payload;
+      }, {});
+
       const response = await api.post<{ message: string; current_credit: number; anonymous_feedback_id?: string }>("/feedbacks", {
         program_id: selectedProgramId,
-        responses: {
-          content_quality: Number(form.content_quality),
-          speaker_quality: Number(form.speaker_quality),
-          organization_quality: Number(form.organization_quality),
-          comment: form.comment.trim() || null,
-        },
+        responses,
       });
 
       setPrograms((current) =>
@@ -169,7 +159,7 @@ export default function EvaluatePage() {
       );
       setTotalScore(response.data.current_credit);
       setFeedbackMessage(response.data.message);
-      setForm(initialFormState);
+      setForm({});
     } catch (error) {
       console.error("Degerlendirme gonderilemedi", error);
       setErrorMessage("Degerlendirme gonderilemedi. Alanlari kontrol edip tekrar dene.");
@@ -188,44 +178,56 @@ export default function EvaluatePage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 py-10">
-      <div className="mb-10 flex items-center gap-4">
+      <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+        <div className="flex items-center gap-4">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary">
           <MessageSquare className="h-7 w-7" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Oturum Degerlendirmesi</h1>
-          <p className="text-sm text-muted-foreground">Tamamlanan ve yoklamasi alinan oturumlar icin anonim degerlendirme gonderebilir ve kesilen kredini geri alabilirsin.</p>
+            <h1 className="text-3xl font-black text-slate-900">Oturum Degerlendirmesi</h1>
+            <p className="mt-1 max-w-2xl text-sm font-medium text-muted-foreground">Tamamlanan ve yoklamasi alinan oturumlar icin anonim degerlendirme gonderebilir, ogrenciysen kesilen kredinin iadesini takip edebilirsin.</p>
+          </div>
+        </div>
+        <div className="grid w-full grid-cols-2 gap-3 lg:max-w-sm">
+          <div className="rounded-2xl border border-border bg-background/70 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Acik Form</p>
+            <p className="mt-2 text-2xl font-black text-slate-900">{programs.filter((program) => !program.feedback_submitted && program.feedback_open !== false).length}</p>
+          </div>
+          <div className="rounded-2xl border border-border bg-background/70 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Gonderilen</p>
+            <p className="mt-2 text-2xl font-black text-slate-900">{programs.filter((program) => program.feedback_submitted).length}</p>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.45fr,1fr]">
         <div className="space-y-6">
           {feedbackMessage ? (
-            <div className="glass-panel rounded-3xl border-emerald-500/20 bg-emerald-500/5 p-5 text-sm text-emerald-300">
+            <div className="glass-panel rounded-3xl border-emerald-500/20 bg-emerald-500/10 p-5 text-sm font-medium text-emerald-700">
               {feedbackMessage}
             </div>
           ) : null}
 
           {errorMessage ? (
-            <div className="glass-panel rounded-3xl border-red-500/20 bg-red-500/5 p-5 text-sm text-red-300">
+            <div className="glass-panel rounded-3xl border-red-500/20 bg-red-500/10 p-5 text-sm font-medium text-red-700">
               {errorMessage}
             </div>
           ) : null}
 
-          <div className="glass-panel rounded-[40px] border-primary/20 bg-primary/5 p-8 md:p-10">
+          <div className="glass-panel rounded-3xl border-primary/20 bg-primary/5 p-6 md:p-8">
             <div className="mb-8 flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-black text-slate-900">Degerlendirme ve kredi iadesi aktif</h2>
+                <h2 className="text-2xl font-black text-slate-900">Degerlendirme akisi</h2>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   Etkinlik tamamlandiktan sonra, bir sonraki etkinlik baslamadan once bir kez anonim degerlendirme gonderebilirsin. Form tamamlandiginda oturuma ait kredi iadesi uygulanir.
                 </p>
               </div>
             </div>
 
-            <div className="mb-8 flex items-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 p-4">
+            <div className="mb-8 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/10 p-4">
               <Zap className="h-5 w-5 text-primary" />
               <p className="text-xs font-bold uppercase tracking-widest text-primary">
                 Etkinlik tamamlaninca tum aktif katilimcilardan oturum kredisi dusulur. Yoklamasi olan ve sure icinde degerlendirme gonderen ogrencinin kredisi geri eklenir.
@@ -234,15 +236,18 @@ export default function EvaluatePage() {
 
             <div className="space-y-4">
               {programs.length === 0 ? (
-                <div className="rounded-3xl border border-white/5 bg-white/5 p-6 text-sm text-muted-foreground">Degerlendirmeye acik oturum kaydi bulunmuyor.</div>
+                <div className="rounded-3xl border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">Degerlendirmeye acik oturum kaydi bulunmuyor.</div>
               ) : (
                 programs.map((program) => (
                   <button
                     key={program.id}
                     type="button"
-                    onClick={() => setSelectedProgramId(program.id)}
+                    onClick={() => {
+                      setSelectedProgramId(program.id);
+                      setForm({});
+                    }}
                     className={`w-full rounded-3xl border p-5 text-left transition ${
-                      selectedProgramId === program.id ? "border-primary bg-primary/10" : "border-white/5 bg-white/5 hover:border-primary/30"
+                      selectedProgramId === program.id ? "border-primary bg-primary/10 shadow-sm" : "border-border bg-background/70 hover:border-primary/30"
                     }`}
                   >
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -261,9 +266,9 @@ export default function EvaluatePage() {
                           {program.feedback_submitted ? "Gonderildi" : "Bekliyor"}
                         </span>
                         {program.credit_restored ? (
-                          <span className="text-xs text-emerald-300">Kredi iadesi tamamlandi</span>
+                          <span className="text-xs font-semibold text-emerald-700">Kredi iadesi tamamlandi</span>
                         ) : (
-                          <span className="text-xs text-amber-300">Kredi iadesi bekliyor</span>
+                          <span className="text-xs font-semibold text-amber-700">Kredi iadesi bekliyor</span>
                         )}
                         {program.anonymous_feedback_id ? (
                           <span className="text-[10px] text-muted-foreground">
@@ -283,10 +288,10 @@ export default function EvaluatePage() {
             </div>
           </div>
 
-          <div className="glass-panel rounded-3xl p-8">
+          <div className="glass-panel rounded-3xl p-6 md:p-8">
             <h3 className="mb-4 text-lg font-bold text-slate-900">Secili Oturum Formu</h3>
             {!selectedProgram ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-muted-foreground">
+              <div className="rounded-2xl border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">
                 Formu doldurmak icin soldan bir oturum sec.
               </div>
             ) : selectedProgram.feedback_submitted ? (
@@ -295,63 +300,102 @@ export default function EvaluatePage() {
                 {selectedProgram.anonymous_feedback_id ? ` Anonim takip ID: ${selectedProgram.anonymous_feedback_id.slice(0, 8).toUpperCase()}` : ""}
               </div>
             ) : selectedProgram.feedback_open === false ? (
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-6 text-sm text-amber-200">
+              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-6 text-sm font-medium text-amber-700">
                 Bu oturum icin degerlendirme suresi doldu. Sure bir sonraki etkinlik basladiginda kapanir.
               </div>
             ) : (
               <form className="space-y-6" onSubmit={handleSubmit}>
-                {questions.map((question) =>
-                  question.type === "rating" ? (
-                    <div key={question.id} className="space-y-3">
-                      <label className="text-sm font-semibold text-slate-900">{question.label}</label>
-                      <div className="flex flex-wrap gap-3">
-                        {Array.from({ length: (question.max ?? 5) - (question.min ?? 1) + 1 }, (_, index) => {
-                          const value = String((question.min ?? 1) + index);
-                          const checked = form[question.id as keyof FeedbackFormState] === value;
+                {selectedQuestions.map((question) => {
+                  if (question.type === "rating") {
+                    return (
+                      <div key={question.id} className="space-y-3">
+                        <label className="text-sm font-semibold text-slate-900">{question.label}</label>
+                        <div className="flex flex-wrap gap-3">
+                          {Array.from({ length: (question.max ?? 5) - (question.min ?? 1) + 1 }, (_, index) => {
+                            const value = String((question.min ?? 1) + index);
+                            const checked = form[question.id] === value;
 
-                          return (
-                            <label
-                              key={value}
-                              className={`flex cursor-pointer items-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${
-                                checked ? "border-primary bg-primary/10 text-slate-900" : "border-white/10 bg-white/5 text-muted-foreground"
-                              }`}
-                            >
-                              <input
-                                type="radio"
-                                name={question.id}
-                                value={value}
-                                checked={checked}
-                                onChange={(event) =>
-                                  setForm((current) => ({
-                                    ...current,
-                                    [question.id]: event.target.value,
-                                  }))
-                                }
-                                className="sr-only"
-                              />
-                              {value}
-                            </label>
-                          );
-                        })}
+                            return (
+                              <label
+                                key={value}
+                                className={`flex cursor-pointer items-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${
+                                  checked ? "border-primary bg-primary/10 text-slate-900" : "border-border bg-background/70 text-muted-foreground hover:border-primary/30"
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={question.id}
+                                  value={value}
+                                  checked={checked}
+                                  onChange={(event) =>
+                                    setForm((current) => ({
+                                      ...current,
+                                      [question.id]: event.target.value,
+                                    }))
+                                  }
+                                  className="sr-only"
+                                />
+                                {value}
+                              </label>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
+                    );
+                  }
+
+                  if (question.type === "choice") {
+                    return (
+                      <div key={question.id} className="space-y-3">
+                        <label className="text-sm font-semibold text-slate-900">{question.label}</label>
+                        <div className="flex flex-wrap gap-3">
+                          {(question.options ?? []).map((option) => {
+                            const checked = form[question.id] === option;
+
+                            return (
+                              <label
+                                key={option}
+                                className={`flex cursor-pointer items-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${
+                                  checked ? "border-primary bg-primary/10 text-slate-900" : "border-border bg-background/70 text-muted-foreground hover:border-primary/30"
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={question.id}
+                                  value={option}
+                                  checked={checked}
+                                  onChange={(event) => setForm((current) => ({ ...current, [question.id]: event.target.value }))}
+                                  className="sr-only"
+                                />
+                                {option}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
                     <label key={question.id} className="block space-y-2">
                       <span className="text-sm font-semibold text-slate-900">{question.label}</span>
                       <textarea
-                        value={form.comment}
-                        onChange={(event) => setForm((current) => ({ ...current, comment: event.target.value }))}
+                        value={form[question.id] ?? ""}
+                        onChange={(event) => setForm((current) => ({ ...current, [question.id]: event.target.value }))}
                         rows={5}
                         placeholder="Ek gorus ve onerilerini yaz."
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary"
+                        className="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary"
                       />
                     </label>
-                  ),
-                )}
+                  );
+                })}
 
                 <button
                   type="submit"
-                  disabled={saving || !form.content_quality || !form.speaker_quality || !form.organization_quality}
+                  disabled={
+                    saving ||
+                    selectedQuestions.some((question) => question.required !== false && !String(form[question.id] ?? "").trim())
+                  }
                   className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}

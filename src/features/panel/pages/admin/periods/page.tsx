@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Calendar, FileStack, Loader2, PencilLine, Plus, Save } from "lucide-react";
+import { ArchiveRestore, Calendar, CheckCircle2, FileStack, Loader2, PencilLine, Plus, RotateCcw, Save } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -38,6 +38,46 @@ interface PeriodFormState {
   status: "active" | "passive" | "completed";
 }
 
+interface ClosureSummary {
+  summary: {
+    participants: { total: number; active: number; completed: number; graduated: number; not_completed: number };
+    applications: { total: number; pending: number; interview_planned: number; waitlisted: number; accepted: number; rejected: number };
+    programs: { total: number; open: number; completed: number; cancelled: number };
+    assignments: { total: number; open: number };
+    certificates: { total: number };
+    materials: { digital_bohca: number; volunteer_opportunities: number; kademe_modules: number };
+    kpd: { appointments: number; reports: number };
+    financials: { total: number; pending: number; approved: number; paid: number };
+    credit_snapshot: {
+      start_amount: number;
+      threshold: number;
+      participant_count: number;
+      total_credit: number;
+      average_credit: number;
+      min_credit: number;
+      max_credit: number;
+      below_threshold_count: number;
+      zero_or_below_count: number;
+      participants: Array<{
+        participant_id: number;
+        student: string;
+        email?: string | null;
+        status?: string | null;
+        graduation_status?: string | null;
+        credit: number;
+        threshold: number;
+        risk_gap: number;
+        below_threshold: boolean;
+      }>;
+    };
+  };
+  warnings: {
+    open_programs: number;
+    pending_applications: number;
+    pending_financials: number;
+  };
+}
+
 const initialForm: PeriodFormState = {
   project_id: "",
   name: "",
@@ -59,6 +99,10 @@ export default function AdminPeriodsPage() {
   const [form, setForm] = useState<PeriodFormState>(initialForm);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [summaryPeriodId, setSummaryPeriodId] = useState<number | null>(null);
+  const [closureSummary, setClosureSummary] = useState<ClosureSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [periodActionId, setPeriodActionId] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -180,6 +224,72 @@ export default function AdminPeriodsPage() {
     });
     setMessage(null);
     setErrorMessage(null);
+  };
+
+  const loadClosureSummary = async (periodId: number) => {
+    if (summaryPeriodId === periodId && closureSummary) {
+      setSummaryPeriodId(null);
+      setClosureSummary(null);
+      return;
+    }
+
+    setSummaryLoading(true);
+    setSummaryPeriodId(periodId);
+    setClosureSummary(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await api.get<ClosureSummary>(`/panel/periods/${periodId}/closure-summary`);
+      setClosureSummary(response.data);
+    } catch (error) {
+      console.error("Donem kapanis ozeti alinamadi", error);
+      setErrorMessage("Donem kapanis ozeti alinamadi.");
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const completePeriod = async (period: PeriodItem) => {
+    if (!confirm(`${period.name} donemini tamamlandi olarak arsivlemek istiyor musunuz?`)) return;
+
+    setPeriodActionId(period.id);
+    setMessage(null);
+    setErrorMessage(null);
+
+    try {
+      await api.post(`/panel/periods/${period.id}/complete`);
+      setMessage("Donem tamamlandi ve gecmis donem olarak arsivlendi.");
+      setSummaryPeriodId(null);
+      setClosureSummary(null);
+      await loadData();
+    } catch (error) {
+      console.error("Donem tamamlanamadi", error);
+      setErrorMessage("Donem tamamlanamadi.");
+    } finally {
+      setPeriodActionId(null);
+    }
+  };
+
+  const reopenPeriod = async (period: PeriodItem, status: "active" | "passive" = "passive") => {
+    const label = status === "active" ? "aktif" : "pasif";
+    if (!confirm(`${period.name} donemini yeniden ${label} yapmak istiyor musunuz?`)) return;
+
+    setPeriodActionId(period.id);
+    setMessage(null);
+    setErrorMessage(null);
+
+    try {
+      await api.post(`/panel/periods/${period.id}/reopen`, { status });
+      setMessage(status === "active" ? "Donem yeniden aktif edildi." : "Donem yeniden pasife alindi.");
+      setSummaryPeriodId(null);
+      setClosureSummary(null);
+      await loadData();
+    } catch (error) {
+      console.error("Donem yeniden acilamadi", error);
+      setErrorMessage("Donem yeniden acilamadi.");
+    } finally {
+      setPeriodActionId(null);
+    }
   };
 
   return (
@@ -321,6 +431,15 @@ export default function AdminPeriodsPage() {
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
+                        onClick={() => void loadClosureSummary(period.id)}
+                        disabled={!canAccessProject("periods.view", period.project_id) || summaryLoading}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {summaryLoading && summaryPeriodId === period.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
+                        Kapanis Ozeti
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => startEdit(period)}
                         disabled={!canAccessProject("periods.update", period.project_id)}
                         className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
@@ -339,14 +458,153 @@ export default function AdminPeriodsPage() {
                           Basvuru Formu
                         </span>
                       )}
+                      {period.status !== "completed" ? (
+                        <button
+                          type="button"
+                          onClick={() => void completePeriod(period)}
+                          disabled={!canAccessProject("periods.update", period.project_id) || periodActionId === period.id}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-600/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {periodActionId === period.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                          Tamamla
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void reopenPeriod(period, "passive")}
+                          disabled={!canAccessProject("periods.update", period.project_id) || periodActionId === period.id}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {periodActionId === period.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+                          Yeniden Ac
+                        </button>
+                      )}
                     </div>
                   </div>
+
+                  {summaryPeriodId === period.id ? (
+                    <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-5">
+                      {summaryLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Kapanis ozeti hazirlaniyor...
+                        </div>
+                      ) : closureSummary ? (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                            <div className="rounded-2xl bg-white/5 p-4">
+                              <p className="text-xs text-muted-foreground">Katilimci</p>
+                              <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.participants.total}</p>
+                              <p className="text-xs text-muted-foreground">aktif {closureSummary.summary.participants.active}</p>
+                            </div>
+                            <div className="rounded-2xl bg-white/5 p-4">
+                              <p className="text-xs text-muted-foreground">Program</p>
+                              <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.programs.total}</p>
+                              <p className="text-xs text-muted-foreground">acik {closureSummary.summary.programs.open}</p>
+                            </div>
+                            <div className="rounded-2xl bg-white/5 p-4">
+                              <p className="text-xs text-muted-foreground">Basvuru</p>
+                              <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.applications.total}</p>
+                              <p className="text-xs text-muted-foreground">bekleyen {closureSummary.warnings.pending_applications}</p>
+                            </div>
+                            <div className="rounded-2xl bg-white/5 p-4">
+                              <p className="text-xs text-muted-foreground">Sertifika</p>
+                              <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.certificates.total}</p>
+                              <p className="text-xs text-muted-foreground">arsiv kaydi</p>
+                            </div>
+                          </div>
+
+                          <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-4">
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-widest text-indigo-300">Kredi Snapshot</p>
+                                <p className="mt-1 text-sm text-muted-foreground">Kapanis aninda arsize giren kredi fotografi</p>
+                              </div>
+                              <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-slate-900">
+                                Esik {closureSummary.summary.credit_snapshot.threshold}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                              <SnapshotMetric label="Ortalama" value={closureSummary.summary.credit_snapshot.average_credit} />
+                              <SnapshotMetric label="Min" value={closureSummary.summary.credit_snapshot.min_credit} />
+                              <SnapshotMetric label="Max" value={closureSummary.summary.credit_snapshot.max_credit} />
+                              <SnapshotMetric label="Esik alti" value={closureSummary.summary.credit_snapshot.below_threshold_count} tone="amber" />
+                              <SnapshotMetric label="Toplam" value={closureSummary.summary.credit_snapshot.total_credit} />
+                            </div>
+                            {closureSummary.summary.credit_snapshot.participants.filter((participant) => participant.below_threshold).length > 0 ? (
+                              <div className="mt-4 grid gap-2 md:grid-cols-2">
+                                {closureSummary.summary.credit_snapshot.participants
+                                  .filter((participant) => participant.below_threshold)
+                                  .slice(0, 4)
+                                  .map((participant) => (
+                                    <div key={participant.participant_id} className="rounded-2xl bg-white/10 p-3 text-sm">
+                                      <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                          <p className="truncate font-bold text-slate-900">{participant.student}</p>
+                                          <p className="truncate text-xs text-muted-foreground">{participant.email ?? "E-posta yok"}</p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="font-black text-amber-300">{participant.credit}</p>
+                                          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">-{participant.risk_gap}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground md:grid-cols-2">
+                            <div className="rounded-2xl bg-white/5 p-4">
+                              Odev: {closureSummary.summary.assignments.total} / acik {closureSummary.summary.assignments.open}
+                              <br />
+                              Dijital bohca: {closureSummary.summary.materials.digital_bohca}
+                              <br />
+                              Gonullu firsati: {closureSummary.summary.materials.volunteer_opportunities}
+                            </div>
+                            <div className="rounded-2xl bg-white/5 p-4">
+                              KPD randevu: {closureSummary.summary.kpd.appointments}
+                              <br />
+                              KPD rapor: {closureSummary.summary.kpd.reports}
+                              <br />
+                              Finans bekleyen: {closureSummary.summary.financials.pending}
+                            </div>
+                          </div>
+
+                          {closureSummary.warnings.open_programs || closureSummary.warnings.pending_applications || closureSummary.warnings.pending_financials ? (
+                            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+                              Kapanis oncesi dikkat: {closureSummary.warnings.open_programs} acik program, {closureSummary.warnings.pending_applications} bekleyen basvuru, {closureSummary.warnings.pending_financials} bekleyen finans kaydi var. Sistem kapatmaya izin verir; bu uyari operasyonel kontroldur.
+                            </div>
+                          ) : (
+                            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+                              Bu donemde kapanis icin kritik bekleyen is gorunmuyor.
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+type SnapshotMetricTone = "slate" | "amber";
+
+function SnapshotMetric({ label, value, tone = "slate" }: { label: string; value: number | string; tone?: SnapshotMetricTone }) {
+  const toneClass: Record<SnapshotMetricTone, string> = {
+    slate: "text-slate-900",
+    amber: "text-amber-300",
+  };
+
+  return (
+    <div className="rounded-2xl bg-white/10 p-3">
+      <p className={`text-xl font-black ${toneClass[tone]}`}>{value}</p>
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
     </div>
   );
 }

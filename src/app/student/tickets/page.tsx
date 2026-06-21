@@ -18,6 +18,8 @@ interface Ticket {
   status: string;
   project_id?: number | null;
   created_at: string;
+  attachment_path?: string | null;
+  attachment_download_url?: string | null;
   replies?: TicketReply[];
 }
 
@@ -56,6 +58,7 @@ export default function StudentTicketsPage() {
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
   const [replyAttachment, setReplyAttachment] = useState<File | null>(null);
+  const [ticketAttachment, setTicketAttachment] = useState<File | null>(null);
   const [form, setForm] = useState<TicketFormState>(initialForm);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -92,14 +95,19 @@ export default function StudentTicketsPage() {
     setErrorMessage(null);
 
     try {
-      await api.post("/tickets", {
-        subject: form.subject,
-        category: form.category,
-        project_id: form.project_id ? Number(form.project_id) : null,
-        message: form.message,
+      const formData = new FormData();
+      formData.append("subject", form.subject);
+      formData.append("category", form.category);
+      if (form.project_id) formData.append("project_id", String(Number(form.project_id)));
+      formData.append("message", form.message);
+      if (ticketAttachment) formData.append("attachment", ticketAttachment);
+
+      await api.post("/tickets", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       setForm(initialForm);
+      setTicketAttachment(null);
       setMessage("Destek talebiniz basariyla olusturuldu.");
       await loadData();
     } catch (error) {
@@ -169,6 +177,36 @@ export default function StudentTicketsPage() {
     }
   };
 
+  const handleDownloadTicketAttachment = async (ticket: Ticket) => {
+    if (!ticket.attachment_download_url) return;
+
+    try {
+      const response = await api.get(ticket.attachment_download_url, { responseType: "blob" });
+      const contentType = String(response.headers["content-type"] ?? "");
+
+      if (contentType.includes("application/json")) {
+        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
+        if (payload.download_url) {
+          window.open(payload.download_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error(payload.message ?? "Talep eki indirilemedi.");
+      }
+
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `destek_talebi_ek_${ticket.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Talep eki indirilemedi", error);
+      setErrorMessage("Talep eki indirilemedi.");
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
@@ -225,9 +263,15 @@ export default function StudentTicketsPage() {
               </option>
             ))}
           </select>
-          <div className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
-            Dosya ekleme backend routeunda yer almadigi icin bu turda metin tabanli talep ve takip mesaji akisi kuruldu.
-          </div>
+          <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-input px-4 py-3 text-sm text-muted-foreground">
+            <Upload className="h-4 w-4" />
+            <span className="truncate">{ticketAttachment ? ticketAttachment.name : form.category === "resmi_evrak" ? "Resmi evrak icin dosya ekleyin" : "Dosya sec (opsiyonel)"}</span>
+            <input
+              type="file"
+              className="hidden"
+              onChange={(event) => setTicketAttachment(event.target.files?.[0] ?? null)}
+            />
+          </label>
         </div>
 
         <textarea
@@ -277,6 +321,16 @@ export default function StudentTicketsPage() {
                   </div>
                   <p className="text-sm text-muted-foreground">{ticket.message}</p>
                   <p className="text-xs uppercase tracking-widest text-muted-foreground">{new Date(ticket.created_at).toLocaleString("tr-TR")}</p>
+                  {ticket.attachment_download_url ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadTicketAttachment(ticket)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Talep Eki
+                    </button>
+                  ) : null}
                   {ticket.replies?.length ? (
                     <div className="mt-4 space-y-2 border-l-2 border-border pl-4">
                       {ticket.replies.map((reply) => (
