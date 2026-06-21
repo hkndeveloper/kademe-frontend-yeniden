@@ -54,11 +54,14 @@ type RoomOption = {
   description?: string | null;
 };
 
+type KpdRoomSchedule = Record<string, any>;
+
 type AppointmentsResponse = {
   appointments: Paginated<KpdAppointment>;
   counselees?: UserOption[];
   counselors?: UserOption[];
   rooms?: RoomOption[];
+  room_schedule?: KpdRoomSchedule[];
 };
 
 type KpdOptionsResponse = {
