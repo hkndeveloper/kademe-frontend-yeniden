@@ -102,6 +102,26 @@ function formatDate(value?: string | null): string {
   return new Date(value).toLocaleDateString("tr-TR");
 }
 
+function moduleEnrollmentLabel(status?: string | null): string {
+  const labels: Record<string, string> = {
+    pending: "Onay Bekleniyor",
+    approved: "Onaylandi",
+    rejected: "Reddedildi",
+    revoked: "Iptal Edildi",
+  };
+  return status ? labels[status] ?? status : "-";
+}
+
+function moduleEnrollmentClass(status?: string | null): string {
+  const classes: Record<string, string> = {
+    pending: "border-amber-300 bg-amber-50 text-amber-800",
+    approved: "border-emerald-300 bg-emerald-50 text-emerald-800",
+    rejected: "border-rose-300 bg-rose-50 text-rose-800",
+    revoked: "border-slate-300 bg-slate-100 text-slate-500",
+  };
+  return status && classes[status] ? classes[status] : "border-slate-200 bg-slate-50 text-slate-600";
+}
+
 export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }) {
   const base = portal === "alumni" ? "/alumni" : "/student";
   const [loading, setLoading] = useState(true);
