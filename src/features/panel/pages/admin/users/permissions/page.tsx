@@ -85,7 +85,7 @@ function scopeOptionsFor(roleName: string, permissionName: string, supportedScop
   if (permissionStartsWith(permissionName, ["users.", "staff."])) {
     return ["all", "own_unit", "self", "none"];
   }
-  if (permissionStartsWith(permissionName, ["permissions.", "settings.", "logs.", "newsletter.", "chatbot."])) {
+  if (permissionStartsWith(permissionName, ["permissions.", "settings.", "logs.", "newsletter.", "chatbot.", "trainers."])) {
     return ["all", "none"];
   }
   if (permissionStartsWith(permissionName, ["dashboard."])) {

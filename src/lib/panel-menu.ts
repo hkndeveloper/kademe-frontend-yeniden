@@ -27,16 +27,14 @@ import { shouldShowMyProjectNav, shouldShowProjectsListNav, type PanelNavUser } 
 import type { PanelModule } from "@/store/useAuth";
 
 /**
- * Panel menü tek kaynağı. Görünürlük `useAuth().hasPermission` ile belirlenir; bu liste
- * `user.effective_permissions` üzerinden çalışır. Backend, atanmış rol(ler)in varsayılan
- * action'ları ile yetki matrisinden eklenen ek action'ları birleştirip `/auth/me` ile döner.
- * `projects` / `Projem` satırları ek olarak `permission_scopes` + `manageable_project_ids`
- * ile süzülür (`@/lib/panel-scope`).
+ * Single source for the authority panel menu. Visibility is resolved from
+ * `user.effective_permissions`, permission scopes, and backend panel modules.
+ * Project-aware rows also use `permission_scopes` and project context.
  */
 export type PanelMenuSectionDef = {
   id: string;
   label: string;
-  /** Sidebar’da bölümlerin üst üste sırası (küçük önce) */
+  /** Display order for sidebar sections. */
   order: number;
 };
 
@@ -47,22 +45,23 @@ export type PanelMenuItem = {
   icon: LucideIcon;
   permission?: string;
   anyPermissions?: string[];
-  /** `PANEL_MENU_SECTIONS` içinden bir id */
+  /** Section id from PANEL_MENU_SECTIONS. */
   sectionId: string;
-  /** Aynı bölüm içindeki sıra (küçük önce) */
+  /** Display order within the section. */
   order: number;
 };
 
 export const PANEL_MENU_SECTIONS: PanelMenuSectionDef[] = [
   { id: "overview", label: "Ozet", order: 0 },
   { id: "projects", label: "Projeler ve programlar", order: 1 },
-  { id: "operations", label: "Operasyon", order: 2 },
-  { id: "people", label: "Yonetim ve kisiler", order: 3 },
-  { id: "organization", label: "Yonetim ve kisiler", order: 3 },
-  { id: "communication", label: "Icerik ve iletisim", order: 4 },
-  { id: "content", label: "Icerik ve iletisim", order: 4 },
-  { id: "system", label: "Sistem", order: 5 },
-  { id: "account", label: "Hesap", order: 6 },
+  { id: "project_special_modules", label: "Projeye Ozgu Moduller", order: 2 },
+  { id: "operations", label: "Operasyon", order: 3 },
+  { id: "people", label: "Yonetim ve kisiler", order: 4 },
+  { id: "organization", label: "Yonetim ve kisiler", order: 4 },
+  { id: "communication", label: "Icerik ve iletisim", order: 5 },
+  { id: "content", label: "Icerik ve iletisim", order: 5 },
+  { id: "system", label: "Sistem", order: 6 },
+  { id: "account", label: "Hesap", order: 7 },
 ];
 
 export const unifiedPanelMenu: PanelMenuItem[] = [
@@ -159,8 +158,8 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
       "kpd.reports.create",
       "kpd.reports.delete",
     ],
-    sectionId: "operations",
-    order: 47,
+    sectionId: "project_special_modules",
+    order: 60,
   },
   {
     id: "my-project",
@@ -206,6 +205,15 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     permission: "support.view",
     sectionId: "operations",
     order: 90,
+  },
+  {
+    id: "trainers",
+    label: "Egitmenler",
+    href: "/panel/trainers",
+    icon: Users,
+    permission: "trainers.view",
+    sectionId: "organization",
+    order: 5,
   },
   {
     id: "users",
@@ -419,7 +427,7 @@ function itemIsVisible(
   return true;
 }
 
-/** Sidebar: izinlere göre filtrelenmiş, bölüm ve sıraya göre gruplanmış menü */
+/** Sidebar menu items filtered by permission, section, and order. */
 const iconByManifestName: Record<string, LucideIcon> = {
   "layout-dashboard": Activity,
   "folder-kanban": Layers,
@@ -434,6 +442,7 @@ const iconByManifestName: Record<string, LucideIcon> = {
   "file-check": FileStack,
   archive: Database,
   "badge-check": Award,
+  award: Award,
   megaphone: Bell,
   newspaper: Database,
   users: Users,

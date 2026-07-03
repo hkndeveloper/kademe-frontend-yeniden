@@ -1,4 +1,4 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AxiosError } from "axios";
 import api from "@/lib/api/axios";
@@ -59,6 +59,10 @@ export interface PanelModule {
   actions: string[];
   enabled_actions: string[];
   scopes: Record<string, { scope_type: string; scope_payload: Record<string, unknown> }>;
+  family_key?: string;
+  required_project_types?: string[];
+  required_special_modules?: string[];
+  matched_project_ids?: number[];
 }
 
 interface AuthState {
@@ -191,3 +195,6 @@ export const useAuth = create<AuthState>()(
     }
   )
 );
+
+
+

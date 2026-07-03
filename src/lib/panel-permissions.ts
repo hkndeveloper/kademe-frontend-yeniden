@@ -99,6 +99,32 @@ function hasKpdAccess(
     .some((projectId) => kpdProjectIds.map(Number).includes(projectId));
 }
 
+
+function hasProjectFamilyAccess(
+  user: PanelNavUser | null,
+  hasPermission: (permission: string) => boolean,
+  permissions: string[],
+  specialModuleKeys: string[]
+): boolean {
+  if (!hasAnyScopedPermission(user, hasPermission, permissions)) return false;
+
+  const hasGlobalScope = permissions.some((permission) => hasGlobalScopeFromUser(user, permission));
+  const projectIdsBySpecialModule = user?.authorization_context?.project_ids_by_special_module ?? {};
+  const familyProjectIds = specialModuleKeys
+    .flatMap((key) => projectIdsBySpecialModule[key] ?? [])
+    .map((projectId) => Number(projectId))
+    .filter((projectId, index, all) => Number.isFinite(projectId) && all.indexOf(projectId) === index);
+
+  if (familyProjectIds.length === 0) return false;
+  if (hasGlobalScope) return true;
+
+  const manageableProjectIds = (user?.authorization_context?.manageable_project_ids ?? [])
+    .map((projectId) => Number(projectId))
+    .filter((projectId) => Number.isFinite(projectId));
+
+  return manageableProjectIds.some((projectId) => familyProjectIds.includes(projectId));
+}
+
 export function canAccessPanelPath(
   pathname: string,
   hasPermission: (permission: string) => boolean,
@@ -132,6 +158,9 @@ export function canAccessPanelPath(
   if (normalized === "/panel/newsletter") {
     return hasScopedPermission(user, hasPermission, "newsletter.view");
   }
+  if (normalized === "/panel/trainers") {
+    return hasScopedPermission(user, hasPermission, "trainers.view");
+  }
   if (normalized === "/panel/chatbot") {
     return hasAnyScopedPermission(user, hasPermission, ["chatbot.view", "chatbot.manage"]);
   }
@@ -143,6 +172,21 @@ export function canAccessPanelPath(
   }
   if (normalized === "/panel/motivation") {
     return hasAnyScopedPermission(user, hasPermission, ["motivation.view", "motivation.manage"]);
+  }
+  if (normalized === "/panel/diplomasi360") {
+    return hasProjectFamilyAccess(user, hasPermission, ["projects.internships.view", "projects.internships.manage"], ["internships", "uploaded_files"]);
+  }
+  if (normalized === "/panel/pergel") {
+    return hasProjectFamilyAccess(user, hasPermission, ["projects.mentors.view", "projects.mentors.manage"], ["mentors"]);
+  }
+  if (normalized === "/panel/eurodesk") {
+    return hasProjectFamilyAccess(user, hasPermission, ["projects.eurodesk.view", "projects.eurodesk.manage"], ["eurodesk_projects"]);
+  }
+  if (normalized === "/panel/kademe-plus") {
+    return hasProjectFamilyAccess(user, hasPermission, ["projects.rewards.view", "projects.rewards.manage"], ["badges", "reward_tiers", "participants_by_module"]);
+  }
+  if (normalized === "/panel/zirve-kademe") {
+    return hasProjectFamilyAccess(user, hasPermission, ["projects.rewards.view", "projects.rewards.manage"], ["badges", "reward_tiers", "participants_by_module"]);
   }
   if (normalized === "/panel/kpd") {
     return hasKpdAccess(user, hasPermission);

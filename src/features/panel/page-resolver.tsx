@@ -34,9 +34,11 @@ import PanelProjectsPage from "@/features/panel/pages/panel/projects/page";
 import PanelDigitalBohcaPage from "@/features/panel/pages/panel/digital-bohca/page";
 import PanelAssignmentsPage from "@/features/panel/pages/panel/assignments/page";
 import PanelKpdPage from "@/features/panel/pages/panel/kpd/page";
+import PanelTrainersPage from "@/features/panel/pages/panel/trainers/page";
 import PanelKvkkForgetPage from "@/features/panel/pages/panel/kvkk-forget/page";
 import PanelMotivationPage from "@/features/panel/pages/panel/motivation/page";
 import AdminPeriodFormBuilderPage from "@/features/panel/pages/admin/periods/form-builder/page";
+import { Diplomasi360PanelPage, EurodeskPanelPage, KademePlusPanelPage, PergelPanelPage, ZirveKademePanelPage } from "@/features/panel/pages/panel/project-family/page";
 
 function NotFoundPanelPage() {
   return (
@@ -52,6 +54,11 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   volunteer: PanelVolunteerPage,
   programs: PanelProgramsPage,
   projects: PanelProjectsPage,
+  diplomasi360: Diplomasi360PanelPage,
+  pergel: PergelPanelPage,
+  eurodesk: EurodeskPanelPage,
+  "kademe-plus": KademePlusPanelPage,
+  "zirve-kademe": ZirveKademePanelPage,
   participants: PanelParticipantsPage,
   "my-project": PanelMyProjectPage,
   calendar: PanelCalendarPage,
@@ -59,6 +66,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   "digital-bohca": PanelDigitalBohcaPage,
   assignments: PanelAssignmentsPage,
   kpd: PanelKpdPage,
+  trainers: PanelTrainersPage,
   motivation: PanelMotivationPage,
   "kvkk-forget": PanelKvkkForgetPage,
   requests: PanelSharedRequestsPage,
@@ -90,3 +98,4 @@ export function PanelRouteContent({ routeKey }: { routeKey: string }) {
   if (!Component) return <NotFoundPanelPage />;
   return <Component />;
 }
+

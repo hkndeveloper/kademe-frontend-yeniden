@@ -1,327 +1,145 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivitySquare, Clock, Filter, Loader2, Search } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ActivitySquare } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
+import { LogFiltersBar } from "./components/LogFiltersBar";
+import { LogSummaryCards } from "./components/LogSummaryCards";
+import { LogTable } from "./components/LogTable";
+import { exportableFilterParams, normalizeActivityRow } from "./log-utils";
+import type { ActivityLog, LogFilterOptions, LogFilters, LogSummary, PaginatedLogs } from "./types";
 
-interface ActivityLog {
-  id: number;
-  user_id: number | null;
-  action: string;
-  description: string;
-  model_type: string | null;
-  model_id: number | null;
-  ip_address: string | null;
-  created_at: string;
-  user?: { name: string; surname: string; role: string } | null;
-  log_name?: string | null;
-  path?: string | null;
-  status_code?: number | null;
-}
+type LogsApiResponse = {
+  logs?: PaginatedLogs | { data?: Record<string, unknown>[] } | Record<string, unknown>[];
+  summary?: LogSummary;
+  filters?: LogFilterOptions;
+  warning?: string;
+};
 
-function normalizeActivityRow(raw: Record<string, unknown>): ActivityLog {
-  const causer = raw.causer as { id?: number; name?: string; surname?: string; role?: string } | undefined;
-  const properties = raw.properties as
-    | { ip_address?: unknown; path?: unknown; route_uri?: unknown; status_code?: unknown; outcome?: unknown }
-    | undefined;
-  const event = raw.event != null && String(raw.event).length > 0 ? String(raw.event) : null;
-  const path =
-    properties?.path != null
-      ? String(properties.path)
-      : properties?.route_uri != null
-        ? String(properties.route_uri)
-        : null;
+const initialFilters: LogFilters = {
+  search: "",
+  log_name: "",
+  event: "",
+  outcome: "",
+  status_code: "",
+  date_from: "",
+  date_to: "",
+};
 
+function normalizeLogsPayload(payload: LogsApiResponse["logs"]): PaginatedLogs {
+  if (Array.isArray(payload)) {
+    return {
+      data: payload.map((item) => normalizeActivityRow(item)),
+      current_page: 1,
+      last_page: 1,
+      total: payload.length,
+    };
+  }
+
+  const rawRows = Array.isArray(payload?.data) ? payload.data : [];
   return {
-    id: Number(raw.id),
-    user_id: causer?.id ?? null,
-    action: event ?? String(raw.description ?? "log"),
-    description: String(raw.description ?? ""),
-    model_type: raw.subject_type != null ? String(raw.subject_type) : null,
-    model_id: raw.subject_id != null ? Number(raw.subject_id) : null,
-    ip_address:
-      properties?.ip_address != null
-        ? String(properties.ip_address)
-        : raw.ip_address != null
-          ? String(raw.ip_address)
-          : null,
-    created_at: String(raw.created_at ?? ""),
-    user: causer
-      ? {
-          name: String(causer.name ?? ""),
-          surname: String(causer.surname ?? ""),
-          role: String(causer.role ?? ""),
-        }
-      : null,
-    log_name: raw.log_name != null ? String(raw.log_name) : null,
-    path,
-    status_code:
-      properties?.status_code != null && Number.isFinite(Number(properties.status_code))
-        ? Number(properties.status_code)
-        : null,
+    data: rawRows.map((item) => normalizeActivityRow(item)),
+    current_page: Number((payload as PaginatedLogs | undefined)?.current_page ?? 1),
+    last_page: Number((payload as PaginatedLogs | undefined)?.last_page ?? 1),
+    total: Number((payload as PaginatedLogs | undefined)?.total ?? rawRows.length),
+    per_page: Number((payload as PaginatedLogs | undefined)?.per_page ?? 25),
   };
 }
-
-const actionColors: Record<string, string> = {
-  created: "bg-green-500/10 text-green-500",
-  updated: "bg-blue-500/10 text-blue-500",
-  deleted: "bg-red-500/10 text-red-500",
-  registered: "bg-green-500/10 text-green-500",
-  login: "bg-indigo-500/10 text-indigo-500",
-  login_failed: "bg-red-500/10 text-red-500",
-  login_blocked: "bg-amber-500/10 text-amber-500",
-  logout: "bg-gray-500/10 text-gray-400",
-  password_reset_requested: "bg-blue-500/10 text-blue-500",
-  password_reset: "bg-green-500/10 text-green-500",
-  password_reset_failed: "bg-red-500/10 text-red-500",
-  assigned: "bg-amber-500/10 text-amber-500",
-  status_changed: "bg-purple-500/10 text-purple-500",
-};
 
 export default function AdminLogsPage() {
   const { hasPermission } = usePermissions();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [summary, setSummary] = useState<LogSummary | null>(null);
+  const [filterOptions, setFilterOptions] = useState<LogFilterOptions>({ log_names: [], events: [] });
+  const [filters, setFilters] = useState<LogFilters>(initialFilters);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [warningMessage, setWarningMessage] = useState("");
-  const [search, setSearch] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
-  const [logNameFilter, setLogNameFilter] = useState<"" | "permissions">("");
 
-  const loadLogs = useCallback(async () => {
+  const loadLogs = useCallback(async (pageNumber = page) => {
     if (!hasPermission("logs.view")) {
       setLogs([]);
       setLoading(false);
       return;
     }
+
     setLoading(true);
     setErrorMessage("");
     setWarningMessage("");
     try {
-      const res = await api.get("/panel/dashboard/activity-logs", {
-        params: logNameFilter ? { log_name: logNameFilter } : undefined,
+      const response = await api.get<LogsApiResponse>("/panel/dashboard/activity-logs", {
+        params: {
+          ...exportableFilterParams(filters),
+          page: pageNumber,
+          per_page: 25,
+        },
       });
-      const raw = Array.isArray(res.data?.logs) ? res.data.logs : [];
-      setLogs(raw.map((item: Record<string, unknown>) => normalizeActivityRow(item)));
-      if (typeof res.data?.warning === "string") {
-        setWarningMessage(res.data.warning);
-      }
+      const payload = normalizeLogsPayload(response.data.logs);
+      setLogs(payload.data);
+      setPage(payload.current_page);
+      setLastPage(payload.last_page);
+      setTotal(payload.total);
+      setSummary(response.data.summary ?? null);
+      setFilterOptions(response.data.filters ?? { log_names: [], events: [] });
+      if (typeof response.data.warning === "string") setWarningMessage(response.data.warning);
     } catch (error) {
       console.error("Loglar yuklenemedi", error);
       setErrorMessage("Loglar yuklenirken bir hata olustu.");
     } finally {
       setLoading(false);
     }
-  }, [hasPermission, logNameFilter]);
+  }, [filters, hasPermission, page]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      void loadLogs();
+      void loadLogs(page);
     }, 0);
-
     return () => window.clearTimeout(timeoutId);
-  }, [loadLogs]);
+  }, [loadLogs, page]);
 
-  const filteredLogs = useMemo(() => {
-    const normalizedSearch = search.trim().toLocaleLowerCase("tr-TR");
-
-    return logs.filter((log) => {
-      const matchesAction = !actionFilter || log.action === actionFilter;
-      const haystack = [
-        log.description,
-        log.user?.name,
-        log.user?.surname,
-        log.user?.role,
-        log.model_type,
-        log.ip_address,
-        log.log_name,
-        log.path,
-        log.status_code,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLocaleLowerCase("tr-TR");
-      const matchesSearch = !normalizedSearch || haystack.includes(normalizedSearch);
-      return matchesAction && matchesSearch;
-    });
-  }, [actionFilter, logs, search]);
+  const applyFilters = () => {
+    setPage(1);
+    void loadLogs(1);
+  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
             <ActivitySquare className="h-7 w-7" />
           </div>
           <div>
             <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Sistem Loglari</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Kritik kullanici ve sistem hareketleri
-            </p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-slate-500">Kritik kullanici ve sistem hareketleri</p>
           </div>
         </div>
-        <PermissionGate
-          permission="logs.export"
-          fallback={<span className="text-sm text-muted-foreground">Disa aktarma yetkiniz yok.</span>}
-        >
-          <ExportButtons
-            endpoint="/panel/dashboard/activity-logs/export"
-            filename="islem_loglari"
-            buttonLabel="Loglari Disa Aktar"
-            params={logNameFilter ? { log_name: logNameFilter } : {}}
-          />
+        <PermissionGate permission="logs.export" fallback={<span className="text-sm text-slate-500">Disa aktarma yetkiniz yok.</span>}>
+          <ExportButtons endpoint="/panel/dashboard/activity-logs/export" filename="islem_loglari" buttonLabel="Loglari Disa Aktar" params={exportableFilterParams(filters)} />
         </PermissionGate>
       </div>
 
-      {errorMessage && (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {errorMessage}
-        </div>
-      )}
-      {warningMessage && !errorMessage && (
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          {warningMessage}
-        </div>
-      )}
+      {errorMessage ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{errorMessage}</div> : null}
+      {warningMessage && !errorMessage ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">{warningMessage}</div> : null}
 
-      <PermissionGate
-        permission="logs.view"
-        fallback={
-          <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 px-6 py-8 text-center text-sm text-amber-100">
-            Islem loglarini goruntuleme yetkiniz bulunmuyor.
+      <PermissionGate permission="logs.view" fallback={<div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-8 text-center text-sm font-bold text-amber-800">Islem loglarini goruntuleme yetkiniz bulunmuyor.</div>}>
+        <LogSummaryCards summary={summary} />
+        <LogFiltersBar filters={filters} options={filterOptions} loading={loading} onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} onApply={applyFilters} />
+        <LogTable logs={logs} loading={loading} />
+
+        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-500 shadow-sm md:flex-row md:items-center md:justify-between">
+          <span>Toplam {total} kayit | Sayfa {page} / {lastPage}</span>
+          <div className="flex gap-2">
+            <button type="button" disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black text-slate-700 disabled:opacity-50">Onceki</button>
+            <button type="button" disabled={page >= lastPage || loading} onClick={() => setPage((current) => current + 1)} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black text-slate-700 disabled:opacity-50">Sonraki</button>
           </div>
-        }
-      >
-      <div className="glass-panel flex flex-col gap-4 rounded-3xl p-6 md:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none focus:border-indigo-500"
-            placeholder="Aciklama, hedef model veya kullanici ara..."
-          />
         </div>
-        <select
-          value={logNameFilter}
-          onChange={(e) => setLogNameFilter(e.target.value as "" | "permissions")}
-          className="min-w-[200px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
-        >
-          <option value="">Tum kaynaklar</option>
-          <option value="permissions">Yetki matrisi / override</option>
-        </select>
-        <select
-          value={actionFilter}
-          onChange={(e) => setActionFilter(e.target.value)}
-          className="min-w-[180px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
-        >
-          <option value="">Tum Islemler</option>
-          <option value="created">Olusturma</option>
-          <option value="updated">Guncelleme</option>
-          <option value="deleted">Silme</option>
-          <option value="registered">Kayit</option>
-          <option value="login">Giris</option>
-          <option value="login_failed">Basarisiz Giris</option>
-          <option value="login_blocked">Engellenen Giris</option>
-          <option value="logout">Cikis</option>
-          <option value="password_reset_requested">Sifre Linki</option>
-          <option value="password_reset">Sifre Sifirlama</option>
-          <option value="password_reset_failed">Basarisiz Sifre</option>
-          <option value="status_changed">Durum</option>
-          <option value="assigned">Atama</option>
-        </select>
-        <button
-          onClick={() => void loadLogs()}
-          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold uppercase tracking-widest text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700"
-        >
-          <Filter className="h-4 w-4" />
-          Yenile
-        </button>
-      </div>
-
-      <div className="glass-panel overflow-hidden rounded-3xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-muted-foreground">
-            <thead className="border-b border-white/5 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
-              <tr>
-                <th className="px-6 py-4">Tarih</th>
-                <th className="px-6 py-4">Islem Yapan</th>
-                <th className="px-6 py-4">Aksiyon</th>
-                <th className="px-6 py-4">Detay</th>
-                <th className="px-6 py-4 text-right">IP</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-indigo-400" />
-                  </td>
-                </tr>
-              ) : filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                    Log bulunamadi.
-                  </td>
-                </tr>
-              ) : (
-                filteredLogs.map((log) => (
-                  <tr key={log.id} className="transition-colors hover:bg-white/5">
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center gap-2 text-slate-900">
-                        <Clock className="h-3 w-3 text-muted-foreground" />
-                        {new Date(log.created_at).toLocaleString("tr-TR")}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {log.user ? (
-                        <div>
-                          <div className="font-bold text-slate-900">
-                            {log.user.name} {log.user.surname}
-                          </div>
-                          <div className="text-[10px] uppercase tracking-widest text-indigo-400">{log.user.role}</div>
-                        </div>
-                      ) : (
-                        <span className="italic text-muted-foreground">Sistem / Anonim</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
-                          actionColors[log.action] || "bg-white/10 text-slate-900"
-                        }`}
-                      >
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="max-w-md px-6 py-4">
-                      <div className="truncate text-slate-900" title={log.description}>
-                        {log.description}
-                      </div>
-                      {log.model_type && (
-                        <div className="text-[10px] uppercase text-muted-foreground">
-                          Hedef: {log.model_type.split("\\").pop()} #{log.model_id}
-                        </div>
-                      )}
-                      {(log.path || log.status_code) && (
-                        <div className="text-[10px] uppercase text-muted-foreground">
-                          {[log.path, log.status_code ? `HTTP ${log.status_code}` : null].filter(Boolean).join(" | ")}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono text-xs text-muted-foreground">
-                      {log.ip_address || "-"}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
       </PermissionGate>
     </div>
   );

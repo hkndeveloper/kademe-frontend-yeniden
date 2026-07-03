@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { CheckCircle2, FileText, GraduationCap, Loader2, Mail, Phone, Search, Star, Users, X, XCircle } from "lucide-react";
+import { CheckCircle2, Download, FileText, GraduationCap, Loader2, Mail, Phone, Search, Star, Users, X, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
+import { downloadBlobResponse } from "@/lib/download";
 
 interface Project {
   id: number;
@@ -67,6 +68,96 @@ interface ParticipantsResponse {
   participants: ParticipantItem[];
 }
 
+
+type CvRecord = Record<string, unknown>;
+
+type CvListSection = {
+  key: string;
+  title: string;
+  items: CvRecord[];
+};
+
+const cvFieldLabels: Record<string, string> = {
+  fullName: "Ad Soyad",
+  email: "E-posta",
+  phone: "Telefon",
+  location: "Konum",
+  summary: "Profesyonel Ozet",
+  university: "Universite",
+  department: "Bolum",
+  classYear: "Sinif",
+  linkedin: "LinkedIn",
+  github: "GitHub",
+  instagram: "Instagram",
+  skills: "Yetkinlikler",
+  languages: "Diller",
+};
+
+const cvListLabels: Record<string, string> = {
+  experience: "Deneyim",
+  education: "Egitim Ekleri",
+  projects: "Projeler",
+  certificates: "Sertifikalar",
+};
+
+const cvTextKeys = ["fullName", "email", "phone", "location", "summary", "university", "department", "classYear", "linkedin", "github", "instagram", "skills", "languages"];
+const cvListKeys = ["experience", "education", "projects", "certificates"];
+const ignoredCvKeys = new Set(["saved_at", "savedAt", "updated_at", "created_at"]);
+
+function isRecord(value: unknown): value is CvRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isBlankCvValue(value: unknown): boolean {
+  if (value === null || value === undefined || value === "") return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (isRecord(value)) return Object.values(value).every(isBlankCvValue);
+  return false;
+}
+
+function cvFormFromData(data?: Record<string, unknown> | null): CvRecord {
+  if (!data) return {};
+  const form = isRecord(data.form) ? data.form : data;
+  return Object.fromEntries(Object.entries(form).filter(([, value]) => !isBlankCvValue(value)));
+}
+
+function cvValueText(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (isRecord(item) ? Object.values(item).filter((part) => !isBlankCvValue(part)).map(cvValueText).join(" / ") : cvValueText(item)))
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  if (isRecord(value)) {
+    return Object.entries(value)
+      .filter(([, nested]) => !isBlankCvValue(nested))
+      .map(([key, nested]) => `${cvFieldLabels[key] ?? key}: ${cvValueText(nested)}`)
+      .join("\n");
+  }
+
+  return String(value ?? "");
+}
+
+function cvRecordList(value: unknown): CvRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).filter((item) => !isBlankCvValue(item));
+}
+
+function cvItemTitle(item: CvRecord): string {
+  return cvValueText(item.title ?? item.school ?? item.name ?? item.company ?? item.organization ?? item.position ?? "Kayit");
+}
+
+function cvItemMeta(item: CvRecord): string {
+  return [item.subtitle, item.date, item.period, item.department, item.location]
+    .filter((value) => !isBlankCvValue(value))
+    .map(cvValueText)
+    .join(" / ");
+}
+
+function cvItemDescription(item: CvRecord): string {
+  return cvValueText(item.description ?? item.summary ?? item.detail ?? "");
+}
 export default function PanelParticipantsPage() {
   const { canAccessProject, hasPermission, hasAnyPermission } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -87,6 +178,7 @@ export default function PanelParticipantsPage() {
   });
   const [cvParticipant, setCvParticipant] = useState<ParticipantItem | null>(null);
   const [cvLoadingId, setCvLoadingId] = useState<number | null>(null);
+  const [cvDownloadingId, setCvDownloadingId] = useState<number | null>(null);
   const [graduationLoadingId, setGraduationLoadingId] = useState<number | null>(null);
   const [visibilityLoadingId, setVisibilityLoadingId] = useState<number | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -139,14 +231,20 @@ export default function PanelParticipantsPage() {
     [projectFilter, projects]
   );
 
-  const cvEntries = useMemo(() => {
-    const data = cvParticipant?.user.cv?.digital_cv_data ?? {};
-    return Object.entries(data).filter(([, value]) => {
-      if (Array.isArray(value)) return value.length > 0;
-      return value !== null && value !== undefined && value !== "";
-    });
-  }, [cvParticipant]);
+  const cvForm = useMemo(() => cvFormFromData(cvParticipant?.user.cv?.digital_cv_data), [cvParticipant]);
+  const cvTextFields = useMemo(() => {
+    const baseEntries = cvTextKeys
+      .filter((key) => !isBlankCvValue(cvForm[key]))
+      .map((key) => [key, cvForm[key]] as const);
+    const extraEntries = Object.entries(cvForm)
+      .filter(([key, value]) => !cvTextKeys.includes(key) && !cvListKeys.includes(key) && !ignoredCvKeys.has(key) && !isBlankCvValue(value) && !Array.isArray(value));
 
+    return [...baseEntries, ...extraEntries];
+  }, [cvForm]);
+  const cvListSections = useMemo<CvListSection[]>(() => cvListKeys
+    .map((key) => ({ key, title: cvListLabels[key], items: cvRecordList(cvForm[key]) }))
+    .filter((section) => section.items.length > 0), [cvForm]);
+  const hasCvContent = cvTextFields.length > 0 || cvListSections.length > 0;
   const filteredParticipants = useMemo(() => {
     return participants.filter((participant) => {
       const fullName = `${participant.user.name} ${participant.user.surname}`.toLowerCase();
@@ -293,6 +391,24 @@ export default function PanelParticipantsPage() {
     }
   };
 
+  const downloadCvPdf = async (participant: ParticipantItem) => {
+    if (!participant.user.cv?.digital_cv_data) {
+      setMessage("Kayitli CV verisi bulunamadi.");
+      return;
+    }
+
+    setCvDownloadingId(participant.id);
+    setMessage("");
+    try {
+      const response = await api.get(`/panel/participants/${participant.id}/cv/pdf`, { responseType: "blob", timeout: 30000 });
+      await downloadBlobResponse(response.data, response.headers, `cv_${participant.user.name}_${participant.user.surname}`);
+    } catch (error) {
+      console.error("CV PDF indirilemedi", error);
+      setMessage("CV PDF indirilemedi.");
+    } finally {
+      setCvDownloadingId(null);
+    }
+  };
   const bulkUpdateGraduation = async (graduationStatus: "completed" | "graduated" | "not_completed") => {
     if (selectedIdsInDataset.length === 0) return;
 
@@ -712,21 +828,33 @@ export default function PanelParticipantsPage() {
       )}
       {cvParticipant ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-3xl rounded-3xl border border-border bg-white p-6 shadow-2xl">
-            <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="w-full max-w-4xl rounded-3xl border border-border bg-white p-6 shadow-2xl">
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <h2 className="text-xl font-black text-slate-900">
                   {cvParticipant.user.name} {cvParticipant.user.surname}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">Dijital CV ve profil baglantilari</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setCvParticipant(null)}
-                className="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-slate-900"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!hasCvContent || cvDownloadingId === cvParticipant.id}
+                  onClick={() => void downloadCvPdf(cvParticipant)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/10 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {cvDownloadingId === cvParticipant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  PDF Indir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCvParticipant(null)}
+                  className="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-slate-900"
+                  aria-label="CV penceresini kapat"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -740,18 +868,42 @@ export default function PanelParticipantsPage() {
               </div>
             </div>
 
-            <div className="mt-4 max-h-[50vh] overflow-y-auto rounded-2xl border border-border">
-              {cvEntries.length === 0 ? (
+            <div className="mt-4 max-h-[56vh] overflow-y-auto rounded-2xl border border-border bg-white">
+              {!hasCvContent ? (
                 <div className="p-6 text-center text-sm text-muted-foreground">Kayitli CV verisi bulunamadi.</div>
               ) : (
                 <div className="divide-y divide-border">
-                  {cvEntries.map(([key, value]) => (
-                    <div key={key} className="grid grid-cols-1 gap-2 p-4 text-sm md:grid-cols-[180px_1fr]">
-                      <div className="font-bold text-slate-900">{key}</div>
-                      <pre className="whitespace-pre-wrap break-words rounded-xl bg-muted p-3 text-xs text-muted-foreground">
-                        {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
-                      </pre>
-                    </div>
+                  {cvTextFields.length > 0 ? (
+                    <section className="p-4">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Temel Bilgiler</h3>
+                      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {cvTextFields.map(([key, value]) => (
+                          <div key={key} className={key === "summary" ? "rounded-2xl bg-muted p-4 text-sm md:col-span-2" : "rounded-2xl bg-muted p-4 text-sm"}>
+                            <div className="font-bold text-slate-900">{cvFieldLabels[key] ?? key}</div>
+                            <div className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">{cvValueText(value)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {cvListSections.map((section) => (
+                    <section key={section.key} className="p-4">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">{section.title}</h3>
+                      <div className="mt-4 space-y-3">
+                        {section.items.map((item, index) => {
+                          const meta = cvItemMeta(item);
+                          const description = cvItemDescription(item);
+                          return (
+                            <div key={`${section.key}-${index}`} className="rounded-2xl border border-border bg-muted/60 p-4 text-sm">
+                              <div className="font-bold text-slate-900">{cvItemTitle(item)}</div>
+                              {meta ? <div className="mt-1 text-xs font-semibold text-muted-foreground">{meta}</div> : null}
+                              {description ? <div className="mt-2 whitespace-pre-wrap break-words text-muted-foreground">{description}</div> : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
                   ))}
                 </div>
               )}

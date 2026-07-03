@@ -897,15 +897,15 @@ export default function AdminStaffPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/5 bg-white/5 p-6">
+          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 p-6">
               <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
-                <UserCog className="h-5 w-5 text-indigo-400" />
+                <UserCog className="h-5 w-5 text-indigo-600" />
                 Ozluk Dosyasi ve Detaylar
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-slate-900"
+                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -914,40 +914,40 @@ export default function AdminStaffPage() {
             <div className="overflow-y-auto p-6">
               {modalLoading || !selectedStaff ? (
                 <div className="flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+                  <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
                 </div>
               ) : (
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-muted-foreground">Ad Soyad</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">Ad Soyad</div>
                       <div className="text-lg font-bold text-slate-900">
                         {selectedStaff.name} {selectedStaff.surname}
                       </div>
-                      <div className="text-sm uppercase tracking-widest text-indigo-400">{selectedStaff.role}</div>
+                      <div className="text-sm uppercase tracking-widest text-indigo-600">{selectedStaff.role}</div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-muted-foreground">Iletisim</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">Iletisim</div>
                       <div className="text-sm font-bold text-slate-900">{selectedStaff.email}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-slate-500">
                         {selectedStaff.phone || "Telefon kayitli degil"}
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-muted-foreground">Birim ve Unvan</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">Birim ve Unvan</div>
                       <div className="text-sm font-bold text-slate-900">
                         {selectedStaff.staff_profile?.unit || "Birim girilmemis"}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-slate-500">
                         {selectedStaff.staff_profile?.title || "Unvan girilmemis"}
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <div className="text-xs uppercase tracking-widest text-slate-500">
                         Sozlesme ve Baslangic
                       </div>
                       <div className="text-sm font-bold text-slate-900">{selectedStaff.staff_profile?.contract_type || "-"}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-slate-500">
                         {selectedStaff.staff_profile?.start_date
                           ? new Date(selectedStaff.staff_profile.start_date).toLocaleDateString("tr-TR")
                           : "-"}
@@ -955,11 +955,11 @@ export default function AdminStaffPage() {
                     </div>
                   </div>
 
-                  <hr className="border-white/5" />
+                  <hr className="border-slate-200" />
 
-                  <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-5">
+                  <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-indigo-400">
+                      <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-indigo-600">
                         <FolderKanban className="h-4 w-4" />
                         Proje Atamalari
                       </h3>
@@ -978,10 +978,10 @@ export default function AdminStaffPage() {
 
                     {projectsLoading ? (
                       <div className="flex justify-center py-6">
-                        <Loader2 className="h-7 w-7 animate-spin text-indigo-400" />
+                        <Loader2 className="h-7 w-7 animate-spin text-indigo-600" />
                       </div>
                     ) : projectOptions.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-4 text-sm text-muted-foreground">
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
                         Proje listesi yuklenemedi veya erisilebilir proje bulunamadi.
                       </div>
                     ) : (
@@ -991,11 +991,11 @@ export default function AdminStaffPage() {
                             <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-900">
                               Koordine ettigi projeler
                             </div>
-                            <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-3">
+                            <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
                               {projectOptions.map((project) => (
                                 <label
                                   key={`coordinated-${project.id}`}
-                                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-white/10"
+                                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-slate-100"
                                 >
                                   <input
                                     type="checkbox"
@@ -1016,11 +1016,11 @@ export default function AdminStaffPage() {
                             <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-900">
                               Gorevli oldugu projeler
                             </div>
-                            <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-3">
+                            <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
                               {projectOptions.map((project) => (
                                 <label
                                   key={`assigned-${project.id}`}
-                                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-white/10"
+                                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-slate-100"
                                 >
                                   <input
                                     type="checkbox"
@@ -1049,7 +1049,7 @@ export default function AdminStaffPage() {
                           unit: selectedStaff.staff_profile?.unit,
                         }}
                       >
-                        <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600/20 px-4 py-2 text-xs font-bold text-indigo-400 transition-colors hover:bg-indigo-600 hover:text-white">
+                        <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white">
                           {uploadingDoc ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                           Yeni Belge Yukle
                           <input
@@ -1064,7 +1064,7 @@ export default function AdminStaffPage() {
                     </h3>
 
                     {!selectedStaff.staff_profile?.personal_documents?.length ? (
-                      <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-muted-foreground">
+                      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
                         Henuz belge yuklenmemis.
                       </div>
                     ) : (
@@ -1072,13 +1072,13 @@ export default function AdminStaffPage() {
                         {selectedStaff.staff_profile.personal_documents.map((document, index) => (
                           <div
                             key={`${document.path}-${index}`}
-                            className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-3"
+                            className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3"
                           >
                             <div className="flex items-center gap-3 overflow-hidden">
-                              <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+                              <FileText className="h-5 w-5 shrink-0 text-slate-500" />
                               <div className="truncate">
                                 <div className="truncate text-xs font-bold text-slate-900">{document.label}</div>
-                                <div className="text-[10px] text-muted-foreground">
+                                <div className="text-[10px] text-slate-500">
                                   {new Date(document.uploaded_at).toLocaleDateString("tr-TR")}
                                 </div>
                               </div>
@@ -1087,7 +1087,7 @@ export default function AdminStaffPage() {
                               href={document.url ?? `${process.env.NEXT_PUBLIC_STORAGE_URL || "http://localhost:8000/storage"}/${document.path.replace(/^public\//, "")}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="rounded-lg bg-white/5 p-2 text-muted-foreground hover:bg-white/10 hover:text-slate-900"
+                              className="rounded-lg bg-slate-50 p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                             >
                               <Download className="h-4 w-4" />
                             </a>

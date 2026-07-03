@@ -104,6 +104,19 @@ function statValue(value: number | null | undefined) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+function projectFamilyRouteForType(type: string | null | undefined, projectId: number) {
+  const routeByType: Record<string, string> = {
+    diplomasi360: "/panel/diplomasi360",
+    pergel_fellowship: "/panel/pergel",
+    eurodesk: "/panel/eurodesk",
+    kademe_plus: "/panel/kademe-plus",
+    zirve_kademe: "/panel/zirve-kademe",
+  };
+  const route = type ? routeByType[type] : undefined;
+
+  return route ? `${route}?project_id=${projectId}` : `/panel/projects/${projectId}/special-modules`;
+}
+
 export default function PanelUnifiedProjectDetailPage() {
   const params = useParams();
   const rawId = params?.id;
@@ -254,7 +267,7 @@ export default function PanelUnifiedProjectDetailPage() {
           access["projects.eurodesk.manage"] ||
           access["projects.rewards.manage"] ||
           access["projects.rewards.view"],
-        href: withPeriod(`/panel/projects/${projectId}/special-modules`),
+        href: withPeriod(projectFamilyRouteForType(data?.project.type, projectId)),
         icon: Layers,
         label: "Projeye ozel moduller",
         value: "Staj, mentor, hibe",

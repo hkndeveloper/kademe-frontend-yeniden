@@ -596,15 +596,15 @@ export default function AdminUsersPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/5 bg-white/5 p-6">
+          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 p-6">
               <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
-                <Users className="h-5 w-5 text-indigo-400" />
+                <Users className="h-5 w-5 text-indigo-600" />
                 Kullanici / Ogrenci Profil Bilgisi
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-white/10 hover:text-slate-900"
+                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -612,36 +612,36 @@ export default function AdminUsersPage() {
             <div className="overflow-y-auto p-6">
               {modalLoading || !selectedUser ? (
                 <div className="flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+                  <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
                 </div>
               ) : (
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-muted-foreground">Ad Soyad</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">Ad Soyad</div>
                       <div className="text-lg font-bold text-slate-900">
                         {selectedUser.name} {selectedUser.surname}
                       </div>
-                      <div className="text-[10px] uppercase tracking-widest text-indigo-400">
+                      <div className="text-[10px] uppercase tracking-widest text-indigo-600">
                         {roleLabels[selectedUser.role] || selectedUser.role}
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-muted-foreground">Iletisim</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">Iletisim</div>
                       <div className="text-sm font-bold text-slate-900">{selectedUser.email}</div>
-                      <div className="text-sm text-muted-foreground">{selectedUser.phone || "Telefon yok"}</div>
+                      <div className="text-sm text-slate-500">{selectedUser.phone || "Telefon yok"}</div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-muted-foreground">Kayit Tarihi</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">Kayit Tarihi</div>
                       <div className="text-sm font-bold text-slate-900">
                         {new Date(selectedUser.created_at).toLocaleDateString("tr-TR")}
                       </div>
-                      <div className="text-sm text-muted-foreground">Statu: {selectedUser.status}</div>
+                      <div className="text-sm text-slate-500">Statu: {selectedUser.status}</div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-muted-foreground">Memleket / Dogum</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">Memleket / Dogum</div>
                       <div className="text-sm font-bold text-slate-900">{selectedUser.hometown || "-"}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-slate-500">
                         {selectedUser.birth_date
                           ? new Date(selectedUser.birth_date).toLocaleDateString("tr-TR")
                           : "-"}
@@ -649,24 +649,24 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
 
-                  <hr className="border-white/5" />
+                  <hr className="border-slate-200" />
 
-                  <div className="rounded-2xl border border-indigo-500/10 bg-indigo-500/5 p-6">
-                    <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-indigo-400">
+                  <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-6">
+                    <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-indigo-600">
                       <GraduationCap className="h-4 w-4" />
                       Okul ve Mezuniyet Bilgileri
                     </h3>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
                       <div>
-                        <div className="text-xs text-muted-foreground">Universite</div>
+                        <div className="text-xs text-slate-500">Universite</div>
                         <div className="font-bold text-slate-900">{selectedUser.university || "Girilmemis"}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-muted-foreground">Bolum</div>
+                        <div className="text-xs text-slate-500">Bolum</div>
                         <div className="font-bold text-slate-900">{selectedUser.department || "Girilmemis"}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-muted-foreground">Sinif / Yil</div>
+                        <div className="text-xs text-slate-500">Sinif / Yil</div>
                         <div className="font-bold text-slate-900">{selectedUser.class_year || "Girilmemis"}</div>
                       </div>
                     </div>
@@ -676,15 +676,15 @@ export default function AdminUsersPage() {
                     <div className="space-y-4">
                       <h3 className="text-sm font-bold uppercase tracking-widest text-slate-900">Puan ve Devamsizlik</h3>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="rounded-xl border border-white/5 bg-white/5 p-4 text-center">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
                           <div className="text-3xl font-black text-emerald-400">{selectedUser.credit_score || 0}</div>
-                          <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                          <div className="mt-1 text-[10px] uppercase tracking-widest text-slate-500">
                             Toplam Puan
                           </div>
                         </div>
-                        <div className="rounded-xl border border-white/5 bg-white/5 p-4 text-center">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
                           <div className="text-3xl font-black text-amber-500">{selectedUser.absent_count || 0}</div>
-                          <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                          <div className="mt-1 text-[10px] uppercase tracking-widest text-slate-500">
                             Devamsizlik
                           </div>
                         </div>
@@ -708,7 +708,7 @@ export default function AdminUsersPage() {
                         Sertifikalar
                       </h3>
                       {!selectedUser.certificates?.length ? (
-                        <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-muted-foreground">
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
                           Sertifika bulunamadi.
                         </div>
                       ) : (
@@ -716,12 +716,12 @@ export default function AdminUsersPage() {
                           {selectedUser.certificates.map((certificate) => (
                             <div
                               key={certificate.id}
-                              className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-3"
+                              className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3"
                             >
                               <div className="text-sm font-bold text-slate-900">
                                 {certificate.project?.name || "Bilinmeyen Proje"} Sertifikasi
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-slate-500">
                                 {new Date(certificate.issued_at || certificate.created_at || "").toLocaleDateString(
                                   "tr-TR",
                                 )}
