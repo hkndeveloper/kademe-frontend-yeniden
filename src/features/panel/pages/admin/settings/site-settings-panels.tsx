@@ -85,9 +85,9 @@ export const SETTINGS_MODULES: SettingsModuleDef[] = [
 
 const fieldBase =
   "w-full rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500";
-const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500";
-const subCard = "rounded-2xl border border-slate-200/60 bg-slate-50/80 p-4 md:p-5";
-const panelShell = "rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm md:p-6";
+const labelClass = "panel-label";
+const subCard = "panel-card-muted p-4 md:p-5";
+const panelShell = "panel-section-card md:p-6";
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
@@ -178,23 +178,23 @@ export function SettingsModuleNav({
             aria-current={active ? "page" : undefined}
             className={`group relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border px-3 py-3 text-left transition ${
               active
-                ? "border-slate-300 bg-slate-950 text-white shadow-sm"
+                ? "border-orange-200 bg-orange-50 text-orange-900 shadow-sm"
                 : "border-transparent bg-transparent hover:border-slate-200 hover:bg-slate-50"
             }`}
           >
-            {active ? <span className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-emerald-400" /> : null}
+            {active ? <span className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-orange-500" /> : null}
             <span
               className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600 group-hover:bg-white"
+                active ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-600 group-hover:bg-white"
               }`}
             >
               <Icon className="h-4 w-4" aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className={`block text-sm font-semibold ${active ? "text-white" : "text-slate-800"}`}>
+              <span className={`block text-sm font-semibold ${active ? "text-orange-950" : "text-slate-800"}`}>
                 {mod.label}
               </span>
-              <span className={`mt-0.5 block text-xs leading-snug ${active ? "text-slate-300" : "text-slate-500"}`}>
+              <span className={`mt-0.5 block text-xs leading-snug ${active ? "text-orange-700" : "text-slate-500"}`}>
                 {mod.description}
               </span>
             </span>
@@ -460,7 +460,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                     disabled={disabled}
                     onClick={() => removeNavLink("header_links", index)}
                     type="button"
-                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50"
+                    className="panel-card-action panel-card-action-danger"
                   >
                     Sil
                   </button>
@@ -504,7 +504,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                     disabled={disabled}
                     onClick={() => removeNavLink("footer_quick_links", index)}
                     type="button"
-                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50"
+                    className="panel-card-action panel-card-action-danger"
                   >
                     Sil
                   </button>
@@ -546,7 +546,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                     disabled={disabled}
                     onClick={() => removeNavLink("footer_project_links", index)}
                     type="button"
-                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50"
+                    className="panel-card-action panel-card-action-danger"
                   >
                     Sil
                   </button>
@@ -1260,20 +1260,20 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
               disabled={disabled}
               onClick={addStat}
               type="button"
-              className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800 disabled:opacity-50"
+              className="panel-card-action panel-card-action-info"
             >
               Alan ekle
             </button>
           </div>
         </div>
         {settings.homepage.stats_mode === "auto" ? (
-          <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-4">
+          <div className="panel-notice panel-notice-success">
             <p className="mb-4 text-sm text-emerald-900">
               Bu modda sayilar sunucuda hesaplanir. Manuel moda gecerek ozel degerler girebilirsiniz.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {computedStats.map((stat, index) => (
-                <div key={`${stat.label}-${index}`} className="rounded-xl border border-white/80 bg-white p-4 shadow-sm">
+                <div key={`${stat.label}-${index}`} className="panel-card-muted">
                   <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stat.label}</div>
                   <div className="mt-1 text-2xl font-bold text-slate-900">{stat.value}</div>
                 </div>
@@ -1317,7 +1317,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                   disabled={disabled}
                   onClick={() => removeStat(index)}
                   type="button"
-                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50"
+                  className="panel-card-action panel-card-action-danger"
                 >
                   Sil
                 </button>

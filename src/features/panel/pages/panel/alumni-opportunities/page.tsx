@@ -150,7 +150,7 @@ export default function PanelAlumniOpportunitiesPage() {
     <PermissionGate
       permission="announcements.view"
       fallback={
-        <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-8 text-center text-sm text-amber-100">
+        <div className="panel-empty-card text-amber-700">
           Firsat kayitlarini goruntuleme yetkiniz bulunmuyor.
         </div>
       }
@@ -172,7 +172,7 @@ export default function PanelAlumniOpportunitiesPage() {
             <button
               type="button"
               onClick={() => setShowForm((s) => !s)}
-              className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-bold text-white"
+              className="panel-button panel-button-primary h-11"
             >
               <Plus className="h-4 w-4" />
               Yeni kayit
@@ -180,25 +180,25 @@ export default function PanelAlumniOpportunitiesPage() {
           </PermissionGate>
         </div>
 
-        {feedback ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700">{feedback}</div> : null}
+        {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
 
         {showForm ? (
           <PermissionGate permission="announcements.create">
-            <form onSubmit={handleSubmit} className="glass-panel rounded-3xl p-6">
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <form onSubmit={handleSubmit} className="panel-section-card">
+              <div className="panel-form-grid">
                 <div className="lg:col-span-2">
-                  <label className="mb-1 block text-xs font-bold uppercase text-muted-foreground">Baslik</label>
+                  <label className="panel-label">Baslik</label>
                   <input
                     required
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    className="panel-control"
                     value={form.title}
                     onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase text-muted-foreground">Tur</label>
+                  <label className="panel-label">Tur</label>
                   <select
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    className="panel-control"
                     value={form.kind}
                     onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value }))}
                   >
@@ -210,9 +210,9 @@ export default function PanelAlumniOpportunitiesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase text-muted-foreground">Proje (opsiyonel)</label>
+                  <label className="panel-label">Proje (opsiyonel)</label>
                   <select
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    className="panel-control"
                     value={form.project_id}
                     onChange={(e) => setForm((f) => ({ ...f, project_id: e.target.value }))}
                   >
@@ -225,49 +225,49 @@ export default function PanelAlumniOpportunitiesPage() {
                   </select>
                 </div>
                 <div className="lg:col-span-2">
-                  <label className="mb-1 block text-xs font-bold uppercase text-muted-foreground">Ozet</label>
+                  <label className="panel-label">Ozet</label>
                   <textarea
-                    className="min-h-[80px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    className="panel-textarea min-h-20"
                     value={form.summary}
                     onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
                   />
                 </div>
                 <div className="lg:col-span-2">
-                  <label className="mb-1 block text-xs font-bold uppercase text-muted-foreground">Detay (opsiyonel)</label>
+                  <label className="panel-label">Detay (opsiyonel)</label>
                   <textarea
-                    className="min-h-[100px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    className="panel-textarea min-h-24"
                     value={form.body}
                     onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
                   />
                 </div>
                 <div className="lg:col-span-2">
-                  <label className="mb-1 block text-xs font-bold uppercase text-muted-foreground">Baglanti URL</label>
+                  <label className="panel-label">Baglanti URL</label>
                   <input
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    className="panel-control"
                     value={form.link_url}
                     onChange={(e) => setForm((f) => ({ ...f, link_url: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase text-muted-foreground">Yayin zamani (bos = simdi)</label>
+                  <label className="panel-label">Yayin zamani (bos = simdi)</label>
                   <input
                     type="datetime-local"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    className="panel-control"
                     value={form.published_at}
                     onChange={(e) => setForm((f) => ({ ...f, published_at: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase text-muted-foreground">Bitis (opsiyonel)</label>
+                  <label className="panel-label">Bitis (opsiyonel)</label>
                   <input
                     type="datetime-local"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    className="panel-control"
                     value={form.expires_at}
                     onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))}
                   />
                 </div>
-                <div className="flex flex-wrap gap-6 lg:col-span-2">
-                  <label className="flex items-center gap-2 text-sm">
+                <div className="panel-card-muted flex flex-wrap gap-6 lg:col-span-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <input
                       type="checkbox"
                       checked={form.target_student}
@@ -275,7 +275,7 @@ export default function PanelAlumniOpportunitiesPage() {
                     />
                     Ogrenciler
                   </label>
-                  <label className="flex items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <input
                       type="checkbox"
                       checked={form.target_alumni}
@@ -285,10 +285,10 @@ export default function PanelAlumniOpportunitiesPage() {
                   </label>
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-3">
+              <div className="panel-modal-footer mt-6">
                 <button
                   type="button"
-                  className="rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold"
+                  className="panel-button panel-button-secondary h-11"
                   onClick={() => setShowForm(false)}
                 >
                   Iptal
@@ -296,7 +296,7 @@ export default function PanelAlumniOpportunitiesPage() {
                 <button
                   type="submit"
                   disabled={saving || (!form.target_student && !form.target_alumni)}
-                  className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50"
+                  className="panel-button panel-button-primary h-11 px-6"
                 >
                   {saving ? "Kaydediliyor..." : "Kaydet"}
                 </button>
@@ -307,18 +307,18 @@ export default function PanelAlumniOpportunitiesPage() {
 
         <div className="space-y-4">
           {rows.length === 0 ? (
-            <div className="glass-panel rounded-3xl p-12 text-center text-muted-foreground">Kayit yok.</div>
+            <div className="panel-empty-card">Kayit yok.</div>
           ) : (
             rows.map((row) => (
-              <div key={row.id} className="glass-panel flex flex-col gap-3 rounded-3xl p-6 md:flex-row md:items-start md:justify-between">
+              <div key={row.id} className="panel-list-card flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <p className="panel-chip panel-chip-warning">
                     {KIND_LABEL[row.kind] ?? row.kind}
                   </p>
                   <h3 className="text-lg font-bold text-slate-900">{row.title}</h3>
                   <p className="text-xs text-muted-foreground">
                     {row.project?.name ?? "Genel"}
-                    {row.target_audience?.length ? ` · Hedef: ${row.target_audience.join(", ")}` : " · Hedef: tum"}
+                    {row.target_audience?.length ? ` - Hedef: ${row.target_audience.join(", ")}` : " - Hedef: tum"}
                   </p>
                   {row.summary ? <p className="mt-2 text-sm text-muted-foreground">{row.summary}</p> : null}
                 </div>
@@ -326,7 +326,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   <button
                     type="button"
                     onClick={() => void removeRow(row)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-500/10"
+                    className="panel-card-action panel-card-action-danger"
                   >
                     <Trash2 className="h-4 w-4" />
                     Sil

@@ -94,9 +94,9 @@ export default function PanelInboxPage() {
         <Bell className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold text-slate-900">Mesaj / Duyuru Kutusu</h1>
       </div>
-      <div className="glass-panel rounded-3xl p-4">
+      <div className="panel-filter-card">
         <div className="flex flex-wrap items-center gap-3">
-          <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="rounded-xl border border-border bg-input px-3 py-2 text-sm">
+          <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="panel-control w-auto min-w-56">
             <option value="all">Tum projeler</option>
             {projects.map((project) => (
               <option key={project.id} value={String(project.id)}>
@@ -104,16 +104,16 @@ export default function PanelInboxPage() {
               </option>
             ))}
           </select>
-          <label className="inline-flex items-center gap-2 text-xs"><input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} /> Okunmamis</label>
-          <label className="inline-flex items-center gap-2 text-xs"><input type="checkbox" checked={starredOnly} onChange={(e) => setStarredOnly(e.target.checked)} /> Yildizli</label>
-          <label className="inline-flex items-center gap-2 text-xs"><input type="checkbox" checked={pinnedOnly} onChange={(e) => setPinnedOnly(e.target.checked)} /> Sabit</label>
+          <label className="panel-chip cursor-pointer"><input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} /> Okunmamis</label>
+          <label className="panel-chip cursor-pointer"><input type="checkbox" checked={starredOnly} onChange={(e) => setStarredOnly(e.target.checked)} /> Yildizli</label>
+          <label className="panel-chip cursor-pointer"><input type="checkbox" checked={pinnedOnly} onChange={(e) => setPinnedOnly(e.target.checked)} /> Sabit</label>
         </div>
       </div>
       {items.length === 0 ? (
-        <div className="glass-panel rounded-3xl p-12 text-center text-muted-foreground">Kutuda duyuru bulunmuyor.</div>
+        <div className="panel-empty-card">Kutuda duyuru bulunmuyor.</div>
       ) : (
         items.map((item) => (
-          <div key={`${item.source_type}:${item.source_id}`} className="glass-panel rounded-3xl p-6">
+          <div key={`${item.source_type}:${item.source_id}`} className="panel-list-card">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
@@ -129,13 +129,13 @@ export default function PanelInboxPage() {
             </div>
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">{item.content ?? "-"}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <button type="button" onClick={() => void updateState(item, { is_read: !item.state.is_read })} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
+              <button type="button" onClick={() => void updateState(item, { is_read: !item.state.is_read })} className="panel-card-action">
                 {item.state.is_read ? "Okunmamis yap" : "Okundu yap"}
               </button>
-              <button type="button" onClick={() => void updateState(item, { is_starred: !item.state.is_starred })} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
+              <button type="button" onClick={() => void updateState(item, { is_starred: !item.state.is_starred })} className="panel-card-action">
                 <Star className={`h-3.5 w-3.5 ${item.state.is_starred ? "fill-current" : ""}`} /> {item.state.is_starred ? "Yildizi kaldir" : "Yildizla"}
               </button>
-              <button type="button" onClick={() => void updateState(item, { is_pinned: !item.state.is_pinned })} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
+              <button type="button" onClick={() => void updateState(item, { is_pinned: !item.state.is_pinned })} className="panel-card-action">
                 <Pin className={`h-3.5 w-3.5 ${item.state.is_pinned ? "fill-current" : ""}`} /> {item.state.is_pinned ? "Sabiti kaldir" : "Sabitle"}
               </button>
             </div>
@@ -145,4 +145,3 @@ export default function PanelInboxPage() {
     </div>
   );
 }
-

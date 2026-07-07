@@ -89,10 +89,10 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusClasses: Record<string, string> = {
-  pending: "text-amber-300 bg-amber-500/10",
-  approved: "text-blue-300 bg-blue-500/10",
-  rejected: "text-red-300 bg-red-500/10",
-  paid: "text-emerald-300 bg-emerald-500/10",
+  pending: "text-amber-700 bg-amber-50 ring-1 ring-amber-200",
+  approved: "text-blue-700 bg-blue-50 ring-1 ring-blue-200",
+  rejected: "text-red-700 bg-red-50 ring-1 ring-red-200",
+  paid: "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200",
 };
 
 const typeLabels: Record<string, string> = {
@@ -379,10 +379,10 @@ export default function AdminFinancialsPage() {
 
       {(errorMessage || successMessage) && (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
+          className={`panel-notice ${
             errorMessage
-              ? "border-red-500/30 bg-red-500/10 text-red-200"
-              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+              ? "panel-notice-error"
+              : "panel-notice-success"
           }`}
         >
           {errorMessage || successMessage}
@@ -390,15 +390,15 @@ export default function AdminFinancialsPage() {
       )}
 
       {(canViewFinancials || canCreateFinancials) && (
-        <div className="flex space-x-1 rounded-2xl bg-black/40 p-1 md:w-max">
+        <div className="panel-tabs md:w-max">
           {canViewFinancials && (
             <button
               type="button"
               onClick={() => setActiveTab("list")}
-              className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all ${
+              className={`panel-tab ${
                 activeTab === "list"
-                  ? "bg-indigo-600 text-white shadow-lg"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-slate-900"
+                  ? "panel-tab-active"
+                  : ""
               }`}
             >
               <FileText className="h-4 w-4" />
@@ -409,10 +409,10 @@ export default function AdminFinancialsPage() {
             <button
               type="button"
               onClick={() => setActiveTab("new")}
-              className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all ${
+              className={`panel-tab ${
                 activeTab === "new"
-                  ? "bg-indigo-600 text-white shadow-lg"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-slate-900"
+                  ? "panel-tab-active"
+                  : ""
               }`}
             >
               <Upload className="h-4 w-4" />
@@ -425,7 +425,7 @@ export default function AdminFinancialsPage() {
       {activeTab === "list" && canViewFinancials ? (
         <>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-        <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
+        <div className="panel-stat-card flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               Filtrelenen Toplam Tutar
@@ -454,8 +454,8 @@ export default function AdminFinancialsPage() {
                 setStatus((current) => (current === statusKey ? "" : statusKey));
                 setPage(1);
               }}
-              className={`glass-panel flex items-center justify-between rounded-3xl p-6 text-left transition ${
-                status === statusKey ? "ring-2 ring-indigo-500" : "hover:border-indigo-500/30"
+              className={`panel-stat-card-button flex items-center justify-between ${
+                status === statusKey ? "panel-stat-card-active" : ""
               }`}
             >
               <div>
@@ -482,7 +482,7 @@ export default function AdminFinancialsPage() {
       {canViewFinancials && (categoryStats.some((s) => Number(s.total) > 0) || projectStats.some((s) => Number(s.total) > 0)) ? (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           {categoryStats.some((s) => Number(s.total) > 0) ? (
-            <div className="glass-panel rounded-3xl p-6">
+            <div className="panel-section-card">
               <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">
                 Kategori — Pasta grafik
               </h3>
@@ -521,7 +521,7 @@ export default function AdminFinancialsPage() {
             </div>
           ) : null}
           {projectStats.some((s) => Number(s.total) > 0) ? (
-            <div className="glass-panel rounded-3xl p-6">
+            <div className="panel-section-card">
               <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-muted-foreground">
                 Proje — Bar grafik
               </h3>
@@ -552,7 +552,7 @@ export default function AdminFinancialsPage() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="glass-panel rounded-3xl p-6">
+        <div className="panel-section-card">
           <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-muted-foreground">
             Kategori Bazli Harcamalar
           </h3>
@@ -573,7 +573,7 @@ export default function AdminFinancialsPage() {
                         {percentage.toFixed(1)}%)
                       </span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+                    <div className="panel-progress-track">
                       <div className="h-full bg-indigo-500" style={{ width: `${percentage}%` }} />
                     </div>
                   </div>
@@ -583,7 +583,7 @@ export default function AdminFinancialsPage() {
           </div>
         </div>
 
-        <div className="glass-panel rounded-3xl p-6">
+        <div className="panel-section-card">
           <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-muted-foreground">
             Proje Bazli Harcamalar
           </h3>
@@ -604,7 +604,7 @@ export default function AdminFinancialsPage() {
                         {percentage.toFixed(1)}%)
                       </span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+                    <div className="panel-progress-track">
                       <div className="h-full bg-emerald-500" style={{ width: `${percentage}%` }} />
                     </div>
                   </div>
@@ -615,18 +615,21 @@ export default function AdminFinancialsPage() {
         </div>
       </div>
 
-      <div className="glass-panel flex flex-col gap-4 rounded-3xl p-6">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_440px_180px_180px_180px]">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && applyFilters()}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none focus:border-indigo-500"
-              placeholder="Firma veya kisi ara"
-            />
-          </div>
+      <div className="panel-filter-card space-y-4">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(260px,1fr)_minmax(360px,440px)_180px_180px_180px] xl:items-end">
+          <label className="panel-field">
+            <span className="panel-label">Arama</span>
+            <div className="relative">
+              <Search className="panel-control-icon" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => event.key === "Enter" && applyFilters()}
+                className="panel-control pl-10"
+                placeholder="Firma veya kisi ara"
+              />
+            </div>
+          </label>
 
           <ProjectPeriodFilters
             projects={projects}
@@ -639,77 +642,90 @@ export default function AdminFinancialsPage() {
             }}
             onPeriodChange={setPeriodId}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-            selectClassName="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
           />
 
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
-          >
-            <option value="">Tum durumlar</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <label className="panel-field">
+            <span className="panel-label">Durum</span>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="panel-control"
+            >
+              <option value="">Tum durumlar</option>
+              {Object.entries(statusLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-          <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
-          >
-            <option value="">Tum kategoriler</option>
-            {Object.entries(categoryLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <label className="panel-field">
+            <span className="panel-label">Kategori</span>
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              className="panel-control"
+            >
+              <option value="">Tum kategoriler</option>
+              {Object.entries(categoryLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-          <select
-            value={transactionType}
-            onChange={(event) => setTransactionType(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
-          >
-            <option value="">Tum turler</option>
-            {Object.entries(typeLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <label className="panel-field">
+            <span className="panel-label">Tur</span>
+            <select
+              value={transactionType}
+              onChange={(event) => setTransactionType(event.target.value)}
+              className="panel-control"
+            >
+              <option value="">Tum turler</option>
+              {Object.entries(typeLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        <div className="flex flex-col items-center gap-4 md:flex-row">
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => setDateFrom(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500"
-          />
-          <span className="text-muted-foreground">-</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(event) => setDateTo(event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500"
-          />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[180px_180px_auto] md:items-end">
+          <label className="panel-field">
+            <span className="panel-label">Baslangic</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(event) => setDateFrom(event.target.value)}
+              className="panel-control"
+            />
+          </label>
+          <label className="panel-field">
+            <span className="panel-label">Bitis</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(event) => setDateTo(event.target.value)}
+              className="panel-control"
+            />
+          </label>
           <button
+            type="button"
             onClick={applyFilters}
-            className="ml-auto inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-indigo-700"
+            className="panel-button panel-button-primary md:justify-self-start"
           >
             <Filter className="h-4 w-4" />
             Filtrele
           </button>
         </div>
       </div>
-
-      <div className="glass-panel overflow-hidden rounded-3xl">
+      <div className="panel-table-card">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-muted-foreground">
-            <thead className="border-b border-white/5 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
+          <table className="panel-table">
+            <thead>
               <tr>
                 <th className="px-6 py-4">Tarih</th>
                 <th className="px-6 py-4">Proje / Kategori</th>
@@ -720,7 +736,7 @@ export default function AdminFinancialsPage() {
                 <th className="px-6 py-4 text-right">Islemler</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center">
@@ -735,7 +751,7 @@ export default function AdminFinancialsPage() {
                 </tr>
               ) : (
                 transactions.map((transaction) => (
-                  <tr key={transaction.id} className="transition-colors hover:bg-white/5">
+                  <tr key={transaction.id}>
                     <td className="px-6 py-4">
                       {new Date(transaction.submitted_at).toLocaleDateString("tr-TR")}
                     </td>
@@ -757,7 +773,7 @@ export default function AdminFinancialsPage() {
                         {transaction.accounting_code ? <p>Kod: {transaction.accounting_code}</p> : null}
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-black text-indigo-300">
+                    <td className="px-6 py-4 font-black text-indigo-700">
                       {transaction.amount.toLocaleString("tr-TR", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -790,7 +806,7 @@ export default function AdminFinancialsPage() {
                         <button
                           type="button"
                           onClick={() => void downloadInvoice(transaction.id, transaction.payee_name)}
-                          className="inline-flex items-center justify-center rounded-lg bg-slate-100 p-2 text-slate-600 transition hover:bg-indigo-500 hover:text-white"
+                          className="panel-table-action panel-table-action-icon panel-table-action-info"
                           title="Faturayi indir"
                         >
                           {actionLoading === transaction.id ? (
@@ -808,7 +824,7 @@ export default function AdminFinancialsPage() {
                             <button
                               type="button"
                               onClick={() => void handleAction(transaction.id, "approve")}
-                              className="inline-flex items-center justify-center rounded-lg bg-white/5 p-2 text-emerald-300 transition hover:bg-emerald-500 hover:text-white"
+                              className="panel-table-action panel-table-action-icon panel-table-action-success"
                               title="Onayla"
                             >
                               <CheckCircle className="h-4 w-4" />
@@ -819,7 +835,7 @@ export default function AdminFinancialsPage() {
                             <button
                               type="button"
                               onClick={() => void handleAction(transaction.id, "reject")}
-                              className="inline-flex items-center justify-center rounded-lg bg-white/5 p-2 text-red-300 transition hover:bg-red-500 hover:text-white"
+                              className="panel-table-action panel-table-action-icon panel-table-action-danger"
                               title="Reddet"
                             >
                               <XCircle className="h-4 w-4" />
@@ -830,7 +846,7 @@ export default function AdminFinancialsPage() {
                             <button
                               type="button"
                               onClick={() => void handleAction(transaction.id, "delete")}
-                              className="rounded-lg bg-white/5 px-3 py-2 text-xs font-bold text-zinc-300 transition hover:bg-red-600 hover:text-white"
+                              className="panel-table-action panel-table-action-danger"
                             >
                               Sil
                             </button>
@@ -845,7 +861,7 @@ export default function AdminFinancialsPage() {
                         <button
                           type="button"
                           onClick={() => void handleAction(transaction.id, "pay")}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/20 px-3 py-2 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500 hover:text-white"
+                          className="panel-table-action panel-table-action-success"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           Odendi Yap
@@ -860,21 +876,21 @@ export default function AdminFinancialsPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-white/5 px-6 py-4">
+          <div className="panel-pagination">
             <button
               disabled={page === 1}
               onClick={() => setPage((current) => current - 1)}
-              className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-900 disabled:opacity-50"
+              className="panel-button panel-button-secondary text-xs"
             >
               Onceki
             </button>
-            <span className="text-xs font-bold text-muted-foreground">
+            <span className="panel-pagination-count">
               {page} / {totalPages}
             </span>
             <button
               disabled={page === totalPages}
               onClick={() => setPage((current) => current + 1)}
-              className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-900 disabled:opacity-50"
+              className="panel-button panel-button-secondary text-xs"
             >
               Sonraki
             </button>
@@ -885,10 +901,10 @@ export default function AdminFinancialsPage() {
       ) : null}
 
       {activeTab === "new" && canCreateFinancials ? (
-        <form onSubmit={handleSubmit} className="glass-panel space-y-6 rounded-3xl p-8">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Proje</label>
+        <form onSubmit={handleSubmit} className="panel-section-card space-y-6">
+          <div className="panel-form-grid">
+            <div className="panel-field">
+              <label className="panel-label">Proje</label>
               <select
                 value={formProjectId}
                 onChange={(event) => {
@@ -898,7 +914,7 @@ export default function AdminFinancialsPage() {
                   setFormPeriodId(defaultPeriodIdForProject(project));
                 }}
                 required
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
               >
                 <option value="">Proje secin</option>
                 {createProjects.map((project) => (
@@ -914,13 +930,13 @@ export default function AdminFinancialsPage() {
               ) : null}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Donem</label>
+            <div className="panel-field">
+              <label className="panel-label">Donem</label>
               <select
                 value={formPeriodId}
                 onChange={(event) => setFormPeriodId(event.target.value)}
                 disabled={!formProjectId}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
               >
                 <option value="">Aktif donem</option>
                 {(createProjects.find((project) => String(project.id) === formProjectId)?.periods ?? []).map((period) => (
@@ -929,13 +945,13 @@ export default function AdminFinancialsPage() {
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kategori</label>
+            <div className="panel-field">
+              <label className="panel-label">Kategori</label>
               <select
                 value={formCategory}
                 onChange={(event) => setFormCategory(event.target.value)}
                 required
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
               >
                 {Object.entries(categoryLabels).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -945,61 +961,61 @@ export default function AdminFinancialsPage() {
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <div className="panel-field">
+              <label className="panel-label">
                 Harcamayi Yapan Birim
               </label>
               <input
                 value={formSpendingUnit}
                 onChange={(event) => setFormSpendingUnit(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
                 placeholder="Orn: Medya Birimi, Pergel Ekibi"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <div className="panel-form-grid">
+            <div className="panel-field">
+              <label className="panel-label">
                 Alici / Firma Adi
               </label>
               <input
                 value={formPayee}
                 onChange={(event) => setFormPayee(event.target.value)}
                 required
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
                 placeholder="Orn: ABC Catering A.S."
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Fatura No</label>
+            <div className="panel-field">
+              <label className="panel-label">Fatura No</label>
               <input
                 value={formInvoiceNo}
                 onChange={(event) => setFormInvoiceNo(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
                 placeholder="Orn: FAT-2026-001"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Odeme Tarihi</label>
+          <div className="panel-form-grid-3">
+            <div className="panel-field">
+              <label className="panel-label">Odeme Tarihi</label>
               <input
                 type="date"
                 value={formPaymentDate}
                 onChange={(event) => setFormPaymentDate(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Odeme Yontemi</label>
+            <div className="panel-field">
+              <label className="panel-label">Odeme Yontemi</label>
               <select
                 value={formPaymentMethod}
                 onChange={(event) => setFormPaymentMethod(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
               >
                 <option value="">Secilmedi</option>
                 {Object.entries(paymentMethodLabels).map(([value, label]) => (
@@ -1010,20 +1026,20 @@ export default function AdminFinancialsPage() {
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Muhasebe Kodu</label>
+            <div className="panel-field">
+              <label className="panel-label">Muhasebe Kodu</label>
               <input
                 value={formAccountingCode}
                 onChange={(event) => setFormAccountingCode(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
                 placeholder="Orn: 770.01"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tutar (TL)</label>
+          <div className="panel-form-grid">
+            <div className="panel-field">
+              <label className="panel-label">Tutar (TL)</label>
               <input
                 type="number"
                 step="0.01"
@@ -1031,13 +1047,13 @@ export default function AdminFinancialsPage() {
                 value={formAmount}
                 onChange={(event) => setFormAmount(event.target.value)}
                 required
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
                 placeholder="0.00"
               />
             </div>
           </div>
 
-          <div className="space-y-2 rounded-2xl border border-dashed border-slate-300 bg-white p-6">
+          <div className="panel-file-drop panel-field">
             <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
               <Upload className="h-4 w-4" />
               Fatura / Fis Belgesi
@@ -1047,15 +1063,15 @@ export default function AdminFinancialsPage() {
               onChange={(event) => setFormFile(event.target.files?.[0] || null)}
               accept=".pdf,.jpg,.jpeg,.png"
               required
-              className="block w-full text-xs text-slate-500 file:mr-4 file:rounded-full file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-widest file:text-white hover:file:bg-indigo-700"
+              className="panel-file-input"
             />
           </div>
 
-          <div className="flex justify-end border-t border-white/5 pt-6">
+          <div className="panel-modal-footer">
             <button
               type="submit"
               disabled={submitting || createProjects.length === 0}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:opacity-50"
+              className="panel-button panel-button-primary h-11 px-6"
             >
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
               Faturayi Gonder

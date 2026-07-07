@@ -67,7 +67,7 @@ export function ExportButtons({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-card-foreground shadow-sm transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="panel-button panel-button-secondary whitespace-nowrap text-xs uppercase tracking-wider"
       >
         <Download className="h-4 w-4 shrink-0" /> {buttonLabel}
       </button>
@@ -80,7 +80,7 @@ export function ExportButtons({
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-2xl border border-border bg-popover p-2 text-popover-foreground shadow-xl"
+              className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-slate-900 shadow-xl shadow-slate-900/10"
             >
               {exportTypes.map((type) => (
                 <button
@@ -88,12 +88,12 @@ export function ExportButtons({
                   type="button"
                   onClick={() => void handleExport(type.format)}
                   disabled={loadingFormat !== null}
-                  className="group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
+                  className="group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-slate-50 disabled:opacity-50"
                 >
                   <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${type.bg} ${type.color}`}>
                     {loadingFormat === type.format ? <Loader2 className="h-4 w-4 animate-spin" /> : <type.icon className="h-4 w-4" />}
                   </div>
-                  <span className="text-xs font-bold text-muted-foreground transition-colors group-hover:text-foreground">
+                  <span className="text-xs font-bold text-slate-600 transition-colors group-hover:text-slate-900">
                     {type.label}
                   </span>
                 </button>

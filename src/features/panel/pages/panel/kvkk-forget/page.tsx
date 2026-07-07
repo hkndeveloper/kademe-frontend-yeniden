@@ -100,12 +100,12 @@ export default function PanelKvkkForgetPage() {
   return (
     <PermissionGate
       permission="users.update"
-      fallback={<div className="glass-panel rounded-3xl p-10 text-center text-sm text-muted-foreground">Bu modulu goruntulemek icin yetkiniz bulunmuyor.</div>}
+      fallback={<div className="panel-empty-card">Bu modulu goruntulemek icin yetkiniz bulunmuyor.</div>}
     >
       <div className="space-y-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
               <ShieldAlert className="h-6 w-6" />
             </div>
             <div>
@@ -116,7 +116,7 @@ export default function PanelKvkkForgetPage() {
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-900"
+            className="panel-control w-auto min-w-52"
           >
             <option value="">Tum durumlar</option>
             <option value="pending">Bekleyen</option>
@@ -125,25 +125,25 @@ export default function PanelKvkkForgetPage() {
           </select>
         </div>
 
-        {message ? <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">{message}</div> : null}
-        {error ? <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">{error}</div> : null}
+        {message ? <div className="panel-notice panel-notice-success">{message}</div> : null}
+        {error ? <div className="panel-notice panel-notice-error">{error}</div> : null}
 
-        <div className="glass-panel rounded-3xl p-6">
+        <div className="panel-section-card">
           {loading ? (
             <div className="flex min-h-24 items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-accent" />
             </div>
           ) : items.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Filtreye uygun KVKK talebi bulunmuyor.</div>
+            <div className="panel-empty-card">Filtreye uygun KVKK talebi bulunmuyor.</div>
           ) : (
             <div className="space-y-4">
               {items.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div key={item.id} className="panel-card-muted">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="text-sm font-bold text-slate-900">
                       #{item.id} - {item.user.name} {item.user.surname}
                     </div>
-                    <span className="rounded-xl border border-slate-200 bg-white px-2 py-1 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                    <span className="panel-chip">
                       {statusLabel[item.status]}
                     </span>
                   </div>
@@ -158,14 +158,14 @@ export default function PanelKvkkForgetPage() {
                         value={reviewNotes[item.id] ?? ""}
                         onChange={(event) => setReviewNotes((current) => ({ ...current, [item.id]: event.target.value }))}
                         placeholder="Inceleme notu"
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-900"
+                        className="panel-textarea min-h-24"
                       />
                       <div className="flex gap-2">
                         <button
                           type="button"
                           disabled={updatingId === item.id}
                           onClick={() => void resolveRequest(item.id, "approve")}
-                          className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+                          className="panel-card-action panel-card-action-success"
                         >
                           Anonimlestirmeyi Onayla
                         </button>
@@ -173,7 +173,7 @@ export default function PanelKvkkForgetPage() {
                           type="button"
                           disabled={updatingId === item.id}
                           onClick={() => void resolveRequest(item.id, "reject")}
-                          className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+                          className="panel-card-action panel-card-action-danger"
                         >
                           Talebi Reddet
                         </button>

@@ -25,6 +25,8 @@ interface ProjectPeriodFiltersProps {
   periodLabel?: string;
   className?: string;
   selectClassName?: string;
+  labelClassName?: string;
+  labelTextClassName?: string;
 }
 
 export function periodsForProject(project?: ProjectWithPeriods): PeriodOption[] {
@@ -50,16 +52,18 @@ export function ProjectPeriodFilters({
   onPeriodChange,
   projectLabel = "Proje",
   periodLabel = "Donem",
-  className = "grid grid-cols-1 gap-4 md:grid-cols-2",
-  selectClassName = "w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm text-card-foreground outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20",
+  className = "grid grid-cols-1 gap-3 md:grid-cols-2",
+  selectClassName = "panel-control",
+  labelClassName = "panel-field",
+  labelTextClassName = "panel-label",
 }: ProjectPeriodFiltersProps) {
   const selectedProject = projects.find((project) => String(project.id) === selectedProjectId);
   const periods = periodsForProject(selectedProject);
 
   return (
     <div className={className}>
-      <label className="block">
-        <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">{projectLabel}</span>
+      <label className={labelClassName}>
+        <span className={labelTextClassName}>{projectLabel}</span>
         <select
           value={selectedProjectId}
           onChange={(event) => onProjectChange(event.target.value)}
@@ -73,8 +77,8 @@ export function ProjectPeriodFilters({
           ))}
         </select>
       </label>
-      <label className="block">
-        <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">{periodLabel}</span>
+      <label className={labelClassName}>
+        <span className={labelTextClassName}>{periodLabel}</span>
         <select
           value={selectedPeriodId}
           onChange={(event) => onPeriodChange(event.target.value)}

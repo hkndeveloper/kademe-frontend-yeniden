@@ -199,10 +199,10 @@ export default function PanelDigitalBohcaPage() {
         </PermissionGate>
       </div>
 
-      {feedback ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700">{feedback}</div> : null}
+      {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
 
       <PermissionGate permission="digital_bohca.create">
-        <form onSubmit={handleSubmit} className="glass-panel rounded-3xl p-6">
+        <form onSubmit={handleSubmit} className="panel-section-card">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
             <select
               name="bohca_project_id"
@@ -212,7 +212,7 @@ export default function PanelDigitalBohcaPage() {
                 const project = uploadProjects.find((item) => String(item.id) === projectId);
                 setForm((current) => ({ ...current, project_id: projectId, period_id: defaultPeriodIdForProject(project) }));
               }}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              className="panel-control"
             >
               {hasGlobalScope("digital_bohca.create") ? <option value="">Genel materyal</option> : null}
               {!hasGlobalScope("digital_bohca.create") && uploadProjects.length === 0 ? <option value="">Yetkili proje yok</option> : null}
@@ -225,7 +225,7 @@ export default function PanelDigitalBohcaPage() {
               value={form.period_id}
               onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))}
               disabled={!form.project_id}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              className="panel-control"
             >
               <option value="">Tum donemler / genel</option>
               {(uploadProjects.find((project) => String(project.id) === form.project_id)?.periods ?? []).map((period) => (
@@ -236,7 +236,7 @@ export default function PanelDigitalBohcaPage() {
               name="bohca_category"
               value={form.category}
               onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              className="panel-control"
             >
               {Object.entries(BOHCA_CATEGORIES).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
@@ -248,9 +248,9 @@ export default function PanelDigitalBohcaPage() {
               onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
               required
               placeholder="Baslik"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              className="panel-control"
             />
-            <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900">
+            <label className="panel-file-drop flex cursor-pointer items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-slate-700">
               <Upload className="h-4 w-4" />
               {file ? file.name : "Dosya sec"}
               <input name="bohca_file" type="file" className="hidden" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
@@ -261,10 +261,10 @@ export default function PanelDigitalBohcaPage() {
             onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
             rows={3}
             placeholder="Aciklama"
-            className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+            className="panel-textarea mt-4"
           />
-          <div className="mt-4 flex justify-end">
-            <button disabled={saving} className="rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">
+          <div className="panel-modal-footer mt-4">
+            <button disabled={saving} className="panel-button panel-button-primary h-11 px-6">
               {saving ? "Yukleniyor..." : "Materyali Yukle"}
             </button>
           </div>
@@ -272,7 +272,7 @@ export default function PanelDigitalBohcaPage() {
       </PermissionGate>
 
       <PermissionGate permission="digital_bohca.view">
-        <div className="glass-panel rounded-3xl p-4">
+        <div className="panel-filter-card">
           <ProjectPeriodFilters
             projects={projects}
             selectedProjectId={projectFilter}
@@ -290,15 +290,15 @@ export default function PanelDigitalBohcaPage() {
             }}
           />
         </div>
-        <div className="glass-panel overflow-hidden rounded-3xl">
+        <div className="panel-section-card p-0">
           {loading ? (
             <div className="flex min-h-40 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-cyan-600" />
             </div>
           ) : (
-            <div className="divide-y divide-slate-200/70">
+            <div className="space-y-3 p-4">
               {materials.map((material) => (
-                <div key={material.id} className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                <div key={material.id} className="panel-list-card flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="text-base font-bold text-slate-900">{material.title}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -310,7 +310,7 @@ export default function PanelDigitalBohcaPage() {
                         </>
                       ) : null}
                       <span className="text-slate-300">/</span>
-                      <span className={`rounded px-1.5 py-0.5 text-[10px] ${material.category === "internship_documents" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
+                      <span className={`panel-chip ${material.category === "internship_documents" ? "panel-chip-info" : ""}`}>
                         {material.category_label ?? BOHCA_CATEGORIES[material.category ?? "general"] ?? "Genel"}
                       </span>
                       {material.file_type ? <span className="text-slate-400">{material.file_type}</span> : null}
@@ -318,7 +318,7 @@ export default function PanelDigitalBohcaPage() {
                     {material.description ? <p className="mt-2 text-sm text-muted-foreground">{material.description}</p> : null}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <button onClick={() => void handleDownload(material)} className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-bold text-cyan-700">
+                    <button onClick={() => void handleDownload(material)} className="panel-card-action panel-card-action-info">
                       <Download className="h-4 w-4" />
                       Indir
                     </button>
@@ -327,7 +327,7 @@ export default function PanelDigitalBohcaPage() {
                       requireProjectAccess={material.project?.id ? { permission: "digital_bohca.delete", projectId: material.project.id } : undefined}
                     >
                       {material.project?.id || hasGlobalScope("digital_bohca.delete") ? (
-                        <button onClick={() => void handleDelete(material)} className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700">
+                        <button onClick={() => void handleDelete(material)} className="panel-card-action panel-card-action-danger">
                           <Trash2 className="h-4 w-4" />
                           Sil
                         </button>
@@ -336,7 +336,7 @@ export default function PanelDigitalBohcaPage() {
                   </div>
                 </div>
               ))}
-              {materials.length === 0 ? <div className="p-10 text-center text-sm text-muted-foreground">Materyal bulunamadi.</div> : null}
+              {materials.length === 0 ? <div className="panel-empty-card">Materyal bulunamadi.</div> : null}
             </div>
           )}
         </div>

@@ -193,14 +193,14 @@ export default function PanelProgramQrPage() {
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+          className="panel-button panel-button-primary"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
           QR Yenile
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="panel-filter-card flex flex-wrap items-center gap-3">
         <div className="mr-2 text-xs font-black uppercase tracking-widest text-slate-500">Kod suresi</div>
         {rotationOptions.map((seconds) => (
           <button
@@ -208,10 +208,10 @@ export default function PanelProgramQrPage() {
             type="button"
             onClick={() => setSelectedRotation(seconds)}
             disabled={loading}
-            className={`rounded-xl px-4 py-2 text-sm font-black transition ${
+            className={`panel-tab ${
               selectedRotation === seconds
-                ? "bg-slate-900 text-white"
-                : "border border-slate-200 bg-slate-50 text-slate-700 hover:border-orange-300 hover:text-orange-700"
+                ? "panel-tab-active"
+                : ""
             } disabled:cursor-not-allowed disabled:opacity-60`}
           >
             {seconds} sn
@@ -220,7 +220,7 @@ export default function PanelProgramQrPage() {
       </div>
 
       {loading ? (
-        <div className="glass-panel flex min-h-[40vh] items-center justify-center rounded-3xl">
+        <div className="panel-section-card flex min-h-[40vh] items-center justify-center">
           <div className="text-center">
             <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-orange-600" />
             <p className="text-sm font-semibold text-slate-600">QR kod hazirlaniyor...</p>
@@ -229,7 +229,7 @@ export default function PanelProgramQrPage() {
       ) : null}
 
       {error ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">
+        <div className="panel-notice panel-notice-error">
           {error}
         </div>
       ) : null}
@@ -237,7 +237,7 @@ export default function PanelProgramQrPage() {
       {token && !loading ? (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-6">
-            <div className="glass-panel overflow-hidden rounded-3xl">
+            <div className="panel-table-card">
             <div className="border-b border-slate-200 bg-slate-50 px-6 py-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -264,7 +264,7 @@ export default function PanelProgramQrPage() {
           </div>
 
 
-            <div className="glass-panel overflow-hidden rounded-3xl">
+            <div className="panel-table-card">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-slate-50 px-6 py-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
@@ -281,7 +281,7 @@ export default function PanelProgramQrPage() {
                   type="button"
                   onClick={() => void loadAttendance()}
                   disabled={attendanceLoading}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="panel-card-action panel-card-action-success"
                 >
                   {attendanceLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
                   Listeyi Yenile
@@ -307,18 +307,18 @@ export default function PanelProgramQrPage() {
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">Son Okutmalar</h3>
                     <p className="mt-1 text-xs text-slate-500">QR veya manuel gecisler anlik listelenir.</p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                  <span className="panel-chip">
                     Feedback: {attendanceSummary?.feedback_count ?? 0}
                   </span>
                 </div>
 
                 {attendanceLoading && attendanceRecords.length === 0 ? (
-                  <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-200 py-10 text-sm font-semibold text-slate-500">
+                  <div className="panel-empty-card flex items-center justify-center py-10">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Canli liste yukleniyor...
                   </div>
                 ) : latestPresentRecords.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center text-sm font-medium text-slate-500">
+                  <div className="panel-empty-card px-5 py-8">
                     Henuz dogrulanmis QR okutmasi yok.
                   </div>
                 ) : (
@@ -332,7 +332,7 @@ export default function PanelProgramQrPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                          <span className="panel-chip panel-chip-success">
                             {record.method ?? "qr"}
                           </span>
                           <p className="mt-1 text-xs font-medium text-slate-500">
@@ -347,7 +347,7 @@ export default function PanelProgramQrPage() {
             </div>
           </div>
           <aside className="space-y-4">
-            <div className="glass-panel rounded-3xl p-6">
+            <div className="panel-section-card">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
                   <Clock3 className="h-5 w-5" />
@@ -362,7 +362,7 @@ export default function PanelProgramQrPage() {
               </p>
             </div>
 
-            <div className="glass-panel rounded-3xl p-6">
+            <div className="panel-section-card">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
                   <Smartphone className="h-5 w-5" />
@@ -373,13 +373,13 @@ export default function PanelProgramQrPage() {
                 </div>
               </div>
               <ol className="space-y-3 text-sm text-slate-600">
-                <li className="rounded-2xl bg-slate-50 p-3">1. Ogrenci kendi panelinde Programlarim sayfasini acar.</li>
-                <li className="rounded-2xl bg-slate-50 p-3">2. QR Yoklama Oku butonuna basar.</li>
-                <li className="rounded-2xl bg-slate-50 p-3">3. Kamera ve konum izniyle yoklama kaydi olusur.</li>
+                <li className="panel-card-muted p-3">1. Ogrenci kendi panelinde Programlarim sayfasini acar.</li>
+                <li className="panel-card-muted p-3">2. QR Yoklama Oku butonuna basar.</li>
+                <li className="panel-card-muted p-3">3. Kamera ve konum izniyle yoklama kaydi olusur.</li>
               </ol>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 text-xs text-slate-500">
+            <div className="panel-card-muted text-xs">
               {generatedAt ? (
                 <>Son uretim: {generatedAt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</>
               ) : (
@@ -402,7 +402,7 @@ function LiveMetric({ label, value, tone = "slate" }: { label: string; value: nu
   };
 
   return (
-    <div className={`rounded-2xl border border-slate-100 p-4 text-center shadow-sm ${toneClass[tone]}`}>
+    <div className={`panel-card-muted p-4 text-center ${toneClass[tone]}`}>
       <p className="text-2xl font-black">{value}</p>
       <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</p>
     </div>

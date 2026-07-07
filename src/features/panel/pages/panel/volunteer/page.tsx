@@ -192,7 +192,7 @@ export default function PanelVolunteerPage() {
   return (
     <PermissionGate
       permission="volunteer.view"
-      fallback={<div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-8 text-center text-sm text-amber-100">Gonullu basvurularini goruntuleme yetkiniz bulunmuyor.</div>}
+      fallback={<div className="panel-empty-card text-amber-700">Gonullu basvurularini goruntuleme yetkiniz bulunmuyor.</div>}
     >
       <div className="space-y-8">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -219,7 +219,7 @@ export default function PanelVolunteerPage() {
               <button
                 type="button"
                 onClick={() => setShowForm((current) => !current)}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white"
+                className="panel-button panel-button-primary h-11"
               >
                 <Plus className="h-4 w-4" />
                 Yeni Ilan
@@ -228,12 +228,12 @@ export default function PanelVolunteerPage() {
           </div>
         </div>
 
-        {feedback ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700">{feedback}</div> : null}
+        {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
 
         {showForm ? (
           <PermissionGate permission="volunteer.manage">
-            <form onSubmit={handleSubmit} className="glass-panel rounded-3xl p-6">
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <form onSubmit={handleSubmit} className="panel-section-card">
+              <div className="panel-form-grid">
                 <select
                   required
                   value={form.project_id}
@@ -242,7 +242,7 @@ export default function PanelVolunteerPage() {
                     const project = manageableProjects.find((item) => String(item.id) === projectId);
                     setForm((current) => ({ ...current, project_id: projectId, period_id: defaultPeriodIdForProject(project) }));
                   }}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                  className="panel-control"
                 >
                   <option value="">Proje sec</option>
                   {manageableProjects.map((project) => (
@@ -253,7 +253,7 @@ export default function PanelVolunteerPage() {
                   value={form.period_id}
                   onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))}
                   disabled={!form.project_id}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                  className="panel-control"
                 >
                   <option value="">Tum donemler / genel</option>
                   {(manageableProjects.find((project) => String(project.id) === form.project_id)?.periods ?? []).map((period) => (
@@ -265,13 +265,13 @@ export default function PanelVolunteerPage() {
                   value={form.title}
                   onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
                   placeholder="Ilan basligi"
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                  className="panel-control"
                 />
                 <input
                   value={form.location}
                   onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
                   placeholder="Konum"
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                  className="panel-control"
                 />
                 <input
                   type="number"
@@ -279,19 +279,19 @@ export default function PanelVolunteerPage() {
                   value={form.quota}
                   onChange={(event) => setForm((current) => ({ ...current, quota: event.target.value }))}
                   placeholder="Kontenjan"
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                  className="panel-control"
                 />
                 <input
                   type="datetime-local"
                   value={form.start_at}
                   onChange={(event) => setForm((current) => ({ ...current, start_at: event.target.value }))}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                  className="panel-control"
                 />
                 <input
                   type="datetime-local"
                   value={form.end_at}
                   onChange={(event) => setForm((current) => ({ ...current, end_at: event.target.value }))}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                  className="panel-control"
                 />
               </div>
               <textarea
@@ -299,10 +299,10 @@ export default function PanelVolunteerPage() {
                 value={form.description}
                 onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                 placeholder="Aciklama"
-                className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+                className="panel-textarea mt-4"
               />
-              <div className="mt-4 flex justify-end">
-                <button disabled={saving} className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">
+              <div className="panel-modal-footer mt-4">
+                <button disabled={saving} className="panel-button panel-button-primary h-11 px-6">
                   {saving ? "Kaydediliyor..." : "Ilani Olustur"}
                 </button>
               </div>
@@ -310,7 +310,7 @@ export default function PanelVolunteerPage() {
           </PermissionGate>
         ) : null}
 
-        <div className="glass-panel rounded-3xl p-4">
+        <div className="panel-filter-card">
           <ProjectPeriodFilters
             projects={projects}
             selectedProjectId={projectFilter}
@@ -329,15 +329,15 @@ export default function PanelVolunteerPage() {
           />
         </div>
 
-        <div className="glass-panel overflow-hidden rounded-3xl">
+        <div className="panel-section-card p-0">
           {loading ? (
             <div className="flex min-h-40 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
             </div>
           ) : (
-            <div className="divide-y divide-slate-200/70">
+            <div className="space-y-3 p-4">
               {opportunities.map((opportunity) => (
-                <div key={opportunity.id} className="p-5">
+                <div key={opportunity.id} className="panel-list-card">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="text-base font-bold text-slate-900">{opportunity.title}</div>
@@ -347,7 +347,7 @@ export default function PanelVolunteerPage() {
                       {opportunity.description ? <p className="mt-2 text-sm text-muted-foreground">{opportunity.description}</p> : null}
                     </div>
                     <PermissionGate permission="volunteer.manage" requireProjectAccess={{ permission: "volunteer.manage", projectId: opportunity.project_id }}>
-                      <button onClick={() => void deleteOpportunity(opportunity)} className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700">
+                      <button onClick={() => void deleteOpportunity(opportunity)} className="panel-card-action panel-card-action-danger">
                         <Trash2 className="h-4 w-4" />
                         Sil
                       </button>
@@ -357,7 +357,7 @@ export default function PanelVolunteerPage() {
                   {opportunity.applications?.length ? (
                     <div className="mt-4 space-y-2">
                       {opportunity.applications.map((application) => (
-                        <div key={application.id} className="flex flex-col gap-3 rounded-2xl bg-white p-3 text-sm md:flex-row md:items-center md:justify-between">
+                        <div key={application.id} className="panel-card-muted flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                           <div>
                             <div className="font-bold text-slate-900">
                               {application.user?.name} {application.user?.surname}
@@ -368,7 +368,7 @@ export default function PanelVolunteerPage() {
                           <PermissionGate permission="volunteer.manage" requireProjectAccess={{ permission: "volunteer.manage", projectId: opportunity.project_id }}>
                             <div className="flex gap-2">
                               {(["accepted", "waitlisted", "rejected"] as const).map((status) => (
-                                <button key={status} onClick={() => void updateApplication(application, status)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1 text-xs font-bold uppercase text-slate-700">
+                                <button key={status} onClick={() => void updateApplication(application, status)} className="panel-card-action py-1">
                                   <UserCheck className="h-3 w-3" />
                                   {status}
                                 </button>
@@ -381,7 +381,7 @@ export default function PanelVolunteerPage() {
                   ) : null}
                 </div>
               ))}
-              {opportunities.length === 0 ? <div className="p-10 text-center text-sm text-muted-foreground">Gonullu ilani bulunamadi.</div> : null}
+              {opportunities.length === 0 ? <div className="panel-empty-card">Gonullu ilani bulunamadi.</div> : null}
             </div>
           )}
         </div>

@@ -507,7 +507,7 @@ export default function AdminSettingsPage() {
 
   if (!canViewSettings) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600 shadow-sm">
+      <div className="panel-empty-card">
         Site ayarlarini goruntulemek icin{" "}
         <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">settings.view</code> veya{" "}
         <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">content.site_settings.update</code> izninin{" "}
@@ -526,10 +526,10 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-6 pb-6">
-      <header className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <header className="panel-section-card overflow-hidden p-0">
         <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-md shadow-slate-950/20">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
               <Settings className="h-6 w-6" />
             </div>
             <div>
@@ -541,14 +541,14 @@ export default function AdminSettingsPage() {
             </div>
           </div>
           <div className="grid gap-2 sm:grid-cols-3 lg:w-[520px]">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <div className="panel-card-muted px-3 py-2.5">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <ActiveModuleIcon className="h-4 w-4" />
                 Modul
               </div>
               <div className="mt-1 truncate text-sm font-bold text-slate-900">{activeModuleLabel}</div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <div className="panel-card-muted px-3 py-2.5">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <ShieldCheck className="h-4 w-4" />
                 Yetki
@@ -557,7 +557,7 @@ export default function AdminSettingsPage() {
                 {canUpdateSettings ? "Duzenlenebilir" : "Salt okunur"}
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <div className="panel-card-muted px-3 py-2.5">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <Clock3 className="h-4 w-4" />
                 Anasayfa
@@ -569,37 +569,37 @@ export default function AdminSettingsPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-slate-50/80 px-5 py-3 text-xs text-slate-600 lg:px-6">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold text-slate-700 ring-1 ring-slate-200">
+          <span className="panel-chip panel-chip-success">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
             Ayar verisi yuklendi
           </span>
-          <span className="rounded-full bg-white px-3 py-1 font-semibold text-slate-700 ring-1 ring-slate-200">
+          <span className="panel-chip">
             {settings.homepage.stats_mode === "manual" ? "Manuel istatistik" : "Otomatik istatistik"}
           </span>
-          <span className="rounded-full bg-white px-3 py-1 font-semibold text-slate-700 ring-1 ring-slate-200">
+          <span className="panel-chip">
             {settings.navigation.header_links.length} header linki
           </span>
         </div>
       </header>
 
       {feedback ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{feedback}</div>
+        <div className="panel-notice panel-notice-success">{feedback}</div>
       ) : null}
       {errorMessage ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{errorMessage}</div>
+        <div className="panel-notice panel-notice-error">{errorMessage}</div>
       ) : null}
 
       <div className="lg:hidden">
         <button
           type="button"
           onClick={() => setMobileNavOpen((o) => !o)}
-          className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-900 shadow-sm"
+          className="panel-button panel-button-secondary flex h-auto w-full justify-between px-4 py-3 text-left"
         >
           <span>Modul: {activeModuleLabel}</span>
           <ChevronDown className={`h-5 w-5 text-slate-500 transition ${mobileNavOpen ? "rotate-180" : ""}`} />
         </button>
         {mobileNavOpen ? (
-          <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+          <div className="panel-section-card mt-2 p-2">
             <SettingsModuleNav
               activeModule={activeModule}
               onSelect={(id) => {
@@ -613,7 +613,7 @@ export default function AdminSettingsPage() {
 
       <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
         <aside className="hidden w-64 shrink-0 lg:block">
-          <div className="sticky top-4 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm">
+          <div className="panel-section-card sticky top-4 p-2">
             <SettingsModuleNav activeModule={activeModule} onSelect={setActiveModule} />
           </div>
         </aside>
@@ -623,7 +623,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      <div className="sticky bottom-4 z-10 mt-8 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="panel-section-card sticky bottom-4 z-10 mt-8 flex flex-col gap-3 bg-white/95 p-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
         {!canUpdateSettings ? (
           <p className="text-xs text-amber-800 sm:text-sm">Salt okunur: kaydetmek icin duzenleme yetkisi gerekir.</p>
         ) : (
@@ -633,7 +633,7 @@ export default function AdminSettingsPage() {
           type="button"
           onClick={() => void handleSave()}
           disabled={saving || !canUpdateSettings}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 disabled:cursor-not-allowed disabled:opacity-50"
+          className="panel-button panel-button-primary shrink-0"
         >
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
           Ayarlari kaydet

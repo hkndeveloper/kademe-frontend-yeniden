@@ -92,7 +92,7 @@ export default function AdminProjectsPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <header className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <header className="panel-section-card overflow-hidden p-0">
         <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-md shadow-slate-950/20">
@@ -131,7 +131,7 @@ export default function AdminProjectsPage() {
         </div>
       </header>
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="panel-filter-card">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -139,7 +139,7 @@ export default function AdminProjectsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Proje adi, turu veya slug ile ara"
-              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10"
+              className="panel-control h-12 pl-11"
             />
           </label>
           <div className="flex flex-wrap gap-2">
@@ -148,10 +148,10 @@ export default function AdminProjectsPage() {
                 key={filter}
                 type="button"
                 onClick={() => setStatusFilter(filter)}
-                className={`h-12 rounded-2xl px-4 text-xs font-bold uppercase tracking-wide transition ${
+                className={`panel-tab h-12 ${
                   statusFilter === filter
-                    ? "bg-slate-950 text-white shadow-sm"
-                    : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                    ? "panel-tab-active"
+                    : ""
                 }`}
               >
                 {filter === "all" ? "Tum durumlar" : filter === "active" ? "Aktif" : "Pasif"}
@@ -166,7 +166,7 @@ export default function AdminProjectsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-16 text-center text-sm text-slate-500 shadow-sm">
+        <div className="panel-empty-card p-16">
           Bu filtreye uygun proje bulunamadi.
         </div>
       ) : (
@@ -174,7 +174,7 @@ export default function AdminProjectsPage() {
           {filteredProjects.map((project) => (
             <article
               key={project.id}
-              className="group flex min-h-[360px] flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+              className="group panel-list-card flex min-h-[360px] flex-col"
             >
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-3">
@@ -187,8 +187,8 @@ export default function AdminProjectsPage() {
                   </div>
                 </div>
                 <span
-                  className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wide ${
-                    project.status === "active" ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+                  className={`panel-chip shrink-0 ${
+                    project.status === "active" ? "panel-chip-success" : ""
                   }`}
                 >
                   {project.status === "active" ? "Aktif" : project.status}
@@ -196,7 +196,7 @@ export default function AdminProjectsPage() {
               </div>
 
               <div className="space-y-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="panel-card-muted p-4">
                   <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                     <Calendar className="h-3 w-3" />
                     Aktif Donem
@@ -205,14 +205,14 @@ export default function AdminProjectsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="panel-card-muted bg-white p-4">
                     <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                       <Users className="h-3 w-3" />
                       Aktif Ogrenci
                     </div>
                     <span className="text-xl font-black text-slate-900">{activeStudentCount(project)}</span>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="panel-card-muted bg-white p-4">
                     <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                       <Users className="h-3 w-3" />
                       Mezun
@@ -220,7 +220,7 @@ export default function AdminProjectsPage() {
                     <span className="text-xl font-black text-slate-900">{alumniCount(project)}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                <div className="panel-card-muted flex items-center justify-between bg-white px-4 py-3">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
                     {project.is_application_open ? (
                       <>
@@ -243,7 +243,7 @@ export default function AdminProjectsPage() {
               <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
                 <Link
                   href={hrefWithActivePeriod(`/panel/projects/${project.id}`, project)}
-                  className="inline-flex flex-1 items-center justify-center gap-1 rounded-2xl bg-slate-950 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800"
+                  className="panel-card-action panel-card-action-primary flex-1"
                 >
                     Detay
                     <ChevronRight className="h-4 w-4" />
@@ -251,7 +251,7 @@ export default function AdminProjectsPage() {
                 <PermissionGate permission="projects.application_form.update" requireProjectAccess={{ permission: "projects.application_form.update", projectId: project.id }}>
                   <Link
                     href={hrefWithActivePeriod(`/panel/periods/form-builder?project_id=${project.id}`, project)}
-                    className="inline-flex items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                    className="panel-card-action panel-card-action-info"
                   >
                     <FilePenLine className="h-4 w-4" />
                     Form
@@ -260,7 +260,7 @@ export default function AdminProjectsPage() {
                 <PermissionGate permission="projects.content.update" requireProjectAccess={{ permission: "projects.content.update", projectId: project.id }}>
                   <Link
                     href={hrefWithActivePeriod(`/panel/projects/${project.id}/content`, project)}
-                    className="inline-flex items-center justify-center gap-1 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100"
+                    className="panel-card-action panel-card-action-info"
                   >
                     <PencilLine className="h-4 w-4" />
                     Icerik

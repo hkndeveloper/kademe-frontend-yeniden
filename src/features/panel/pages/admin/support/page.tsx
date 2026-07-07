@@ -79,10 +79,10 @@ const statusLabels: Record<Ticket["status"], string> = {
 };
 
 const statusClasses: Record<Ticket["status"], string> = {
-  open: "bg-amber-500/10 text-amber-300",
-  in_progress: "bg-blue-500/10 text-blue-300",
-  resolved: "bg-emerald-500/10 text-emerald-300",
-  closed: "bg-zinc-500/10 text-zinc-300",
+  open: "panel-chip-warning",
+  in_progress: "panel-chip-info",
+  resolved: "panel-chip-success",
+  closed: "",
 };
 
 export default function AdminSupportPage() {
@@ -327,24 +327,24 @@ export default function AdminSupportPage() {
 
       {(errorMessage || successMessage) && (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
+          className={`panel-notice ${
             errorMessage
-              ? "border-red-500/30 bg-red-500/10 text-red-200"
-              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+              ? "panel-notice-error"
+              : "panel-notice-success"
           }`}
         >
           {errorMessage || successMessage}
         </div>
       )}
 
-      <div className="glass-panel grid grid-cols-1 gap-4 rounded-3xl p-6 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.8fr_0.8fr_auto]">
+      <div className="panel-filter-card grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.8fr_0.8fr_auto] lg:items-end">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="panel-control-icon" />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             onKeyDown={(event) => event.key === "Enter" && void loadData()}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none focus:border-indigo-500"
+            className="panel-control pl-10"
             placeholder="Konu, mesaj, ad veya e-posta ara"
           />
         </div>
@@ -357,7 +357,7 @@ export default function AdminSupportPage() {
             setFilterProjectId(value);
             setFilterPeriodId(value ? defaultPeriodIdForProject(project) || "all" : "all");
           }}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+          className="panel-control"
         >
           <option value="">Tum projeler</option>
           {projects.map((project) => (
@@ -371,7 +371,7 @@ export default function AdminSupportPage() {
           value={filterPeriodId}
           onChange={(event) => setFilterPeriodId(event.target.value)}
           disabled={!filterProjectId || filterPeriods.length === 0}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="panel-control"
         >
           <option value="all">{filterProjectId ? "Tum donemler" : "Proje secince donem"}</option>
           {filterPeriods.map((period) => (
@@ -385,7 +385,7 @@ export default function AdminSupportPage() {
         <select
           value={categoryFilter}
           onChange={(event) => setCategoryFilter(event.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+          className="panel-control"
         >
           <option value="">Tum kategoriler</option>
           <option value="general">Genel</option>
@@ -396,7 +396,7 @@ export default function AdminSupportPage() {
         <select
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+          className="panel-control"
         >
           <option value="">Tum durumlar</option>
           <option value="open">Acik</option>
@@ -407,7 +407,7 @@ export default function AdminSupportPage() {
 
         <button
           onClick={() => void loadData()}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-indigo-700"
+          className="panel-button panel-button-primary"
         >
           <Filter className="h-4 w-4" />
           Filtrele
@@ -420,26 +420,26 @@ export default function AdminSupportPage() {
             <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
           </div>
         ) : tickets.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-16 text-center text-muted-foreground">
+          <div className="panel-empty-card py-16">
             Destek talebi bulunamadi.
           </div>
         ) : (
           tickets.map((ticket) => (
-            <div key={ticket.id} className="glass-panel rounded-3xl p-6">
+            <div key={ticket.id} className="panel-list-card">
               <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
                 <div className="flex-1 space-y-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="text-lg font-bold text-slate-900">{ticket.subject}</h2>
-                    <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${statusClasses[ticket.status]}`}>
+                    <span className={`panel-chip ${statusClasses[ticket.status]}`}>
                       {statusLabels[ticket.status]}
                     </span>
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-900">
+                    <span className="panel-chip">
                       {ticket.category}
                     </span>
                   </div>
 
                   <div className="text-xs text-muted-foreground">
-                    <span className="font-bold text-indigo-300">
+                    <span className="font-bold text-indigo-700">
                       {ticket.user
                         ? `${ticket.user.name} ${ticket.user.surname}`
                         : "Ziyaretci"}
@@ -451,18 +451,18 @@ export default function AdminSupportPage() {
                     {ticket.project?.name ? (
                       <>
                         <span className="mx-2">•</span>
-                        <span className="font-bold text-emerald-300/90">{ticket.project.name}</span>
+                        <span className="font-bold text-emerald-700">{ticket.project.name}</span>
                       </>
                     ) : null}
                     {ticket.period?.name ? (
                       <>
                         <span className="mx-2">•</span>
-                        <span className="font-bold text-amber-300/90">{ticket.period.name}</span>
+                        <span className="font-bold text-amber-700">{ticket.period.name}</span>
                       </>
                     ) : null}
                   </div>
 
-                  <div className="rounded-2xl border border-white/5 bg-black/30 p-4 text-sm text-gray-300">
+                  <div className="panel-card-muted">
                     {ticket.message}
                   </div>
 
@@ -470,7 +470,7 @@ export default function AdminSupportPage() {
                     <button
                       type="button"
                       onClick={() => void handleDownloadTicketAttachment(ticket)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300"
+                      className="panel-card-action panel-card-action-success py-1.5"
                     >
                       <Download className="h-3.5 w-3.5" />
                       Talep Eki
@@ -478,24 +478,24 @@ export default function AdminSupportPage() {
                   ) : null}
 
                   {!!ticket.replies?.length && (
-                    <div className="space-y-3 border-l-2 border-white/10 pl-4">
-                      <div className="text-xs font-bold uppercase tracking-widest text-indigo-300">Yanitlar</div>
+                    <div className="space-y-3 border-l-2 border-slate-200 pl-4">
+                      <div className="text-xs font-bold uppercase tracking-widest text-indigo-700">Yanitlar</div>
                       {ticket.replies.map((reply) => (
-                        <div key={reply.id} className="rounded-xl bg-white/5 p-3">
+                        <div key={reply.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                           <div className="mb-1 flex items-center justify-between text-[10px]">
-                            <span className="font-bold text-indigo-300">
+                            <span className="font-bold text-indigo-700">
                               {reply.user ? `${reply.user.name} ${reply.user.surname}` : "Kullanici"}
                             </span>
                             <span className="text-muted-foreground">
                               {new Date(reply.created_at).toLocaleString("tr-TR")}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-300">{reply.message}</div>
+                          <div className="text-sm text-slate-600">{reply.message}</div>
                           {reply.attachment_download_url ? (
                             <button
                               type="button"
                               onClick={() => void handleDownloadReplyAttachment(reply)}
-                              className="mt-2 inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300"
+                              className="panel-card-action panel-card-action-success mt-2 py-1.5"
                             >
                               <Download className="h-3.5 w-3.5" />
                               Ek Dosya
@@ -507,7 +507,7 @@ export default function AdminSupportPage() {
                   )}
                 </div>
 
-                <div className="w-full space-y-4 rounded-2xl border border-white/5 bg-white/5 p-4 xl:w-80">
+                <div className="panel-card-muted w-full space-y-4 xl:w-80">
                   <div>
                     <div className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                       Gorevlendirme
@@ -522,7 +522,7 @@ export default function AdminSupportPage() {
                           }))
                         }
                         disabled={ticket.status === "closed" || !canActOnTicket("support.assign", ticket)}
-                        className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-900 outline-none focus:border-indigo-500"
+                        className="panel-control h-10 text-xs"
                       >
                         <option value="">
                           {ticket.assignee
@@ -544,7 +544,7 @@ export default function AdminSupportPage() {
                           ticket.status === "closed" ||
                           !canActOnTicket("support.assign", ticket)
                         }
-                        className="rounded-xl bg-indigo-600 px-3 text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                        className="panel-button panel-button-primary px-3"
                         title="Ata"
                       >
                         {actionLoading === ticket.id ? (
@@ -570,10 +570,10 @@ export default function AdminSupportPage() {
                         }))
                       }
                       disabled={ticket.status === "closed" || !canActOnTicket("support.reply", ticket)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-900 outline-none focus:border-indigo-500"
+                      className="panel-textarea min-h-24 text-xs"
                       placeholder="Mesajinizi yazin"
                     />
-                    <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white p-2.5 text-xs font-bold text-slate-700">
+                    <label className="panel-file-drop mt-2 flex cursor-pointer items-center justify-center gap-2 p-2.5 text-xs font-bold text-slate-700">
                       <Upload className="h-4 w-4 text-indigo-500" />
                       <span className="truncate">{attachmentByTicket[ticket.id]?.name ?? "Ek dosya sec"}</span>
                       <input
@@ -600,7 +600,7 @@ export default function AdminSupportPage() {
                         ticket.status === "closed" ||
                         !canActOnTicket("support.reply", ticket)
                       }
-                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                      className="panel-card-action panel-card-action-primary flex-1"
                     >
                       {actionLoading === ticket.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -615,7 +615,7 @@ export default function AdminSupportPage() {
                         type="button"
                         onClick={() => void handleClose(ticket.id)}
                         disabled={actionLoading === ticket.id || !canActOnTicket("support.close", ticket)}
-                        className="inline-flex items-center justify-center rounded-xl bg-red-500/15 px-4 text-red-300 transition hover:bg-red-500 hover:text-white disabled:opacity-50"
+                        className="panel-card-action panel-card-action-danger px-4"
                         title="Talebi kapat"
                       >
                         <CheckCircle2 className="h-4 w-4" />

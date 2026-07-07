@@ -338,7 +338,7 @@ export default function PanelUnifiedProjectDetailPage() {
 
   if (invalidProjectId || error || !data) {
     return (
-      <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-8 text-red-100">
+      <div className="panel-notice panel-notice-error">
         {invalidProjectId ? "Gecersiz proje." : error ?? "Proje bulunamadi."}
       </div>
     );
@@ -360,7 +360,7 @@ export default function PanelUnifiedProjectDetailPage() {
           <h1 className="mt-2 text-3xl font-black text-slate-900">{data.project.name}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {data.project.selected_period?.name ? `Secili donem: ${data.project.selected_period.name}` : data.project.active_period?.name ? `Aktif donem: ${data.project.active_period.name}` : "Aktif donem baglantisi yok"}
-            {typeof data.project.quota === "number" ? ` · Kontenjan: ${data.project.quota}` : ""}
+            {typeof data.project.quota === "number" ? ` - Kontenjan: ${data.project.quota}` : ""}
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -368,7 +368,7 @@ export default function PanelUnifiedProjectDetailPage() {
             <select
               value={selectedPeriodId}
               onChange={(event) => setSelectedPeriodId(event.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-accent/60"
+              className="panel-control min-w-56 font-bold"
             >
               {data.project.periods.map((period) => (
                 <option key={period.id} value={period.id}>
@@ -380,7 +380,7 @@ export default function PanelUnifiedProjectDetailPage() {
         {data.project.slug ? (
           <Link
             href={`/projects/${data.project.slug}`}
-            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-800 transition hover:border-slate-300"
+            className="panel-button panel-button-secondary"
             target="_blank"
             rel="noreferrer"
           >
@@ -399,7 +399,7 @@ export default function PanelUnifiedProjectDetailPage() {
               <PermissionGate key={card.key} requireProjectAccess={{ permission: card.permission, projectId }}>
                 <Link
                   href={card.href}
-                  className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-accent/60 hover:bg-slate-50"
+                  className="group panel-list-card block"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/15 text-accent">
@@ -416,19 +416,19 @@ export default function PanelUnifiedProjectDetailPage() {
 
       {data.summary.participants ? (
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="panel-stat-card">
             <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Toplam katilimci</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.total}</div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="panel-stat-card">
             <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Aktif ogrenci</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.active}</div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="panel-stat-card">
             <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Mezun</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.graduates}</div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="panel-stat-card">
             <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Ortalama kredi</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.average_credit}</div>
           </div>
@@ -468,7 +468,7 @@ export default function PanelUnifiedProjectDetailPage() {
         ) : null}
 
         {data.previews.attendance?.length ? (
-          <section className="rounded-2xl border border-slate-200 bg-white p-5">
+          <section className="panel-stat-card">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 text-lg font-black text-slate-900">
                 <QrCode className="h-5 w-5 text-accent" />
@@ -480,7 +480,7 @@ export default function PanelUnifiedProjectDetailPage() {
             </div>
             <div className="space-y-3">
               {data.previews.attendance.map((program) => (
-                <div key={program.id} className="rounded-2xl bg-white p-4">
+                <div key={program.id} className="panel-card-muted bg-white">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="font-bold text-slate-900">{program.title}</div>
@@ -488,7 +488,7 @@ export default function PanelUnifiedProjectDetailPage() {
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
                       <div>{statValue(program.valid_attendances_count)} / {statValue(program.attendances_count)} gecerli</div>
-                      <div className="mt-1 inline-flex items-center gap-1 text-amber-300">
+                      <div className="mt-1 inline-flex items-center gap-1 text-amber-600">
                         <Star className="h-3 w-3" />
                         -{statValue(program.credit_deduction)}
                       </div>
@@ -520,7 +520,7 @@ function PreviewList({
   footerLabel: string;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+    <section className="panel-stat-card">
       <div className="mb-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-lg font-black text-slate-900">
           <span className="text-accent">{icon}</span>
@@ -532,21 +532,21 @@ function PreviewList({
       </div>
       <div className="space-y-3">
         {items.map((participant) => (
-          <div key={participant.id} className="rounded-2xl bg-white p-4">
+          <div key={participant.id} className="panel-card-muted bg-white">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="font-bold text-slate-900">{fullName(participant)}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {[participant.user?.university, participant.user?.department].filter(Boolean).join(" · ") || participant.user?.email || "Profil bilgisi yok"}
+                  {[participant.user?.university, participant.user?.department].filter(Boolean).join(" - ") || participant.user?.email || "Profil bilgisi yok"}
                 </div>
                 {showCv ? (
                   <div className="mt-2 text-xs text-muted-foreground">
                     {participant.user?.cv?.linkedin_url ? "LinkedIn bagli" : "LinkedIn yok"}
-                    {participant.user?.cv?.github_url ? " · GitHub bagli" : ""}
+                    {participant.user?.cv?.github_url ? " - GitHub bagli" : ""}
                   </div>
                 ) : null}
               </div>
-              <div className="shrink-0 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-center text-amber-200">
+              <div className="panel-chip panel-chip-warning shrink-0 flex-col rounded-xl px-3 py-2 text-center normal-case tracking-normal">
                 <div className="text-[10px] font-bold uppercase tracking-widest">Kredi</div>
                 <div className="text-lg font-black">{statValue(participant.credit)}</div>
               </div>

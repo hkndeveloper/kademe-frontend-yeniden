@@ -1426,39 +1426,42 @@ export default function PanelProgramsPage() {
         )}
 
         {/* Panel bolumu */}
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_440px]">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Program, proje veya konum ara..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-slate-200/80 bg-white py-2.5 pl-10 pr-4 text-sm shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+        <div className="panel-filter-card">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(280px,1fr)_minmax(360px,440px)] lg:items-end">
+            <label className="panel-field">
+              <span className="panel-label">Arama</span>
+              <div className="relative">
+                <Search className="panel-control-icon" />
+                <input
+                  type="text"
+                  placeholder="Program, proje veya konum ara..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="panel-control pl-10"
+                />
+              </div>
+            </label>
+            <ProjectPeriodFilters
+              projects={projects}
+              selectedProjectId={selectedProjectId}
+              selectedPeriodId={selectedPeriodId}
+              onProjectChange={(value) => {
+                setSelectedProjectId(value);
+                const project = projects.find((item) => String(item.id) === value);
+                setSelectedPeriodId(value === "all" ? "all" : defaultPeriodIdForProject(project) || "all");
+              }}
+              onPeriodChange={setSelectedPeriodId}
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2"
             />
           </div>
-          <ProjectPeriodFilters
-            projects={projects}
-            selectedProjectId={selectedProjectId}
-            selectedPeriodId={selectedPeriodId}
-            onProjectChange={(value) => {
-              setSelectedProjectId(value);
-              const project = projects.find((item) => String(item.id) === value);
-              setSelectedPeriodId(value === "all" ? "all" : defaultPeriodIdForProject(project) || "all");
-            }}
-            onPeriodChange={setSelectedPeriodId}
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-            selectClassName="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
-          />
         </div>
-
         {/* Panel bolumu */}
         {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
           </div>
         ) : filteredPrograms.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 p-16 text-center">
+          <div className="panel-empty-card py-16">
             <Calendar className="mx-auto mb-4 h-10 w-10 text-slate-300" />
             <p className="text-sm text-slate-500">Secili filtrelerde program bulunamadi.</p>
           </div>
@@ -1478,7 +1481,7 @@ export default function PanelProgramsPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.035 }}
-                  className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-indigo-200 hover:shadow-md md:p-6"
+                  className="panel-list-card"
                 >
                   <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                     {/* Sol: meta */}
@@ -1491,7 +1494,7 @@ export default function PanelProgramsPage() {
                       <div className="min-w-0 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-lg font-bold text-slate-900">{fixMojibake(program.title)}</h3>
-                          <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-700">
+                          <span className="panel-chip panel-chip-info">
                             {fixMojibake(program.project?.name ?? projectNameMap[program.project_id] ?? `Proje #${program.project_id}`)}
                           </span>
                           {(program.target_audience?.length ? program.target_audience : (["student"] as Array<"student" | "alumni">)).map((audience) => (
@@ -1511,16 +1514,16 @@ export default function PanelProgramsPage() {
                             {statusLabels[programStatus]}
                           </span>
                           {program.is_public === false ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                            <span className="panel-chip">
                               <EyeOff className="h-3 w-3" />Gizli
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                            <span className="panel-chip panel-chip-success">
                               <Eye className="h-3 w-3" />Herkese acik
                             </span>
                           )}
                           {program.is_featured && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                            <span className="panel-chip panel-chip-warning">
                               <Sparkles className="h-3 w-3" />One cikan
                             </span>
                           )}
@@ -1560,7 +1563,7 @@ export default function PanelProgramsPage() {
                       {canViewAttendanceStats && canAccessProject("programs.attendance.view", program.project_id) && (
                         <button
                           onClick={() => void openAttendanceModal(program)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                          className="panel-card-action"
                         >
                           <SquareCheckBig className="h-3.5 w-3.5" />
                           Yoklama
@@ -1569,7 +1572,7 @@ export default function PanelProgramsPage() {
                       {programStatus === "completed" && canAccessProject("programs.view", program.project_id) && (
                         <button
                           onClick={() => void openFeedbackModal(program)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+                          className="panel-card-action panel-card-action-info"
                         >
                           <BarChart3 className="h-3.5 w-3.5" />
                           Degerlendirme
@@ -1578,7 +1581,7 @@ export default function PanelProgramsPage() {
                       {canManageMedia && canAccessProject("programs.update", program.project_id) && (
                         <button
                           onClick={() => void openGalleryModal(program)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                          className="panel-card-action"
                         >
                           <ImageIcon className="h-3.5 w-3.5" />
                           Galeri
@@ -1589,10 +1592,10 @@ export default function PanelProgramsPage() {
                           type="button"
                           disabled={visibilityTogglingId === program.id}
                           onClick={() => void handleToggleVisibility(program, "is_public")}
-                          className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold shadow-sm transition ${
+                          className={`panel-card-action ${
                             program.is_public !== false
-                              ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                              : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                              ? ""
+                              : "panel-card-action-success"
                           }`}
                         >
                           {visibilityTogglingId === program.id ? (
@@ -1608,7 +1611,7 @@ export default function PanelProgramsPage() {
                       {canUpdatePrograms && canAccessProject("programs.update", program.project_id) && (
                         <button
                           onClick={() => openEditForm(program)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                          className="panel-card-action"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                           Duzenle
@@ -1617,7 +1620,7 @@ export default function PanelProgramsPage() {
                       {canCompletePrograms && canCompleteThisProgram && canAccessProject("programs.complete", program.project_id) && (
                         <button
                           onClick={() => void handleComplete(program.id)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100"
+                          className="panel-card-action panel-card-action-success"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Tamamla
@@ -1626,7 +1629,7 @@ export default function PanelProgramsPage() {
                       {canShowQrStatus && canStartQrForProgram && (
                         <Link
                           href={`/panel/programs/${program.id}/qr?title=${encodeURIComponent(fixMojibake(program.title))}`}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
+                          className="panel-card-action panel-card-action-primary"
                         >
                           <Play className="h-3.5 w-3.5 fill-current" />
                           QR Yoklama
@@ -1637,7 +1640,7 @@ export default function PanelProgramsPage() {
                           type="button"
                           disabled
                           title="QR yoklama sadece program saat araliginda baslatilabilir."
-                          className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-4 py-2 text-xs font-bold text-slate-500"
+                          className="panel-card-action cursor-not-allowed bg-slate-100 text-slate-500"
                         >
                           <Clock className="h-3.5 w-3.5" />
                           QR Saat Disi

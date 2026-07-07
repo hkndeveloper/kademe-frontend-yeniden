@@ -445,13 +445,13 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
             <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{config.description}</p>
           </div>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">
+        <div className="panel-chip rounded-lg px-4 py-3 text-sm tracking-normal">
           {projectCount} erisilebilir proje
         </div>
       </div>
 
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div>
+        <div className="panel-notice panel-notice-error">{error}</div>
       ) : null}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -461,7 +461,7 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
             value={payload?.selected_project?.id ? String(payload.selected_project.id) : requestedProjectId ?? ""}
             onChange={(event) => updateFilter("project_id", event.target.value)}
             disabled={isLoading || !payload?.projects.length}
-            className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-accent"
+            className="panel-control"
           >
             {payload?.projects.map((project) => (
               <option key={project.id} value={project.id}>{project.name}</option>
@@ -474,7 +474,7 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
             value={requestedPeriodId ?? ""}
             onChange={(event) => updateFilter("period_id", event.target.value)}
             disabled={isLoading || !payload?.periods.length}
-            className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-accent"
+            className="panel-control"
           >
             <option value="">Tum donemler</option>
             {payload?.periods.map((period) => (
@@ -490,8 +490,8 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
             key={tab.id}
             type="button"
             className={cn(
-              "rounded-lg border px-4 py-2 text-sm font-bold",
-              index === 0 ? "border-accent bg-accent text-white" : "border-slate-200 bg-white text-slate-700"
+              "panel-tab",
+              index === 0 ? "panel-tab-active" : ""
             )}
           >
             {tab.label}
@@ -500,14 +500,14 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
       </div>
 
       {isLoading ? (
-        <section className="flex min-h-52 items-center justify-center rounded-lg border border-slate-200 bg-white p-8 text-sm font-bold text-slate-600">
+        <section className="panel-section-card flex min-h-52 items-center justify-center text-sm font-bold text-slate-600">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Yukleniyor
         </section>
       ) : payload ? (
         <div className="space-y-6">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {payload.summary.map((item) => (
-              <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div key={item.id} className="panel-stat-card">
                 <div className="text-xs font-black uppercase tracking-widest text-slate-500">{item.label}</div>
                 <div className="mt-3 text-3xl font-black text-slate-900">{item.value}</div>
               </div>
@@ -543,7 +543,7 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
               onReload={reloadFamilyData}
             />
           ) : (
-            <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <section className="panel-section-card">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-black text-slate-900">Son kayitlar</h2>
@@ -856,32 +856,32 @@ function KademeRewardsFamilyContent({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(390px,0.8fr)]">
-      <section className="space-y-5 rounded-lg border border-slate-200 bg-white p-5">
+      <section className="panel-section-card space-y-5">
         <div>
           <h2 className="text-lg font-black text-slate-900">{title} odul ve moduller</h2>
           <p className="mt-1 text-sm text-muted-foreground">{payload.selected_project?.name ?? title}</p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Hediye</div><div className="mt-2 text-xl font-black text-slate-900">{awardStats.total}</div></div>
-          <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Teslim</div><div className="mt-2 text-xl font-black text-slate-900">{awardStats.delivered}</div></div>
-          <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Bekleyen</div><div className="mt-2 text-xl font-black text-slate-900">{awardStats.pending}</div></div>
-          <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Modul</div><div className="mt-2 text-xl font-black text-slate-900">{kademeModules.length}</div></div>
+          <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Hediye</div><div className="mt-2 text-xl font-black text-slate-900">{awardStats.total}</div></div>
+          <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Teslim</div><div className="mt-2 text-xl font-black text-slate-900">{awardStats.delivered}</div></div>
+          <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Bekleyen</div><div className="mt-2 text-xl font-black text-slate-900">{awardStats.pending}</div></div>
+          <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Modul</div><div className="mt-2 text-xl font-black text-slate-900">{kademeModules.length}</div></div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 p-4">
+        <div className="panel-card-muted bg-white">
           <h3 className="font-black text-slate-900">Odul kademeleri</h3>
           <div className="mt-3 space-y-2">
             {rewardTiers.length ? rewardTiers.map((tier) => (
-              <div key={tier.id} className="flex flex-col gap-3 rounded-lg bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div key={tier.id} className="panel-card-muted flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="font-bold text-slate-900">{tier.name}</div>
                   <div className="text-sm text-slate-500">{tier.reward_description} / {tier.min_badges} rozet / {tier.min_credits} kredi</div>
                 </div>
                 {canManage && tier.project_id === projectId ? (
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => editTier(tier)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600" title="Duzenle"><Edit2 className="h-4 w-4" /></button>
-                    <button type="button" onClick={() => void deleteTier(tier.id)} disabled={busy === `tier-${tier.id}`} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-600 disabled:opacity-50" title="Sil"><Trash2 className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => editTier(tier)} className="panel-button-icon" title="Duzenle"><Edit2 className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => void deleteTier(tier.id)} disabled={busy === `tier-${tier.id}`} className="panel-button-icon panel-table-action-danger disabled:opacity-50" title="Sil"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 ) : null}
               </div>
@@ -889,7 +889,7 @@ function KademeRewardsFamilyContent({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 p-4">
+        <div className="panel-card-muted bg-white">
           <h3 className="font-black text-slate-900">Hediyeler ve teslimler</h3>
           <div className="mt-3 space-y-3">
             {rewardAwards.length ? rewardAwards.map((award) => {
@@ -897,20 +897,20 @@ function KademeRewardsFamilyContent({
               const canDeliver = canManage && award.status !== "delivered" && award.status !== "cancelled";
 
               return (
-                <div key={award.id} className="rounded-lg bg-slate-50 p-3">
+                <div key={award.id} className="panel-card-muted p-3">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <div className="font-bold text-slate-900">{award.name || award.email || `Katilimci #${award.participant_id}`}</div>
                       <div className="mt-1 text-sm text-slate-600">{award.reward_name}</div>
                       <div className="mt-1 text-xs text-slate-500">Kayit: {formatDateTime(award.awarded_at)} / Teslim: {formatDateTime(award.delivered_at)}</div>
                     </div>
-                    <span className={`w-fit rounded-full border px-3 py-1 text-xs font-black ${status.className}`}>{status.label}</span>
+                    <span className={`panel-chip ${status.className}`}>{status.label}</span>
                   </div>
                   {award.note ? <div className="mt-2 text-sm text-slate-500">{award.note}</div> : null}
                   {canManage ? (
                     <div className="mt-3 flex justify-end gap-2">
-                      {canDeliver ? <button type="button" onClick={() => void markDelivered(award.id)} disabled={busy === `award-${award.id}`} className="rounded-lg border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-700 disabled:opacity-50">Teslim edildi</button> : null}
-                      <button type="button" onClick={() => void deleteAward(award.id)} disabled={busy === `award-delete-${award.id}`} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-black text-red-600 disabled:opacity-50">Sil</button>
+                      {canDeliver ? <button type="button" onClick={() => void markDelivered(award.id)} disabled={busy === `award-${award.id}`} className="panel-card-action panel-card-action-success disabled:opacity-50">Teslim edildi</button> : null}
+                      <button type="button" onClick={() => void deleteAward(award.id)} disabled={busy === `award-delete-${award.id}`} className="panel-card-action panel-card-action-danger disabled:opacity-50">Sil</button>
                     </div>
                   ) : null}
                 </div>
@@ -919,11 +919,11 @@ function KademeRewardsFamilyContent({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 p-4">
+        <div className="panel-card-muted bg-white">
           <h3 className="font-black text-slate-900">Hak kazananlar</h3>
           <div className="mt-3 space-y-2">
             {eligibleParticipants.length ? eligibleParticipants.map((participant) => (
-              <div key={participant.participant_id} className="rounded-lg bg-slate-50 p-3 text-sm">
+              <div key={participant.participant_id} className="panel-card-muted p-3 text-sm">
                 <div className="font-bold text-slate-900">{participant.name || participant.email || `#${participant.participant_id}`}</div>
                 <div className="text-slate-500">{participant.badge_count} rozet / {participant.credit} kredi / {participant.eligible_rewards.map((reward) => reward.reward_description).join(", ")}</div>
               </div>
@@ -931,11 +931,11 @@ function KademeRewardsFamilyContent({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 p-4">
+        <div className="panel-card-muted bg-white">
           <h3 className="font-black text-slate-900">Moduller ve kayitlar</h3>
           <div className="mt-3 space-y-3">
             {kademeModules.length ? kademeModules.map((module) => (
-              <div key={module.id} className="rounded-lg bg-slate-50 p-3">
+              <div key={module.id} className="panel-card-muted p-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="font-bold text-slate-900">{module.title}</div>
@@ -944,23 +944,23 @@ function KademeRewardsFamilyContent({
                   </div>
                   {canManage ? (
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => editModule(module)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600" title="Duzenle"><Edit2 className="h-4 w-4" /></button>
-                      <button type="button" onClick={() => void deleteModule(module.id)} disabled={busy === `module-${module.id}`} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-600 disabled:opacity-50" title="Sil"><Trash2 className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => editModule(module)} className="panel-button-icon" title="Duzenle"><Edit2 className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => void deleteModule(module.id)} disabled={busy === `module-${module.id}`} className="panel-button-icon panel-table-action-danger disabled:opacity-50" title="Sil"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   ) : null}
                 </div>
                 {canManage && module.enrollments?.length ? (
                   <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
                     {module.enrollments.map((enrollment) => (
-                      <div key={enrollment.id} className="flex flex-col gap-2 rounded-lg bg-white p-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                      <div key={enrollment.id} className="panel-card-muted flex flex-col gap-2 bg-white p-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <div className="font-bold text-slate-800">{enrollment.user?.name || enrollment.user?.email || `Kullanici #${enrollment.user_id}`}</div>
                           <div className="text-xs text-slate-500">{enrollment.status}</div>
                         </div>
                         {enrollment.status === "pending" ? (
                           <div className="flex gap-2">
-                            <button type="button" onClick={() => void updateEnrollment(enrollment.id, "approved")} disabled={busy === `enrollment-${enrollment.id}`} className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-black text-white disabled:opacity-50">Onayla</button>
-                            <button type="button" onClick={() => void updateEnrollment(enrollment.id, "rejected")} disabled={busy === `enrollment-${enrollment.id}`} className="rounded-lg bg-red-600 px-3 py-1 text-xs font-black text-white disabled:opacity-50">Reddet</button>
+                            <button type="button" onClick={() => void updateEnrollment(enrollment.id, "approved")} disabled={busy === `enrollment-${enrollment.id}`} className="panel-card-action panel-card-action-success px-3 py-1 disabled:opacity-50">Onayla</button>
+                            <button type="button" onClick={() => void updateEnrollment(enrollment.id, "rejected")} disabled={busy === `enrollment-${enrollment.id}`} className="panel-card-action panel-card-action-danger px-3 py-1 disabled:opacity-50">Reddet</button>
                           </div>
                         ) : null}
                       </div>
@@ -974,54 +974,54 @@ function KademeRewardsFamilyContent({
       </section>
 
       <aside className="space-y-4">
-        {feedback ? <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm font-bold text-slate-700">{feedback}</div> : null}
+        {feedback ? <div className="panel-notice border-slate-200 bg-white text-slate-700">{feedback}</div> : null}
         {canManage ? (
           <>
-            <form onSubmit={(event) => void submitTier(event)} className="rounded-lg border border-slate-200 bg-white p-5">
-              <div className="flex items-center justify-between gap-3"><h3 className="text-base font-black text-slate-900">{editingTierId ? "Kademe duzenle" : "Odul kademesi ekle"}</h3>{editingTierId ? <button type="button" onClick={resetTierForm} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500"><X className="h-4 w-4" /></button> : null}</div>
+            <form onSubmit={(event) => void submitTier(event)} className="panel-section-card">
+              <div className="flex items-center justify-between gap-3"><h3 className="text-base font-black text-slate-900">{editingTierId ? "Kademe duzenle" : "Odul kademesi ekle"}</h3>{editingTierId ? <button type="button" onClick={resetTierForm} className="panel-button-icon h-8 w-8"><X className="h-4 w-4" /></button> : null}</div>
               <div className="mt-4 space-y-3">
-                <input value={tierForm.name} onChange={(event) => setTierForm((current) => ({ ...current, name: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Kademe adi" />
-                <input value={tierForm.reward_description} onChange={(event) => setTierForm((current) => ({ ...current, reward_description: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Hediye" />
+                <input value={tierForm.name} onChange={(event) => setTierForm((current) => ({ ...current, name: event.target.value }))} className="panel-control" placeholder="Kademe adi" />
+                <input value={tierForm.reward_description} onChange={(event) => setTierForm((current) => ({ ...current, reward_description: event.target.value }))} className="panel-control" placeholder="Hediye" />
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input type="number" value={tierForm.min_badges} onChange={(event) => setTierForm((current) => ({ ...current, min_badges: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Min rozet" />
-                  <input type="number" value={tierForm.min_credits} onChange={(event) => setTierForm((current) => ({ ...current, min_credits: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Min kredi" />
+                  <input type="number" value={tierForm.min_badges} onChange={(event) => setTierForm((current) => ({ ...current, min_badges: event.target.value }))} className="panel-control" placeholder="Min rozet" />
+                  <input type="number" value={tierForm.min_credits} onChange={(event) => setTierForm((current) => ({ ...current, min_credits: event.target.value }))} className="panel-control" placeholder="Min kredi" />
                 </div>
-                <textarea value={tierForm.description} onChange={(event) => setTierForm((current) => ({ ...current, description: event.target.value }))} className="min-h-20 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-accent" placeholder="Aciklama" />
-                <button type="submit" disabled={busy === "tier"} className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-black text-white disabled:opacity-50"><Plus className="h-4 w-4" /> {editingTierId ? "Guncelle" : "Kaydet"}</button>
+                <textarea value={tierForm.description} onChange={(event) => setTierForm((current) => ({ ...current, description: event.target.value }))} className="panel-textarea min-h-20" placeholder="Aciklama" />
+                <button type="submit" disabled={busy === "tier"} className="panel-button panel-button-primary disabled:opacity-50"><Plus className="h-4 w-4" /> {editingTierId ? "Guncelle" : "Kaydet"}</button>
               </div>
             </form>
 
-            <form onSubmit={(event) => void submitAward(event)} className="rounded-lg border border-slate-200 bg-white p-5">
+            <form onSubmit={(event) => void submitAward(event)} className="panel-section-card">
               <h3 className="text-base font-black text-slate-900">Hediye kaydi ekle</h3>
               <div className="mt-4 space-y-3">
-                <select value={awardForm.participant_id} onChange={(event) => setAwardForm((current) => ({ ...current, participant_id: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"><option value="">Katilimci sec</option>{participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name || participant.email || `#${participant.id}`}</option>)}</select>
-                <select value={awardForm.reward_tier_id} onChange={(event) => { const tier = rewardTiers.find((item) => String(item.id) === event.target.value); setAwardForm((current) => ({ ...current, reward_tier_id: event.target.value, reward_name: tier?.reward_description || current.reward_name })); }} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"><option value="">Kademe secmeden</option>{rewardTiers.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}</select>
-                <input value={awardForm.reward_name} onChange={(event) => setAwardForm((current) => ({ ...current, reward_name: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Verilen hediye" />
-                <select value={awardForm.status} onChange={(event) => setAwardForm((current) => ({ ...current, status: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"><option value="given">Verildi</option><option value="planned">Planlandi</option><option value="cancelled">Iptal</option></select>
-                <textarea value={awardForm.note} onChange={(event) => setAwardForm((current) => ({ ...current, note: event.target.value }))} className="min-h-20 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-accent" placeholder="Not" />
-                <button type="submit" disabled={busy === "award"} className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-black text-white disabled:opacity-50"><Award className="h-4 w-4" /> Hediye ekle</button>
+                <select value={awardForm.participant_id} onChange={(event) => setAwardForm((current) => ({ ...current, participant_id: event.target.value }))} className="panel-control"><option value="">Katilimci sec</option>{participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name || participant.email || `#${participant.id}`}</option>)}</select>
+                <select value={awardForm.reward_tier_id} onChange={(event) => { const tier = rewardTiers.find((item) => String(item.id) === event.target.value); setAwardForm((current) => ({ ...current, reward_tier_id: event.target.value, reward_name: tier?.reward_description || current.reward_name })); }} className="panel-control"><option value="">Kademe secmeden</option>{rewardTiers.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}</select>
+                <input value={awardForm.reward_name} onChange={(event) => setAwardForm((current) => ({ ...current, reward_name: event.target.value }))} className="panel-control" placeholder="Verilen hediye" />
+                <select value={awardForm.status} onChange={(event) => setAwardForm((current) => ({ ...current, status: event.target.value }))} className="panel-control"><option value="given">Verildi</option><option value="planned">Planlandi</option><option value="cancelled">Iptal</option></select>
+                <textarea value={awardForm.note} onChange={(event) => setAwardForm((current) => ({ ...current, note: event.target.value }))} className="panel-textarea min-h-20" placeholder="Not" />
+                <button type="submit" disabled={busy === "award"} className="panel-button panel-button-primary disabled:opacity-50"><Award className="h-4 w-4" /> Hediye ekle</button>
               </div>
             </form>
 
-            <form onSubmit={(event) => void submitModule(event)} className="rounded-lg border border-slate-200 bg-white p-5">
-              <div className="flex items-center justify-between gap-3"><h3 className="text-base font-black text-slate-900">{editingModuleId ? "Modul duzenle" : "Modul ekle"}</h3>{editingModuleId ? <button type="button" onClick={resetModuleForm} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500"><X className="h-4 w-4" /></button> : null}</div>
+            <form onSubmit={(event) => void submitModule(event)} className="panel-section-card">
+              <div className="flex items-center justify-between gap-3"><h3 className="text-base font-black text-slate-900">{editingModuleId ? "Modul duzenle" : "Modul ekle"}</h3>{editingModuleId ? <button type="button" onClick={resetModuleForm} className="panel-button-icon h-8 w-8"><X className="h-4 w-4" /></button> : null}</div>
               <div className="mt-4 space-y-3">
-                <input value={moduleForm.title} onChange={(event) => setModuleForm((current) => ({ ...current, title: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Modul basligi" />
-                <select value={moduleForm.period_id} onChange={(event) => setModuleForm((current) => ({ ...current, period_id: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"><option value="">Genel / donemsiz</option>{payload.periods.map((period) => <option key={period.id} value={period.id}>{period.name}</option>)}</select>
-                <textarea value={moduleForm.description} onChange={(event) => setModuleForm((current) => ({ ...current, description: event.target.value }))} className="min-h-20 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-accent" placeholder="Aciklama" />
-                <textarea value={moduleForm.outcomesText} onChange={(event) => setModuleForm((current) => ({ ...current, outcomesText: event.target.value }))} className="min-h-20 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-accent" placeholder="Kazanimlar, her satira bir madde" />
-                <input type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm((current) => ({ ...current, sort_order: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Sira" />
-                <textarea value={moduleForm.warning_text} onChange={(event) => setModuleForm((current) => ({ ...current, warning_text: event.target.value }))} className="min-h-20 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-accent" placeholder="Uyari metni" />
-                <input value={moduleForm.consent_checkbox_label} onChange={(event) => setModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Onay metni" />
+                <input value={moduleForm.title} onChange={(event) => setModuleForm((current) => ({ ...current, title: event.target.value }))} className="panel-control" placeholder="Modul basligi" />
+                <select value={moduleForm.period_id} onChange={(event) => setModuleForm((current) => ({ ...current, period_id: event.target.value }))} className="panel-control"><option value="">Genel / donemsiz</option>{payload.periods.map((period) => <option key={period.id} value={period.id}>{period.name}</option>)}</select>
+                <textarea value={moduleForm.description} onChange={(event) => setModuleForm((current) => ({ ...current, description: event.target.value }))} className="panel-textarea min-h-20" placeholder="Aciklama" />
+                <textarea value={moduleForm.outcomesText} onChange={(event) => setModuleForm((current) => ({ ...current, outcomesText: event.target.value }))} className="panel-textarea min-h-20" placeholder="Kazanimlar, her satira bir madde" />
+                <input type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm((current) => ({ ...current, sort_order: event.target.value }))} className="panel-control" placeholder="Sira" />
+                <textarea value={moduleForm.warning_text} onChange={(event) => setModuleForm((current) => ({ ...current, warning_text: event.target.value }))} className="panel-textarea min-h-20" placeholder="Uyari metni" />
+                <input value={moduleForm.consent_checkbox_label} onChange={(event) => setModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} className="panel-control" placeholder="Onay metni" />
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.is_active} onChange={(event) => setModuleForm((current) => ({ ...current, is_active: event.target.checked }))} /> Aktif</label>
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.application_open} onChange={(event) => setModuleForm((current) => ({ ...current, application_open: event.target.checked }))} /> Basvuru acik</label>
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.requires_consent} onChange={(event) => setModuleForm((current) => ({ ...current, requires_consent: event.target.checked }))} /> Onay gerekli</label>
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.requires_coordinator_approval} onChange={(event) => setModuleForm((current) => ({ ...current, requires_coordinator_approval: event.target.checked }))} /> Koordinator onayi</label>
-                <button type="submit" disabled={busy === "module"} className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-black text-white disabled:opacity-50"><Plus className="h-4 w-4" /> {editingModuleId ? "Guncelle" : "Kaydet"}</button>
+                <button type="submit" disabled={busy === "module"} className="panel-button panel-button-primary disabled:opacity-50"><Plus className="h-4 w-4" /> {editingModuleId ? "Guncelle" : "Kaydet"}</button>
               </div>
             </form>
           </>
-        ) : <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; odul ve modul duzenleme aksiyonlari gizlendi.</div>}
+        ) : <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; odul ve modul duzenleme aksiyonlari gizlendi.</div>}
       </aside>
     </div>
   );
@@ -1177,7 +1177,7 @@ function EurodeskFamilyContent({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
-      <section className="space-y-5 rounded-lg border border-slate-200 bg-white p-5">
+      <section className="panel-section-card space-y-5">
         <div>
           <h2 className="text-lg font-black text-slate-900">Eurodesk projeleri</h2>
           <p className="mt-1 text-sm text-muted-foreground">{payload.selected_project?.name ?? "Eurodesk"}</p>
@@ -1185,10 +1185,10 @@ function EurodeskFamilyContent({
 
         {summary ? (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Basvuru</div><div className="mt-2 text-xl font-black text-slate-900">{summary.applied_projects}</div></div>
-            <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Tamamlanan</div><div className="mt-2 text-xl font-black text-slate-900">{summary.completed_projects}</div></div>
-            <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Ulke</div><div className="mt-2 text-xl font-black text-slate-900">{summary.country_count}</div></div>
-            <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Toplam hibe</div><div className="mt-2 text-xl font-black text-slate-900">{formatCurrency(summary.total_grant_amount)}</div></div>
+            <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Basvuru</div><div className="mt-2 text-xl font-black text-slate-900">{summary.applied_projects}</div></div>
+            <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Tamamlanan</div><div className="mt-2 text-xl font-black text-slate-900">{summary.completed_projects}</div></div>
+            <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Ulke</div><div className="mt-2 text-xl font-black text-slate-900">{summary.country_count}</div></div>
+            <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Toplam hibe</div><div className="mt-2 text-xl font-black text-slate-900">{formatCurrency(summary.total_grant_amount)}</div></div>
           </div>
         ) : null}
 
@@ -1198,7 +1198,7 @@ function EurodeskFamilyContent({
             const partners = item.partner_organizations ?? [];
 
             return (
-              <div key={item.id} className="rounded-lg border border-slate-200 p-4">
+              <div key={item.id} className="panel-card-muted bg-white">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="font-black text-slate-900">{item.title}</div>
@@ -1207,34 +1207,34 @@ function EurodeskFamilyContent({
                       {item.start_date ? <span>{dateInput(item.start_date)}{item.end_date ? ` - ${dateInput(item.end_date)}` : ""}</span> : null}
                     </div>
                   </div>
-                  <span className={`w-fit rounded-full border px-3 py-1 text-xs font-black ${status.className}`}>{status.label}</span>
+                  <span className={`panel-chip ${status.className}`}>{status.label}</span>
                 </div>
                 <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-                  <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Hibe</div><div className="mt-1 font-bold text-slate-900">{formatCurrency(item.grant_amount)}</div></div>
-                  <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Ortak kaydi</div><div className="mt-1 font-bold text-slate-900">{item.partnerships?.length ?? 0}</div></div>
-                  <div className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-black uppercase text-slate-500">Ortak listesi</div><div className="mt-1 font-bold text-slate-900">{partners.length ? partners.join(", ") : "-"}</div></div>
+                  <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Hibe</div><div className="mt-1 font-bold text-slate-900">{formatCurrency(item.grant_amount)}</div></div>
+                  <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Ortak kaydi</div><div className="mt-1 font-bold text-slate-900">{item.partnerships?.length ?? 0}</div></div>
+                  <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Ortak listesi</div><div className="mt-1 font-bold text-slate-900">{partners.length ? partners.join(", ") : "-"}</div></div>
                 </div>
                 {canManage ? (
                   <div className="mt-4 flex flex-wrap justify-end gap-2">
-                    <button type="button" onClick={() => editProject(item)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-600">
+                    <button type="button" onClick={() => editProject(item)} className="panel-card-action">
                       <Edit2 className="h-4 w-4" /> Duzenle
                     </button>
-                    <button type="button" onClick={() => void deleteProject(item.id)} disabled={busy === `project-${item.id}`} className="inline-flex h-9 items-center gap-2 rounded-lg border border-red-200 px-3 text-sm font-bold text-red-600 disabled:opacity-50">
+                    <button type="button" onClick={() => void deleteProject(item.id)} disabled={busy === `project-${item.id}`} className="panel-card-action panel-card-action-danger disabled:opacity-50">
                       <Trash2 className="h-4 w-4" /> Sil
                     </button>
                   </div>
                 ) : null}
-                <div className="mt-4 rounded-lg bg-slate-50 p-3">
+                <div className="panel-card-muted mt-4 p-3">
                   <div className="text-xs font-black uppercase tracking-widest text-slate-500">Ortakliklar</div>
                   <div className="mt-2 space-y-2">
                     {item.partnerships?.length ? item.partnerships.map((partnership) => (
-                      <div key={partnership.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm">
+                      <div key={partnership.id} className="panel-card-muted flex items-center justify-between gap-3 bg-white px-3 py-2 text-sm">
                         <div>
                           <div className="font-bold text-slate-800">{partnership.organization_name}</div>
                           <div className="text-xs text-slate-500">{[partnership.country, partnership.contact_info].filter(Boolean).join(" - ") || "Detay yok"}</div>
                         </div>
                         {canManage ? (
-                          <button type="button" onClick={() => void deletePartnership(item.id, partnership.id)} disabled={busy === `partnership-${partnership.id}`} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-50" title="Ortakligi sil">
+                          <button type="button" onClick={() => void deletePartnership(item.id, partnership.id)} disabled={busy === `partnership-${partnership.id}`} className="panel-button-icon h-8 w-8 disabled:opacity-50" title="Ortakligi sil">
                             <X className="h-4 w-4" />
                           </button>
                         ) : null}
@@ -1245,62 +1245,62 @@ function EurodeskFamilyContent({
               </div>
             );
           }) : (
-            <div className="rounded-lg border border-dashed border-slate-300 p-8 text-sm font-semibold text-slate-500">Eurodesk proje kaydi yok.</div>
+            <div className="panel-empty-card">Eurodesk proje kaydi yok.</div>
           )}
         </div>
       </section>
 
       <aside className="space-y-4">
-        {feedback ? <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm font-bold text-slate-700">{feedback}</div> : null}
+        {feedback ? <div className="panel-notice border-slate-200 bg-white text-slate-700">{feedback}</div> : null}
         {canManage ? (
           <>
-            <form onSubmit={(event) => void submitProject(event)} className="rounded-lg border border-slate-200 bg-white p-5">
+            <form onSubmit={(event) => void submitProject(event)} className="panel-section-card">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-base font-black text-slate-900">{editingId ? "Eurodesk projesi duzenle" : "Eurodesk projesi ekle"}</h3>
-                {editingId ? <button type="button" onClick={resetProjectForm} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500" title="Vazgec"><X className="h-4 w-4" /></button> : null}
+                {editingId ? <button type="button" onClick={resetProjectForm} className="panel-button-icon h-8 w-8" title="Vazgec"><X className="h-4 w-4" /></button> : null}
               </div>
               <div className="mt-4 space-y-3">
-                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Proje adi" />
-                <select value={form.period_id} onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent">
+                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className="panel-control" placeholder="Proje adi" />
+                <select value={form.period_id} onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))} className="panel-control">
                   <option value="">Genel / donemsiz</option>
                   {payload.periods.map((period) => <option key={period.id} value={period.id}>{period.name}</option>)}
                 </select>
-                <input value={form.partner_organizations} onChange={(event) => setForm((current) => ({ ...current, partner_organizations: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Ortaklar, virgulle" />
-                <input type="number" value={form.grant_amount} onChange={(event) => setForm((current) => ({ ...current, grant_amount: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Hibe tutari" />
-                <select value={form.grant_status} onChange={(event) => setForm((current) => ({ ...current, grant_status: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent">
+                <input value={form.partner_organizations} onChange={(event) => setForm((current) => ({ ...current, partner_organizations: event.target.value }))} className="panel-control" placeholder="Ortaklar, virgulle" />
+                <input type="number" value={form.grant_amount} onChange={(event) => setForm((current) => ({ ...current, grant_amount: event.target.value }))} className="panel-control" placeholder="Hibe tutari" />
+                <select value={form.grant_status} onChange={(event) => setForm((current) => ({ ...current, grant_status: event.target.value }))} className="panel-control">
                   <option value="applied">Basvuruldu</option>
                   <option value="approved">Onaylandi</option>
                   <option value="rejected">Reddedildi</option>
                   <option value="completed">Tamamlandi</option>
                 </select>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input type="date" value={form.start_date} onChange={(event) => setForm((current) => ({ ...current, start_date: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" />
-                  <input type="date" value={form.end_date} onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" />
+                  <input type="date" value={form.start_date} onChange={(event) => setForm((current) => ({ ...current, start_date: event.target.value }))} className="panel-control" />
+                  <input type="date" value={form.end_date} onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))} className="panel-control" />
                 </div>
-                <button type="submit" disabled={busy === "project"} className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-black text-white disabled:opacity-50">
+                <button type="submit" disabled={busy === "project"} className="panel-button panel-button-primary disabled:opacity-50">
                   <Plus className="h-4 w-4" /> {editingId ? "Guncelle" : "Kaydet"}
                 </button>
               </div>
             </form>
 
-            <form onSubmit={(event) => void submitPartnership(event)} className="rounded-lg border border-slate-200 bg-white p-5">
+            <form onSubmit={(event) => void submitPartnership(event)} className="panel-section-card">
               <h3 className="text-base font-black text-slate-900">Ortaklik ekle</h3>
               <div className="mt-4 space-y-3">
-                <select value={partnershipForm.eurodesk_project_id} onChange={(event) => setPartnershipForm((current) => ({ ...current, eurodesk_project_id: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent">
+                <select value={partnershipForm.eurodesk_project_id} onChange={(event) => setPartnershipForm((current) => ({ ...current, eurodesk_project_id: event.target.value }))} className="panel-control">
                   <option value="">Eurodesk projesi sec</option>
                   {eurodeskProjects.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
                 </select>
-                <input value={partnershipForm.organization_name} onChange={(event) => setPartnershipForm((current) => ({ ...current, organization_name: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Kurulus adi" />
-                <input value={partnershipForm.country} onChange={(event) => setPartnershipForm((current) => ({ ...current, country: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Ulke" />
-                <input value={partnershipForm.contact_info} onChange={(event) => setPartnershipForm((current) => ({ ...current, contact_info: event.target.value }))} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent" placeholder="Iletisim / not" />
-                <button type="submit" disabled={busy === "partnership"} className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-black text-white disabled:opacity-50">
+                <input value={partnershipForm.organization_name} onChange={(event) => setPartnershipForm((current) => ({ ...current, organization_name: event.target.value }))} className="panel-control" placeholder="Kurulus adi" />
+                <input value={partnershipForm.country} onChange={(event) => setPartnershipForm((current) => ({ ...current, country: event.target.value }))} className="panel-control" placeholder="Ulke" />
+                <input value={partnershipForm.contact_info} onChange={(event) => setPartnershipForm((current) => ({ ...current, contact_info: event.target.value }))} className="panel-control" placeholder="Iletisim / not" />
+                <button type="submit" disabled={busy === "partnership"} className="panel-button panel-button-primary disabled:opacity-50">
                   <Handshake className="h-4 w-4" /> Ortaklik ekle
                 </button>
               </div>
             </form>
           </>
         ) : (
-          <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; Eurodesk duzenleme aksiyonlari gizlendi.</div>
+          <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; Eurodesk duzenleme aksiyonlari gizlendi.</div>
         )}
       </aside>
     </div>
@@ -1427,14 +1427,14 @@ function DiplomasiFamilyContent({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-      <section className="rounded-lg border border-slate-200 bg-white p-5">
+      <section className="panel-section-card">
         <div>
           <h2 className="text-lg font-black text-slate-900">Stajlar</h2>
           <p className="mt-1 text-sm text-muted-foreground">{payload.selected_project?.name ?? "Diplomasi360"}</p>
         </div>
         <div className="mt-5 space-y-3">
           {internships.length ? internships.map((item) => (
-            <div key={item.id} className="rounded-lg border border-slate-200 p-4">
+            <div key={item.id} className="panel-card-muted bg-white">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="font-black text-slate-900">{item.company_name}</div>
@@ -1450,7 +1450,7 @@ function DiplomasiFamilyContent({
                     <button
                       type="button"
                       onClick={() => editInternship(item)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600"
+                      className="panel-button-icon"
                       title="Staji duzenle"
                     >
                       <Edit2 className="h-4 w-4" />
@@ -1459,7 +1459,7 @@ function DiplomasiFamilyContent({
                       type="button"
                       onClick={() => void deleteInternship(item.id)}
                       disabled={busy === `internship-${item.id}`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-600 disabled:opacity-50"
+                      className="panel-button-icon panel-table-action-danger disabled:opacity-50"
                       title="Staji sil"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1469,19 +1469,19 @@ function DiplomasiFamilyContent({
               </div>
             </div>
           )) : (
-            <div className="rounded-lg border border-dashed border-slate-300 p-8 text-sm font-semibold text-slate-500">Staj kaydi bulunamadi.</div>
+            <div className="panel-empty-card">Staj kaydi bulunamadi.</div>
           )}
         </div>
       </section>
 
       <aside className="space-y-4">
-        {feedback ? <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm font-bold text-slate-700">{feedback}</div> : null}
+        {feedback ? <div className="panel-notice border-slate-200 bg-white text-slate-700">{feedback}</div> : null}
         {canManage ? (
-          <form onSubmit={(event) => void submitInternship(event)} className="rounded-lg border border-slate-200 bg-white p-5">
+          <form onSubmit={(event) => void submitInternship(event)} className="panel-section-card">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-base font-black text-slate-900">{editingId ? "Staj duzenle" : "Staj ekle"}</h3>
               {editingId ? (
-                <button type="button" onClick={resetForm} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500" title="Vazgec">
+                <button type="button" onClick={resetForm} className="panel-button-icon h-8 w-8" title="Vazgec">
                   <X className="h-4 w-4" />
                 </button>
               ) : null}
@@ -1491,7 +1491,7 @@ function DiplomasiFamilyContent({
                 value={form.participant_id}
                 onChange={(event) => setForm((current) => ({ ...current, participant_id: event.target.value }))}
                 disabled={Boolean(editingId)}
-                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent disabled:bg-slate-50"
+                className="panel-control disabled:bg-slate-50"
               >
                 <option value="">Katilimci sec</option>
                 {participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name || participant.email || `#${participant.id}`}</option>)}
@@ -1499,13 +1499,13 @@ function DiplomasiFamilyContent({
               <input
                 value={form.company_name}
                 onChange={(event) => setForm((current) => ({ ...current, company_name: event.target.value }))}
-                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"
+                className="panel-control"
                 placeholder="Kurum / sirket"
               />
               <input
                 value={form.position}
                 onChange={(event) => setForm((current) => ({ ...current, position: event.target.value }))}
-                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"
+                className="panel-control"
                 placeholder="Pozisyon"
               />
               <div className="grid gap-3 sm:grid-cols-2">
@@ -1513,28 +1513,28 @@ function DiplomasiFamilyContent({
                   type="date"
                   value={form.start_date}
                   onChange={(event) => setForm((current) => ({ ...current, start_date: event.target.value }))}
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"
+                  className="panel-control"
                 />
                 <input
                   type="date"
                   value={form.end_date}
                   onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))}
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"
+                  className="panel-control"
                 />
               </div>
               <textarea
                 value={form.description}
                 onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                className="min-h-24 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-accent"
+                className="panel-textarea min-h-24"
                 placeholder="Aciklama"
               />
               <input
                 value={form.document_path}
                 onChange={(event) => setForm((current) => ({ ...current, document_path: event.target.value }))}
-                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"
+                className="panel-control"
                 placeholder="Belge yolu veya URL"
               />
-              <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm font-black text-slate-700">
+              <label className="panel-button panel-button-secondary cursor-pointer">
                 <Upload className="h-4 w-4" /> Belge yukle
                 <input
                   type="file"
@@ -1547,13 +1547,13 @@ function DiplomasiFamilyContent({
                   }}
                 />
               </label>
-              <button type="submit" disabled={busy === "internship"} className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-black text-white disabled:opacity-50">
+              <button type="submit" disabled={busy === "internship"} className="panel-button panel-button-primary disabled:opacity-50">
                 <Plus className="h-4 w-4" /> {editingId ? "Guncelle" : "Kaydet"}
               </button>
             </div>
           </form>
         ) : (
-          <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; staj duzenleme aksiyonlari gizlendi.</div>
+          <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; staj duzenleme aksiyonlari gizlendi.</div>
         )}
       </aside>
     </div>
@@ -1656,14 +1656,14 @@ function PergelFamilyContent({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-      <section className="rounded-lg border border-slate-200 bg-white p-5">
+      <section className="panel-section-card">
         <div>
           <h2 className="text-lg font-black text-slate-900">Mentorler</h2>
           <p className="mt-1 text-sm text-muted-foreground">{payload.selected_project?.name ?? "Pergel"}</p>
         </div>
         <div className="mt-5 space-y-3">
           {mentors.length ? mentors.map((mentor) => (
-            <div key={mentor.id} className="rounded-lg border border-slate-200 p-4">
+            <div key={mentor.id} className="panel-card-muted bg-white">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="font-black text-slate-900">{mentor.name}</div>
@@ -1675,14 +1675,14 @@ function PergelFamilyContent({
                     type="button"
                     onClick={() => void deleteMentor(mentor.id)}
                     disabled={busy === `mentor-${mentor.id}`}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-600 disabled:opacity-50"
+                    className="panel-button-icon panel-table-action-danger disabled:opacity-50"
                     title="Mentoru sil"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 ) : null}
               </div>
-              <div className="mt-4 rounded-lg bg-slate-50 p-3">
+              <div className="panel-card-muted mt-4 p-3">
                 <div className="text-xs font-black uppercase tracking-widest text-slate-500">Eslestirmeler</div>
                 <div className="mt-2 space-y-2">
                   {mentor.assigned_participants?.length ? mentor.assigned_participants.map((participant) => (
@@ -1696,7 +1696,7 @@ function PergelFamilyContent({
                           type="button"
                           onClick={() => void unassignParticipant(mentor.id, participant.id)}
                           disabled={busy === `unassign-${mentor.id}-${participant.id}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-50"
+                          className="panel-button-icon h-8 w-8 disabled:opacity-50"
                           title="Eslestirmeyi kaldir"
                         >
                           <X className="h-4 w-4" />
@@ -1710,49 +1710,49 @@ function PergelFamilyContent({
               </div>
             </div>
           )) : (
-            <div className="rounded-lg border border-dashed border-slate-300 p-8 text-sm font-semibold text-slate-500">Mentor kaydi bulunamadi.</div>
+            <div className="panel-empty-card">Mentor kaydi bulunamadi.</div>
           )}
         </div>
       </section>
 
       <aside className="space-y-4">
-        {feedback ? <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm font-bold text-slate-700">{feedback}</div> : null}
+        {feedback ? <div className="panel-notice border-slate-200 bg-white text-slate-700">{feedback}</div> : null}
         {canManage ? (
           <>
-            <form onSubmit={(event) => void submitMentor(event)} className="rounded-lg border border-slate-200 bg-white p-5">
+            <form onSubmit={(event) => void submitMentor(event)} className="panel-section-card">
               <h3 className="text-base font-black text-slate-900">Mentor ekle</h3>
               <div className="mt-4 space-y-3">
                 <input
                   value={mentorForm.name}
                   onChange={(event) => setMentorForm((form) => ({ ...form, name: event.target.value }))}
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"
+                  className="panel-control"
                   placeholder="Ad soyad"
                 />
                 <input
                   value={mentorForm.expertise}
                   onChange={(event) => setMentorForm((form) => ({ ...form, expertise: event.target.value }))}
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"
+                  className="panel-control"
                   placeholder="Uzmanlik"
                 />
                 <textarea
                   value={mentorForm.bio}
                   onChange={(event) => setMentorForm((form) => ({ ...form, bio: event.target.value }))}
-                  className="min-h-24 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-accent"
+                  className="panel-textarea min-h-24"
                   placeholder="Kisa bio"
                 />
-                <button type="submit" disabled={busy === "mentor"} className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-black text-white disabled:opacity-50">
+                <button type="submit" disabled={busy === "mentor"} className="panel-button panel-button-primary disabled:opacity-50">
                   <Plus className="h-4 w-4" /> Kaydet
                 </button>
               </div>
             </form>
 
-            <form onSubmit={(event) => void assignParticipant(event)} className="rounded-lg border border-slate-200 bg-white p-5">
+            <form onSubmit={(event) => void assignParticipant(event)} className="panel-section-card">
               <h3 className="text-base font-black text-slate-900">Eslestirme ekle</h3>
               <div className="mt-4 space-y-3">
                 <select
                   value={assignmentForm.mentor_id}
                   onChange={(event) => setAssignmentForm((form) => ({ ...form, mentor_id: event.target.value }))}
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"
+                  className="panel-control"
                 >
                   <option value="">Mentor sec</option>
                   {mentors.map((mentor) => <option key={mentor.id} value={mentor.id}>{mentor.name}</option>)}
@@ -1760,7 +1760,7 @@ function PergelFamilyContent({
                 <select
                   value={assignmentForm.participant_id}
                   onChange={(event) => setAssignmentForm((form) => ({ ...form, participant_id: event.target.value }))}
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-accent"
+                  className="panel-control"
                 >
                   <option value="">Katilimci sec</option>
                   {participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name || participant.email || `#${participant.id}`}</option>)}
@@ -1768,17 +1768,17 @@ function PergelFamilyContent({
                 <textarea
                   value={assignmentForm.note}
                   onChange={(event) => setAssignmentForm((form) => ({ ...form, note: event.target.value }))}
-                  className="min-h-20 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-accent"
+                  className="panel-textarea min-h-20"
                   placeholder="Not"
                 />
-                <button type="submit" disabled={busy === "assignment"} className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-black text-white disabled:opacity-50">
+                <button type="submit" disabled={busy === "assignment"} className="panel-button panel-button-primary disabled:opacity-50">
                   <UserPlus className="h-4 w-4" /> Eslestir
                 </button>
               </div>
             </form>
           </>
         ) : (
-          <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; mentor duzenleme aksiyonlari gizlendi.</div>
+          <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; mentor duzenleme aksiyonlari gizlendi.</div>
         )}
       </aside>
     </div>

@@ -9,10 +9,10 @@ type Props = {
 
 export function LogTable({ logs, loading }: Props) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="panel-table-card">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-600">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase tracking-widest text-slate-500">
+        <table className="panel-table">
+          <thead>
             <tr>
               <th className="px-5 py-4">Tarih</th>
               <th className="px-5 py-4">Kullanici</th>
@@ -22,7 +22,7 @@ export function LogTable({ logs, loading }: Props) {
               <th className="px-5 py-4 text-right">Teknik</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {loading ? (
               <tr>
                 <td colSpan={6} className="px-6 py-14 text-center">
@@ -34,7 +34,7 @@ export function LogTable({ logs, loading }: Props) {
                 <td colSpan={6} className="px-6 py-14 text-center text-slate-500">Log bulunamadi.</td>
               </tr>
             ) : logs.map((log) => (
-              <tr key={log.id} className="align-top transition-colors hover:bg-slate-50">
+              <tr key={log.id} className="align-top">
                 <td className="whitespace-nowrap px-5 py-4">
                   <div className="flex items-center gap-2 font-semibold text-slate-900">
                     <Clock className="h-3.5 w-3.5 text-slate-400" />

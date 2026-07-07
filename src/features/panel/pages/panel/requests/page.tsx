@@ -248,8 +248,6 @@ export default function PanelSharedRequestsPage() {
       setErrorMessage("Yanit belgesi indirilemedi.");
     }
   };
-
-  const accent = "bg-accent text-accent-foreground";
   const accentSoft = "bg-accent/20 text-accent-foreground";
   const exportName = "panel_talepler";
 
@@ -279,20 +277,20 @@ export default function PanelSharedRequestsPage() {
         </PermissionGate>
       </div>
 
-      {feedback ? <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-sm text-emerald-200">{feedback}</div> : null}
-      {errorMessage ? <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-200">{errorMessage}</div> : null}
+      {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
+      {errorMessage ? <div className="panel-notice panel-notice-error">{errorMessage}</div> : null}
 
       <PermissionGate
         permissions={["requests.view", "requests.create"]}
         require="any"
-        fallback={<div className="glass-panel rounded-3xl p-10 text-center text-sm text-muted-foreground">Bu modulu goruntulemek icin yetkiniz bulunmuyor.</div>}
+        fallback={<div className="panel-empty-card">Bu modulu goruntulemek icin yetkiniz bulunmuyor.</div>}
       >
         <div className={`grid grid-cols-1 gap-8 ${isResponder ? "lg:grid-cols-[1fr_1fr]" : "lg:grid-cols-[1.05fr_0.95fr]"}`}>
-          <PermissionGate permission="requests.create" fallback={<div className="glass-panel rounded-3xl p-8 text-sm text-muted-foreground">Yeni talep olusturma yetkiniz bulunmuyor.</div>}>
-            <form className="glass-panel rounded-3xl p-8" onSubmit={handleSubmit}>
+          <PermissionGate permission="requests.create" fallback={<div className="panel-empty-card text-left">Yeni talep olusturma yetkiniz bulunmuyor.</div>}>
+            <form className="panel-section-card" onSubmit={handleSubmit}>
               <h2 className="mb-4 text-lg font-bold text-slate-900">Yeni Talep Olustur</h2>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <select value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))} required className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900">
+              <div className="panel-form-grid">
+                <select value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))} required className="panel-control">
                   <option value="">Talep tipi sec</option>
                   {requestTypes.map((type) => <option key={type} value={type}>{typeLabels[type] || type}</option>)}
                 </select>
@@ -307,7 +305,7 @@ export default function PanelSharedRequestsPage() {
                       period_id: value ? defaultPeriodIdForProject(project) : "",
                     }));
                   }}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900"
+                  className="panel-control"
                 >
                   <option value="">Proje sec</option>
                   {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
@@ -316,7 +314,7 @@ export default function PanelSharedRequestsPage() {
                   value={form.period_id}
                   onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))}
                   disabled={!form.project_id || formPeriods.length === 0}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="panel-control"
                 >
                   <option value="">{form.project_id ? "Donem secmeden gonder" : "Proje secince donem"}</option>
                   {formPeriods.map((period) => (
@@ -326,11 +324,11 @@ export default function PanelSharedRequestsPage() {
                     </option>
                   ))}
                 </select>
-                <select value={form.target_unit} onChange={(event) => setForm((current) => ({ ...current, target_unit: event.target.value }))} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900">
+                <select value={form.target_unit} onChange={(event) => setForm((current) => ({ ...current, target_unit: event.target.value }))} className="panel-control">
                   <option value="">Hedef birim sec</option>
                   {targetUnits.map((targetUnit) => <option key={targetUnit} value={targetUnit}>{targetUnitLabels[targetUnit] || targetUnit}</option>)}
                 </select>
-                <select value={form.target_user_id} onChange={(event) => setForm((current) => ({ ...current, target_user_id: event.target.value }))} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900">
+                <select value={form.target_user_id} onChange={(event) => setForm((current) => ({ ...current, target_user_id: event.target.value }))} className="panel-control">
                   <option value="">Hedef kisi sec</option>
                   {targetUsers.map((targetUser) => <option key={targetUser.id} value={targetUser.id}>{targetUser.name} {targetUser.surname} ({targetUser.role})</option>)}
                 </select>
@@ -343,10 +341,10 @@ export default function PanelSharedRequestsPage() {
                 required
                 minLength={10}
                 placeholder="Ihtiyacini ve gerekli ayrintilari yaz."
-                className="mt-4 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900"
+                className="panel-textarea mt-4"
               />
 
-              <button type="submit" disabled={saving} className={`mt-6 inline-flex items-center gap-2 rounded-2xl px-6 py-3 font-bold disabled:opacity-60 ${accent}`}>
+              <button type="submit" disabled={saving} className="panel-button panel-button-primary mt-6 h-11 px-6">
                 {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                 Talebi Gonder
               </button>
@@ -354,7 +352,7 @@ export default function PanelSharedRequestsPage() {
           </PermissionGate>
 
           <PermissionGate permission="requests.view">
-            <div className="glass-panel rounded-3xl p-8">
+            <div className="panel-section-card">
               <h2 className="mb-4 text-lg font-bold text-slate-900">
                 {isResponder ? "Bana Dusebilecek Talepler" : "Talepler"}
               </h2>
@@ -362,7 +360,7 @@ export default function PanelSharedRequestsPage() {
                 <select
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-900"
+                  className="panel-control"
                 >
                   <option value="">Tum durumlar</option>
                   <option value="pending">Beklemede</option>
@@ -378,7 +376,7 @@ export default function PanelSharedRequestsPage() {
                     setProjectFilter(value);
                     setPeriodFilter(value ? defaultPeriodIdForProject(project) || "all" : "all");
                   }}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-900"
+                  className="panel-control"
                 >
                   <option value="">Tum projeler</option>
                   {projects.map((project) => (
@@ -391,7 +389,7 @@ export default function PanelSharedRequestsPage() {
                   value={periodFilter}
                   onChange={(event) => setPeriodFilter(event.target.value)}
                   disabled={!projectFilter || filterPeriods.length === 0}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="panel-control"
                 >
                   <option value="all">{projectFilter ? "Tum donemler" : "Proje secince donem"}</option>
                   {filterPeriods.map((period) => (
@@ -413,7 +411,7 @@ export default function PanelSharedRequestsPage() {
               ) : (
                 <div className="space-y-3">
                   {visibleRequests.map((request) => (
-                    <div key={request.id} className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                    <div key={request.id} className="panel-list-card p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="text-sm font-bold text-slate-900">{typeLabels[request.type] || request.type}</div>
                         {canUpdateRequestStatus ? (
@@ -421,7 +419,7 @@ export default function PanelSharedRequestsPage() {
                             value={request.status}
                             onChange={(e) => void handleStatusChange(request.id, e.target.value as RequestItem["status"])}
                             disabled={updatingId === request.id}
-                            className="rounded-xl border border-slate-200 bg-white px-2 py-1 text-[10px] uppercase tracking-[0.1em] text-muted-foreground outline-none"
+                            className="rounded-xl border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-600 outline-none"
                           >
                             <option value="pending">Beklemede</option>
                             <option value="in_progress">Isleniyor</option>
@@ -429,7 +427,7 @@ export default function PanelSharedRequestsPage() {
                             <option value="rejected">Reddedildi</option>
                           </select>
                         ) : (
-                          <span className="rounded-xl border border-slate-200 bg-white px-2 py-1 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">{request.status}</span>
+                          <span className="panel-chip">{request.status}</span>
                         )}
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground">
@@ -443,18 +441,18 @@ export default function PanelSharedRequestsPage() {
                         <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                         {request.description}
                       </div>
-                      <div className="mt-4 border-t border-white/5 pt-3">
+                      <div className="mt-4 border-t border-slate-200 pt-3">
                         {request.response_file_path ? (
                           <button
                             type="button"
                             onClick={() => void handleDownloadResponseFile(request)}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent/20 px-3 py-2 text-xs font-bold text-accent-foreground transition-colors hover:bg-accent hover:text-primary-foreground"
+                            className="panel-card-action panel-card-action-primary w-full"
                           >
                             <Download className="h-3 w-3" />
                             Yanit belgesini indir
                           </button>
                         ) : canUploadRequestResponse ? (
-                          <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 bg-white/5 px-3 py-2 text-xs font-bold text-muted-foreground transition-colors hover:bg-white/10 hover:text-slate-900">
+                          <label className="panel-file-drop flex w-full cursor-pointer items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-slate-600">
                             <Upload className="h-3 w-3" />
                             {updatingId === request.id ? "Yukleniyor..." : "Belge yukle"}
                             <input

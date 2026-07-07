@@ -57,7 +57,7 @@ export default function AdminNewsletterPage() {
 
   if (!canView) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-muted-foreground">
+      <div className="panel-empty-card">
         E-bulten listesi icin <span className="font-mono text-slate-900">newsletter.view</span> izni ve tum sistem kapsami gerekir.
       </div>
     );
@@ -75,9 +75,9 @@ export default function AdminNewsletterPage() {
         </div>
       </div>
 
-      <div className="glass-panel flex flex-col gap-4 rounded-3xl p-6 md:flex-row md:items-center">
+      <div className="panel-filter-card flex flex-col gap-4 md:flex-row md:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="panel-control-icon" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -87,7 +87,7 @@ export default function AdminNewsletterPage() {
                 void fetchData(1);
               }
             }}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none focus:border-sky-500"
+            className="panel-control pl-10"
             placeholder="E-posta veya isim ara..."
           />
         </div>
@@ -97,7 +97,7 @@ export default function AdminNewsletterPage() {
             setPage(1);
             void fetchData(1);
           }}
-          className="rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-sky-500"
+          className="panel-button panel-button-primary"
         >
           Ara
         </button>
@@ -109,17 +109,17 @@ export default function AdminNewsletterPage() {
         />
       </div>
 
-      <div className="glass-panel overflow-hidden rounded-3xl">
+      <div className="panel-table-card">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-muted-foreground">
-            <thead className="border-b border-white/5 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
+          <table className="panel-table">
+            <thead>
               <tr>
                 <th className="px-6 py-4">E-posta</th>
                 <th className="px-6 py-4">Isim</th>
                 <th className="px-6 py-4">Kayit</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={3} className="px-6 py-12 text-center">
@@ -134,7 +134,7 @@ export default function AdminNewsletterPage() {
                 </tr>
               ) : (
                 subscribers.map((s) => (
-                  <tr key={s.id} className="transition-colors hover:bg-white/5">
+                  <tr key={s.id}>
                     <td className="px-6 py-4 font-mono text-sm text-slate-900">{s.email}</td>
                     <td className="px-6 py-4 text-slate-900">{s.name ?? "—"}</td>
                     <td className="px-6 py-4">
@@ -147,23 +147,23 @@ export default function AdminNewsletterPage() {
           </table>
         </div>
         {lastPage > 1 && (
-          <div className="flex items-center justify-between border-t border-white/5 px-6 py-4">
+          <div className="panel-pagination">
             <button
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-900 disabled:opacity-50"
+              className="panel-button panel-button-secondary text-xs"
             >
               Onceki
             </button>
-            <span className="text-xs font-bold text-muted-foreground">
+            <span className="panel-pagination-count">
               {page} / {lastPage}
             </span>
             <button
               type="button"
               disabled={page >= lastPage}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-900 disabled:opacity-50"
+              className="panel-button panel-button-secondary text-xs"
             >
               Sonraki
             </button>

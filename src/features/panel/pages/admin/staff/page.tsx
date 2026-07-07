@@ -436,23 +436,23 @@ export default function AdminStaffPage() {
 
       {(successMessage || errorMessage) && (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
+          className={`panel-notice ${
             errorMessage
-              ? "border-red-500/20 bg-red-500/10 text-red-200"
-              : "border-green-500/20 bg-green-500/10 text-green-200"
+              ? "panel-notice-error"
+              : "panel-notice-success"
           }`}
         >
           {errorMessage || successMessage}
         </div>
       )}
 
-      <div className="flex space-x-1 rounded-2xl bg-black/40 p-1 md:w-max">
+      <div className="panel-tabs md:w-max">
         <button
           onClick={() => setActiveTab("staff")}
-          className={`flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all ${
+          className={`panel-tab ${
             activeTab === "staff"
-              ? "bg-indigo-600 text-white shadow-lg"
-              : "text-muted-foreground hover:bg-white/5 hover:text-slate-900"
+              ? "panel-tab-active"
+              : ""
           }`}
         >
           <BriefcaseBusiness className="h-4 w-4" />
@@ -460,10 +460,10 @@ export default function AdminStaffPage() {
         </button>
         <button
           onClick={() => setActiveTab("leaves")}
-          className={`flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all ${
+          className={`panel-tab ${
             activeTab === "leaves"
-              ? "bg-indigo-600 text-white shadow-lg"
-              : "text-muted-foreground hover:bg-white/5 hover:text-slate-900"
+              ? "panel-tab-active"
+              : ""
           }`}
         >
           <Calendar className="h-4 w-4" />
@@ -474,7 +474,7 @@ export default function AdminStaffPage() {
       {activeTab === "staff" && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
+            <div className="panel-stat-card flex items-center justify-between">
               <div>
                 <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Aktif Calisanlar</div>
                 <div className="mt-2 text-3xl font-black text-emerald-400">{activeStats.active_staff.length}</div>
@@ -484,7 +484,7 @@ export default function AdminStaffPage() {
                 <BriefcaseBusiness className="h-8 w-8" />
               </div>
             </div>
-            <div className="glass-panel flex items-center justify-between rounded-3xl p-6">
+            <div className="panel-stat-card flex items-center justify-between">
               <div>
                 <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Izindeki Personeller</div>
                 <div className="mt-2 text-3xl font-black text-amber-500">{activeStats.on_leave.length}</div>
@@ -496,21 +496,21 @@ export default function AdminStaffPage() {
             </div>
           </div>
 
-          <div className="glass-panel flex flex-col gap-4 rounded-3xl p-6 md:flex-row">
+          <div className="panel-filter-card flex flex-col gap-4 md:flex-row">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="panel-control-icon" />
               <input
                 value={staffSearch}
                 onChange={(e) => setStaffSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && void loadStaff()}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control pl-10"
                 placeholder="Personel ara..."
               />
             </div>
             <select
               value={staffRole}
               onChange={(e) => setStaffRole(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              className="panel-control md:max-w-[180px]"
             >
               <option value="">Tum Roller</option>
               <option value="coordinator">Koordinator</option>
@@ -526,7 +526,7 @@ export default function AdminStaffPage() {
             <select
               value={projectFilter}
               onChange={(e) => setProjectFilter(e.target.value)}
-              className="min-w-[180px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              className="panel-control md:max-w-[220px]"
               disabled={projectsLoading}
             >
               <option value="">Tum Projeler</option>
@@ -538,17 +538,17 @@ export default function AdminStaffPage() {
             </select>
             <button
               onClick={() => void loadStaff()}
-              className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold uppercase tracking-widest text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700"
+              className="panel-button panel-button-primary"
             >
               <Filter className="h-4 w-4" />
               Filtrele
             </button>
           </div>
 
-          <div className="glass-panel overflow-hidden rounded-3xl">
+          <div className="panel-table-card">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-muted-foreground">
-                <thead className="border-b border-white/5 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
+              <table className="panel-table">
+                <thead>
                   <tr>
                     <th className="px-6 py-4">Personel</th>
                     <th className="px-6 py-4">Iletisim</th>
@@ -558,7 +558,7 @@ export default function AdminStaffPage() {
                     <th className="px-6 py-4 text-right">Islem</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody>
                   {staffLoading ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center">
@@ -573,7 +573,7 @@ export default function AdminStaffPage() {
                     </tr>
                   ) : (
                     staff.map((staffItem) => (
-                      <tr key={staffItem.id} className="transition-colors hover:bg-white/5">
+                      <tr key={staffItem.id}>
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-900">
                             {staffItem.name} {staffItem.surname}
@@ -614,7 +614,7 @@ export default function AdminStaffPage() {
                         <td className="px-6 py-4 text-right">
                           <button
                             onClick={() => void openStaffModal(staffItem.id)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-xs font-bold text-slate-900 transition-colors hover:bg-white/10"
+                            className="panel-table-action panel-table-action-info"
                           >
                             <UserCog className="h-4 w-4" />
                             Ozluk Dosyasi
@@ -632,11 +632,11 @@ export default function AdminStaffPage() {
 
       {activeTab === "leaves" && (
         <div className="space-y-6">
-          <div className="glass-panel flex flex-col gap-4 rounded-3xl p-6 md:flex-row">
+          <div className="panel-filter-card flex flex-col gap-4 md:flex-row">
             <select
               value={leaveStatus}
               onChange={(e) => setLeaveStatus(e.target.value)}
-              className="min-w-[200px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              className="panel-control md:max-w-[220px]"
             >
               <option value="">Tum Durumlar</option>
               <option value="pending">Bekleyenler</option>
@@ -645,17 +645,17 @@ export default function AdminStaffPage() {
             </select>
             <button
               onClick={() => void loadLeaves()}
-              className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold uppercase tracking-widest text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700"
+              className="panel-button panel-button-primary"
             >
               <Filter className="h-4 w-4" />
               Filtrele
             </button>
           </div>
 
-          <div className="glass-panel overflow-hidden rounded-3xl">
+          <div className="panel-table-card">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-muted-foreground">
-                <thead className="border-b border-white/5 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
+              <table className="panel-table">
+                <thead>
                   <tr>
                     <th className="px-6 py-4">Personel</th>
                     <th className="px-6 py-4">Tarih Araligi</th>
@@ -664,7 +664,7 @@ export default function AdminStaffPage() {
                     <th className="px-6 py-4 text-right">Islemler</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody>
                   {leavesLoading ? (
                     <tr>
                       <td colSpan={5} className="px-6 py-12 text-center">
@@ -679,7 +679,7 @@ export default function AdminStaffPage() {
                     </tr>
                   ) : (
                     leaves.map((leave) => (
-                      <tr key={leave.id} className="transition-colors hover:bg-white/5">
+                      <tr key={leave.id}>
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-900">
                             {leave.user?.name} {leave.user?.surname}
@@ -722,7 +722,7 @@ export default function AdminStaffPage() {
                                 <button
                                   type="button"
                                   onClick={() => void handleLeaveAction(leave.id, "approve")}
-                                  className="inline-flex items-center justify-center rounded-lg bg-white/5 p-2 text-green-500 transition-colors hover:bg-green-500 hover:text-white"
+                                  className="panel-table-action panel-table-action-icon panel-table-action-success"
                                   title="Onayla"
                                 >
                                   <CheckCircle className="h-4 w-4" />
@@ -732,7 +732,7 @@ export default function AdminStaffPage() {
                                 <button
                                   type="button"
                                   onClick={() => void handleLeaveAction(leave.id, "reject")}
-                                  className="inline-flex items-center justify-center rounded-lg bg-white/5 p-2 text-red-500 transition-colors hover:bg-red-500 hover:text-white"
+                                  className="panel-table-action panel-table-action-icon panel-table-action-danger"
                                   title="Reddet"
                                 >
                                   <XCircle className="h-4 w-4" />
@@ -753,8 +753,8 @@ export default function AdminStaffPage() {
 
       {createOpen ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="panel-modal-card flex max-h-[90vh] w-full max-w-2xl flex-col">
+            <div className="panel-modal-header">
               <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
                 <UserPlus className="h-5 w-5 text-indigo-600" />
                 Yeni panel hesabi olustur
@@ -767,56 +767,56 @@ export default function AdminStaffPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={(e) => void handleCreateStaff(e)} className="space-y-4 overflow-y-auto p-6">
+            <form onSubmit={(e) => void handleCreateStaff(e)} className="panel-modal-body space-y-4">
               {createError ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{createError}</div>
+                <div className="panel-notice panel-notice-error">{createError}</div>
               ) : null}
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-950">
+              <div className="panel-form-note">
                 Koordinator, personel veya yetki matrisinde olusturulan ozel panel rolleri buradan acilir. Sifre belirleme baglantisi e-posta ile gider; proje atamalari panel gorunurlugunu belirler.
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Ad</label>
+                  <label className="panel-label">Ad</label>
                   <input
                     required
                     value={createForm.name}
                     onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                    className="panel-control"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Soyad</label>
+                  <label className="panel-label">Soyad</label>
                   <input
                     required
                     value={createForm.surname}
                     onChange={(e) => setCreateForm((p) => ({ ...p, surname: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                    className="panel-control"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">E-posta</label>
+                  <label className="panel-label">E-posta</label>
                   <input
                     required
                     type="email"
                     value={createForm.email}
                     onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                    className="panel-control"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Telefon</label>
+                  <label className="panel-label">Telefon</label>
                   <input
                     value={createForm.phone}
                     onChange={(e) => setCreateForm((p) => ({ ...p, phone: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                    className="panel-control"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Rol</label>
+                  <label className="panel-label">Rol</label>
                   {createRolesLoading ? (
                     <div className="mt-2 flex justify-center py-4">
                       <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
@@ -826,7 +826,7 @@ export default function AdminStaffPage() {
                       required
                       value={createForm.role}
                       onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                      className="panel-control"
                     >
                       {createRoles.length === 0 ? (
                         <option value="">Rol yok</option>
@@ -841,11 +841,11 @@ export default function AdminStaffPage() {
                   )}
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Birim</label>
+                  <label className="panel-label">Birim</label>
                   <input
                     value={createForm.unit}
                     onChange={(e) => setCreateForm((p) => ({ ...p, unit: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                    className="panel-control"
                   />
                 </div>
               </div>
@@ -873,18 +873,18 @@ export default function AdminStaffPage() {
                   oldugu projeler olarak kaydedilir.
                 </p>
               </div>
-              <div className="flex flex-wrap justify-end gap-2 pt-2">
+              <div className="panel-modal-footer">
                 <button
                   type="button"
                   onClick={() => setCreateOpen(false)}
-                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                  className="panel-button panel-button-secondary"
                 >
                   Kapat
                 </button>
                 <button
                   type="submit"
                   disabled={createSubmitting || createRolesLoading || createRoles.length === 0}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 disabled:opacity-50"
+                  className="panel-button panel-button-primary"
                 >
                   {createSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Olustur
@@ -897,8 +897,8 @@ export default function AdminStaffPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 p-6">
+          <div className="panel-modal-card flex max-h-[90vh] w-full max-w-3xl flex-col">
+            <div className="panel-modal-header">
               <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
                 <UserCog className="h-5 w-5 text-indigo-600" />
                 Ozluk Dosyasi ve Detaylar
@@ -911,7 +911,7 @@ export default function AdminStaffPage() {
               </button>
             </div>
 
-            <div className="overflow-y-auto p-6">
+            <div className="panel-modal-body">
               {modalLoading || !selectedStaff ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
@@ -968,7 +968,7 @@ export default function AdminStaffPage() {
                           type="button"
                           onClick={() => void handleSaveProjects()}
                           disabled={savingProjects || projectsLoading}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-indigo-700 disabled:opacity-50"
+                          className="panel-button panel-button-primary text-xs"
                         >
                           {savingProjects ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                           Projeleri Kaydet
@@ -1068,7 +1068,7 @@ export default function AdminStaffPage() {
                         Henuz belge yuklenmemis.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {selectedStaff.staff_profile.personal_documents.map((document, index) => (
                           <div
                             key={`${document.path}-${index}`}

@@ -248,7 +248,7 @@ export default function AdminCertificatesPage() {
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-sm font-bold text-black shadow-lg shadow-amber-500/20 transition-colors hover:bg-amber-400"
+              className="panel-button panel-button-primary"
             >
               <Plus className="h-5 w-5" />
               Yeni Sertifika Oluştur
@@ -257,14 +257,14 @@ export default function AdminCertificatesPage() {
         </div>
       </div>
 
-      <div className="glass-panel flex flex-col md:flex-row gap-4 rounded-3xl p-6">
+      <div className="panel-filter-card flex flex-col gap-4 md:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="panel-control-icon" />
           <input 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none focus:border-amber-500" 
+            className="panel-control pl-10" 
             placeholder="Doğrulama kodu, isim veya e-posta ara..." 
           />
         </div>
@@ -276,7 +276,7 @@ export default function AdminCertificatesPage() {
             setProjectId(value);
             setPeriodId(value ? defaultPeriodIdForProject(project) || "all" : "all");
           }}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-amber-500 min-w-[200px]"
+          className="panel-control md:max-w-[220px]"
         >
           <option value="">Tüm Projeler</option>
           {filterableProjects.map((p) => (
@@ -289,7 +289,7 @@ export default function AdminCertificatesPage() {
           value={periodId}
           onChange={(e) => setPeriodId(e.target.value)}
           disabled={!projectId}
-          className="min-w-[200px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-amber-500"
+          className="panel-control md:max-w-[220px]"
         >
           <option value="all">{projectId ? "Tüm Dönemler" : "Proje seçince dönem"}</option>
           {periodsForProject(filterableProjects.find((project) => String(project.id) === projectId)).map((period) => (
@@ -300,17 +300,17 @@ export default function AdminCertificatesPage() {
         </select>
         <button 
           onClick={applyFilters}
-          className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold uppercase tracking-widest text-black shadow-lg shadow-amber-500/20 hover:bg-amber-400"
+          className="panel-button panel-button-primary"
         >
           <Filter className="h-4 w-4" />
           Filtrele
         </button>
       </div>
 
-      <div className="glass-panel overflow-hidden rounded-3xl">
+      <div className="panel-table-card">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-muted-foreground">
-            <thead className="border-b border-white/5 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
+          <table className="panel-table">
+            <thead>
               <tr>
                 <th className="px-6 py-4">Öğrenci / Alıcı</th>
                 <th className="px-6 py-4">Proje</th>
@@ -321,7 +321,7 @@ export default function AdminCertificatesPage() {
                 <th className="px-6 py-4 text-right">İşlem</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center">
@@ -336,7 +336,7 @@ export default function AdminCertificatesPage() {
                 </tr>
               ) : (
                 certificates.map((cert) => (
-                  <tr key={cert.id} className="hover:bg-white/5 transition-colors">
+                  <tr key={cert.id}>
                     <td className="px-6 py-4">
                       <div className="font-bold text-slate-900">{cert.user?.name} {cert.user?.surname}</div>
                       <div className="text-[10px] text-muted-foreground">{cert.user?.email}</div>
@@ -355,7 +355,7 @@ export default function AdminCertificatesPage() {
                         <button
                           type="button"
                           onClick={() => void handleDownload(cert)}
-                          className="mr-2 inline-flex items-center gap-1 rounded-xl bg-emerald-500/10 p-2 text-xs font-bold text-emerald-600 transition-colors hover:bg-emerald-500 hover:text-white"
+                          className="panel-table-action panel-table-action-icon panel-table-action-success mr-2"
                           title="Indir"
                         >
                           <Download className="h-4 w-4" />
@@ -365,7 +365,7 @@ export default function AdminCertificatesPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(cert.id)}
-                          className="inline-flex items-center gap-1 rounded-xl bg-red-500/10 p-2 text-xs font-bold text-red-500 transition-colors hover:bg-red-500 hover:text-white"
+                          className="panel-table-action panel-table-action-icon panel-table-action-danger"
                           title="İptal Et / Sil"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -382,19 +382,19 @@ export default function AdminCertificatesPage() {
         </div>
         
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-white/5 px-6 py-4">
+          <div className="panel-pagination">
             <button 
               disabled={page === 1}
               onClick={() => setPage(p => p - 1)}
-              className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-900 disabled:opacity-50"
+              className="panel-button panel-button-secondary text-xs"
             >
               Önceki
             </button>
-            <span className="text-xs font-bold text-muted-foreground">{page} / {totalPages}</span>
+            <span className="panel-pagination-count">{page} / {totalPages}</span>
             <button 
               disabled={page === totalPages}
               onClick={() => setPage(p => p + 1)}
-              className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-900 disabled:opacity-50"
+              className="panel-button panel-button-secondary text-xs"
             >
               Sonraki
             </button>
@@ -405,19 +405,21 @@ export default function AdminCertificatesPage() {
       {/* CREATE CERTIFICATE MODAL */}
       {isModalOpen && canCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-          <form onSubmit={handleCreate} className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <h2 className="mb-2 flex items-center gap-2 text-xl font-black text-slate-900">
+          <form onSubmit={handleCreate} className="panel-modal-card w-full max-w-lg">
+            <div className="panel-modal-header">
+              <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
               <Award className="h-5 w-5 text-amber-500" />
               Sertifika Oluştur
             </h2>
-            <div className="space-y-4">
+            </div>
+            <div className="panel-modal-body space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Kullanıcı (Öğrenci)</label>
+                <label className="panel-label">Kullanıcı (Öğrenci)</label>
                 <select
                   required
                   value={form.user_id}
                   onChange={(e) => setForm((f) => ({ ...f, user_id: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-amber-500"
+                  className="panel-control"
                   disabled={!canListUsers}
                 >
                   <option value="">Seçiniz...</option>
@@ -434,7 +436,7 @@ export default function AdminCertificatesPage() {
                 ) : null}
               </div>
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Proje</label>
+                <label className="panel-label">Proje</label>
                 <select
                   required
                   value={form.project_id}
@@ -443,7 +445,7 @@ export default function AdminCertificatesPage() {
                     const project = creatableProjects.find((item) => String(item.id) === value);
                     setForm((f) => ({ ...f, project_id: value, period_id: defaultPeriodIdForProject(project) }));
                   }}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-amber-500"
+                  className="panel-control"
                 >
                   <option value="">Seçiniz...</option>
                   {creatableProjects.map((p) => (
@@ -454,12 +456,12 @@ export default function AdminCertificatesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Dönem</label>
+                <label className="panel-label">Dönem</label>
                 <select
                   value={form.period_id}
                   onChange={(e) => setForm((f) => ({ ...f, period_id: e.target.value }))}
                   disabled={!form.project_id}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-amber-500"
+                  className="panel-control"
                 >
                   <option value="">Dönem seçmeden oluştur</option>
                   {periodsForProject(creatableProjects.find((project) => String(project.id) === form.project_id)).map((period) => (
@@ -470,12 +472,12 @@ export default function AdminCertificatesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Tür</label>
+                <label className="panel-label">Tür</label>
                 <select 
                   required
                   value={form.type} 
                   onChange={(e) => setForm(f => ({ ...f, type: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-amber-500"
+                  className="panel-control"
                 >
                   <option value="participation">Katılım Belgesi</option>
                   <option value="achievement">Başarı / Onur Belgesi</option>
@@ -483,10 +485,10 @@ export default function AdminCertificatesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                <label className="panel-label">
                   Sertifika Dosyası
                 </label>
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white p-3 text-sm font-bold text-slate-700 transition-colors hover:border-amber-500">
+                <label className="panel-file-drop flex cursor-pointer items-center gap-3 text-sm font-bold text-slate-700">
                   <Upload className="h-4 w-4 text-amber-500" />
                   <span className="truncate">{certificateFile ? certificateFile.name : "PDF veya görsel seç"}</span>
                   <input
@@ -498,21 +500,21 @@ export default function AdminCertificatesPage() {
                 </label>
               </div>
             </div>
-            <div className="mt-8 flex items-center justify-end gap-3">
+            <div className="panel-modal-footer mx-6 mb-6">
               <button 
                 type="button" 
                 onClick={() => {
                   setIsModalOpen(false);
                   setCertificateFile(null);
                 }}
-                className="rounded-xl px-4 py-2 text-sm font-bold text-muted-foreground hover:text-slate-900"
+                className="panel-button panel-button-secondary"
               >
                 İptal
               </button>
               <button 
                 type="submit" 
                 disabled={creating}
-                className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2 text-sm font-bold text-black hover:bg-amber-400 disabled:opacity-50"
+                className="panel-button panel-button-primary"
               >
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                 Oluştur

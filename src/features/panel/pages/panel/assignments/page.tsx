@@ -191,10 +191,10 @@ export default function PanelAssignmentsPage() {
         </PermissionGate>
       </div>
 
-      {feedback ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700">{feedback}</div> : null}
+      {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
 
       <PermissionGate permission="assignments.create">
-        <form onSubmit={handleSubmit} className="glass-panel rounded-3xl p-6">
+        <form onSubmit={handleSubmit} className="panel-section-card">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_220px]">
             <select
               value={form.project_id}
@@ -204,7 +204,7 @@ export default function PanelAssignmentsPage() {
                 setForm((current) => ({ ...current, project_id: projectId, period_id: defaultPeriodIdForProject(project) }));
               }}
               required
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              className="panel-control"
             >
               <option value="">Proje sec</option>
               {createProjects.map((project) => (
@@ -216,7 +216,7 @@ export default function PanelAssignmentsPage() {
               onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))}
               disabled={!form.project_id}
               required
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              className="panel-control"
             >
               <option value="">Donem sec</option>
               {(selectedProject?.periods ?? []).map((period) => (
@@ -228,13 +228,13 @@ export default function PanelAssignmentsPage() {
               onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
               required
               placeholder="Odev basligi"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              className="panel-control"
             />
             <input
               type="datetime-local"
               value={form.due_date}
               onChange={(event) => setForm((current) => ({ ...current, due_date: event.target.value }))}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+              className="panel-control"
             />
           </div>
           <textarea
@@ -242,10 +242,10 @@ export default function PanelAssignmentsPage() {
             onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
             rows={3}
             placeholder="Odev aciklamasi"
-            className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
+            className="panel-textarea mt-4"
           />
-          <div className="mt-4 flex justify-end">
-            <button disabled={saving || !selectedProject || !selectedPeriodId} className="rounded-xl bg-violet-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">
+          <div className="panel-modal-footer mt-4">
+            <button disabled={saving || !selectedProject || !selectedPeriodId} className="panel-button panel-button-primary h-11 px-6">
               {saving ? "Kaydediliyor..." : "Odev Olustur"}
             </button>
           </div>
@@ -253,7 +253,7 @@ export default function PanelAssignmentsPage() {
       </PermissionGate>
 
       <PermissionGate permission="assignments.view">
-        <div className="glass-panel rounded-3xl p-4">
+        <div className="panel-filter-card">
           <ProjectPeriodFilters
             projects={projects}
             selectedProjectId={projectFilter}
@@ -271,15 +271,15 @@ export default function PanelAssignmentsPage() {
             }}
           />
         </div>
-        <div className="glass-panel overflow-hidden rounded-3xl">
+        <div className="panel-section-card p-0">
           {loading ? (
             <div className="flex min-h-40 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
             </div>
           ) : (
-            <div className="divide-y divide-slate-200/70">
+            <div className="space-y-3 p-4">
               {assignments.map((assignment) => (
-                <div key={assignment.id} className="p-5">
+                <div key={assignment.id} className="panel-list-card">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="text-base font-bold text-slate-900">{assignment.title}</div>
@@ -289,7 +289,7 @@ export default function PanelAssignmentsPage() {
                       {assignment.description ? <p className="mt-2 text-sm text-muted-foreground">{assignment.description}</p> : null}
                     </div>
                     <PermissionGate permission="assignments.delete" requireProjectAccess={{ permission: "assignments.delete", projectId: assignment.project_id }}>
-                      <button onClick={() => void handleDelete(assignment)} className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700">
+                      <button onClick={() => void handleDelete(assignment)} className="panel-card-action panel-card-action-danger">
                         <Trash2 className="h-4 w-4" />
                         Sil
                       </button>
@@ -298,7 +298,7 @@ export default function PanelAssignmentsPage() {
                   {assignment.submissions?.length ? (
                     <div className="mt-4 space-y-2">
                       {assignment.submissions.map((submission) => (
-                        <div key={submission.id} className="flex flex-col gap-3 rounded-2xl bg-white p-3 text-sm md:flex-row md:items-center md:justify-between">
+                        <div key={submission.id} className="panel-card-muted flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                           <div>
                             <div className="font-bold text-slate-900">
                               {submission.user?.name} {submission.user?.surname}
@@ -310,13 +310,13 @@ export default function PanelAssignmentsPage() {
                           <PermissionGate permission="assignments.submissions.review" requireProjectAccess={{ permission: "assignments.submissions.review", projectId: assignment.project_id }}>
                             <div className="flex flex-wrap gap-2">
                               {submission.download_url ? (
-                                <button type="button" onClick={() => void handleDownload(submission)} className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-700">
+                                <button type="button" onClick={() => void handleDownload(submission)} className="panel-card-action panel-card-action-success py-1">
                                   <Download className="h-3.5 w-3.5" />
                                   Indir
                                 </button>
                               ) : null}
                               {(["reviewed", "approved", "rejected"] as const).map((status) => (
-                                <button key={status} onClick={() => void handleReview(submission, status)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-bold uppercase text-slate-700">
+                                <button key={status} onClick={() => void handleReview(submission, status)} className="panel-card-action py-1">
                                   {status}
                                 </button>
                               ))}
@@ -328,7 +328,7 @@ export default function PanelAssignmentsPage() {
                   ) : null}
                 </div>
               ))}
-              {assignments.length === 0 ? <div className="p-10 text-center text-sm text-muted-foreground">Odev bulunamadi.</div> : null}
+              {assignments.length === 0 ? <div className="panel-empty-card">Odev bulunamadi.</div> : null}
             </div>
           )}
         </div>

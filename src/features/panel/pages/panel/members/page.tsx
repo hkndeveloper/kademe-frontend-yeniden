@@ -82,14 +82,14 @@ export default function StaffMembersPage() {
       <PermissionGate
         permission="staff.view"
         fallback={
-        <div className="glass-panel rounded-3xl p-10 text-center text-sm text-muted-foreground">
+        <div className="panel-empty-card">
           Bu modulu goruntulemek icin yetkiniz bulunmuyor.
         </div>
         }
       >
       {
         <>
-      <div className="glass-panel rounded-3xl p-8">
+      <div className="panel-section-card">
         <div className="space-y-5 text-sm text-muted-foreground">
           <p>Bu ekran artik sahte ekip kartlari yerine gercek birim listesine bagli calisiyor.</p>
           <p>
@@ -100,27 +100,27 @@ export default function StaffMembersPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="glass-panel rounded-3xl p-8">
+        <div className="panel-section-card">
           <div className="mb-4 flex items-center gap-2 text-amber-500">
             <ShieldCheck className="h-5 w-5" />
             <h2 className="text-lg font-bold text-slate-900">Beklenen Veri Kapsami</h2>
           </div>
           <div className="space-y-3 text-sm text-muted-foreground">
-            <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">Birim bazli uye listesi</div>
-            <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">Ad soyad, gorev, iletisim, aktif/pasif durumu</div>
-            <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">Detayli ozluk verisi olmayan sade gorunum</div>
-            <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3">Yetki bazli sadece kendi birimine erisim</div>
+            <div className="panel-card-muted px-4 py-3">Birim bazli uye listesi</div>
+            <div className="panel-card-muted px-4 py-3">Ad soyad, gorev, iletisim, aktif/pasif durumu</div>
+            <div className="panel-card-muted px-4 py-3">Detayli ozluk verisi olmayan sade gorunum</div>
+            <div className="panel-card-muted px-4 py-3">Yetki bazli sadece kendi birimine erisim</div>
           </div>
         </div>
 
-        <div className="glass-panel rounded-3xl p-8">
+        <div className="panel-section-card">
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Canli Birim Listesi</h2>
               <p className="text-sm text-muted-foreground">
                 Hesap: {user?.name} {user?.surname} ({user?.role || "staff"})
               </p>
-              <p className="text-sm text-amber-400">{unit ? `Birim: ${unit}` : "Birim bilgisi tanimli degil"}</p>
+              <p className="text-sm font-semibold text-amber-700">{unit ? `Birim: ${unit}` : "Birim bilgisi tanimli degil"}</p>
             </div>
             <label className="relative block md:w-72">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -128,7 +128,7 @@ export default function StaffMembersPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Ad, e-posta veya unvan ara"
-                className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition-all placeholder:text-muted-foreground focus:border-amber-500/40"
+                className="panel-control pl-10"
               />
             </label>
           </div>
@@ -138,20 +138,20 @@ export default function StaffMembersPage() {
               <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
             </div>
           ) : error && members.length === 0 ? (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">{error}</div>
+            <div className="panel-notice panel-notice-error">{error}</div>
           ) : filteredMembers.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Bu filtreye uygun ekip uyesi bulunmuyor.</div>
+            <div className="panel-empty-card">Bu filtreye uygun ekip uyesi bulunmuyor.</div>
           ) : (
             <div className="space-y-3 text-sm text-muted-foreground">
               {filteredMembers.map((member) => (
-                <div key={member.id} className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                <div key={member.id} className="panel-card-muted">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-bold text-slate-900">
                           {member.name} {member.surname}
                         </h3>
-                        <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <span className="panel-chip">
                           {member.role}
                         </span>
                       </div>

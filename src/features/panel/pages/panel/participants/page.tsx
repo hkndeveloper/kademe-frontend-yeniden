@@ -458,7 +458,7 @@ export default function PanelParticipantsPage() {
       permissions={["projects.participants.view", "projects.alumni.view", "projects.student_cv.view"]}
       require="any"
       fallback={
-        <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 px-6 py-8 text-center text-sm text-amber-100">
+        <div className="panel-empty-card text-amber-700">
           Katilimci, mezun veya CV goruntuleme yetkiniz bulunmuyor.
         </div>
       }
@@ -502,19 +502,19 @@ export default function PanelParticipantsPage() {
 
       {hasAnyPermission(["projects.participants.view", "projects.alumni.view"]) ? (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
-          <div className="glass-panel rounded-3xl p-6">
+          <div className="panel-stat-card">
             <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Toplam Kayit</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{summary.total}</div>
           </div>
-          <div className="glass-panel rounded-3xl p-6">
+          <div className="panel-stat-card">
             <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif Katilimci</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{summary.active}</div>
           </div>
-          <div className="glass-panel rounded-3xl p-6">
+          <div className="panel-stat-card">
             <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mezun</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{summary.graduates}</div>
           </div>
-          <div className="glass-panel rounded-3xl p-6">
+          <div className="panel-stat-card">
             <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ortalama Kredi</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{summary.average_credit}</div>
           </div>
@@ -522,22 +522,25 @@ export default function PanelParticipantsPage() {
       ) : null}
 
       {message ? (
-        <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm font-semibold text-slate-900">
+        <div className="panel-notice panel-notice-success">
           {message}
         </div>
       ) : null}
 
-      <div className="glass-panel rounded-3xl p-6">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_420px_180px]">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Isim, e-posta, universite veya bolum ara"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="w-full rounded-2xl border border-border bg-input py-3 pr-4 pl-11 text-sm outline-none focus:ring-2 focus:ring-accent"
-            />
+      <div className="panel-filter-card">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(280px,1fr)_minmax(360px,420px)_180px] xl:items-end">
+          <label className="panel-field">
+            <span className="panel-label">Arama</span>
+            <div className="relative">
+              <Search className="panel-control-icon" />
+              <input
+                type="text"
+                placeholder="Isim, e-posta, universite veya bolum ara"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="panel-control pl-10"
+              />
+            </div>
           </label>
 
           <ProjectPeriodFilters
@@ -555,18 +558,19 @@ export default function PanelParticipantsPage() {
               setSelectedIds([]);
             }}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-            selectClassName="w-full rounded-2xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent"
           />
 
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-2xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-accent">
-            <option value="all">Tum durumlar</option>
-            <option value="active">Aktif</option>
-            <option value="passive">Pasif</option>
-            <option value="graduated">Mezun</option>
-            <option value="completed">Tamamladi</option>
-          </select>
+          <label className="panel-field">
+            <span className="panel-label">Durum</span>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="panel-control">
+              <option value="all">Tum durumlar</option>
+              <option value="active">Aktif</option>
+              <option value="passive">Pasif</option>
+              <option value="graduated">Mezun</option>
+              <option value="completed">Tamamladi</option>
+            </select>
+          </label>
         </div>
-
         {hasPermission("projects.participants.manage") && manageableIdsInView.length > 0 ? (
           <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -577,7 +581,7 @@ export default function PanelParticipantsPage() {
                 type="button"
                 disabled={bulkLoading}
                 onClick={() => selectAllManageableInView()}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-slate-900 hover:bg-muted disabled:opacity-50"
+                className="panel-card-action py-1.5"
               >
                 Filtredeki tumunu sec ({manageableIdsInView.length})
               </button>
@@ -586,7 +590,7 @@ export default function PanelParticipantsPage() {
                   type="button"
                   disabled={bulkLoading}
                   onClick={() => clearSelection()}
-                  className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-slate-900 hover:bg-muted disabled:opacity-50"
+                  className="panel-card-action py-1.5"
                 >
                   Secimi temizle
                 </button>
@@ -598,7 +602,7 @@ export default function PanelParticipantsPage() {
                   type="button"
                   disabled={rowActionDisabled}
                   onClick={() => void bulkUpdateGraduation("completed")}
-                  className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-800 disabled:opacity-60"
+                  className="panel-card-action panel-card-action-success"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Secilenleri tamamladi
@@ -607,7 +611,7 @@ export default function PanelParticipantsPage() {
                   type="button"
                   disabled={rowActionDisabled}
                   onClick={() => void bulkUpdateGraduation("graduated")}
-                  className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/15 px-3 py-2 text-xs font-bold text-indigo-800 disabled:opacity-60"
+                  className="panel-card-action panel-card-action-info"
                 >
                   <GraduationCap className="h-4 w-4" />
                   Secilenleri mezun yap
@@ -616,7 +620,7 @@ export default function PanelParticipantsPage() {
                   type="button"
                   disabled={rowActionDisabled}
                   onClick={() => void bulkUpdateGraduation("not_completed")}
-                  className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/15 px-3 py-2 text-xs font-bold text-red-800 disabled:opacity-60"
+                  className="panel-card-action panel-card-action-danger"
                 >
                   <XCircle className="h-4 w-4" />
                   Secilenleri tamamlayamadi
@@ -632,11 +636,11 @@ export default function PanelParticipantsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       ) : filteredParticipants.length === 0 ? (
-        <div className="glass-panel rounded-3xl p-16 text-center text-muted-foreground">Bu filtreye uygun katilimci bulunamadi.</div>
+        <div className="panel-empty-card py-16">Bu filtreye uygun katilimci bulunamadi.</div>
       ) : (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {filteredParticipants.map((participant) => (
-            <div key={participant.id} className="glass-panel rounded-3xl p-6">
+            <div key={participant.id} className="panel-list-card">
               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
                   {hasPermission("projects.participants.manage") &&
@@ -651,7 +655,7 @@ export default function PanelParticipantsPage() {
                       />
                     </label>
                   ) : null}
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-white/5">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
                     {participant.user.profile_photo ? (
                       <Image src={participant.user.profile_photo} alt={`${participant.user.name} ${participant.user.surname}`} fill unoptimized className="object-cover" />
                     ) : (
@@ -665,11 +669,11 @@ export default function PanelParticipantsPage() {
                       <h3 className="text-lg font-bold text-slate-900">
                         {participant.user.name} {participant.user.surname}
                       </h3>
-                      <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${participant.status === "active" ? "bg-green-500/10 text-green-400" : "bg-white/10 text-muted-foreground"}`}>
+                      <span className={`panel-chip ${participant.status === "active" ? "panel-chip-success" : ""}`}>
                         {participant.status}
                       </span>
                       {participant.graduation_status ? (
-                        <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-indigo-300">
+                        <span className="panel-chip panel-chip-info">
                           {participant.graduation_status}
                         </span>
                       ) : null}
@@ -679,8 +683,8 @@ export default function PanelParticipantsPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-center">
-                  <div className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-widest text-amber-300">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center">
+                  <div className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-widest text-amber-700">
                     <Star className="h-3 w-3" />
                     Kredi
                   </div>
@@ -694,7 +698,7 @@ export default function PanelParticipantsPage() {
                     type="button"
                     disabled={cvLoadingId === participant.id}
                     onClick={() => void openCvDetails(participant)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-muted"
+                    className="panel-card-action"
                   >
                     {cvLoadingId === participant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
                     {cvLoadingId === participant.id ? "CV Yukleniyor" : "CV Bilgilerini Gor"}
@@ -708,7 +712,7 @@ export default function PanelParticipantsPage() {
                     type="button"
                     disabled={graduationLoadingId === participant.id || bulkLoading}
                     onClick={() => void updateGraduationStatus(participant, "completed")}
-                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-500 hover:text-white disabled:opacity-60"
+                    className="panel-card-action panel-card-action-success"
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     Tamamladi
@@ -717,7 +721,7 @@ export default function PanelParticipantsPage() {
                     type="button"
                     disabled={graduationLoadingId === participant.id || bulkLoading}
                     onClick={() => void updateGraduationStatus(participant, "graduated")}
-                    className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-500 hover:text-white disabled:opacity-60"
+                    className="panel-card-action panel-card-action-info"
                   >
                     <GraduationCap className="h-4 w-4" />
                     Mezun Yap
@@ -726,7 +730,7 @@ export default function PanelParticipantsPage() {
                     type="button"
                     disabled={graduationLoadingId === participant.id || bulkLoading}
                     onClick={() => void updateGraduationStatus(participant, "not_completed")}
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-500 hover:text-white disabled:opacity-60"
+                    className="panel-card-action panel-card-action-danger"
                   >
                     <XCircle className="h-4 w-4" />
                     Tamamlayamadi
@@ -735,7 +739,7 @@ export default function PanelParticipantsPage() {
               ) : null}
 
               {hasPermission("projects.participants.manage") && canAccessProject("projects.participants.manage", participant.project.id) ? (
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="panel-card-muted mt-4">
                   <div className="mb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     Public gorunurluk
                   </div>
@@ -794,12 +798,12 @@ export default function PanelParticipantsPage() {
               ) : null}
 
               <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="rounded-2xl bg-white/5 p-4 text-sm text-muted-foreground">
+                <div className="panel-card-muted">
                   <div className="font-bold text-slate-900">{participant.user.university || "Universite yok"}</div>
                   <div>{participant.user.department || "Bolum yok"}</div>
                   <div>{participant.user.class_year || "Sinif bilgisi yok"}</div>
                 </div>
-                <div className="rounded-2xl bg-white/5 p-4 text-sm text-muted-foreground">
+                <div className="panel-card-muted">
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-accent" />
                     <span>{participant.user.email || "E-posta yok"}</span>
@@ -813,7 +817,7 @@ export default function PanelParticipantsPage() {
               </div>
 
               {(participant.graduated_at || participant.graduation_note) && (
-                <div className="mt-4 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-4 text-sm text-indigo-100">
+                <div className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-800">
                   <div className="mb-2 flex items-center gap-2 font-bold">
                     <GraduationCap className="h-4 w-4" />
                     Mezuniyet Bilgisi
@@ -828,7 +832,7 @@ export default function PanelParticipantsPage() {
       )}
       {cvParticipant ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-3xl border border-border bg-white p-6 shadow-2xl">
+          <div className="panel-modal-card w-full max-w-4xl p-6">
             <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <h2 className="text-xl font-black text-slate-900">

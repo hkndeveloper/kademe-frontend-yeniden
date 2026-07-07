@@ -185,8 +185,8 @@ const initialKademeModule = {
   instructorsJson: "[]",
   faqJson: "[]",
 };
-const inputClass = "rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-accent";
-const buttonClass = "inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white";
+const inputClass = "panel-control";
+const buttonClass = "panel-button panel-button-primary";
 const eurodeskStatusMeta: Record<string, { label: string; className: string }> = {
   applied: { label: "Basvuruldu", className: "border-sky-200 bg-sky-50 text-sky-700" },
   approved: { label: "Onaylandi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
@@ -464,7 +464,7 @@ export default function PanelProjectSpecialModulesPage() {
   }
 
   if (invalidProjectId || !data) {
-    return <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-8 text-red-100">Proje modulleri acilamadi.</div>;
+    return <div className="panel-notice panel-notice-error">Proje modulleri acilamadi.</div>;
   }
 
   return (
@@ -480,7 +480,7 @@ export default function PanelProjectSpecialModulesPage() {
         "projects.rewards.manage",
       ]}
       require="any"
-      fallback={<div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-8 text-amber-100">Projeye ozel modul yetkiniz yok.</div>}
+      fallback={<div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">Projeye ozel modul yetkiniz yok.</div>}
     >
       <div className="space-y-8">
         <Link href={`/panel/projects/${projectId}${periodId !== "all" ? `?period_id=${periodId}` : ""}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-slate-900">
@@ -494,20 +494,20 @@ export default function PanelProjectSpecialModulesPage() {
           <p className="mt-2 text-sm text-muted-foreground">{specialModulesIntroCopy(data.project.type)}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {(data.applicable_modules ?? ["digital_bohca"]).map((module) => (
-              <span key={module} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <span key={module} className="panel-chip">
                 {module.replaceAll("_", " ")}
               </span>
             ))}
           </div>
         </div>
 
-        <div className="glass-panel rounded-3xl p-4">
+        <div className="panel-filter-card">
           <label className="block max-w-md">
             <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Donem</span>
             <select
               value={periodId}
               onChange={(event) => setPeriodId(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-accent"
+              className="panel-control"
             >
               <option value="all">Tum donemler</option>
               {periods.map((period) => (
@@ -605,7 +605,7 @@ export default function PanelProjectSpecialModulesPage() {
                       }}
                     />
                   </label>
-                  <textarea value={mentorForm.bio} onChange={(event) => setMentorForm((current) => ({ ...current, bio: event.target.value }))} placeholder="Kisa bio" className={`${inputClass} md:col-span-2`} />
+                  <textarea value={mentorForm.bio} onChange={(event) => setMentorForm((current) => ({ ...current, bio: event.target.value }))} placeholder="Kisa bio" className="panel-control md:col-span-2" />
                 </SimpleForm>
               ) : null}
               <RecordList
@@ -622,7 +622,7 @@ export default function PanelProjectSpecialModulesPage() {
                 } : undefined}
                 onDelete={access["projects.mentors.manage"] ? (id) => destroy("mentors", id) : undefined}
               />
-              <div className="mt-5 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+              <div className="panel-card-muted mt-5">
                 <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Mentor-katilimci eslestirmeleri</h3>
                 {access["projects.mentors.manage"] ? (
                   <form
@@ -640,7 +640,7 @@ export default function PanelProjectSpecialModulesPage() {
                       <option value="">Katilimci sec</option>
                       {data.participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}</option>)}
                     </select>
-                    <input value={mentorAssignmentForm.note} onChange={(event) => setMentorAssignmentForm((current) => ({ ...current, note: event.target.value }))} placeholder="Eslestirme notu" className={`${inputClass} md:col-span-2`} />
+                    <input value={mentorAssignmentForm.note} onChange={(event) => setMentorAssignmentForm((current) => ({ ...current, note: event.target.value }))} placeholder="Eslestirme notu" className="panel-control md:col-span-2" />
                     <button className={`${buttonClass} md:col-span-2`} type="submit"><Users className="h-4 w-4" /> Eslestir</button>
                   </form>
                 ) : null}
@@ -659,7 +659,7 @@ export default function PanelProjectSpecialModulesPage() {
                                 {participant.note ? <div className="text-xs text-muted-foreground">{participant.note}</div> : null}
                               </div>
                               {access["projects.mentors.manage"] ? (
-                                <button type="button" className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10" onClick={() => void unassignMentor(mentor.id, participant.id)} title="Eslestirmeyi kaldir">
+                                <button type="button" className="panel-button-icon panel-table-action-danger" onClick={() => void unassignMentor(mentor.id, participant.id)} title="Eslestirmeyi kaldir">
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                               ) : null}
@@ -698,7 +698,7 @@ export default function PanelProjectSpecialModulesPage() {
               ) : null}
               <EurodeskSummaryPanel summary={data.eurodesk_summary} />
               {data.eurodesk_projects.length === 0 ? (
-                <div className="rounded-xl border border-slate-200 bg-white/[0.03] p-4 text-sm text-muted-foreground">Eurodesk proje kaydi yok.</div>
+                <div className="panel-empty-card py-5">Eurodesk proje kaydi yok.</div>
               ) : (
                 <div className="space-y-3">
                   {data.eurodesk_projects.map((item) => {
@@ -716,7 +716,7 @@ export default function PanelProjectSpecialModulesPage() {
                               {item.start_date ? <span>{toDateInput(item.start_date)}{item.end_date ? ` - ${toDateInput(item.end_date)}` : ""}</span> : null}
                             </div>
                           </div>
-                          <span className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-widest ${status.className}`}>{status.label}</span>
+                          <span className={`panel-chip ${status.className}`}>{status.label}</span>
                         </div>
                         <div className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
                           <EurodeskMetric label="Hibe" value={formatCurrency(item.grant_amount)} />
@@ -738,12 +738,12 @@ export default function PanelProjectSpecialModulesPage() {
                                   end_date: toDateInput(item.end_date),
                                 });
                               }}
-                              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-muted-foreground hover:bg-slate-50 hover:text-slate-900"
+                              className="panel-card-action"
                             >
                               <Edit2 className="h-4 w-4" />
                               Duzenle
                             </button>
-                            <button type="button" onClick={() => void destroy("eurodesk-projects", item.id)} className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-black text-red-500 hover:bg-red-50">
+                            <button type="button" onClick={() => void destroy("eurodesk-projects", item.id)} className="panel-card-action panel-card-action-danger">
                               <Trash2 className="h-4 w-4" />
                               Sil
                             </button>
@@ -754,7 +754,7 @@ export default function PanelProjectSpecialModulesPage() {
                   })}
                 </div>
               )}
-              <div className="mt-5 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+              <div className="panel-card-muted mt-5">
                 <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Ortak kuruluslar</h3>
                 {access["projects.eurodesk.manage"] ? (
                   <form
@@ -789,7 +789,7 @@ export default function PanelProjectSpecialModulesPage() {
                                 <div className="text-xs text-muted-foreground">{[partnership.country, partnership.contact_info].filter(Boolean).join(" - ") || "Detay girilmemis"}</div>
                               </div>
                               {access["projects.eurodesk.manage"] ? (
-                                <button type="button" className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10" onClick={() => void destroyPartnership(project.id, partnership.id)} title="Ortakligi sil">
+                                <button type="button" className="panel-button-icon panel-table-action-danger" onClick={() => void destroyPartnership(project.id, partnership.id)} title="Ortakligi sil">
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                               ) : null}
@@ -836,14 +836,14 @@ export default function PanelProjectSpecialModulesPage() {
                 } : undefined}
                 onDelete={access["projects.rewards.manage"] ? (id) => destroy("reward-tiers", id) : undefined}
               />
-              <div className="mt-5 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+              <div className="panel-card-muted mt-5">
                 <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Hediye hakki kazananlar</h3>
                 {(data.reward_eligible_participants ?? []).length === 0 ? (
                   <div className="text-sm text-muted-foreground">Su an kosullari saglayan katilimci yok.</div>
                 ) : (
                   <div className="space-y-2">
                     {(data.reward_eligible_participants ?? []).map((participant) => (
-                      <div key={participant.participant_id} className="rounded-lg bg-slate-100 p-3 text-sm text-slate-900">
+                      <div key={participant.participant_id} className="panel-card-muted bg-white text-sm text-slate-900">
                         <div className="font-bold">{participant.name || participant.email || "Katilimci"}</div>
                         <div className="text-xs text-muted-foreground">
                           {participant.badge_count} rozet / {participant.credit} kredi - {participant.eligible_rewards.map((reward) => reward.reward_description).join(", ")}
@@ -884,11 +884,11 @@ export default function PanelProjectSpecialModulesPage() {
                     <option value="planned">Planlandi</option>
                     <option value="cancelled">Iptal</option>
                   </select>
-                  <input value={rewardAwardForm.note} onChange={(event) => setRewardAwardForm((current) => ({ ...current, note: event.target.value }))} placeholder="Not" className={`${inputClass} md:col-span-2`} />
+                  <input value={rewardAwardForm.note} onChange={(event) => setRewardAwardForm((current) => ({ ...current, note: event.target.value }))} placeholder="Not" className="panel-control md:col-span-2" />
                   <button className={`${buttonClass} md:col-span-2`}><Gift className="h-4 w-4" /> Hediye kaydi ekle</button>
                 </form>
               ) : null}
-              <div className="mt-5 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+              <div className="panel-card-muted mt-5">
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Verilen hediyeler</h3>
@@ -918,7 +918,7 @@ export default function PanelProjectSpecialModulesPage() {
                               <div className="mt-1 text-sm text-muted-foreground">{item.reward_name}</div>
                               {item.tier ? <div className="mt-1 text-xs text-muted-foreground">Kademe: {item.tier.name}</div> : null}
                             </div>
-                            <span className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-widest ${status.className}`}>{status.label}</span>
+                            <span className={`panel-chip ${status.className}`}>{status.label}</span>
                           </div>
                           <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-muted-foreground sm:grid-cols-2">
                             <RewardDetail label="Kayit" value={formatPanelDateTime(item.awarded_at)} />
@@ -930,12 +930,12 @@ export default function PanelProjectSpecialModulesPage() {
                           {access["projects.rewards.manage"] ? (
                             <div className="mt-4 flex flex-wrap justify-end gap-2">
                               {canMarkDelivered ? (
-                                <button type="button" onClick={() => void markRewardDelivered(item.id)} className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-100">
+                                <button type="button" onClick={() => void markRewardDelivered(item.id)} className="panel-card-action panel-card-action-success">
                                   <CheckCircle2 className="h-4 w-4" />
                                   Teslim edildi
                                 </button>
                               ) : null}
-                              <button type="button" onClick={() => void destroy("reward-awards", item.id)} className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-black text-red-500 hover:bg-red-50">
+                              <button type="button" onClick={() => void destroy("reward-awards", item.id)} className="panel-card-action panel-card-action-danger">
                                 <Trash2 className="h-4 w-4" />
                                 Sil
                               </button>
@@ -980,12 +980,12 @@ export default function PanelProjectSpecialModulesPage() {
                 >
                   <input value={kademeModuleForm.title} onChange={(event) => setKademeModuleForm((current) => ({ ...current, title: event.target.value }))} placeholder="Modul basligi" className={inputClass} required />
                   <input type="number" value={kademeModuleForm.sort_order} onChange={(event) => setKademeModuleForm((current) => ({ ...current, sort_order: event.target.value }))} placeholder="Sira" className={inputClass} />
-                  <textarea value={kademeModuleForm.description} onChange={(event) => setKademeModuleForm((current) => ({ ...current, description: event.target.value }))} placeholder="Aciklama" className={`${inputClass} md:col-span-2 min-h-[72px]`} />
-                  <textarea value={kademeModuleForm.outcomesText} onChange={(event) => setKademeModuleForm((current) => ({ ...current, outcomesText: event.target.value }))} placeholder="Kazanumlar (her satira bir madde)" className={`${inputClass} md:col-span-2 min-h-[80px]`} />
-                  <textarea value={kademeModuleForm.warning_text} onChange={(event) => setKademeModuleForm((current) => ({ ...current, warning_text: event.target.value }))} placeholder="Uyari / yaptirim metni" className={`${inputClass} md:col-span-2 min-h-[64px]`} />
-                  <input value={kademeModuleForm.consent_checkbox_label} onChange={(event) => setKademeModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} placeholder="Onay kutusu metni" className={`${inputClass} md:col-span-2`} />
-                  <textarea value={kademeModuleForm.instructorsJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, instructorsJson: event.target.value }))} placeholder='Egitmenler JSON ornek: [{"name":"Ad Soyad","bio":"..."}]' className={`${inputClass} md:col-span-2 min-h-[64px] font-mono text-xs`} />
-                  <textarea value={kademeModuleForm.faqJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, faqJson: event.target.value }))} placeholder='SSS JSON ornek: [{"question":"?","answer":"..."}]' className={`${inputClass} md:col-span-2 min-h-[64px] font-mono text-xs`} />
+                  <textarea value={kademeModuleForm.description} onChange={(event) => setKademeModuleForm((current) => ({ ...current, description: event.target.value }))} placeholder="Aciklama" className="panel-textarea md:col-span-2 min-h-[72px]" />
+                  <textarea value={kademeModuleForm.outcomesText} onChange={(event) => setKademeModuleForm((current) => ({ ...current, outcomesText: event.target.value }))} placeholder="Kazanumlar (her satira bir madde)" className="panel-textarea md:col-span-2 min-h-[80px]" />
+                  <textarea value={kademeModuleForm.warning_text} onChange={(event) => setKademeModuleForm((current) => ({ ...current, warning_text: event.target.value }))} placeholder="Uyari / yaptirim metni" className="panel-textarea md:col-span-2 min-h-[64px]" />
+                  <input value={kademeModuleForm.consent_checkbox_label} onChange={(event) => setKademeModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} placeholder="Onay kutusu metni" className="panel-control md:col-span-2" />
+                  <textarea value={kademeModuleForm.instructorsJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, instructorsJson: event.target.value }))} placeholder='Egitmenler JSON ornek: [{"name":"Ad Soyad","bio":"..."}]' className="panel-textarea md:col-span-2 min-h-[64px] font-mono text-xs" />
+                  <textarea value={kademeModuleForm.faqJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, faqJson: event.target.value }))} placeholder='SSS JSON ornek: [{"question":"?","answer":"..."}]' className="panel-textarea md:col-span-2 min-h-[64px] font-mono text-xs" />
                   <label className="flex items-center gap-2 text-sm text-slate-900">
                     <input type="checkbox" checked={kademeModuleForm.requires_consent} onChange={(event) => setKademeModuleForm((current) => ({ ...current, requires_consent: event.target.checked }))} />
                     Katilimci onayi zorunlu
@@ -1010,7 +1010,7 @@ export default function PanelProjectSpecialModulesPage() {
                     {editing?.endpoint === "kademe-modules" ? (
                       <button
                         type="button"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-slate-50 hover:text-slate-900"
+                        className="panel-button panel-button-secondary"
                         onClick={() => {
                           setEditing(null);
                           setKademeModuleForm(initialKademeModule);
@@ -1028,13 +1028,13 @@ export default function PanelProjectSpecialModulesPage() {
                   <div className="text-sm text-muted-foreground">Tanimli KADEME+ modulu yok.</div>
                 ) : (
                   (data.kademe_modules ?? []).map((mod) => (
-                    <div key={mod.id} className="rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+                    <div key={mod.id} className="panel-card-muted">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <div className="font-bold text-slate-900">{mod.title}</div>
                           <div className="text-xs text-muted-foreground">
-                            {mod.is_active ? "Aktif" : "Pasif"} · {mod.application_open ? "Başvuru açık" : "Başvuru kapalı"}
-                            {typeof mod.enrollments_count === "number" ? ` · ${mod.enrollments_count} kayıt` : ""}
+                            {mod.is_active ? "Aktif" : "Pasif"} - {mod.application_open ? "Başvuru açık" : "Başvuru kapalı"}
+                            {typeof mod.enrollments_count === "number" ? ` - ${mod.enrollments_count} kayıt` : ""}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -1042,7 +1042,7 @@ export default function PanelProjectSpecialModulesPage() {
                             <>
                               <button
                                 type="button"
-                                className="rounded-lg border border-slate-200 p-2 text-muted-foreground hover:bg-slate-50 hover:text-slate-900"
+                                className="panel-button-icon"
                                 title="Duzenle"
                                 onClick={() => {
                                   setEditing({ endpoint: "kademe-modules", id: mod.id });
@@ -1066,7 +1066,7 @@ export default function PanelProjectSpecialModulesPage() {
                               </button>
                               <button
                                 type="button"
-                                className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10"
+                                className="panel-button-icon panel-table-action-danger"
                                 title="Sil"
                                 onClick={() => destroy("kademe-modules", mod.id)}
                               >
@@ -1080,15 +1080,15 @@ export default function PanelProjectSpecialModulesPage() {
                         <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
                           <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Kayitlar</div>
                           {(mod.enrollments ?? []).map((en) => (
-                            <div key={en.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-black/20 p-2 text-sm">
+                            <div key={en.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2 text-sm">
                               <span className="text-slate-900">{en.user?.name || en.user?.email || `Kullanici #${en.user_id}`}</span>
                               <span className="text-xs text-muted-foreground">{en.status}</span>
                               {en.status === "pending" ? (
                                 <div className="flex gap-1">
-                                  <button type="button" className="rounded-md bg-emerald-600/80 px-2 py-1 text-xs font-bold text-white" onClick={() => void updateKademeEnrollment(en.id, "approved")}>
+                                  <button type="button" className="panel-card-action panel-card-action-success px-2 py-1" onClick={() => void updateKademeEnrollment(en.id, "approved")}>
                                     Onayla
                                   </button>
-                                  <button type="button" className="rounded-md bg-red-600/80 px-2 py-1 text-xs font-bold text-white" onClick={() => void updateKademeEnrollment(en.id, "rejected")}>
+                                  <button type="button" className="panel-card-action panel-card-action-danger px-2 py-1" onClick={() => void updateKademeEnrollment(en.id, "rejected")}>
                                     Reddet
                                   </button>
                                 </div>
@@ -1113,7 +1113,7 @@ export default function PanelProjectSpecialModulesPage() {
 
 function ModuleCard({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+    <section className="panel-section-card">
       <div className="mb-5 flex items-center gap-2 text-lg font-black text-slate-900">
         <span className="text-accent">{icon}</span>
         {title}
@@ -1139,7 +1139,7 @@ function SimpleForm({ children, isEditing, label, onCancel, onSubmit }: { childr
           {isEditing ? `${label ?? "Kayit"} guncelle` : "Kaydet"}
         </button>
         {isEditing && onCancel ? (
-          <button type="button" onClick={onCancel} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-slate-50 hover:text-slate-900">
+          <button type="button" onClick={onCancel} className="panel-button panel-button-secondary">
             <X className="h-4 w-4" />
             Vazgec
           </button>
@@ -1153,7 +1153,7 @@ function EurodeskSummaryPanel({ summary }: { summary?: EurodeskSummary | null })
   if (!summary) return null;
 
   return (
-    <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <div className="panel-card-muted mb-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Eurodesk ozeti</h3>
         {summary.countries.length > 0 ? <span className="text-xs font-semibold text-slate-600">Ulkeler: {summary.countries.join(", ")}</span> : null}
@@ -1180,7 +1180,7 @@ function EurodeskSummaryPanel({ summary }: { summary?: EurodeskSummary | null })
 
 function EurodeskMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+    <div className="panel-card-muted bg-white px-3 py-2">
       <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className="mt-1 break-words font-semibold text-slate-800">{value}</div>
     </div>
@@ -1189,7 +1189,7 @@ function EurodeskMetric({ label, value }: { label: string; value: string }) {
 
 function RewardStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+    <div className="panel-card-muted px-3 py-2 text-center">
       <div className="text-base font-black text-slate-900">{value}</div>
       <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</div>
     </div>
@@ -1198,7 +1198,7 @@ function RewardStat({ label, value }: { label: string; value: number }) {
 
 function RewardDetail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 px-3 py-2">
+    <div className="panel-card-muted px-3 py-2">
       <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className="mt-1 font-semibold text-slate-800">{value}</div>
     </div>
@@ -1213,7 +1213,7 @@ function FormActions({ isEditing, label, onCancel }: { isEditing?: boolean; labe
         {isEditing ? `${label} guncelle` : `${label} ekle`}
       </button>
       {isEditing ? (
-        <button type="button" onClick={onCancel} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-slate-50 hover:text-slate-900">
+        <button type="button" onClick={onCancel} className="panel-button panel-button-secondary">
           <X className="h-4 w-4" />
           Vazgec
         </button>
@@ -1237,21 +1237,21 @@ function RecordList<T extends { id: number }>({
   onEdit?: (item: T) => void;
   onDelete?: (id: number) => void;
 }) {
-  if (items.length === 0) return <div className="rounded-xl border border-slate-200 bg-white/[0.03] p-4 text-sm text-muted-foreground">Kayit yok.</div>;
+  if (items.length === 0) return <div className="panel-empty-card py-5">Kayit yok.</div>;
 
   return (
     <div className="space-y-2">
       {items.map((item) => (
-        <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/[0.03] p-4">
+        <div key={item.id} className="flex items-center justify-between gap-3 panel-card-muted bg-white">
           <div className="text-sm font-semibold text-slate-900">{render(item)}</div>
           <div className="flex shrink-0 items-center gap-2">
             {onEdit && (canEdit ? canEdit(item) : true) ? (
-              <button type="button" onClick={() => onEdit(item)} className="rounded-lg border border-slate-200 p-2 text-muted-foreground hover:bg-slate-50 hover:text-slate-900" title="Duzenle">
+              <button type="button" onClick={() => onEdit(item)} className="panel-button-icon" title="Duzenle">
                 <Edit2 className="h-4 w-4" />
               </button>
             ) : null}
             {onDelete && (canDelete ? canDelete(item) : true) ? (
-              <button type="button" onClick={() => onDelete(item.id)} className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10" title="Sil">
+              <button type="button" onClick={() => onDelete(item.id)} className="panel-button-icon panel-table-action-danger" title="Sil">
                 <Trash2 className="h-4 w-4" />
               </button>
             ) : null}
@@ -1279,4 +1279,3 @@ function toDateInput(value?: string | null): string {
   if (!value) return "";
   return value.slice(0, 10);
 }
-

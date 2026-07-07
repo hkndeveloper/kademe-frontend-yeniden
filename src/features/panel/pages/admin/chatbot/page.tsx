@@ -9,7 +9,7 @@ export default function AdminChatbotPage() {
 
   if (!canUseChatbot) {
     return (
-      <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 px-6 py-8 text-center text-sm text-amber-100">
+      <div className="panel-empty-card text-amber-700">
         Yonetim chatbotuna erisim icin tum sistem kapsami gerekir.
       </div>
     );

@@ -296,7 +296,7 @@ export default function AdminPeriodsPage() {
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
             <FileStack className="h-7 w-7" />
           </div>
           <div>
@@ -314,11 +314,11 @@ export default function AdminPeriodsPage() {
         </PermissionGate>
       </div>
 
-      {message ? <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-sm text-emerald-200">{message}</div> : null}
-      {errorMessage ? <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-200">{errorMessage}</div> : null}
+      {message ? <div className="panel-notice panel-notice-success">{message}</div> : null}
+      {errorMessage ? <div className="panel-notice panel-notice-error">{errorMessage}</div> : null}
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[0.95fr_1.05fr]">
-        <form onSubmit={(event) => void handleSubmit(event)} className="glass-panel rounded-3xl p-8">
+        <form onSubmit={(event) => void handleSubmit(event)} className="panel-section-card">
           <div className="mb-6 flex items-center gap-3">
             {editingPeriodId ? <PencilLine className="h-5 w-5 text-indigo-400" /> : <Plus className="h-5 w-5 text-indigo-400" />}
             <h2 className="text-lg font-bold text-slate-900">{editingPeriodId ? "Donem Duzenle" : "Yeni Donem Olustur"}</h2>
@@ -329,7 +329,7 @@ export default function AdminPeriodsPage() {
               value={form.project_id}
               onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))}
               disabled={editingPeriodId !== null}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900 disabled:opacity-70"
+              className="panel-control"
               required
             >
               <option value="">Proje secin</option>
@@ -339,15 +339,15 @@ export default function AdminPeriodsPage() {
                 </option>
               ))}
             </select>
-            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="2026 Bahar Donemi" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" required />
+            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="2026 Bahar Donemi" className="panel-control" required />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <input type="date" value={form.start_date} onChange={(event) => setForm((current) => ({ ...current, start_date: event.target.value }))} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" required />
-              <input type="date" value={form.end_date} onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" required />
+              <input type="date" value={form.start_date} onChange={(event) => setForm((current) => ({ ...current, start_date: event.target.value }))} className="panel-control" required />
+              <input type="date" value={form.end_date} onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))} className="panel-control" required />
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <input type="number" min="0" value={form.credit_start_amount} onChange={(event) => setForm((current) => ({ ...current, credit_start_amount: event.target.value }))} placeholder="Baslangic kredi" className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" required />
-              <input type="number" min="0" value={form.credit_threshold} onChange={(event) => setForm((current) => ({ ...current, credit_threshold: event.target.value }))} placeholder="Uyari esigi" className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900" required />
-              <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as PeriodFormState["status"] }))} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-900">
+              <input type="number" min="0" value={form.credit_start_amount} onChange={(event) => setForm((current) => ({ ...current, credit_start_amount: event.target.value }))} placeholder="Baslangic kredi" className="panel-control" required />
+              <input type="number" min="0" value={form.credit_threshold} onChange={(event) => setForm((current) => ({ ...current, credit_threshold: event.target.value }))} placeholder="Uyari esigi" className="panel-control" required />
+              <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as PeriodFormState["status"] }))} className="panel-control">
                 <option value="active">Aktif</option>
                 <option value="passive">Pasif</option>
                 <option value="completed">Tamamlandi</option>
@@ -359,7 +359,7 @@ export default function AdminPeriodsPage() {
             <button
               type="submit"
               disabled={saving || !canSubmitPeriod()}
-              className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
+              className="panel-button panel-button-primary h-11 px-5"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {editingPeriodId ? "Donemi Kaydet" : "Donem Olustur"}
@@ -371,7 +371,7 @@ export default function AdminPeriodsPage() {
                   setEditingPeriodId(null);
                   setForm(initialForm);
                 }}
-                className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-slate-900"
+                className="panel-button panel-button-secondary h-11 px-5"
               >
                 Vazgec
               </button>
@@ -380,13 +380,13 @@ export default function AdminPeriodsPage() {
         </form>
 
         <div className="space-y-6">
-          <div className="glass-panel rounded-3xl p-6">
+          <div className="panel-section-card">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Donem Listesi</h2>
                 <p className="text-sm text-muted-foreground">Projeye bagli tum donemler ve aktif kredi kurallari</p>
               </div>
-              <select value={selectedProjectId} onChange={(event) => setSelectedProjectId(event.target.value)} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900">
+              <select value={selectedProjectId} onChange={(event) => setSelectedProjectId(event.target.value)} className="panel-control md:w-72">
                 <option value="all">Tum projeler</option>
                 {projectsInScope.map((project) => (
                   <option key={project.id} value={project.id}>
@@ -402,25 +402,25 @@ export default function AdminPeriodsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
             </div>
           ) : filteredPeriods.length === 0 ? (
-            <div className="glass-panel rounded-3xl p-16 text-center text-muted-foreground">Bu kapsamda donem bulunamadi.</div>
+            <div className="panel-empty-card">Bu kapsamda donem bulunamadi.</div>
           ) : (
             <div className="space-y-4">
               {filteredPeriods.map((period) => (
-                <div key={period.id} className="glass-panel rounded-3xl p-6">
+                <div key={period.id} className="panel-section-card">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${period.status === "active" ? "bg-green-500/10 text-green-400" : period.status === "completed" ? "bg-indigo-500/10 text-indigo-300" : "bg-white/10 text-muted-foreground"}`}>
+                        <span className={`panel-chip ${period.status === "active" ? "panel-chip-success" : period.status === "completed" ? "panel-chip-info" : ""}`}>
                           {period.status}
                         </span>
-                        <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <span className="panel-chip">
                           {period.project?.name || `Proje #${period.project_id}`}
                         </span>
                       </div>
                       <h3 className="text-lg font-bold text-slate-900">{period.name}</h3>
                       <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
                         <div className="inline-flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-indigo-400" />
+                          <Calendar className="h-4 w-4 text-indigo-600" />
                           {new Date(period.start_date).toLocaleDateString("tr-TR")} - {new Date(period.end_date).toLocaleDateString("tr-TR")}
                         </div>
                         <div>Baslangic kredi: {period.credit_start_amount}</div>
@@ -433,7 +433,7 @@ export default function AdminPeriodsPage() {
                         type="button"
                         onClick={() => void loadClosureSummary(period.id)}
                         disabled={!canAccessProject("periods.view", period.project_id) || summaryLoading}
-                        className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="panel-card-action"
                       >
                         {summaryLoading && summaryPeriodId === period.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
                         Kapanis Ozeti
@@ -442,19 +442,19 @@ export default function AdminPeriodsPage() {
                         type="button"
                         onClick={() => startEdit(period)}
                         disabled={!canAccessProject("periods.update", period.project_id)}
-                        className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="panel-card-action"
                       >
                         Duzenle
                       </button>
                       {canAccessProject("projects.application_form.update", period.project_id) ? (
                         <Link
                           href={`/panel/periods/form-builder?project_id=${period.project_id}&period_id=${period.id}`}
-                          className="rounded-2xl border border-indigo-500/20 bg-indigo-600/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-indigo-300"
+                          className="panel-card-action panel-card-action-info"
                         >
                           Basvuru Formu
                         </Link>
                       ) : (
-                        <span className="cursor-not-allowed rounded-2xl border border-white/5 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground opacity-50">
+                        <span className="panel-card-action cursor-not-allowed opacity-50">
                           Basvuru Formu
                         </span>
                       )}
@@ -463,7 +463,7 @@ export default function AdminPeriodsPage() {
                           type="button"
                           onClick={() => void completePeriod(period)}
                           disabled={!canAccessProject("periods.update", period.project_id) || periodActionId === period.id}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-600/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="panel-card-action panel-card-action-success"
                         >
                           {periodActionId === period.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                           Tamamla
@@ -473,7 +473,7 @@ export default function AdminPeriodsPage() {
                           type="button"
                           onClick={() => void reopenPeriod(period, "passive")}
                           disabled={!canAccessProject("periods.update", period.project_id) || periodActionId === period.id}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="panel-card-action panel-card-action-warning"
                         >
                           {periodActionId === period.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
                           Yeniden Ac
@@ -483,7 +483,7 @@ export default function AdminPeriodsPage() {
                   </div>
 
                   {summaryPeriodId === period.id ? (
-                    <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-5">
+                    <div className="panel-card-muted mt-5">
                       {summaryLoading ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -492,35 +492,35 @@ export default function AdminPeriodsPage() {
                       ) : closureSummary ? (
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                            <div className="rounded-2xl bg-white/5 p-4">
+                            <div className="panel-card-muted">
                               <p className="text-xs text-muted-foreground">Katilimci</p>
                               <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.participants.total}</p>
                               <p className="text-xs text-muted-foreground">aktif {closureSummary.summary.participants.active}</p>
                             </div>
-                            <div className="rounded-2xl bg-white/5 p-4">
+                            <div className="panel-card-muted">
                               <p className="text-xs text-muted-foreground">Program</p>
                               <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.programs.total}</p>
                               <p className="text-xs text-muted-foreground">acik {closureSummary.summary.programs.open}</p>
                             </div>
-                            <div className="rounded-2xl bg-white/5 p-4">
+                            <div className="panel-card-muted">
                               <p className="text-xs text-muted-foreground">Basvuru</p>
                               <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.applications.total}</p>
                               <p className="text-xs text-muted-foreground">bekleyen {closureSummary.warnings.pending_applications}</p>
                             </div>
-                            <div className="rounded-2xl bg-white/5 p-4">
+                            <div className="panel-card-muted">
                               <p className="text-xs text-muted-foreground">Sertifika</p>
                               <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.certificates.total}</p>
                               <p className="text-xs text-muted-foreground">arsiv kaydi</p>
                             </div>
                           </div>
 
-                          <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-4">
+                          <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
                             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                               <div>
-                                <p className="text-xs font-bold uppercase tracking-widest text-indigo-300">Kredi Snapshot</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-indigo-700">Kredi Snapshot</p>
                                 <p className="mt-1 text-sm text-muted-foreground">Kapanis aninda arsize giren kredi fotografi</p>
                               </div>
-                              <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-slate-900">
+                              <div className="panel-chip panel-chip-info">
                                 Esik {closureSummary.summary.credit_snapshot.threshold}
                               </div>
                             </div>
@@ -537,14 +537,14 @@ export default function AdminPeriodsPage() {
                                   .filter((participant) => participant.below_threshold)
                                   .slice(0, 4)
                                   .map((participant) => (
-                                    <div key={participant.participant_id} className="rounded-2xl bg-white/10 p-3 text-sm">
+                                    <div key={participant.participant_id} className="panel-card-muted text-sm">
                                       <div className="flex items-center justify-between gap-3">
                                         <div className="min-w-0">
                                           <p className="truncate font-bold text-slate-900">{participant.student}</p>
                                           <p className="truncate text-xs text-muted-foreground">{participant.email ?? "E-posta yok"}</p>
                                         </div>
                                         <div className="text-right">
-                                          <p className="font-black text-amber-300">{participant.credit}</p>
+                                          <p className="font-black text-amber-700">{participant.credit}</p>
                                           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">-{participant.risk_gap}</p>
                                         </div>
                                       </div>
@@ -555,14 +555,14 @@ export default function AdminPeriodsPage() {
                           </div>
 
                           <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground md:grid-cols-2">
-                            <div className="rounded-2xl bg-white/5 p-4">
+                            <div className="panel-card-muted">
                               Odev: {closureSummary.summary.assignments.total} / acik {closureSummary.summary.assignments.open}
                               <br />
                               Dijital bohca: {closureSummary.summary.materials.digital_bohca}
                               <br />
                               Gonullu firsati: {closureSummary.summary.materials.volunteer_opportunities}
                             </div>
-                            <div className="rounded-2xl bg-white/5 p-4">
+                            <div className="panel-card-muted">
                               KPD randevu: {closureSummary.summary.kpd.appointments}
                               <br />
                               KPD rapor: {closureSummary.summary.kpd.reports}
@@ -572,11 +572,11 @@ export default function AdminPeriodsPage() {
                           </div>
 
                           {closureSummary.warnings.open_programs || closureSummary.warnings.pending_applications || closureSummary.warnings.pending_financials ? (
-                            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+                            <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
                               Kapanis oncesi dikkat: {closureSummary.warnings.open_programs} acik program, {closureSummary.warnings.pending_applications} bekleyen basvuru, {closureSummary.warnings.pending_financials} bekleyen finans kaydi var. Sistem kapatmaya izin verir; bu uyari operasyonel kontroldur.
                             </div>
                           ) : (
-                            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+                            <div className="panel-notice panel-notice-success">
                               Bu donemde kapanis icin kritik bekleyen is gorunmuyor.
                             </div>
                           )}
@@ -598,11 +598,11 @@ type SnapshotMetricTone = "slate" | "amber";
 function SnapshotMetric({ label, value, tone = "slate" }: { label: string; value: number | string; tone?: SnapshotMetricTone }) {
   const toneClass: Record<SnapshotMetricTone, string> = {
     slate: "text-slate-900",
-    amber: "text-amber-300",
+    amber: "text-amber-700",
   };
 
   return (
-    <div className="rounded-2xl bg-white/10 p-3">
+    <div className="panel-card-muted">
       <p className={`text-xl font-black ${toneClass[tone]}`}>{value}</p>
       <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
     </div>

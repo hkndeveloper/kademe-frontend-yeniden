@@ -5,7 +5,7 @@ import { Bell, CheckCircle2, Download, FileText, Loader2, Mail, MessageSquare, S
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodsForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -134,15 +134,10 @@ export default function AdminAnnouncementsPage() {
   const canDeleteAnnouncements = hasPermission("announcements.delete");
   const canSendSms = hasPermission("announcements.send_sms");
   const canSendEmail = hasPermission("announcements.send_email");
-  const filterProject = useMemo(
-    () => projects.find((project) => String(project.id) === filterProjectId),
-    [filterProjectId, projects]
-  );
   const formProject = useMemo(
     () => projects.find((project) => String(project.id) === projectId),
     [projectId, projects]
   );
-  const filterPeriods = useMemo(() => periodsForProject(filterProject), [filterProject]);
   const formPeriods = useMemo(() => periodsForProject(formProject), [formProject]);
   const availableTargetUnits = useMemo(() => {
     const units = Object.keys(targetUnitLabels);
@@ -412,10 +407,10 @@ export default function AdminAnnouncementsPage() {
 
       {(successMessage || errorMessage) && (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
+          className={`panel-notice ${
             errorMessage
-              ? "border-red-500/20 bg-red-500/10 text-red-200"
-              : "border-green-500/20 bg-green-500/10 text-green-200"
+              ? "panel-notice-error"
+              : "panel-notice-success"
           }`}
         >
           {errorMessage || successMessage}
@@ -423,14 +418,14 @@ export default function AdminAnnouncementsPage() {
       )}
 
       <PermissionGate permissions={["announcements.view", "announcements.create"]} require="any">
-        <div className="flex space-x-1 rounded-2xl bg-black/40 p-1 md:w-max">
+        <div className="panel-tabs md:w-max">
           <PermissionGate permission="announcements.view">
             <button
               onClick={() => setActiveTab("list")}
-              className={`flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all ${
+              className={`panel-tab ${
                 activeTab === "list"
-                  ? "bg-indigo-600 text-white shadow-lg"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-slate-900"
+                  ? "panel-tab-active"
+                  : ""
               }`}
             >
               <FileText className="h-4 w-4" />
@@ -440,10 +435,10 @@ export default function AdminAnnouncementsPage() {
           <PermissionGate permission="announcements.create">
             <button
               onClick={() => setActiveTab("new")}
-              className={`flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all ${
+              className={`panel-tab ${
                 activeTab === "new"
-                  ? "bg-indigo-600 text-white shadow-lg"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-slate-900"
+                  ? "panel-tab-active"
+                  : ""
               }`}
             >
               <Send className="h-4 w-4" />
@@ -457,69 +452,41 @@ export default function AdminAnnouncementsPage() {
         permissions={["announcements.view", "announcements.create"]}
         require="any"
         fallback={
-        <div className="glass-panel rounded-3xl p-10 text-center text-sm text-muted-foreground">
+        <div className="panel-empty-card">
           Bu modulu goruntulemek icin yetkiniz bulunmuyor.
         </div>
         }
       >
       {activeTab === "list" && canViewAnnouncements ? (
         <div className="space-y-6">
-        <div className="glass-panel rounded-3xl p-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Proje
-              </span>
-              <select
-                value={filterProjectId}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const project = projects.find((item) => String(item.id) === value);
-                  setFilterProjectId(value);
-                  setFilterPeriodId(value ? defaultPeriodIdForProject(project) || "all" : "all");
-                }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
-              >
-                <option value="">Tum projeler</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Donem
-              </span>
-              <select
-                value={filterPeriodId}
-                onChange={(e) => setFilterPeriodId(e.target.value)}
-                disabled={!filterProjectId || filterPeriods.length === 0}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <option value="all">{filterProjectId ? "Tum donemler" : "Proje secince donem filtrelenir"}</option>
-                {filterPeriods.map((period) => (
-                  <option key={period.id} value={period.id}>
-                    {period.name}
-                    {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <div className="panel-filter-card">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+            <ProjectPeriodFilters
+              projects={projects}
+              selectedProjectId={filterProjectId || "all"}
+              selectedPeriodId={filterPeriodId}
+              onProjectChange={(value) => {
+                const normalizedValue = value === "all" ? "" : value;
+                const project = projects.find((item) => String(item.id) === normalizedValue);
+                setFilterProjectId(normalizedValue);
+                setFilterPeriodId(normalizedValue ? defaultPeriodIdForProject(project) || "all" : "all");
+              }}
+              onPeriodChange={(value) => setFilterPeriodId(value)}
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            />
             <button
               type="button"
               onClick={() => void loadAnnouncements()}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700"
+              className="panel-button panel-button-secondary"
             >
               Yenile
             </button>
           </div>
         </div>
-        <div className="glass-panel overflow-hidden rounded-3xl">
+        <div className="panel-table-card">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-muted-foreground">
-              <thead className="border-b border-white/5 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
+            <table className="panel-table">
+              <thead>
                 <tr>
                   <th className="px-6 py-4">Tarih</th>
                   <th className="px-6 py-4">Baslik</th>
@@ -529,7 +496,7 @@ export default function AdminAnnouncementsPage() {
                   <th className="px-6 py-4 text-right">Islem</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody>
                 {listLoading ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
@@ -544,7 +511,7 @@ export default function AdminAnnouncementsPage() {
                   </tr>
                 ) : (
                   announcements.map((announcement) => (
-                    <tr key={announcement.id} className="transition-colors hover:bg-white/5">
+                    <tr key={announcement.id}>
                       <td className="px-6 py-4">{new Date(announcement.published_at).toLocaleDateString("tr-TR")}</td>
                       <td className="px-6 py-4">
                         <div className="line-clamp-1 font-bold text-slate-900">{announcement.title}</div>
@@ -568,7 +535,7 @@ export default function AdminAnnouncementsPage() {
                             {announcement.target_roles?.map((role) => (
                               <span
                                 key={role}
-                                className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase text-slate-900"
+                                className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase text-slate-700"
                               >
                                 {roleLabels[role] || role}
                               </span>
@@ -597,7 +564,7 @@ export default function AdminAnnouncementsPage() {
                           <button
                             type="button"
                             onClick={() => handleDelete(announcement.id)}
-                            className="inline-flex items-center justify-center rounded-lg bg-white/5 p-2 text-gray-400 transition-colors hover:bg-red-600 hover:text-white"
+                            className="panel-table-action panel-table-action-icon panel-table-action-danger"
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -610,11 +577,11 @@ export default function AdminAnnouncementsPage() {
             </table>
           </div>
         </div>
-        <div className="glass-panel rounded-3xl p-6">
+        <div className="panel-section-card">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Gonderim Ekleri</h2>
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Filtrelenebilir e-posta/SMS loglari</p>
+              <p className="panel-label">Filtrelenebilir e-posta/SMS loglari</p>
             </div>
             <div className="flex items-center gap-2">
               <ExportButtons
@@ -630,7 +597,7 @@ export default function AdminAnnouncementsPage() {
                 }}
                 buttonLabel="Loglari Disa Aktar"
               />
-              <button type="button" onClick={() => void loadCommunicationLogs(1)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700">
+              <button type="button" onClick={() => void loadCommunicationLogs(1)} className="panel-button panel-button-secondary text-xs">
                 Yenile
               </button>
             </div>
@@ -671,7 +638,7 @@ export default function AdminAnnouncementsPage() {
               <button
                 type="button"
                 onClick={() => void loadCommunicationLogs(1)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                className="panel-button panel-button-secondary w-full text-xs"
               >
                 Uygula
               </button>
@@ -687,7 +654,7 @@ export default function AdminAnnouncementsPage() {
                     date_to: "",
                   });
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                className="panel-button panel-button-secondary w-full text-xs"
               >
                 Temizle
               </button>
@@ -713,12 +680,12 @@ export default function AdminAnnouncementsPage() {
             <div className="text-sm text-muted-foreground">Gonderim kaydi bulunamadi.</div>
           ) : (
             <div className="space-y-3">
-              <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="panel-label">
                 Toplam {logTotal} kayit
               </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {communicationLogs.map((log) => (
-                <div key={log.id} className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                <div key={log.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-bold text-slate-900">{log.subject || log.type.toUpperCase()}</div>
@@ -731,7 +698,7 @@ export default function AdminAnnouncementsPage() {
                       <button
                         type="button"
                         onClick={() => void handleDownloadAttachment(log)}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600/20 px-3 py-2 text-xs font-bold text-indigo-300 transition-colors hover:bg-indigo-600 hover:text-white"
+                        className="panel-table-action panel-table-action-info shrink-0"
                       >
                         <Download className="h-3.5 w-3.5" />
                         Ek
@@ -742,23 +709,23 @@ export default function AdminAnnouncementsPage() {
               ))}
               </div>
               {logLastPage > 1 ? (
-                <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                <div className="flex items-center justify-between border-t border-slate-200 pt-3">
                   <button
                     type="button"
                     disabled={logPage <= 1}
                     onClick={() => void loadCommunicationLogs(Math.max(1, logPage - 1))}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 disabled:opacity-50"
+                    className="panel-button panel-button-secondary text-xs"
                   >
                     Onceki
                   </button>
-                  <span className="text-xs font-bold text-muted-foreground">
+                  <span className="panel-pagination-count">
                     {logPage} / {logLastPage}
                   </span>
                   <button
                     type="button"
                     disabled={logPage >= logLastPage}
                     onClick={() => void loadCommunicationLogs(logPage + 1)}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 disabled:opacity-50"
+                    className="panel-button panel-button-secondary text-xs"
                   >
                     Sonraki
                   </button>
@@ -771,50 +738,50 @@ export default function AdminAnnouncementsPage() {
       ) : null}
 
       {activeTab === "new" && canCreateAnnouncements && (
-        <form onSubmit={handleSubmit} className="glass-panel rounded-3xl p-8 space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        <form onSubmit={handleSubmit} className="panel-section-card space-y-6">
+          <div className="panel-form-grid">
+            <div className="panel-field">
+              <label className="panel-label">
                 Duyuru Basligi
               </label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
                 placeholder="Orn: Yeni donem basvurulari basladi"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kategori</label>
+            <div className="panel-field">
+              <label className="panel-label">Kategori</label>
               <input
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                className="panel-control"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Duyuru Icerigi</label>
+          <div className="panel-field">
+            <label className="panel-label">Duyuru Icerigi</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               required
-              className="min-h-[150px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+              className="panel-textarea min-h-[150px]"
               placeholder="Mesajinizi buraya yazin..."
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-8 border-t border-white/5 pt-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-8 border-t border-slate-200 pt-6 md:grid-cols-2">
             <div className="space-y-4">
               <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
                 <Users className="h-4 w-4 text-indigo-400" />
                 Hedef Kitle
               </h3>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="panel-field">
+                <label className="panel-label">
                   Proje Bazli Gonderim
                 </label>
                 <select
@@ -825,7 +792,7 @@ export default function AdminAnnouncementsPage() {
                     setProjectId(value);
                     setPeriodId(value ? defaultPeriodIdForProject(project) : "");
                   }}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  className="panel-control"
                 >
                   <option value="">Tum Projeler</option>
                   {projects.filter((project) => canAccessProject("announcements.create", project.id)).map((project) => (
@@ -836,15 +803,15 @@ export default function AdminAnnouncementsPage() {
                 </select>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="panel-field">
+                <label className="panel-label">
                   Donem
                 </label>
                 <select
                   value={periodId}
                   onChange={(e) => setPeriodId(e.target.value)}
                   disabled={!projectId || formPeriods.length === 0}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="panel-control"
                 >
                   <option value="">{projectId ? "Donem secmeden gonder" : "Proje secince donem secilebilir"}</option>
                   {formPeriods.map((period) => (
@@ -856,8 +823,8 @@ export default function AdminAnnouncementsPage() {
                 </select>
               </div>
 
-              <div className="space-y-2 pt-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="panel-field pt-2">
+                <label className="panel-label">
                   Rol Bazli Secim
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -868,8 +835,8 @@ export default function AdminAnnouncementsPage() {
                       onClick={() => toggleRole(role)}
                       className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
                         targetRoles.includes(role)
-                          ? "border-indigo-500 bg-indigo-500/20 text-white"
-                          : "border-slate-200 bg-white text-muted-foreground hover:bg-white/5"
+                          ? "border-indigo-600 bg-indigo-600 text-white"
+                          : "border-slate-200 bg-white text-muted-foreground hover:border-orange-200 hover:bg-orange-50/40"
                       }`}
                     >
                       {label}
@@ -878,8 +845,8 @@ export default function AdminAnnouncementsPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 pt-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="panel-field pt-2">
+                <label className="panel-label">
                   Birim Bazli Secim
                 </label>
                 {availableTargetUnits.length > 0 ? (
@@ -891,8 +858,8 @@ export default function AdminAnnouncementsPage() {
                         onClick={() => toggleTargetUnit(unit)}
                         className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
                           targetUnits.includes(unit)
-                            ? "border-indigo-500 bg-indigo-500/20 text-white"
-                            : "border-slate-200 bg-white text-muted-foreground hover:bg-white/5"
+                            ? "border-indigo-600 bg-indigo-600 text-white"
+                            : "border-slate-200 bg-white text-muted-foreground hover:border-orange-200 hover:bg-orange-50/40"
                         }`}
                       >
                         {targetUnitLabels[unit] || unit}
@@ -914,7 +881,7 @@ export default function AdminAnnouncementsPage() {
               </h3>
 
               {canSendEmail && (
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/5 bg-white/5 p-4 transition-colors hover:bg-white/10">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:bg-orange-50/40">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
                     <Mail className="h-5 w-5" />
                   </div>
@@ -926,26 +893,26 @@ export default function AdminAnnouncementsPage() {
                     type="checkbox"
                     checked={sendEmail}
                     onChange={(e) => setSendEmail(e.target.checked)}
-                    className="h-5 w-5 rounded border-gray-600 bg-black/40 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-gray-900"
+                    className="h-5 w-5 rounded border-slate-300 bg-white text-accent focus:ring-accent/30"
                   />
                 </label>
               )}
 
               {canSendEmail && sendEmail && (
                 <div className="space-y-2 pl-14">
-                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  <label className="panel-label">
                     E-posta Eki
                   </label>
                   <input
                     type="file"
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    className="block w-full text-xs text-slate-400 file:mr-4 file:rounded-full file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-700"
+                    className="panel-file-input"
                   />
                 </div>
               )}
 
               {canSendSms && (
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/5 bg-white/5 p-4 transition-colors hover:bg-white/10">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:bg-orange-50/40">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
                     <MessageSquare className="h-5 w-5" />
                   </div>
@@ -957,18 +924,18 @@ export default function AdminAnnouncementsPage() {
                     type="checkbox"
                     checked={sendSms}
                     onChange={(e) => setSendSms(e.target.checked)}
-                    className="h-5 w-5 rounded border-gray-600 bg-black/40 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-gray-900"
+                    className="h-5 w-5 rounded border-slate-300 bg-white text-accent focus:ring-accent/30"
                   />
                 </label>
               )}
             </div>
           </div>
 
-          <div className="flex justify-end border-t border-white/5 pt-6">
+          <div className="panel-modal-footer">
             <button
               type="submit"
               disabled={submitting || !title.trim() || !content.trim()}
-              className="flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-lg shadow-indigo-600/20 transition-all hover:bg-indigo-700 disabled:opacity-50"
+              className="panel-button panel-button-primary h-11 px-6"
             >
               {submitting ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

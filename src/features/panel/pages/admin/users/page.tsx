@@ -297,31 +297,31 @@ export default function AdminUsersPage() {
 
       {(successMessage || errorMessage) && (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
+          className={`panel-notice ${
             errorMessage
-              ? "border-red-500/20 bg-red-500/10 text-red-200"
-              : "border-green-500/20 bg-green-500/10 text-green-200"
+              ? "panel-notice-error"
+              : "panel-notice-success"
           }`}
         >
           {errorMessage || successMessage}
         </div>
       )}
 
-      <div className="glass-panel flex flex-col gap-4 rounded-3xl p-6 md:flex-row">
+      <div className="panel-filter-card flex flex-col gap-4 md:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="panel-control-icon" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && applyFilters()}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none focus:border-indigo-500"
+            className="panel-control pl-10"
             placeholder="Ogrenci veya mezun ara..."
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="min-w-[150px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+          className="panel-control md:max-w-[180px]"
         >
           <option value="">Ogrenci ve Mezun</option>
           {Object.entries(roleLabels).map(([key, value]) => (
@@ -333,7 +333,7 @@ export default function AdminUsersPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="min-w-[150px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+          className="panel-control md:max-w-[180px]"
         >
           <option value="">Tum Durumlar</option>
           <option value="active">Aktif</option>
@@ -343,17 +343,17 @@ export default function AdminUsersPage() {
         </select>
         <button
           onClick={applyFilters}
-          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold uppercase tracking-widest text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700"
+          className="panel-button panel-button-primary"
         >
           <Filter className="h-4 w-4" />
           Filtrele
         </button>
       </div>
 
-      <div className="glass-panel overflow-hidden rounded-3xl">
+      <div className="panel-table-card">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-muted-foreground">
-            <thead className="border-b border-white/5 bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-900">
+          <table className="panel-table">
+            <thead>
               <tr>
                 <th className="px-6 py-4">Kullanici</th>
                 <th className="px-6 py-4">Iletisim</th>
@@ -363,7 +363,7 @@ export default function AdminUsersPage() {
                 <th className="px-6 py-4 text-right">Islem</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
@@ -378,7 +378,7 @@ export default function AdminUsersPage() {
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className="transition-colors hover:bg-white/5">
+                  <tr key={user.id}>
                     <td className="px-6 py-4">
                       <div className="font-bold text-slate-900">
                         {user.name} {user.surname}
@@ -426,7 +426,7 @@ export default function AdminUsersPage() {
                     <td className="space-x-2 px-6 py-4 text-right">
                       <button
                         onClick={() => void openUserModal(user.id)}
-                        className="inline-flex items-center gap-1 rounded-xl bg-indigo-500/10 px-3 py-2 text-xs font-bold text-indigo-400 transition-colors hover:bg-indigo-500 hover:text-white"
+                        className="panel-table-action panel-table-action-info"
                       >
                         <Eye className="h-4 w-4" />
                         Profil
@@ -436,10 +436,10 @@ export default function AdminUsersPage() {
                         <button
                           onClick={() => void handleUpdateStatus(user.id, user.status)}
                           disabled={actionLoading === user.id}
-                          className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-colors disabled:opacity-50 ${
+                          className={`panel-table-action ${
                             user.status === "active"
-                              ? "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"
-                              : "bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white"
+                              ? "panel-table-action-danger"
+                              : "panel-table-action-success"
                           }`}
                         >
                           {actionLoading === user.id ? (
@@ -462,21 +462,21 @@ export default function AdminUsersPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-white/5 px-6 py-4">
+          <div className="panel-pagination">
             <button
               disabled={page === 1}
               onClick={() => setPage((prev) => prev - 1)}
-              className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-900 disabled:opacity-50"
+              className="panel-button panel-button-secondary text-xs"
             >
               Onceki
             </button>
-            <span className="text-xs font-bold text-muted-foreground">
+            <span className="panel-pagination-count">
               {page} / {totalPages}
             </span>
             <button
               disabled={page === totalPages}
               onClick={() => setPage((prev) => prev + 1)}
-              className="rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-900 disabled:opacity-50"
+              className="panel-button panel-button-secondary text-xs"
             >
               Sonraki
             </button>
@@ -486,8 +486,8 @@ export default function AdminUsersPage() {
 
       {createOpen ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="panel-modal-card w-full max-w-lg">
+            <div className="panel-modal-header">
               <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
                 <UserPlus className="h-5 w-5 text-indigo-600" />
                 Yeni ogrenci / mezun olustur
@@ -500,55 +500,55 @@ export default function AdminUsersPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={(e) => void handleCreateUser(e)} className="space-y-4 p-6">
+            <form onSubmit={(e) => void handleCreateUser(e)} className="panel-modal-body space-y-4">
               {createError ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{createError}</div>
+                <div className="panel-notice panel-notice-error">{createError}</div>
               ) : null}
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-950">
+              <div className="panel-form-note">
                 Hesaba <strong>sifre belirleme baglantisi</strong> e-posta ile gider. Baglantiyi kullanmadan ogrenci/mezun
                 alanina <strong>giris yapamaz</strong>. E-posta gelmezse &quot;Sifremi unuttum&quot; ile yeni baglanti
                 talep edebilir.
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Ad</label>
+                  <label className="panel-label">Ad</label>
                   <input
                     required
                     value={createForm.name}
                     onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                    className="panel-control"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Soyad</label>
+                  <label className="panel-label">Soyad</label>
                   <input
                     required
                     value={createForm.surname}
                     onChange={(e) => setCreateForm((p) => ({ ...p, surname: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                    className="panel-control"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">E-posta</label>
+                <label className="panel-label">E-posta</label>
                 <input
                   required
                   type="email"
                   value={createForm.email}
                   onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  className="panel-control"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Telefon (istege bagli)</label>
+                <label className="panel-label">Telefon (istege bagli)</label>
                 <input
                   value={createForm.phone}
                   onChange={(e) => setCreateForm((p) => ({ ...p, phone: e.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                  className="panel-control"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Rol</label>
+                <label className="panel-label">Rol</label>
                 {createRolesLoading ? (
                   <div className="mt-2 flex justify-center py-4">
                     <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
@@ -558,7 +558,7 @@ export default function AdminUsersPage() {
                     required
                     value={createForm.role}
                     onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
+                    className="panel-control"
                   >
                     {roleOptionsForForm.length === 0 ? (
                       <option value="">Rol yok</option>
@@ -572,18 +572,18 @@ export default function AdminUsersPage() {
                   </select>
                 )}
               </div>
-              <div className="flex flex-wrap justify-end gap-2 pt-2">
+              <div className="panel-modal-footer">
                 <button
                   type="button"
                   onClick={() => setCreateOpen(false)}
-                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                  className="panel-button panel-button-secondary"
                 >
                   Kapat
                 </button>
                 <button
                   type="submit"
                   disabled={createSubmitting || createRolesLoading || roleOptionsForForm.length === 0}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 disabled:opacity-50"
+                  className="panel-button panel-button-primary"
                 >
                   {createSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Olustur
@@ -596,8 +596,8 @@ export default function AdminUsersPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 p-6">
+          <div className="panel-modal-card flex max-h-[90vh] w-full max-w-4xl flex-col">
+            <div className="panel-modal-header">
               <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
                 <Users className="h-5 w-5 text-indigo-600" />
                 Kullanici / Ogrenci Profil Bilgisi
@@ -609,7 +609,7 @@ export default function AdminUsersPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="overflow-y-auto p-6">
+            <div className="panel-modal-body">
               {modalLoading || !selectedUser ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />

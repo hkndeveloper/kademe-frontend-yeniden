@@ -102,7 +102,7 @@ export default function PanelMyProjectPage() {
       <PermissionGate
         permission="projects.view"
         fallback={
-        <div className="glass-panel rounded-3xl p-10 text-center text-sm text-muted-foreground">
+        <div className="panel-empty-card">
           Bu modulu goruntulemek icin yetkiniz bulunmuyor.
         </div>
         }
@@ -110,34 +110,34 @@ export default function PanelMyProjectPage() {
       {
         <>
 
-      <div className="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-6 text-sm text-muted-foreground">
+      <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
         {scope === "all_active_for_media_unit"
           ? "Medya birimi oldugunuz icin sistem aktif projelerin tam kapsam listesini gosteriyor."
           : "Bu ekran personelin atandigi talep ve destek kayitlarindaki proje baglarini kullanarak gorev kapsamini olusturuyor."}
       </div>
 
       {infoMessage && (
-        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-300">{infoMessage}</div>
+        <div className="panel-notice border-indigo-200 bg-indigo-50 text-indigo-800">{infoMessage}</div>
       )}
 
       {errorMessage && (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{errorMessage}</div>
+        <div className="panel-notice panel-notice-error">{errorMessage}</div>
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {projects.length === 0 ? (
-          <div className="glass-panel col-span-full rounded-3xl p-12 text-center text-muted-foreground">
+          <div className="panel-empty-card col-span-full">
             Henuz size bagli proje kapsami bulunmuyor.
           </div>
         ) : (
           projects.map((project) => (
-            <div key={project.id} className="glass-panel rounded-3xl p-8">
+            <div key={project.id} className="panel-list-card">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-2xl font-bold text-slate-900">{project.name}</h2>
                     {project.type && (
-                      <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <span className="panel-chip">
                         {project.type}
                       </span>
                     )}
@@ -147,26 +147,22 @@ export default function PanelMyProjectPage() {
                   </p>
                 </div>
                 <span
-                  className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
-                    project.application_open
-                      ? "bg-green-500/10 text-green-400"
-                      : "bg-white/5 text-muted-foreground"
-                  }`}
+                  className={`panel-chip ${project.application_open ? "panel-chip-success" : ""}`}
                 >
                   {project.application_open ? "Basvuru acik" : "Basvuru kapali"}
                 </span>
               </div>
 
               <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="rounded-2xl bg-white/5 p-4">
+                <div className="panel-card-muted">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif donem</p>
                   <p className="mt-2 text-sm font-bold text-slate-900">{project.active_period?.name || "-"}</p>
                 </div>
-                <div className="rounded-2xl bg-white/5 p-4">
+                <div className="panel-card-muted">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif ogrenci</p>
                   <p className="mt-2 text-sm font-bold text-slate-900">{project.participant_summary?.active ?? 0}</p>
                 </div>
-                <div className="rounded-2xl bg-white/5 p-4">
+                <div className="panel-card-muted">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mezun</p>
                   <p className="mt-2 text-sm font-bold text-slate-900">{project.participant_summary?.graduates ?? 0}</p>
                 </div>
@@ -174,18 +170,18 @@ export default function PanelMyProjectPage() {
 
               <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-amber-400" />
+                  <CalendarDays className="h-4 w-4 text-amber-600" />
                   <span>
                     {project.active_period?.start_date || "-"} / {project.active_period?.end_date || "-"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-amber-400" />
+                  <Users className="h-4 w-4 text-amber-600" />
                   <span>Toplam katilimci: {project.participant_summary?.total ?? 0}</span>
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5">
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">
                   Sonraki basvuru tarihi: {project.next_application_date || "Belirtilmedi"}
                 </div>
@@ -193,7 +189,7 @@ export default function PanelMyProjectPage() {
                   {hasPermission("projects.content.update") && canAccessProject("projects.content.update", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/projects/${project.id}/content`, project)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-accent-foreground transition hover:opacity-90"
+                      className="panel-card-action panel-card-action-primary"
                     >
                       <FilePenLine className="h-4 w-4" />
                       Icerigi Duzenle
@@ -202,7 +198,7 @@ export default function PanelMyProjectPage() {
                   {hasPermission("projects.application_form.update") && canAccessProject("projects.application_form.update", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/periods/form-builder?project_id=${project.id}`, project)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                      className="panel-card-action"
                     >
                       <Settings2 className="h-4 w-4" />
                       Basvuru Formu
@@ -211,7 +207,7 @@ export default function PanelMyProjectPage() {
                   {hasPermission("programs.view") && canAccessProject("programs.view", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/programs?project_id=${project.id}`, project)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                      className="panel-card-action"
                     >
                       <CalendarDays className="h-4 w-4" />
                       Programlar
@@ -220,7 +216,7 @@ export default function PanelMyProjectPage() {
                   {hasPermission("projects.participants.view") && canAccessProject("projects.participants.view", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/participants?project_id=${project.id}`, project)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                      className="panel-card-action"
                     >
                       <Users className="h-4 w-4" />
                       Katilimcilar
@@ -229,7 +225,7 @@ export default function PanelMyProjectPage() {
                   {hasPermission("applications.view") && canAccessProject("applications.view", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/applications?project_id=${project.id}`, project)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                      className="panel-card-action"
                     >
                       <ClipboardCheck className="h-4 w-4" />
                       Basvurular
@@ -238,7 +234,7 @@ export default function PanelMyProjectPage() {
                   {hasPermission("volunteer.view") && canAccessProject("volunteer.view", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/volunteer?project_id=${project.id}`, project)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                      className="panel-card-action"
                     >
                       <UserCog className="h-4 w-4" />
                       Gonullu
@@ -247,7 +243,7 @@ export default function PanelMyProjectPage() {
                   {hasPermission("digital_bohca.view") && canAccessProject("digital_bohca.view", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/digital-bohca?project_id=${project.id}`, project)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                      className="panel-card-action"
                     >
                       <Database className="h-4 w-4" />
                       Bohca
@@ -256,7 +252,7 @@ export default function PanelMyProjectPage() {
                   {hasPermission("assignments.view") && canAccessProject("assignments.view", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/assignments?project_id=${project.id}`, project)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                      className="panel-card-action"
                     >
                       <FileStack className="h-4 w-4" />
                       Odevler
@@ -265,7 +261,7 @@ export default function PanelMyProjectPage() {
                   {hasPermission("certificates.view") && canAccessProject("certificates.view", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/certificates?project_id=${project.id}`, project)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                      className="panel-card-action"
                     >
                       <FileStack className="h-4 w-4" />
                       Sertifikalar
@@ -274,7 +270,7 @@ export default function PanelMyProjectPage() {
                   {project.slug ? (
                     <Link
                       href={`/projects/${project.slug}`}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white/10"
+                      className="panel-card-action"
                     >
                       Public proje sayfasi
                       <ArrowRight className="h-4 w-4" />

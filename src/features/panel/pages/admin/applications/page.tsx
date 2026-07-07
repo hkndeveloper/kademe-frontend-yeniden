@@ -130,10 +130,10 @@ const statusOptions = [
 ];
 
 const quickActions: Array<{ label: string; status: ActionStatus; tone: string }> = [
-  { label: "Kabul Et", status: "accepted", tone: "bg-green-500 text-white shadow-lg shadow-green-500/20" },
-  { label: "Yedege Al", status: "waitlisted", tone: "border border-blue-500/30 text-blue-400 hover:bg-blue-500/10" },
-  { label: "Mulakat Planla", status: "interview_planned", tone: "border border-amber-500/30 text-amber-400 hover:bg-amber-500/10" },
-  { label: "Reddet", status: "rejected", tone: "border border-destructive/30 text-destructive hover:bg-destructive/10" },
+  { label: "Kabul Et", status: "accepted", tone: "panel-card-action-success" },
+  { label: "Yedege Al", status: "waitlisted", tone: "panel-card-action-info" },
+  { label: "Mulakat Planla", status: "interview_planned", tone: "panel-card-action-warning" },
+  { label: "Reddet", status: "rejected", tone: "panel-card-action-danger" },
 ];
 
 const perPage = 20;
@@ -425,62 +425,69 @@ export default function AdminApplicationsPage() {
         </PermissionGate>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr,440px,220px]">
-        <div className="relative">
-          <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Ogrenci, e-posta veya proje ara..."
-            value={searchTerm}
-            onChange={(event) => {
-              setSearchTerm(event.target.value);
+      <div className="panel-filter-card">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(280px,1fr)_minmax(360px,440px)_220px] xl:items-end">
+          <label className="panel-field">
+            <span className="panel-label">Arama</span>
+            <div className="relative">
+              <Search className="panel-control-icon" />
+              <input
+                type="text"
+                placeholder="Ogrenci, e-posta veya proje ara..."
+                value={searchTerm}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setPage(1);
+                }}
+                className="panel-control pl-10"
+              />
+            </div>
+          </label>
+          <ProjectPeriodFilters
+            projects={projects}
+            selectedProjectId={projectFilter}
+            selectedPeriodId={periodFilter}
+            onProjectChange={(value) => {
+              setProjectFilter(value);
+              const project = projects.find((item) => String(item.id) === value);
+              setPeriodFilter(value === "all" ? "all" : defaultPeriodIdForProject(project) || "all");
               setPage(1);
             }}
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white/10"
+            onPeriodChange={(value) => {
+              setPeriodFilter(value);
+              setPage(1);
+            }}
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
           />
+          <label className="panel-field">
+            <span className="panel-label">Durum</span>
+            <select
+              value={statusFilter}
+              onChange={(event) => {
+                setStatusFilter(event.target.value);
+                setPage(1);
+              }}
+              className="panel-control"
+            >
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-        <ProjectPeriodFilters
-          projects={projects}
-          selectedProjectId={projectFilter}
-          selectedPeriodId={periodFilter}
-          onProjectChange={(value) => {
-            setProjectFilter(value);
-            const project = projects.find((item) => String(item.id) === value);
-            setPeriodFilter(value === "all" ? "all" : defaultPeriodIdForProject(project) || "all");
-            setPage(1);
-          }}
-          onPeriodChange={(value) => {
-            setPeriodFilter(value);
-            setPage(1);
-          }}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-          selectClassName="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition-all focus:border-indigo-500"
-        />
-        <select
-          value={statusFilter}
-          onChange={(event) => {
-            setStatusFilter(event.target.value);
-            setPage(1);
-          }}
-          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition-all focus:border-indigo-500"
-        >
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
       </div>
 
-      {message && <div className="rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm font-bold text-green-400">{message}</div>}
-      {errorMessage && <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-400">{errorMessage}</div>}
+      {message && <div className="panel-notice panel-notice-success">{message}</div>}
+      {errorMessage && <div className="panel-notice panel-notice-error">{errorMessage}</div>}
 
       {loading ? (
         <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
         </div>
       ) : applications.length === 0 ? (
-        <div className="glass-panel rounded-3xl border border-dashed border-white/10 p-20 text-center font-bold text-muted-foreground">
+        <div className="panel-empty-card py-16 font-bold">
           Secili filtrelerde basvuru bulunmuyor.
         </div>
       ) : (
@@ -491,7 +498,7 @@ export default function AdminApplicationsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.03 }}
-              className="glass-panel rounded-3xl border border-white/5 bg-white/5 p-6 hover:bg-white/10"
+              className="panel-list-card"
             >
               <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
                 <div className="flex items-start gap-5">
@@ -504,17 +511,17 @@ export default function AdminApplicationsPage() {
                         {application.user.name} {application.user.surname}
                       </h3>
                       <div className="mt-2 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                        <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-indigo-400">
+                        <span className="panel-chip panel-chip-info">
                           {application.projectName}
                         </span>
                         {application.period?.name && (
-                          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{application.period.name}</span>
+                          <span className="panel-chip">{application.period.name}</span>
                         )}
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{statusLabel(application.status)}</span>
+                        <span className="panel-chip">{statusLabel(application.status)}</span>
                         {application.hasInterview ? (
-                          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">Mulakatli</span>
+                          <span className="panel-chip panel-chip-warning">Mulakatli</span>
                         ) : (
-                          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">Mulakatsiz</span>
+                          <span className="panel-chip panel-chip-success">Mulakatsiz</span>
                         )}
                       </div>
                     </div>
@@ -544,7 +551,7 @@ export default function AdminApplicationsPage() {
                       }))
                     }
                     placeholder="Mulakat notu, yedek gerekcesi veya ret aciklamasi yazin..."
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white/5"
+                    className="panel-textarea min-h-20"
                   />
 
                   {application.hasInterview && availableActionStatuses(application).includes("interview_planned") ? (
@@ -557,10 +564,10 @@ export default function AdminApplicationsPage() {
                           [application.id]: event.target.value,
                         }))
                       }
-                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white/5"
+                      className="panel-control"
                     />
                   ) : application.interview_at ? (
-                    <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs font-bold uppercase tracking-widest text-amber-400">
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-amber-700">
                       Mulakat: {new Date(application.interview_at).toLocaleString("tr-TR")}
                     </div>
                   ) : null}
@@ -577,7 +584,7 @@ export default function AdminApplicationsPage() {
                           type="button"
                           onClick={() => void handleStatusChange(application.id, action.status)}
                           disabled={actionLoading === application.id || (action.status === "interview_planned" && !interviewPlanAt[application.id])}
-                          className={`rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-all disabled:cursor-not-allowed disabled:opacity-60 ${action.tone}`}
+                          className={`panel-card-action ${action.tone}`}
                         >
                           {actionLoading === application.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -594,7 +601,7 @@ export default function AdminApplicationsPage() {
                             type="button"
                             onClick={() => void handleStatusChange(application.id, "interview_passed")}
                             disabled={actionLoading === application.id}
-                            className="rounded-xl border border-green-500/30 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-green-400 transition-all hover:bg-green-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="panel-card-action panel-card-action-success"
                           >
                             {actionLoading === application.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -608,7 +615,7 @@ export default function AdminApplicationsPage() {
                             type="button"
                             onClick={() => void handleStatusChange(application.id, "interview_failed")}
                             disabled={actionLoading === application.id}
-                            className="rounded-xl border border-destructive/30 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-destructive transition-all hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="panel-card-action panel-card-action-danger"
                           >
                             {actionLoading === application.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -630,7 +637,7 @@ export default function AdminApplicationsPage() {
                   )}
 
                   {application.workflow?.next_step ? (
-                    <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-3 text-xs font-bold uppercase tracking-widest text-indigo-500">
+                    <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-indigo-700">
                       Sonraki adim:{" "}
                       {application.workflow.next_step === "plan_interview"
                         ? "Mulakat planla"
@@ -643,13 +650,13 @@ export default function AdminApplicationsPage() {
               </div>
 
               {application.form_entries?.length ? (
-                <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="panel-card-muted mt-6">
                   <div className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     Form cevaplari ve ekler
                   </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {application.form_entries.map((entry) => (
-                      <div key={entry.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div key={entry.id} className="rounded-xl border border-slate-200 bg-white p-4">
                         <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{entry.label}</div>
                         {entry.file ? (
                           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -662,7 +669,7 @@ export default function AdminApplicationsPage() {
                             <button
                               type="button"
                               onClick={() => void handleDownloadFormFile(application, entry)}
-                              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold uppercase text-indigo-700 transition hover:bg-indigo-100"
+                              className="panel-card-action panel-card-action-info shrink-0"
                             >
                               <Download className="h-3.5 w-3.5" />
                               Indir
@@ -681,7 +688,7 @@ export default function AdminApplicationsPage() {
             </motion.div>
           ))}
 
-          <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
+          <div className="panel-pagination">
             <div className="font-bold">
               {total > 0 && rangeStart && rangeEnd
                 ? `${rangeStart}-${rangeEnd} / ${total} basvuru`
@@ -692,19 +699,19 @@ export default function AdminApplicationsPage() {
                 type="button"
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
                 disabled={page <= 1 || loading}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                className="panel-button-icon"
                 aria-label="Onceki sayfa"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="min-w-24 text-center text-xs font-bold uppercase tracking-widest">
+              <span className="panel-pagination-count min-w-24 text-center">
                 {page} / {lastPage}
               </span>
               <button
                 type="button"
                 onClick={() => setPage((current) => Math.min(lastPage, current + 1))}
                 disabled={page >= lastPage || loading}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                className="panel-button-icon"
                 aria-label="Sonraki sayfa"
               >
                 <ChevronRight className="h-4 w-4" />

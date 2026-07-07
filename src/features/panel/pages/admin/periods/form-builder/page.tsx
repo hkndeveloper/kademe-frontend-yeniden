@@ -315,7 +315,7 @@ export default function FormBuilderPage() {
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div className="flex items-center gap-4">
-          <Link href="/panel/periods" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-muted-foreground transition-all hover:bg-white/10 hover:text-slate-900">
+          <Link href="/panel/periods" className="panel-button panel-button-secondary h-10 w-10 px-0">
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div>
@@ -327,7 +327,7 @@ export default function FormBuilderPage() {
           <button
             type="button"
             onClick={() => setShowPreview((current) => !current)}
-            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-bold text-slate-900 transition-all hover:bg-white/10"
+            className="panel-button panel-button-secondary h-11 px-5"
           >
             <Eye className="h-5 w-5" /> Onizle
           </button>
@@ -335,7 +335,7 @@ export default function FormBuilderPage() {
             type="button"
             onClick={() => void handleSave()}
             disabled={loading || saving || success || !canEditForm}
-            className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 font-bold text-white shadow-lg shadow-indigo-600/20 transition-all hover:bg-indigo-500 disabled:opacity-70"
+            className="panel-button panel-button-primary h-11 px-5"
           >
             {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : success ? <CheckCircle2 className="h-5 w-5" /> : <Save className="h-5 w-5" />}
             {success ? "Kaydedildi" : "Formu Kaydet"}
@@ -343,16 +343,16 @@ export default function FormBuilderPage() {
         </div>
       </div>
 
-      {errorMessage ? <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-200">{errorMessage}</div> : null}
+      {errorMessage ? <div className="panel-notice panel-notice-error">{errorMessage}</div> : null}
 
       {projectId && !canEditForm ? (
-        <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
           Bu proje icin basvuru formunu guncelleme yetkiniz yok; formu yalnizca goruntuleyebilirsiniz.
         </div>
       ) : null}
 
       {showPreview ? (
-        <div className="glass-panel rounded-3xl border border-indigo-500/20 bg-indigo-500/5 p-6">
+        <div className="panel-section-card">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Form Onizleme</h2>
@@ -361,29 +361,29 @@ export default function FormBuilderPage() {
             <button
               type="button"
               onClick={() => setShowPreview(false)}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-900"
+              className="panel-card-action"
             >
               Kapat
             </button>
           </div>
 
           {questions.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-muted-foreground">
+            <div className="panel-empty-card">
               Onizlenecek soru bulunmuyor.
             </div>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {questions.map((question) => (
-                  <div key={`preview-${question.id}`} className="rounded-2xl border border-white/10 bg-white/70 p-4">
+                  <div key={`preview-${question.id}`} className="panel-card-muted">
                     <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
                       {question.label}
                       {question.required ? <span className="ml-1 text-red-500">*</span> : null}
                     </label>
                     {question.type === "longtext" ? (
-                      <textarea disabled rows={3} className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                      <textarea disabled rows={3} className="panel-textarea min-h-24" />
                     ) : question.type === "select" ? (
-                      <select disabled className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                      <select disabled className="panel-control">
                         <option>Secim yapin</option>
                         {question.options?.map((option) => <option key={option}>{option}</option>)}
                       </select>
@@ -397,15 +397,15 @@ export default function FormBuilderPage() {
                         ))}
                       </div>
                     ) : question.type === "file" ? (
-                      <input disabled type="file" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                      <input disabled type="file" className="panel-control" />
                     ) : (
-                      <input disabled type="text" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                      <input disabled type="text" className="panel-control" />
                     )}
                   </div>
                 ))}
               </div>
               {requireConsent ? (
-                <label className="flex items-start gap-3 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4 text-sm text-slate-700">
+                <label className="panel-card-muted flex items-start gap-3 text-sm text-slate-700">
                   <input disabled type="checkbox" className="mt-1" />
                   <span>{consentText || defaultConsentText}</span>
                 </label>
@@ -415,7 +415,7 @@ export default function FormBuilderPage() {
         </div>
       ) : null}
 
-      <div className="glass-panel rounded-3xl p-6">
+      <div className="panel-section-card">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <select
             value={projectId}
@@ -424,7 +424,7 @@ export default function FormBuilderPage() {
               setPeriodId("");
               setProgramId("");
             }}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900"
+            className="panel-control"
           >
             <option value="">Proje secin</option>
             {projects.map((project) => (
@@ -440,7 +440,7 @@ export default function FormBuilderPage() {
               setProgramId("");
             }}
             disabled={!canEditForm}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 disabled:opacity-60"
+            className="panel-control"
           >
             <option value="">Projeye genel form</option>
             {periods.map((period) => (
@@ -453,7 +453,7 @@ export default function FormBuilderPage() {
             value={effectiveProgramId}
             onChange={(event) => setProgramId(event.target.value)}
             disabled={!canEditForm || filteredPrograms.length === 0}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 disabled:opacity-60"
+            className="panel-control"
           >
             <option value="">Programa ozel form yok</option>
             {filteredPrograms.map((program) => (
@@ -472,7 +472,7 @@ export default function FormBuilderPage() {
         ) : null}
       </div>
 
-      <div className="glass-panel rounded-3xl p-6">
+      <div className="panel-section-card">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Basvuru Onayi</h2>
@@ -494,11 +494,11 @@ export default function FormBuilderPage() {
           readOnly={!canEditForm}
           onChange={(event) => setConsentText(event.target.value)}
           rows={4}
-          className="mt-4 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 read-only:opacity-70"
+          className="panel-textarea mt-4"
         />
       </div>
 
-      <div className="glass-panel rounded-3xl p-6">
+      <div className="panel-section-card">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Otomatik Eleme Kurallari</h2>
@@ -508,7 +508,7 @@ export default function FormBuilderPage() {
             type="button"
             disabled={!canEditForm || autoRejectFields.length === 0}
             onClick={addAutoRejectRule}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-40"
+            className="panel-card-action panel-card-action-info"
           >
             <Settings2 className="h-4 w-4" />
             Kural Ekle
@@ -516,23 +516,23 @@ export default function FormBuilderPage() {
         </div>
 
         {autoRejectFields.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+          <div className="panel-empty-card mt-4 p-4">
             Otomatik eleme icin once dosya disinda en az bir soru ekleyin.
           </div>
         ) : autoRejectRules.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+          <div className="panel-empty-card mt-4 p-4">
             Henuz otomatik eleme kurali yok.
           </div>
         ) : (
           <div className="mt-4 space-y-3">
             {autoRejectRules.map((rule, index) => (
-              <div key={`auto-rule-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div key={`auto-rule-${index}`} className="panel-card-muted">
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_160px_1fr_auto]">
                   <select
                     disabled={!canEditForm}
                     value={rule.field_id}
                     onChange={(event) => updateAutoRejectRule(index, { field_id: event.target.value })}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 disabled:opacity-60"
+                    className="panel-control h-10"
                   >
                     <option value="">Soru secin</option>
                     {autoRejectFields.map((question) => (
@@ -545,7 +545,7 @@ export default function FormBuilderPage() {
                     disabled={!canEditForm}
                     value={rule.operator}
                     onChange={(event) => updateAutoRejectRule(index, { operator: event.target.value as AutoRejectRule["operator"] })}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 disabled:opacity-60"
+                    className="panel-control h-10"
                   >
                     {autoRejectOperators.map((operator) => (
                       <option key={operator.value} value={operator.value}>
@@ -558,13 +558,13 @@ export default function FormBuilderPage() {
                     value={rule.value}
                     onChange={(event) => updateAutoRejectRule(index, { value: event.target.value })}
                     placeholder="Karsilastirilacak cevap"
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 read-only:opacity-60"
+                    className="panel-control h-10"
                   />
                   <button
                     type="button"
                     disabled={!canEditForm}
                     onClick={() => removeAutoRejectRule(index)}
-                    className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 disabled:opacity-40"
+                    className="panel-card-action panel-card-action-danger px-3"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -574,7 +574,7 @@ export default function FormBuilderPage() {
                   value={rule.reason}
                   onChange={(event) => updateAutoRejectRule(index, { reason: event.target.value })}
                   placeholder="Adaya/panele yazilacak gerekce"
-                  className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 read-only:opacity-60"
+                  className="panel-control mt-3 h-10"
                 />
               </div>
             ))}
@@ -602,7 +602,7 @@ export default function FormBuilderPage() {
                   key={question.id}
                   value={question}
                   drag={canEditForm}
-                  className="glass-panel group flex gap-4 rounded-3xl border border-white/5 p-6 transition-all hover:border-indigo-500/30"
+                  className="panel-list-card group flex gap-4"
                 >
                   <div
                     className={`mt-2 text-muted-foreground opacity-30 transition-opacity group-hover:opacity-100 ${canEditForm ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
@@ -611,7 +611,7 @@ export default function FormBuilderPage() {
                   </div>
                   <div className="flex-1 space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="rounded bg-white/5 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{question.type}</span>
+                      <span className="panel-chip">{question.type}</span>
                       <div className="flex items-center gap-4">
                         <label className={`flex items-center gap-2 ${canEditForm ? "cursor-pointer" : "cursor-default opacity-70"}`}>
                           <input
@@ -643,11 +643,11 @@ export default function FormBuilderPage() {
                     />
 
                     {(question.type === "select" || question.type === "radio" || question.type === "checkbox") && (
-                      <div className="space-y-2 border-t border-white/5 pt-2">
+                      <div className="space-y-2 border-t border-slate-200 pt-3">
                         <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Seçenekler</p>
                         {question.options?.map((option, index) => (
                           <div key={`${question.id}-${index}`} className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-white/10" />
+                            <div className="h-2 w-2 rounded-full bg-slate-300" />
                             <input
                               value={option}
                               readOnly={!canEditForm}
@@ -664,7 +664,7 @@ export default function FormBuilderPage() {
                           type="button"
                           disabled={!canEditForm}
                           onClick={() => updateQuestion(question.id, { options: [...(question.options || []), "Yeni seçenek"] })}
-                          className="pt-2 text-[10px] font-bold uppercase text-indigo-400 transition-colors hover:text-indigo-300 disabled:opacity-40"
+                          className="pt-2 text-[10px] font-bold uppercase text-indigo-700 transition-colors hover:text-indigo-800 disabled:opacity-40"
                         >
                           + Seçenek Ekle
                         </button>
@@ -676,14 +676,14 @@ export default function FormBuilderPage() {
             </Reorder.Group>
 
             {questions.length === 0 && (
-              <div className="glass-panel rounded-3xl border border-dashed border-white/10 p-20 text-center font-bold italic text-muted-foreground">
+              <div className="panel-empty-card p-12 font-bold italic">
                 Henüz soru eklemediniz. Sağ taraftan bir soru tipi seçerek başlayın.
               </div>
             )}
           </div>
 
           <div className="space-y-4">
-            <div className="glass-panel sticky top-8 rounded-3xl p-6">
+            <div className="panel-section-card sticky top-8">
               <h3 className="mb-6 text-xs font-bold uppercase tracking-widest text-muted-foreground">Soru Tipleri</h3>
               <div className="space-y-2">
                 {questionTypes.map((item) => (
@@ -692,12 +692,12 @@ export default function FormBuilderPage() {
                     key={item.type}
                     disabled={!canEditForm}
                     onClick={() => addQuestion(item.type)}
-                    className="group flex w-full items-center gap-3 rounded-xl border border-white/5 bg-white/5 p-4 text-left transition-all hover:border-indigo-600/30 hover:bg-indigo-600/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="panel-card-action group w-full justify-start p-4 text-left"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-muted-foreground transition-all group-hover:bg-indigo-600 group-hover:text-white">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-all group-hover:bg-accent group-hover:text-white">
                       <item.icon className="h-4 w-4" />
                     </div>
-                    <span className="text-xs font-bold text-muted-foreground transition-colors group-hover:text-slate-900">{item.label}</span>
+                    <span className="text-xs font-bold text-slate-600 transition-colors group-hover:text-slate-900">{item.label}</span>
                   </button>
                 ))}
               </div>
