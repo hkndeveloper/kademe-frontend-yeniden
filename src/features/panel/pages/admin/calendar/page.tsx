@@ -22,6 +22,7 @@ import {
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Project {
@@ -52,6 +53,8 @@ interface Program {
   title: string;
   description?: string | null;
   location?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   status?: ProgramStatusFilter | string | null;
   start_at: string;
   end_at?: string | null;
@@ -111,6 +114,8 @@ const initialForm = {
   title: "",
   description: "",
   location: "",
+  latitude: "",
+  longitude: "",
   start_at: "",
   end_at: "",
   radius_meters: "100",
@@ -128,6 +133,8 @@ const statusStyles: Record<string, { label: string; dot: string; chip: string; t
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20";
 const labelClass = "mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500";
+
+const formatCoordinate = (value: number) => value.toFixed(8);
 
 function localDateKey(value: Date) {
   const year = value.getFullYear();
@@ -402,6 +409,8 @@ export default function AdminCalendarPage() {
           ...form,
           project_id: projectId,
           period_id: Number(form.period_id),
+          latitude: form.latitude ? Number(form.latitude) : null,
+          longitude: form.longitude ? Number(form.longitude) : null,
           radius_meters: Number(form.radius_meters),
           credit_deduction: Number(form.credit_deduction),
           application_quota: form.application_quota ? Number(form.application_quota) : null,
@@ -1195,6 +1204,37 @@ export default function AdminCalendarPage() {
                   <input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} className={inputClass} />
                 </div>
                 {createMode === "program" ? (
+                  <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <label className={labelClass}>Haritadan Konum Secimi</label>
+                        <p className="text-xs text-slate-500">Haritaya tiklayarak program yoklama koordinatini belirleyin.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setForm((current) => ({ ...current, latitude: "", longitude: "" }))}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                      >
+                        Konumu temizle
+                      </button>
+                    </div>
+                    <ProgramLocationMap
+                      mode="picker"
+                      latitude={form.latitude}
+                      longitude={form.longitude}
+                      radiusMeters={form.radius_meters}
+                      heightClassName="h-64"
+                      onChange={(coordinates) =>
+                        setForm((current) => ({
+                          ...current,
+                          latitude: formatCoordinate(coordinates.latitude),
+                          longitude: formatCoordinate(coordinates.longitude),
+                        }))
+                      }
+                    />
+                  </div>
+                ) : null}
+                {createMode === "program" ? (
                   <>
                     <div>
                       <label className={labelClass}>Yoklama Yari Capi</label>
@@ -1289,3 +1329,6 @@ export default function AdminCalendarPage() {
     </PermissionGate>
   );
 }
+
+
+

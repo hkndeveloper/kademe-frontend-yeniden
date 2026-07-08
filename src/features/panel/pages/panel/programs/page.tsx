@@ -31,6 +31,7 @@ import { motion } from "framer-motion";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
 import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { AxiosError } from "axios";
@@ -310,6 +311,16 @@ const audienceLabels: Record<"student" | "alumni", string> = {
   student: "Öğrenci",
   alumni: "Mezun",
 };
+
+const formatCoordinate = (value: number) => value.toFixed(8);
+
+const hasProgramCoordinates = (program: Program) =>
+  program.latitude !== null &&
+  program.latitude !== undefined &&
+  program.latitude !== "" &&
+  program.longitude !== null &&
+  program.longitude !== undefined &&
+  program.longitude !== "";
 
 export default function PanelProgramsPage() {
   const { hasPermission, canAccessProject } = usePermissions();
@@ -1162,6 +1173,35 @@ export default function PanelProgramsPage() {
               </p>
             </div>
 
+            <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
+              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <label className={labelClass}>Haritadan konum secimi</label>
+                  <p className="text-xs text-slate-500">Haritaya tiklayin veya isaretciyi surukleyin; GPS alanlari otomatik guncellenir.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, latitude: "", longitude: "" }))}
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                >
+                  Konumu temizle
+                </button>
+              </div>
+              <ProgramLocationMap
+                mode="picker"
+                latitude={form.latitude}
+                longitude={form.longitude}
+                radiusMeters={form.radius_meters}
+                onChange={(coordinates) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    latitude: formatCoordinate(coordinates.latitude),
+                    longitude: formatCoordinate(coordinates.longitude),
+                  }))
+                }
+              />
+            </div>
+
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <label className={labelClass}>GPS enlem (opsiyonel)</label>
@@ -1406,7 +1446,7 @@ export default function PanelProgramsPage() {
               <div className="mt-5 flex gap-3 border-t border-slate-100 pt-4">
                 <button type="submit" disabled={templateSaving || !templateForm.project_id} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 disabled:opacity-60">
                   {templateSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  {editingTemplateId ? "Şablonu Kaydet" : "Şablon Oluştur"}
+                  {editingTemplateId ? "�?ablonu Kaydet" : "�?ablon Oluştur"}
                 </button>
               </div>
             </form>
@@ -1648,6 +1688,24 @@ export default function PanelProgramsPage() {
                       )}
                     </div>
                   </div>
+
+                  {hasProgramCoordinates(program) ? (
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-700">
+                          <MapPin className="h-3.5 w-3.5 text-accent" />
+                          Harita onizlemesi
+                        </span>
+                        <span>Yoklama yaricapi: {program.radius_meters ?? 100} m</span>
+                      </div>
+                      <ProgramLocationMap
+                        latitude={program.latitude}
+                        longitude={program.longitude}
+                        radiusMeters={program.radius_meters}
+                        heightClassName="h-48"
+                      />
+                    </div>
+                  ) : null}
                 </motion.div>
               );
             })}

@@ -20,6 +20,7 @@ import {
   XCircle,
 } from "lucide-react";
 import api from "@/lib/api/axios";
+import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
 
 interface ProgramCredit {
   deducted: boolean;
@@ -43,6 +44,9 @@ interface Program {
   title: string;
   description?: string | null;
   location?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  radius_meters?: number | null;
   start_at: string;
   end_at?: string | null;
   status: "scheduled" | "active" | "completed";
@@ -111,6 +115,14 @@ function formatTime(value?: string | null) {
   if (!value) return "-";
   return new Date(value).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 }
+
+const hasProgramCoordinates = (program: Program) =>
+  program.latitude !== null &&
+  program.latitude !== undefined &&
+  program.latitude !== "" &&
+  program.longitude !== null &&
+  program.longitude !== undefined &&
+  program.longitude !== "";
 
 function attendanceIcon(status: Program["attendance_status"]) {
   if (status === "present") return <CheckCircle2 className="h-4 w-4" />;
@@ -443,6 +455,21 @@ export default function StudentProgramsPage() {
                     </div>
                   </div>
 
+                  {hasProgramCoordinates(program) ? (
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-border/60 bg-white p-3">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        Harita
+                      </div>
+                      <ProgramLocationMap
+                        latitude={program.latitude}
+                        longitude={program.longitude}
+                        radiusMeters={program.radius_meters}
+                        heightClassName="h-44"
+                      />
+                    </div>
+                  ) : null}
+
                   {(program.status === "scheduled" || program.status === "active") && (
                     <button
                       type="button"
@@ -629,3 +656,5 @@ export default function StudentProgramsPage() {
     </div>
   );
 }
+
+

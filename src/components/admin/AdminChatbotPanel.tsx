@@ -12,7 +12,7 @@ import type { ChatbotQueryResponse, ChatMessage } from "./chatbot/types";
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
-  text: "Merhaba. Yetkinizin kapsadigi panel verileri icin ozet, liste ve karsilastirma cikarabilirim. Proje bazli sorgularda proje adiyla birlikte yazabilirsiniz.",
+  text: "Merhaba. Yetkinizin kapsadığı panel verileri için özet, liste ve karşılaştırma çıkarabilirim. Proje bazlı sorgularda proje adıyla birlikte yazabilirsiniz.",
 };
 
 export function AdminChatbotPanel() {
@@ -49,7 +49,7 @@ export function AdminChatbotPanel() {
           {
             id: `e-${Date.now()}`,
             role: "assistant",
-            text: "Istek islenemedi. Oturum veya yetki durumunuzu kontrol edip tekrar deneyin.",
+            text: "İstek işlenemedi. Oturum veya yetki durumunuzu kontrol edip tekrar deneyin.",
           },
         ]);
       } finally {
@@ -72,7 +72,7 @@ export function AdminChatbotPanel() {
                 <Sparkles className="h-3.5 w-3.5" aria-hidden />
                 Panel
               </div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-950 md:text-2xl">Veri Asistani</h1>
+              <h1 className="text-xl font-bold tracking-tight text-slate-950 md:text-2xl">Veri Asistanı</h1>
             </div>
           </div>
           <div className="min-w-0 flex-1 lg:max-w-3xl">

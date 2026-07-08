@@ -20,7 +20,7 @@ export function ChatComposer({ value, loading, onChange, onSubmit }: ChatCompose
         <input
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Orn: Diplomasi360 program listesi son 30 gun"
+          placeholder="Örn: Diplomasi360 program listesi son 30 gün"
           className="min-h-[46px] flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900/10"
           disabled={loading}
         />
@@ -30,7 +30,7 @@ export function ChatComposer({ value, loading, onChange, onSubmit }: ChatCompose
           className="inline-flex min-h-[46px] shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-40"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          Gonder
+          Gönder
         </button>
       </div>
     </form>

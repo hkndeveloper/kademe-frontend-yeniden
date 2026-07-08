@@ -4,6 +4,7 @@ import { Calendar, ChevronLeft, Loader2, MapPin, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import api from "@/lib/api/axios";
+import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
 
 interface ProgramPhoto {
   id: number;
@@ -17,6 +18,9 @@ interface ActivityDetail {
   title: string;
   description?: string | null;
   location?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  radius_meters?: number | null;
   guest_info?: string[] | null;
   start_at: string;
   end_at?: string | null;
@@ -88,6 +92,13 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
 
   const photos = program.photos ?? [];
   const coverPhoto = photos[0];
+  const hasCoordinates =
+    program.latitude !== null &&
+    program.latitude !== undefined &&
+    program.latitude !== "" &&
+    program.longitude !== null &&
+    program.longitude !== undefined &&
+    program.longitude !== "";
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -196,6 +207,23 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
             )}
           </div>
 
+          {hasCoordinates ? (
+            <div className="glass-panel rounded-[32px] border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+              <h3 className="flex items-center gap-2 text-lg font-black text-foreground">
+                <MapPin className="h-5 w-5 text-primary" />
+                Harita
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">{program.location || "Faaliyet konumu"}</p>
+              <div className="mt-5">
+                <ProgramLocationMap
+                  latitude={program.latitude}
+                  longitude={program.longitude}
+                  radiusMeters={program.radius_meters}
+                  heightClassName="h-64"
+                />
+              </div>
+            </div>
+          ) : null}
           {Array.isArray(program.guest_info) && program.guest_info.length > 0 && (
             <div className="glass-panel rounded-[32px] border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
               <h3 className="text-lg font-black text-foreground">Konuk ve Program Notlari</h3>

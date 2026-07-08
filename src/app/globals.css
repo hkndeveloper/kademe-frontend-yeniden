@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "leaflet/dist/leaflet.css";
+@import "maplibre-gl/dist/maplibre-gl.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -342,3 +344,27 @@
     }
   }
 }
+@layer components {
+  .program-location-marker {
+    display: block;
+    height: 28px;
+    width: 28px;
+    border-radius: 9999px;
+    border: 3px solid white;
+    background: #f36d26;
+    box-shadow: 0 10px 24px rgb(15 23 42 / 0.24), 0 0 0 8px rgb(243 109 38 / 0.18);
+  }
+  .program-location-radius {
+    stroke: #f36d26;
+    stroke-width: 2;
+    fill: #f36d26;
+    fill-opacity: 0.12;
+  }
+  .program-location-map-picker {
+    cursor: crosshair;
+  }
+  .leaflet-container {
+    font-family: inherit;
+  }
+}
+

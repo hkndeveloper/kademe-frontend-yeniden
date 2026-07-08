@@ -25,6 +25,7 @@ import {
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { PublicBreadcrumbs } from "@/components/shared/PublicBreadcrumbs";
+import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
 import { useAuth } from "@/store/useAuth";
 
 interface ActivePeriod {
@@ -122,6 +123,9 @@ interface PublicProgram {
   title: string;
   description?: string | null;
   location?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  radius_meters?: number | null;
   guest_info?: unknown;
   status: string;
   start_at?: string | null;
@@ -189,6 +193,13 @@ interface ProjectResponse {
   project_specials?: ProjectSpecialsPayload;
 }
 
+const hasProgramCoordinates = (program: PublicProgram) =>
+  program.latitude !== null &&
+  program.latitude !== undefined &&
+  program.latitude !== "" &&
+  program.longitude !== null &&
+  program.longitude !== undefined &&
+  program.longitude !== "";
 function programStatusLabel(status: string): string {
   const map: Record<string, string> = {
     scheduled: "Planlandi",
@@ -644,6 +655,16 @@ export default function ProjectDetailPage() {
         ) : null}
       </div>
       {program.description ? <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{program.description}</p> : null}
+      {hasProgramCoordinates(program) ? (
+        <div className="mt-4">
+          <ProgramLocationMap
+            latitude={program.latitude}
+            longitude={program.longitude}
+            radiusMeters={program.radius_meters}
+            heightClassName="h-44"
+          />
+        </div>
+      ) : null}
       {project?.is_application_open && program.status !== "completed" ? (
         <button
           type="button"
@@ -1318,3 +1339,4 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
+

@@ -10,7 +10,7 @@ export default function AdminChatbotPage() {
   if (!canUseChatbot) {
     return (
       <div className="panel-empty-card text-amber-700">
-        Yonetim chatbotuna erisim icin tum sistem kapsami gerekir.
+        Yönetim chatbotuna erişim için tüm sistem kapsamı gerekir.
       </div>
     );
   }
