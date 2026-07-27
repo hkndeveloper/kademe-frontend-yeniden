@@ -49,6 +49,30 @@ interface VolunteerApplication {
   } | null;
 }
 
+const MOTIVATION_MAX = 4000;
+const NOTES_MAX = 2000;
+
+const applicationStatusLabel: Record<string, string> = {
+  pending: "Beklemede",
+  accepted: "Olumlu",
+  waitlisted: "Beklemede / Yedek",
+  rejected: "Olumsuz",
+};
+
+const applicationStatusClass: Record<string, string> = {
+  pending: "bg-blue-500/10 text-blue-700",
+  accepted: "bg-green-500/10 text-green-700",
+  waitlisted: "bg-blue-500/10 text-blue-700",
+  rejected: "bg-red-500/10 text-red-700",
+};
+
+function applicationStatus(status: string) {
+  return {
+    label: applicationStatusLabel[status] ?? status,
+    className: applicationStatusClass[status] ?? "bg-slate-100 text-slate-600",
+  };
+}
+
 interface VolunteerPayload {
   opportunities: VolunteerOpportunity[];
   my_applications: VolunteerApplication[];
@@ -208,7 +232,7 @@ export default function AlumniVolunteerPage() {
                     <CheckCircle2 className="h-4 w-4" />
                     Bu ilan icin daha once basvuru yaptiniz.
                   </div>
-                  <p>Durum: {selectedOpportunity.my_application.status}</p>
+                  <p>Durum: {applicationStatus(selectedOpportunity.my_application.status).label}</p>
                   <p className="mt-2 text-green-200/80">
                     Basvuru tarihi: {new Date(selectedOpportunity.my_application.created_at).toLocaleString("tr-TR")}
                   </p>
@@ -216,24 +240,27 @@ export default function AlumniVolunteerPage() {
               ) : (
                 <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-muted-foreground">Motivasyon Metni</label>
+                    <label className="mb-2 flex items-center justify-between gap-3 text-sm font-bold text-muted-foreground"><span>Motivasyon Metni *</span><span className="text-xs">{motivationText.length}/{MOTIVATION_MAX}</span></label>
                     <textarea
                       value={motivationText}
                       onChange={(event) => setMotivationText(event.target.value)}
                       rows={6}
+                      minLength={20}
+                      maxLength={MOTIVATION_MAX}
                       placeholder="Bu gonulluluk ilanina neden katilmak istediginizi detayli yazin."
-                      className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
                       required
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-muted-foreground">Ek Notlar</label>
+                    <label className="mb-2 flex items-center justify-between gap-3 text-sm font-bold text-muted-foreground"><span>Ek Notlar</span><span className="text-xs">{notes.length}/{NOTES_MAX}</span></label>
                     <textarea
                       value={notes}
                       onChange={(event) => setNotes(event.target.value)}
                       rows={3}
+                      maxLength={NOTES_MAX}
                       placeholder="Uygunluk, deneyim veya ek aciklamalarinizi yazabilirsiniz."
-                      className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                   <button
@@ -266,8 +293,8 @@ export default function AlumniVolunteerPage() {
                   <div key={application.id} className="rounded-2xl bg-white/5 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <h4 className="text-sm font-bold text-slate-900">{application.opportunity?.title || "Gonulluluk ilani"}</h4>
-                      <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
-                        {application.status}
+                      <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${applicationStatus(application.status).className}`}>
+                        {applicationStatus(application.status).label}
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">{application.opportunity?.project?.name || "Genel kapsam"}</p>

@@ -7,6 +7,13 @@ import { Calendar, CheckCircle2, Download, FileCheck, Loader2, Send, Upload, XCi
 import api from "@/lib/api/axios";
 import { downloadBlobResponse } from "@/lib/download";
 
+
+interface AssignmentAttachment {
+  id: number;
+  original_name?: string | null;
+  file_type?: string | null;
+  download_url?: string | null;
+}
 interface AssignmentSubmission {
   id: number;
   status?: string;
@@ -28,6 +35,7 @@ interface Assignment {
   description?: string | null;
   due_date?: string | null;
   submissions?: AssignmentSubmission[];
+  attachments?: AssignmentAttachment[];
 }
 
 export default function StudentAssignmentsPage() {
@@ -104,6 +112,17 @@ export default function StudentAssignmentsPage() {
     }
   };
 
+  const handleDownloadAttachment = async (attachment: AssignmentAttachment) => {
+    if (!attachment.download_url) return;
+
+    try {
+      const response = await api.get(attachment.download_url, { responseType: "blob" });
+      await downloadBlobResponse(response.data, response.headers, attachment.original_name || `odev_eki_${attachment.id}`);
+    } catch (error) {
+      console.error("Odev eki indirilemedi", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -163,6 +182,22 @@ export default function StudentAssignmentsPage() {
                     </div>
 
                     <p className="max-w-3xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{assignment.description || "Aciklama girilmemis."}</p>
+
+                    {assignment.attachments?.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {assignment.attachments.map((attachment) => (
+                          <button
+                            key={attachment.id}
+                            type="button"
+                            onClick={() => void handleDownloadAttachment(attachment)}
+                            className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/15"
+                          >
+                            <Download className="h-4 w-4" />
+                            {attachment.original_name || "Odev Ekini Indir"}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <InfoBox label="Son Tarih">

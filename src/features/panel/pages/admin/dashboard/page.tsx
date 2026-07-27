@@ -10,6 +10,7 @@ import { DashboardCharts, type DashboardChartsData } from "@/components/panel/Da
 import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/store/useAuth";
+import { formatIstanbulDayNumber, formatIstanbulTime, formatIstanbulWeekdayShort } from "@/lib/istanbul-time";
 
 interface DashboardStats {
   students: { active: number };
@@ -858,19 +859,19 @@ export default function AdminDashboardPage() {
                   ) : (
                     <div className="space-y-3">
                       {stats.upcoming_programs.map((program) => {
-                        const date = new Date(program.start_at);
+                        const date = program.start_at;
                         return (
                           <div key={program.id} className="group flex items-center gap-3">
                             <div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-center">
                               <span className="text-[7px] font-bold uppercase text-slate-500">
-                                {date.toLocaleDateString("tr-TR", { weekday: "short" }).toUpperCase()}
+                                {formatIstanbulWeekdayShort(date).toUpperCase()}
                               </span>
-                              <span className="text-sm font-extrabold text-slate-900">{date.getDate()}</span>
+                              <span className="text-sm font-extrabold text-slate-900">{formatIstanbulDayNumber(date)}</span>
                             </div>
                             <div>
                               <h5 className="text-xs font-bold text-slate-900 transition-colors group-hover:text-[#FF6B00]">{program.title}</h5>
                               <p className="text-[10px] text-slate-500">
-                                {date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })} • {program.project?.name || "Genel"}
+                                {formatIstanbulTime(date)} • {program.project?.name || "Genel"}
                               </p>
                             </div>
                           </div>
@@ -916,7 +917,7 @@ export default function AdminDashboardPage() {
                             </div>
                             {date && !Number.isNaN(date.getTime()) ? (
                               <p className="mt-2 text-[10px] font-semibold text-slate-500">
-                                {date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                                {formatIstanbulTime(date)}
                                 {task.location ? ` - ${task.location}` : ""}
                               </p>
                             ) : null}

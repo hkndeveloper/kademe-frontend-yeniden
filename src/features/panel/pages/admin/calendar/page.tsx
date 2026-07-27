@@ -24,6 +24,7 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
 import { usePermissions } from "@/hooks/usePermissions";
+import { formatIstanbulDateTime, formatIstanbulTime, toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 
 interface Project {
   id: number;
@@ -53,6 +54,10 @@ interface Program {
   title: string;
   description?: string | null;
   location?: string | null;
+  location_place_name?: string | null;
+  location_place_address?: string | null;
+  location_place_id?: string | null;
+  location_place_provider?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
   status?: ProgramStatusFilter | string | null;
@@ -114,6 +119,10 @@ const initialForm = {
   title: "",
   description: "",
   location: "",
+  location_place_name: "",
+  location_place_address: "",
+  location_place_id: "",
+  location_place_provider: "",
   latitude: "",
   longitude: "",
   start_at: "",
@@ -144,13 +153,7 @@ function localDateKey(value: Date) {
 }
 
 function formatDateTime(value: string | null | undefined) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString("tr-TR", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatIstanbulDateTime(value);
 }
 
 function GoogleStatusMetric({ label, value }: { label: string; value: string }) {
@@ -162,10 +165,8 @@ function GoogleStatusMetric({ label, value }: { label: string; value: string }) 
   );
 }
 function formatTimeRange(program: Program) {
-  const start = new Date(program.start_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
-  const end = program.end_at
-    ? new Date(program.end_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
-    : null;
+  const start = formatIstanbulTime(program.start_at);
+  const end = program.end_at ? formatIstanbulTime(program.end_at) : null;
   return end ? `${start} - ${end}` : start;
 }
 
@@ -393,8 +394,8 @@ export default function AdminCalendarPage() {
           title: form.title,
           description: form.description,
           location: form.location,
-          start_at: form.start_at,
-          end_at: form.end_at || null,
+          start_at: withIstanbulOffset(form.start_at),
+          end_at: withIstanbulOffset(form.end_at),
           assigned_user_ids: createAssigneeIds,
         });
         setSuccessMessage("Toplanti takvime eklendi.");
@@ -407,8 +408,14 @@ export default function AdminCalendarPage() {
 
         await api.post("/panel/programs", {
           ...form,
+          start_at: withIstanbulOffset(form.start_at),
+          end_at: withIstanbulOffset(form.end_at),
           project_id: projectId,
           period_id: Number(form.period_id),
+          location_place_name: form.location_place_name || null,
+          location_place_address: form.location_place_address || null,
+          location_place_id: form.location_place_id || null,
+          location_place_provider: form.location_place_provider || null,
           latitude: form.latitude ? Number(form.latitude) : null,
           longitude: form.longitude ? Number(form.longitude) : null,
           radius_meters: Number(form.radius_meters),
@@ -612,7 +619,7 @@ export default function AdminCalendarPage() {
 
   const groupedPrograms = useMemo(() => {
     return visiblePrograms.reduce<Record<string, Program[]>>((accumulator, program) => {
-      const key = localDateKey(new Date(program.start_at));
+      const key = toIstanbulDateTimeLocal(program.start_at).slice(0, 10) || localDateKey(new Date(program.start_at));
       accumulator[key] = accumulator[key] || [];
       accumulator[key].push(program);
       return accumulator;
@@ -664,7 +671,7 @@ export default function AdminCalendarPage() {
 
   const googleStatusText = googleStatus?.configured
     ? googleStatus.connected
-      ? `Bagli${googleStatus.last_synced_at ? ` / ${new Date(googleStatus.last_synced_at).toLocaleString("tr-TR")}` : ""}`
+      ? `Bagli${googleStatus.last_synced_at ? ` / ${formatIstanbulDateTime(googleStatus.last_synced_at)}` : ""}`
       : "Baglanti bekleniyor"
     : "Google ayarlari eksik";
 
@@ -1201,7 +1208,7 @@ export default function AdminCalendarPage() {
                 </div>
                 <div>
                   <label className={labelClass}>Konum</label>
-                  <input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} className={inputClass} />
+                  <input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value, location_place_name: "", location_place_address: "", location_place_id: "", location_place_provider: "" }))} className={inputClass} />
                 </div>
                 {createMode === "program" ? (
                   <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
@@ -1212,7 +1219,7 @@ export default function AdminCalendarPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setForm((current) => ({ ...current, latitude: "", longitude: "" }))}
+                        onClick={() => setForm((current) => ({ ...current, latitude: "", longitude: "", location_place_name: "", location_place_address: "", location_place_id: "", location_place_provider: "" }))}
                         className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                       >
                         Konumu temizle
@@ -1223,12 +1230,21 @@ export default function AdminCalendarPage() {
                       latitude={form.latitude}
                       longitude={form.longitude}
                       radiusMeters={form.radius_meters}
+                      placeName={form.location_place_name}
+                      placeAddress={form.location_place_address}
+                      placeId={form.location_place_id}
+                      placeProvider={form.location_place_provider}
                       heightClassName="h-64"
-                      onChange={(coordinates) =>
+                      onChange={(selection) =>
                         setForm((current) => ({
                           ...current,
-                          latitude: formatCoordinate(coordinates.latitude),
-                          longitude: formatCoordinate(coordinates.longitude),
+                          location: selection.placeName || selection.placeAddress || current.location,
+                          location_place_name: selection.placeName ?? "",
+                          location_place_address: selection.placeAddress ?? "",
+                          location_place_id: selection.placeId ?? "",
+                          location_place_provider: selection.placeProvider ?? "",
+                          latitude: formatCoordinate(selection.latitude),
+                          longitude: formatCoordinate(selection.longitude),
                         }))
                       }
                     />

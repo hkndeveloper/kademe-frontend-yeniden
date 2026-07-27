@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, Calendar, Loader2, Search } from "lucide-react";
 import api from "@/lib/api/axios";
+import { LinkifiedText } from "@/components/shared/LinkifiedText";
 
 interface Announcement {
   id: number;
@@ -114,7 +115,7 @@ export default function AlumniAnnouncementsPage() {
                 </span>
               </div>
               <div className="p-5">
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{announcement.content}</p>
+                <LinkifiedText text={announcement.content} className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground" />
               </div>
             </motion.article>
           ))

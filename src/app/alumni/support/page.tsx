@@ -63,6 +63,48 @@ const initialForm: TicketFormState = {
   message: "",
 };
 
+const applicationStatusLabel: Record<string, string> = {
+  pending: "Beklemede",
+  accepted: "Olumlu",
+  waitlisted: "Beklemede / Yedek",
+  rejected: "Olumsuz",
+};
+
+const applicationStatusClass: Record<string, string> = {
+  pending: "bg-blue-500/10 text-blue-700",
+  accepted: "bg-green-500/10 text-green-700",
+  waitlisted: "bg-blue-500/10 text-blue-700",
+  rejected: "bg-red-500/10 text-red-700",
+};
+
+const ticketStatusLabel: Record<string, string> = {
+  open: "Acik",
+  in_progress: "Islemde",
+  resolved: "Cozuldu",
+  closed: "Kapali",
+};
+
+const ticketStatusClass: Record<string, string> = {
+  open: "bg-blue-500/10 text-blue-700",
+  in_progress: "bg-blue-500/10 text-blue-700",
+  resolved: "bg-green-500/10 text-green-700",
+  closed: "bg-slate-100 text-slate-600",
+};
+
+function applicationStatus(status: string) {
+  return {
+    label: applicationStatusLabel[status] ?? status,
+    className: applicationStatusClass[status] ?? "bg-slate-100 text-slate-600",
+  };
+}
+
+function ticketStatus(status: string) {
+  return {
+    label: ticketStatusLabel[status] ?? status,
+    className: ticketStatusClass[status] ?? "bg-slate-100 text-slate-600",
+  };
+}
+
 export default function AlumniSupportPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -258,8 +300,8 @@ export default function AlumniSupportPage() {
                 <div key={application.id} className="rounded-2xl bg-white/5 p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-sm font-bold text-slate-900">{application.opportunity?.title || "Gonulluluk ilani"}</h3>
-                    <span className="rounded-full bg-purple-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-purple-300">
-                      {application.status}
+                    <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${applicationStatus(application.status).className}`}>
+                      {applicationStatus(application.status).label}
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">{application.opportunity?.project?.name || "Genel gonulluluk kapsami"}</p>
@@ -361,8 +403,8 @@ export default function AlumniSupportPage() {
                     <span className="rounded-full bg-purple-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-purple-300">
                       {ticket.category}
                     </span>
-                    <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      {ticket.status}
+                    <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${ticketStatus(ticket.status).className}`}>
+                      {ticketStatus(ticket.status).label}
                     </span>
                   </div>
                   <p className="mt-3 text-sm text-muted-foreground">{ticket.message}</p>

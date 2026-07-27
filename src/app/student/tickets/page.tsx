@@ -50,6 +50,27 @@ const initialForm: TicketFormState = {
   message: "",
 };
 
+const ticketStatusLabel: Record<string, string> = {
+  open: "Acik",
+  in_progress: "Islemde",
+  resolved: "Cozuldu",
+  closed: "Kapali",
+};
+
+const ticketStatusClass: Record<string, string> = {
+  open: "bg-blue-500/10 text-blue-700",
+  in_progress: "bg-blue-500/10 text-blue-700",
+  resolved: "bg-green-500/10 text-green-700",
+  closed: "bg-slate-100 text-slate-600",
+};
+
+function ticketStatus(status: string) {
+  return {
+    label: ticketStatusLabel[status] ?? status,
+    className: ticketStatusClass[status] ?? "bg-slate-100 text-slate-600",
+  };
+}
+
 export default function StudentTicketsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -317,7 +338,7 @@ export default function StudentTicketsPage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <h3 className="text-lg font-bold">{ticket.subject}</h3>
                     <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">{ticket.category}</span>
-                    <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{ticket.status}</span>
+                    <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${ticketStatus(ticket.status).className}`}>{ticketStatus(ticket.status).label}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">{ticket.message}</p>
                   <p className="text-xs uppercase tracking-widest text-muted-foreground">{new Date(ticket.created_at).toLocaleString("tr-TR")}</p>

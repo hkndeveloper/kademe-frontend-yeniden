@@ -499,16 +499,31 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
           <div className="panel-section-card space-y-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Basvuru Ayarlari</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Public proje sayfasindaki basvuru karti ve paneldeki degerlendirme akisi buradan beslenir.</p>
+                <h2 className="text-lg font-bold text-slate-900">Basvuru Acma ve Akis Ayarlari</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Yeni basvuruyu public proje sayfasinda acmak, kapatmak ve mulakatli/mulakatsiz akisi secmek icin bu bolumu kullanin.</p>
               </div>
               <Link
                 href={`/panel/periods/form-builder?project_id=${projectId}${periodId ? `&period_id=${periodId}` : ""}`}
                 className="panel-button panel-button-secondary text-indigo-700 hover:border-indigo-200 hover:bg-indigo-50"
               >
                 <ClipboardList className="h-4 w-4" />
-                Basvuru Formu
+                Basvuru Formunu Duzenle
               </Link>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className={`panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal ${form.application_open ? "panel-chip-success" : "panel-chip-warning"}`}>
+                <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">Basvuru</div>
+                <div className="mt-1 font-extrabold">{form.application_open ? "Acik" : "Kapali"}</div>
+              </div>
+              <div className={`panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal ${form.has_interview ? "panel-chip-warning" : "panel-chip-success"}`}>
+                <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">Degerlendirme</div>
+                <div className="mt-1 font-extrabold">{form.has_interview ? "Mulakatli" : "Mulakatsiz"}</div>
+              </div>
+              <div className="panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kontenjan</div>
+                <div className="mt-1 font-extrabold">{form.quota === "" ? "Sinirsiz" : form.quota}</div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -581,14 +596,14 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
 
             <div className="panel-form-grid">
               <label className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Kontenjan</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Basvuru Kontenjani (kredi degil)</span>
                 <input
                   type="number"
                   min="0"
                   readOnly={readOnly}
                   value={form.quota}
                   onChange={(event) => setForm((current) => ({ ...current, quota: event.target.value === "" ? "" : Number(event.target.value) }))}
-                  placeholder="Orn: 40"
+                  placeholder="Orn: 40 aday"
                   className={inputClass}
                 />
               </label>
@@ -606,8 +621,10 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
 
             <div className="panel-form-note">
               {form.application_open
-                ? "Basvurular acikken public sayfada basvuru butonu gorunur; sonraki basvuru tarihi otomatik temizlenir."
+                ? "Basvurular acikken public sayfada basvuru butonu gorunur; adaylar aktif basvuru formunu doldurabilir."
                 : `Basvurular kapaliyken public sayfada sonraki tarih gorunur: ${formatApplicationDate(form.next_application_date)}`}
+              <br />
+              Kredi sinirlari bu ekrandan yonetilmez; koordinatorler katilimci ekranindan aylik manuel kredi guncellemesi yapar.
             </div>
           </div>
         </div>

@@ -20,6 +20,7 @@ export type OpportunityItem = {
 
 const KIND_LABEL: Record<string, string> = {
   internship: "Staj",
+  job: "Is Firsati",
   network: "Ag / Network",
   event: "Etkinlik",
   other: "Diger",

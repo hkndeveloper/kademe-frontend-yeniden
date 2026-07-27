@@ -44,6 +44,10 @@ interface Program {
   title: string;
   description?: string | null;
   location?: string | null;
+  location_place_name?: string | null;
+  location_place_address?: string | null;
+  location_place_id?: string | null;
+  location_place_provider?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
   radius_meters?: number | null;
@@ -102,9 +106,12 @@ const filters: Array<{ value: Filter; label: string }> = [
   { value: "missed", label: "Puan Kesilenler" },
 ];
 
+const ISTANBUL_TIME_ZONE = "Europe/Istanbul";
+
 function formatDate(value?: string | null) {
   if (!value) return "-";
   return new Date(value).toLocaleDateString("tr-TR", {
+    timeZone: ISTANBUL_TIME_ZONE,
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -113,7 +120,7 @@ function formatDate(value?: string | null) {
 
 function formatTime(value?: string | null) {
   if (!value) return "-";
-  return new Date(value).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleTimeString("tr-TR", { timeZone: ISTANBUL_TIME_ZONE, hour: "2-digit", minute: "2-digit" });
 }
 
 const hasProgramCoordinates = (program: Program) =>
@@ -372,13 +379,13 @@ export default function StudentProgramsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {filters.map((item) => (
           <button
             key={item.value}
             type="button"
             onClick={() => setFilter(item.value)}
-            className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-widest transition ${
+            className={`min-h-9 rounded-lg px-3 py-2 text-[10px] font-bold uppercase tracking-wide transition sm:text-xs ${
               filter === item.value
                 ? "bg-primary text-primary-foreground"
                 : "border border-border/60 bg-white text-muted-foreground hover:border-primary/40 hover:text-slate-900"
@@ -390,7 +397,7 @@ export default function StudentProgramsPage() {
         <button
           type="button"
           onClick={() => setScannerOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-primary"
+          className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-primary sm:text-xs"
         >
           <QrCode className="h-4 w-4" />
           QR Yoklama Oku
@@ -465,6 +472,10 @@ export default function StudentProgramsPage() {
                         latitude={program.latitude}
                         longitude={program.longitude}
                         radiusMeters={program.radius_meters}
+                        placeName={program.location_place_name}
+                        placeAddress={program.location_place_address}
+                        placeId={program.location_place_id}
+                        placeProvider={program.location_place_provider}
                         heightClassName="h-44"
                       />
                     </div>
@@ -523,7 +534,7 @@ export default function StudentProgramsPage() {
                             : "Gerekli degil"}
                       </div>
                       {program.attendance_status === "present" && program.status === "completed" && !program.feedback_submitted ? (
-                        <Link href="/student/evaluate" className="mt-2 inline-block text-xs font-bold text-primary hover:underline">
+                        <Link href={`/student/evaluate?program_id=${program.id}`} className="mt-2 inline-block text-xs font-bold text-primary hover:underline">
                           Degerlendirmeye git
                         </Link>
                       ) : null}
@@ -539,7 +550,7 @@ export default function StudentProgramsPage() {
       <AnimatePresence>
         {scannerOpen ? (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -548,7 +559,7 @@ export default function StudentProgramsPage() {
               initial={{ opacity: 0, y: 20, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              className="w-full max-w-2xl overflow-hidden rounded-3xl border border-border bg-white shadow-2xl"
+              className="relative z-[2010] w-full max-w-2xl overflow-hidden rounded-3xl border border-border bg-white shadow-2xl"
             >
               <div className="flex items-start justify-between border-b border-border/60 p-6">
                 <div className="flex items-center gap-4">
@@ -627,7 +638,7 @@ export default function StudentProgramsPage() {
                           <p className="text-sm font-semibold text-slate-900">Bekleyen oturum: {feedbackBlock.program_title}</p>
                         ) : null}
                         <Link
-                          href={feedbackBlock.redirect_to || "/student/feedback"}
+                          href={feedbackBlock.redirect_to || (feedbackBlock.program_id ? `/student/evaluate?program_id=${feedbackBlock.program_id}` : "/student/evaluate")}
                           onClick={closeScanner}
                           className="inline-flex rounded-xl bg-primary px-8 py-3 text-sm font-bold text-primary-foreground"
                         >

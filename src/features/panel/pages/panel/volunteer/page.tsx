@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ClipboardList, Loader2, Plus, Trash2, UserCheck } from "lucide-react";
+import { ClipboardList, Loader2, Pencil, Plus, Trash2, UserCheck, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
+import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 
 type Project = {
   id: number;
@@ -41,11 +42,21 @@ type Opportunity = {
   applications?: VolunteerApplication[];
 };
 
-type Paginated<T> = {
-  data: T[];
+type Paginated<T> = { data: T[] };
+
+type VolunteerForm = {
+  project_id: string;
+  period_id: string;
+  title: string;
+  description: string;
+  location: string;
+  start_at: string;
+  end_at: string;
+  quota: string;
+  status: Opportunity["status"];
 };
 
-const emptyForm = {
+const emptyForm: VolunteerForm = {
   project_id: "",
   period_id: "",
   title: "",
@@ -57,6 +68,44 @@ const emptyForm = {
   status: "open",
 };
 
+const opportunityStatusLabel: Record<Opportunity["status"], string> = {
+  open: "Acik",
+  closed: "Kapali",
+  archived: "Arsiv",
+};
+
+const applicationStatusLabel: Record<VolunteerApplication["status"], string> = {
+  pending: "Beklemede",
+  accepted: "Olumlu",
+  waitlisted: "Beklemede / Yedek",
+  rejected: "Olumsuz",
+};
+
+const statusChipClass: Record<string, string> = {
+  open: "panel-chip-success",
+  accepted: "panel-chip-success",
+  pending: "panel-chip-info",
+  waitlisted: "panel-chip-info",
+  closed: "panel-chip-warning",
+  archived: "panel-chip-muted",
+  rejected: "panel-chip-danger",
+};
+
+
+function formPayload(form: VolunteerForm) {
+  return {
+    project_id: Number(form.project_id),
+    period_id: form.period_id ? Number(form.period_id) : null,
+    title: form.title,
+    description: form.description || null,
+    location: form.location || null,
+    start_at: withIstanbulOffset(form.start_at),
+    end_at: withIstanbulOffset(form.end_at),
+    quota: form.quota ? Number(form.quota) : null,
+    status: form.status,
+  };
+}
+
 export default function PanelVolunteerPage() {
   const { canAccessProject, hasPermission } = usePermissions();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
@@ -64,8 +113,9 @@ export default function PanelVolunteerPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<VolunteerForm>(emptyForm);
   const [projectFilter, setProjectFilter] = useState(() => {
     if (typeof window === "undefined") return "all";
     return new URLSearchParams(window.location.search).get("project_id") ?? "all";
@@ -82,13 +132,13 @@ export default function PanelVolunteerPage() {
 
   useEffect(() => {
     let active = true;
-    const initialProjectId = new URLSearchParams(window.location.search).get("project_id");
+    const params = new URLSearchParams(window.location.search);
+    const initialProjectId = params.get("project_id");
+    const initialPeriodId = params.get("period_id");
+
     Promise.all([
       api.get<{ opportunities: Paginated<Opportunity> }>("/panel/volunteer/opportunities", {
-        params: {
-          project_id: initialProjectId ?? undefined,
-          period_id: new URLSearchParams(window.location.search).get("period_id") ?? undefined,
-        },
+        params: { project_id: initialProjectId ?? undefined, period_id: initialPeriodId ?? undefined },
       }),
       api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "volunteer.view" } }),
       hasPermission("volunteer.manage")
@@ -101,12 +151,12 @@ export default function PanelVolunteerPage() {
         [...(viewProjectResponse.data.projects ?? []), ...(manageProjectResponse.data.projects ?? [])].forEach((project) => {
           mergedProjects.set(project.id, project);
         });
-        setOpportunities(opportunityResponse.data.opportunities?.data ?? []);
-        setProjects(Array.from(mergedProjects.values()));
         const projectItems = Array.from(mergedProjects.values());
+        setOpportunities(opportunityResponse.data.opportunities?.data ?? []);
+        setProjects(projectItems);
         if (initialProjectId) {
           const project = projectItems.find((item) => String(item.id) === initialProjectId);
-          const nextPeriod = new URLSearchParams(window.location.search).get("period_id") ?? (defaultPeriodIdForProject(project) || "all");
+          const nextPeriod = initialPeriodId ?? (defaultPeriodIdForProject(project) || "all");
           setForm((current) => ({ ...current, project_id: initialProjectId, period_id: nextPeriod === "all" ? "" : nextPeriod }));
           setPeriodFilter(nextPeriod);
         }
@@ -130,29 +180,52 @@ export default function PanelVolunteerPage() {
     setOpportunities(response.data.opportunities?.data ?? []);
   }
 
+  function openCreateForm() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm((current) => !current);
+  }
+
+  function startEdit(opportunity: Opportunity) {
+    setEditingId(opportunity.id);
+    setForm({
+      project_id: String(opportunity.project_id),
+      period_id: opportunity.period_id ? String(opportunity.period_id) : "",
+      title: opportunity.title ?? "",
+      description: opportunity.description ?? "",
+      location: opportunity.location ?? "",
+      start_at: toIstanbulDateTimeLocal(opportunity.start_at),
+      end_at: toIstanbulDateTimeLocal(opportunity.end_at),
+      quota: opportunity.quota != null ? String(opportunity.quota) : "",
+      status: opportunity.status,
+    });
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setFeedback(null);
     try {
-      const response = await api.post<{ message: string; opportunity: Opportunity }>("/panel/volunteer/opportunities", {
-        project_id: Number(form.project_id),
-        period_id: form.period_id ? Number(form.period_id) : null,
-        title: form.title,
-        description: form.description || null,
-        location: form.location || null,
-        start_at: form.start_at || null,
-        end_at: form.end_at || null,
-        quota: form.quota ? Number(form.quota) : null,
-        status: form.status,
-      });
-      setOpportunities((current) => [response.data.opportunity, ...current]);
+      const payload = formPayload(form);
+      const response = editingId
+        ? await api.put<{ message: string; opportunity: Opportunity }>(`/panel/volunteer/opportunities/${editingId}`, payload)
+        : await api.post<{ message: string; opportunity: Opportunity }>("/panel/volunteer/opportunities", payload);
+
+      setOpportunities((current) =>
+        editingId ? current.map((item) => (item.id === editingId ? response.data.opportunity : item)) : [response.data.opportunity, ...current],
+      );
       setFeedback(response.data.message);
-      setForm(emptyForm);
-      setShowForm(false);
+      closeForm();
     } catch (error) {
-      console.error("Gonullu ilani olusturulamadi", error);
-      setFeedback("Gonullu ilani olusturulurken bir hata olustu.");
+      console.error("Gonullu ilani kaydedilemedi", error);
+      setFeedback("Gonullu ilani kaydedilirken bir hata olustu.");
     } finally {
       setSaving(false);
     }
@@ -216,11 +289,7 @@ export default function PanelVolunteerPage() {
               buttonLabel="Gonullu Kayitlarini Disa Aktar"
             />
             <PermissionGate permission="volunteer.manage">
-              <button
-                type="button"
-                onClick={() => setShowForm((current) => !current)}
-                className="panel-button panel-button-primary h-11"
-              >
+              <button type="button" onClick={openCreateForm} className="panel-button panel-button-primary h-11">
                 <Plus className="h-4 w-4" />
                 Yeni Ilan
               </button>
@@ -233,6 +302,12 @@ export default function PanelVolunteerPage() {
         {showForm ? (
           <PermissionGate permission="volunteer.manage">
             <form onSubmit={handleSubmit} className="panel-section-card">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-bold text-slate-900">{editingId ? "Gonullu Ilanini Duzenle" : "Yeni Gonullu Ilani"}</h2>
+                <button type="button" onClick={closeForm} className="rounded-full p-2 text-slate-500 hover:bg-slate-100">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
               <div className="panel-form-grid">
                 <select
                   required
@@ -258,6 +333,15 @@ export default function PanelVolunteerPage() {
                   <option value="">Tum donemler / genel</option>
                   {(manageableProjects.find((project) => String(project.id) === form.project_id)?.periods ?? []).map((period) => (
                     <option key={period.id} value={period.id}>{period.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={form.status}
+                  onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as Opportunity["status"] }))}
+                  className="panel-control"
+                >
+                  {Object.entries(opportunityStatusLabel).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
                 <input
@@ -302,8 +386,9 @@ export default function PanelVolunteerPage() {
                 className="panel-textarea mt-4"
               />
               <div className="panel-modal-footer mt-4">
+                <button type="button" onClick={closeForm} className="panel-button panel-button-secondary h-11 px-5">Iptal</button>
                 <button disabled={saving} className="panel-button panel-button-primary h-11 px-6">
-                  {saving ? "Kaydediliyor..." : "Ilani Olustur"}
+                  {saving ? "Kaydediliyor..." : editingId ? "Ilani Guncelle" : "Ilani Olustur"}
                 </button>
               </div>
             </form>
@@ -340,17 +425,26 @@ export default function PanelVolunteerPage() {
                 <div key={opportunity.id} className="panel-list-card">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
-                      <div className="text-base font-bold text-slate-900">{opportunity.title}</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-base font-bold text-slate-900">{opportunity.title}</span>
+                        <span className={`panel-chip ${statusChipClass[opportunity.status] ?? ""}`}>{opportunityStatusLabel[opportunity.status]}</span>
+                      </div>
                       <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                        {opportunity.project?.name ?? "-"} {opportunity.period?.name ? `/ ${opportunity.period.name}` : ""} / {opportunity.status} / {opportunity.applications_count ?? opportunity.applications?.length ?? 0} basvuru
+                        {opportunity.project?.name ?? "-"} {opportunity.period?.name ? `/ ${opportunity.period.name}` : ""} / {opportunity.applications_count ?? opportunity.applications?.length ?? 0} basvuru
                       </div>
                       {opportunity.description ? <p className="mt-2 text-sm text-muted-foreground">{opportunity.description}</p> : null}
                     </div>
                     <PermissionGate permission="volunteer.manage" requireProjectAccess={{ permission: "volunteer.manage", projectId: opportunity.project_id }}>
-                      <button onClick={() => void deleteOpportunity(opportunity)} className="panel-card-action panel-card-action-danger">
-                        <Trash2 className="h-4 w-4" />
-                        Sil
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => startEdit(opportunity)} className="panel-card-action">
+                          <Pencil className="h-4 w-4" />
+                          Duzenle
+                        </button>
+                        <button type="button" onClick={() => void deleteOpportunity(opportunity)} className="panel-card-action panel-card-action-danger">
+                          <Trash2 className="h-4 w-4" />
+                          Sil
+                        </button>
+                      </div>
                     </PermissionGate>
                   </div>
 
@@ -362,15 +456,18 @@ export default function PanelVolunteerPage() {
                             <div className="font-bold text-slate-900">
                               {application.user?.name} {application.user?.surname}
                             </div>
-                            <div className="text-xs text-muted-foreground">{application.user?.email} / {application.status}</div>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span>{application.user?.email}</span>
+                              <span className={`panel-chip ${statusChipClass[application.status] ?? ""}`}>{applicationStatusLabel[application.status]}</span>
+                            </div>
                             {application.motivation_text ? <p className="mt-2 text-xs text-muted-foreground">{application.motivation_text}</p> : null}
                           </div>
                           <PermissionGate permission="volunteer.manage" requireProjectAccess={{ permission: "volunteer.manage", projectId: opportunity.project_id }}>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               {(["accepted", "waitlisted", "rejected"] as const).map((status) => (
-                                <button key={status} onClick={() => void updateApplication(application, status)} className="panel-card-action py-1">
+                                <button key={status} onClick={() => void updateApplication(application, status)} className={`panel-card-action py-1 ${statusChipClass[status] ?? ""}`}>
                                   <UserCheck className="h-3 w-3" />
-                                  {status}
+                                  {applicationStatusLabel[status]}
                                 </button>
                               ))}
                             </div>

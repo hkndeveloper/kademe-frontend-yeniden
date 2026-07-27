@@ -7,56 +7,44 @@ import {
   ChevronRight,
   Globe,
   Loader2,
+  Mail,
   MapPin,
   ShieldCheck,
+  Sparkles,
   Trophy,
   Users,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { PublicButton, PublicCounter, PublicMarquee } from "@/components/public";
 import api from "@/lib/api/axios";
 import { getCachedHomepage, getCachedPublicProjects, getCachedSiteConfig } from "@/lib/public-api-cache";
 import { homePathForUser } from "@/lib/role-home";
 import { defaultSiteSettings, SiteSettingsPayload } from "@/lib/site-config";
 import { useAuth } from "@/store/useAuth";
 
-interface HomeProject {
-  id: number;
-  name: string;
-  slug: string;
-  short_description?: string | null;
-}
+interface HomeProject { id: number; name: string; slug: string; short_description?: string | null; cover_image?: string | null; }
+interface HomeBlog { id: number; title: string; slug: string; cover_image?: string | null; category?: string | { name?: string | null } | null; excerpt?: string | null; content?: string | null; }
+interface HomeProgram { id: number; title: string; description?: string | null; location?: string | null; start_at: string; is_featured?: boolean; project?: { id: number; name: string; slug: string; }; }
 
-interface HomeBlog {
-  id: number;
-  title: string;
-  slug: string;
-  cover_image?: string | null;
-  category?: string | { name?: string | null } | null;
-  excerpt?: string | null;
-  content?: string | null;
-}
+type HomeBlock = SiteSettingsPayload["homepage"]["block_order"][number];
 
-interface HomeProgram {
-  id: number;
-  title: string;
-  description?: string | null;
-  location?: string | null;
-  start_at: string;
-  project?: {
-    id: number;
-    name: string;
-    slug: string;
-  };
-}
+const projectShowcaseImages = ["/aigocy/images/section/featured-works-1.jpg", "/aigocy/images/section/featured-works-2.jpg", "/aigocy/images/section/featured-works-3.jpg", "/aigocy/images/section/featured-works-4.jpg"];
+const activityShowcaseImages = ["/aigocy/images/section/service-1.jpg", "/aigocy/images/section/service-2.jpg", "/aigocy/images/section/service-3.jpg"];
+const blogShowcaseImages = ["/aigocy/images/blog/blog-1.jpg", "/aigocy/images/blog/blog-2.jpg", "/aigocy/images/blog/blog-3.jpg"];
+const iconMap = { users: Users, trophy: Trophy, calendar: Calendar, globe: Globe } as const;
 
-const iconMap = {
-  users: Users,
-  trophy: Trophy,
-  calendar: Calendar,
-  globe: Globe,
-} as const;
+function formatDate(value: string) { const date = new Date(value); if (Number.isNaN(date.getTime())) return "Tarih bilgisi yok"; return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" }); }
+function getBlogCategory(blog: HomeBlog) { if (typeof blog.category === "string") return blog.category; return blog.category?.name || "Haberler"; }
+function parseCounterValue(value: string) { const match = value.trim().match(/^([^0-9]*)([0-9][0-9.,]*)(.*)$/); if (!match) return null; const numeric = Number(match[2].replace(/\./g, "").replace(",", ".")); if (!Number.isFinite(numeric)) return null; return { prefix: match[1], value: Math.round(numeric), suffix: match[3] }; }
+function AnimatedStatValue({ value }: { value: string }) { const parsed = parseCounterValue(value); if (!parsed) return <>{value}</>; return <PublicCounter value={parsed.value} prefix={parsed.prefix} suffix={parsed.suffix} />; }
+function SectionHeading({ eyebrow, title, description, center = false, dark = false }: { eyebrow: ReactNode; title: ReactNode; description?: ReactNode; center?: boolean; dark?: boolean }) {
+  const headingClass = ["kdm-public-section-heading", center ? "center" : "", dark ? "text-white" : ""].filter(Boolean).join(" ");
+  const titleClass = ["kdm-public-heading-title", dark ? "!text-white ![background:none] ![-webkit-text-fill-color:white]" : ""].filter(Boolean).join(" ");
+  const descClass = ["mt-5 max-w-2xl text-base leading-8", center ? "mx-auto" : "", dark ? "text-zinc-400" : "text-[#71717a]"].filter(Boolean).join(" ");
+  return <div className={headingClass}><div className="kdm-public-heading-sub">{eyebrow}</div><h2 className={titleClass}>{title}</h2>{description ? <p className={descClass}>{description}</p> : null}</div>;
+}
 
 export default function HomePage() {
   const { isAuthenticated, user } = useAuth();
@@ -82,540 +70,52 @@ export default function HomePage() {
           setSiteSettings(homepageResponse.settings ?? null);
           setComputedStats(homepageResponse.computed_homepage_stats ?? []);
           return;
-        } catch (homepageError) {
-          console.error("Anasayfa toplu verileri cekilemedi, eski akis deneniyor", homepageError);
-        }
-
+        } catch (homepageError) { console.error("Anasayfa toplu verileri çekilemedi, eski akış deneniyor", homepageError); }
         const [projectResponse, blogResponse, activitiesResponse, configResponse] = await Promise.all([
           getCachedPublicProjects().catch(() => [] as HomeProject[]),
           api.get<{ blogs: HomeBlog[] | { data?: HomeBlog[] } }>("/blogs").catch(() => ({ data: { blogs: [] as HomeBlog[] } })),
           api.get<{ programs: HomeProgram[] | { data?: HomeProgram[] } }>("/activities", { params: { per_page: 6 } }).catch(() => ({ data: { programs: [] as HomeProgram[] } })),
           getCachedSiteConfig(),
         ]);
-
         setProjects(projectResponse);
-
-        const rawBlogs = blogResponse.data.blogs;
-        setBlogs(Array.isArray(rawBlogs) ? rawBlogs : rawBlogs?.data ?? []);
-
-        const rawActivities = activitiesResponse.data.programs;
-        setActivities(Array.isArray(rawActivities) ? rawActivities : rawActivities?.data ?? []);
-        setSiteSettings(configResponse.settings ?? null);
-        setComputedStats(configResponse.computed_homepage_stats ?? []);
-      } catch (error) {
-        console.error("Anasayfa verileri cekilemedi", error);
-      } finally {
-        setLoading(false);
-      }
+        const rawBlogs = blogResponse.data.blogs; setBlogs(Array.isArray(rawBlogs) ? rawBlogs : rawBlogs?.data ?? []);
+        const rawActivities = activitiesResponse.data.programs; setActivities(Array.isArray(rawActivities) ? rawActivities : rawActivities?.data ?? []);
+        setSiteSettings(configResponse.settings ?? null); setComputedStats(configResponse.computed_homepage_stats ?? []);
+      } catch (error) { console.error("Anasayfa verileri çekilemedi", error); } finally { setLoading(false); }
     };
-
     void loadData();
   }, []);
 
   const resolvedSettings = siteSettings ?? defaultSiteSettings;
-
-  const stats = useMemo(
-    () =>
-      (resolvedSettings.homepage.stats_mode === "auto" && computedStats.length > 0 ? computedStats : resolvedSettings.homepage.stats).map((stat) => ({
-        ...stat,
-        icon: iconMap[stat.icon as keyof typeof iconMap] || Users,
-      })),
-    [computedStats, resolvedSettings.homepage.stats, resolvedSettings.homepage.stats_mode],
-  );
-
+  const stats = useMemo(() => (resolvedSettings.homepage.stats_mode === "auto" && computedStats.length > 0 ? computedStats : resolvedSettings.homepage.stats).map((stat) => ({ ...stat, icon: iconMap[stat.icon as keyof typeof iconMap] || Users })), [computedStats, resolvedSettings.homepage.stats, resolvedSettings.homepage.stats_mode]);
   const dashboardLink = homePathForUser(user);
+  const featuredProjects = resolvedSettings.homepage.featured_project_slugs.length > 0 ? projects.filter((project) => resolvedSettings.homepage.featured_project_slugs.includes(project.slug)).sort((left, right) => resolvedSettings.homepage.featured_project_slugs.indexOf(left.slug) - resolvedSettings.homepage.featured_project_slugs.indexOf(right.slug)).slice(0, 4) : projects.slice(0, 4);
+  const featuredActivities = resolvedSettings.homepage.featured_activity_ids.length > 0 ? activities.filter((activity) => resolvedSettings.homepage.featured_activity_ids.includes(activity.id)).sort((left, right) => resolvedSettings.homepage.featured_activity_ids.indexOf(left.id) - resolvedSettings.homepage.featured_activity_ids.indexOf(right.id)).slice(0, 3) : [...activities].sort((left, right) => Number(right.is_featured === true) - Number(left.is_featured === true)).slice(0, 3);
+  const featuredBlogs = resolvedSettings.homepage.featured_blog_slugs.length > 0 ? blogs.filter((blog) => resolvedSettings.homepage.featured_blog_slugs.includes(blog.slug)).sort((left, right) => resolvedSettings.homepage.featured_blog_slugs.indexOf(left.slug) - resolvedSettings.homepage.featured_blog_slugs.indexOf(right.slug)).slice(0, 3) : blogs.slice(0, 3);
+  const homepageBlockKeys = Object.keys(defaultSiteSettings.homepage.block_visibility) as HomeBlock[];
+  const normalizedBlockOrder = [
+    ...resolvedSettings.homepage.block_order,
+    ...homepageBlockKeys.filter((block) => !resolvedSettings.homepage.block_order.includes(block)),
+  ];
+  const visibleBlockOrder = normalizedBlockOrder.filter((block) => resolvedSettings.homepage.block_visibility[block] ?? defaultSiteSettings.homepage.block_visibility[block]);
 
-  const projectColors = ["from-blue-600 to-cyan-500", "from-orange-500 to-red-600", "from-green-500 to-emerald-600", "from-indigo-500 to-blue-600"];
-  const featuredProjects =
-    resolvedSettings.homepage.featured_project_slugs.length > 0
-      ? projects
-          .filter((project) => resolvedSettings.homepage.featured_project_slugs.includes(project.slug))
-          .sort(
-            (left, right) =>
-              resolvedSettings.homepage.featured_project_slugs.indexOf(left.slug) -
-              resolvedSettings.homepage.featured_project_slugs.indexOf(right.slug),
-          )
-          .slice(0, 4)
-      : projects.slice(0, 4);
-  const featuredActivities =
-    resolvedSettings.homepage.featured_activity_ids.length > 0
-      ? activities
-          .filter((activity) => resolvedSettings.homepage.featured_activity_ids.includes(activity.id))
-          .sort(
-            (left, right) =>
-              resolvedSettings.homepage.featured_activity_ids.indexOf(left.id) -
-              resolvedSettings.homepage.featured_activity_ids.indexOf(right.id),
-          )
-          .slice(0, 3)
-      : activities.slice(0, 3);
-  const featuredBlogs =
-    resolvedSettings.homepage.featured_blog_slugs.length > 0
-      ? blogs
-          .filter((blog) => resolvedSettings.homepage.featured_blog_slugs.includes(blog.slug))
-          .sort(
-            (left, right) =>
-              resolvedSettings.homepage.featured_blog_slugs.indexOf(left.slug) -
-              resolvedSettings.homepage.featured_blog_slugs.indexOf(right.slug),
-          )
-          .slice(0, 3)
-      : blogs.slice(0, 3);
-  const visibleBlockOrder = resolvedSettings.homepage.block_order.filter((block) => resolvedSettings.homepage.block_visibility[block]);
+  const handleNewsletterSubmit = async () => { if (!newsletterEmail.trim()) { setNewsletterFeedback("Lütfen geçerli bir e-posta adresi girin."); return; } setNewsletterSubmitting(true); setNewsletterFeedback(null); try { const response = await api.post<{ message: string }>("/newsletter/subscribe", { name: newsletterName, email: newsletterEmail }); setNewsletterFeedback(response.data.message); setNewsletterName(""); setNewsletterEmail(""); } catch (error) { console.error("E-bülten aboneliği kaydedilemedi", error); setNewsletterFeedback("E-bülten aboneliği kaydedilemedi."); } finally { setNewsletterSubmitting(false); } };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (loading) return <div className="kdm-public-shell flex min-h-[70vh] items-center justify-center pt-20"><div className="kdm-public-card flex flex-col items-center gap-4 px-8 py-7"><Loader2 className="h-10 w-10 animate-spin text-[#fd3a25]" /><span className="text-sm font-bold text-[#71717a]">Anasayfa hazırlanıyor...</span></div></div>;
 
-  const handleNewsletterSubmit = async () => {
-    if (!newsletterEmail.trim()) {
-      setNewsletterFeedback("Lutfen gecerli bir e-posta adresi gir.");
-      return;
-    }
-
-    setNewsletterSubmitting(true);
-    setNewsletterFeedback(null);
-
-    try {
-      const response = await api.post<{ message: string }>("/newsletter/subscribe", {
-        name: newsletterName,
-        email: newsletterEmail,
-      });
-      setNewsletterFeedback(response.data.message);
-      setNewsletterName("");
-      setNewsletterEmail("");
-    } catch (error) {
-      console.error("E-bulten aboneligi kaydedilemedi", error);
-      setNewsletterFeedback("E-bulten aboneligi kaydedilemedi.");
-    } finally {
-      setNewsletterSubmitting(false);
-    }
+  const sectionMap: Record<HomeBlock, ReactNode> = {
+    hero: <section className="kdm-public-hero-section overflow-hidden"><div className="kdm-public-hero-bg-image"><div className="kdm-public-hero-blob-right" aria-hidden="true" /><div className="kdm-public-hero-blob-left" aria-hidden="true" /><video className="h-full w-full object-cover opacity-[0.18]" muted autoPlay loop playsInline poster="/aigocy/images/section/hero-1.jpg"><source src="/aigocy/images/video/hero.mp4" type="video/mp4" /></video><div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_24%,rgba(255,255,255,0.62),transparent_34rem),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(237,236,236,0.38))]" />{resolvedSettings.homepage.hero_background_image_url ? <Image src={resolvedSettings.homepage.hero_background_image_url} alt={resolvedSettings.general.site_name} fill priority unoptimized className="object-cover opacity-[0.10]" /> : null}</div><div className="container relative z-10 mx-auto px-4 sm:px-6"><motion.div className="kdm-public-hero-content mx-auto max-w-6xl" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.58 }}><div className="kdm-public-heading-sub mx-auto mb-6"><Sparkles className="mr-2 h-4 w-4" />{resolvedSettings.homepage.hero_badge}</div><h1 className="kdm-public-hero-title text-balance" style={{ letterSpacing: '-0.025em' }}><span className="kdm-public-gradient-text-alt">{resolvedSettings.homepage.hero_title_line_1}</span><br /><span className="inline-flex flex-wrap items-center justify-center gap-5"><span className="kdm-public-gradient-text-alt">{resolvedSettings.homepage.hero_title_line_2}</span><span className="kdm-public-hero-title-icon relative hidden h-[118px] w-[220px] sm:inline-flex"><span className="kdm-public-hero-title-icon-box absolute left-0 top-8 h-20 w-full rounded-full bg-[linear-gradient(180deg,#ea2b16_0%,#ff3b26_100%)] shadow-[0_22px_37px_rgba(255,59,0,0.17),0_56px_83px_rgba(255,59,0,0.25),0_14px_34px_rgba(255,59,0,0.25)]" /><img src="/aigocy/images/item/hero-1.svg" alt="" className="kdm-public-hero-float kdm-public-hero-float-1 absolute left-12 top-0 h-20 w-20" /><img src="/aigocy/images/item/hero-2.svg" alt="" className="kdm-public-hero-float kdm-public-hero-float-2 absolute left-[126px] top-8 h-20 w-20" /><img src="/aigocy/images/item/hero-3.svg" alt="" className="kdm-public-hero-float kdm-public-hero-float-3 absolute left-16 top-[72px] h-16 w-16" /></span></span><br /><span className="kdm-public-gradient-text-alt">{resolvedSettings.homepage.hero_title_line_3} {resolvedSettings.homepage.hero_title_line_4}</span></h1><p className="mx-auto mt-7 max-w-3xl text-lg font-medium leading-8 text-[#292c2e] sm:text-xl">{resolvedSettings.homepage.hero_description}</p><div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">{isAuthenticated ? <PublicButton href={dashboardLink} size="lg" variant="dark" icon={<ArrowRight className="h-5 w-5" />}>Panelime Git</PublicButton> : <><PublicButton href={resolvedSettings.homepage.hero_primary_href} size="lg" variant="dark" icon={<ArrowRight className="h-5 w-5" />}>{resolvedSettings.homepage.hero_primary_label}</PublicButton><PublicButton href={resolvedSettings.homepage.hero_secondary_href} size="lg" variant="secondary">{resolvedSettings.homepage.hero_secondary_label}</PublicButton></>}</div><div className="mx-auto mt-10 grid max-w-4xl gap-3 sm:grid-cols-3">{featuredProjects.slice(0, 3).map((project, index) => <Link key={project.id} href={"/projects/" + project.slug} className="group kdm-public-card kdm-public-hero-project-link flex items-center justify-between gap-3 rounded-3xl px-4 py-3 text-left"><span className="min-w-0"><span className="block text-[10px] font-black uppercase tracking-[0.16em] text-[#71717a]">Öne çıkan proje</span><span className="mt-1 block truncate text-base font-black text-[#09090b] transition group-hover:text-[#fd3a25]">{project.name}</span></span><ArrowRight className="h-4 w-4 shrink-0 text-[#fd3a25] transition group-hover:translate-x-1" /></Link>)}</div></motion.div></div><a href="#about" className="absolute bottom-0 left-1/2 z-20 hidden h-14 w-80 -translate-x-1/2 items-center justify-center gap-4 rounded-t-[40px] bg-[#edecec] text-sm font-semibold text-[#09090b] lg:flex"><span>Aşağı kaydır</span><span className="flex h-8 w-5 items-center justify-center rounded-full bg-[#fd3a25] text-white">↓</span></a></section>,
+    intro: <section id="about" className="kdm-public-flat-spacing bg-[#edecec]"><div className="container mx-auto px-4 sm:px-6"><SectionHeading center eyebrow="Deneyim" title="KADEME deneyimi tek yolculukta birleşir" description="Başvuru, proje, faaliyet, mentorluk ve içerik akışları sade ve izlenebilir bir KADEME deneyiminde toplanır." /><div className="grid gap-6 lg:grid-cols-[0.88fr_1.12fr] lg:items-stretch"><div className="kdm-public-about-col min-h-[30rem]"><div className="px-7 text-center"><div className="kdm-public-badge-dark mx-auto"><span className="dot" /> KADEME Ekosistemi</div><h3 className="mt-8 text-3xl font-semibold leading-tight text-white sm:text-4xl" style={{ letterSpacing: '-0.02em' }}>Gelişim akışları tek merkezde.</h3><PublicButton href="/projects" variant="primary" className="mt-8">Projeleri İncele</PublicButton><blockquote className="mt-8 border-t border-white/10 px-2 pt-6 text-left"><svg width="22" height="18" viewBox="0 0 23 20" className="mb-3 opacity-25" aria-hidden="true"><path d="M10 0v8H6c0 2.2 1.333 4.333 4 6.5L8 20C3.333 17.667.667 14.167 0 9.5V0h10zm13 0v8h-4c0 2.2 1.333 4.333 4 6.5L21 20c-4.667-2.333-7.333-5.833-8-10.5V0h10z" fill="white"/></svg><p className="text-sm font-semibold italic leading-7 text-zinc-300">"Gelişim, izlenebilir bir sürecin ürünüdür."</p><cite className="mt-3 block text-[10px] font-black not-italic uppercase tracking-[0.16em] text-zinc-500">— KADEME Ekibi</cite></blockquote></div><img src="/aigocy/images/item/earth.png" alt="" className="mt-8 max-h-72 w-full object-contain object-bottom" /></div><div className="grid gap-4">{resolvedSettings.homepage.intro_cards.map((card, index) => <motion.div key={card.title + "-" + index} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }}><Link href={card.cta_href} className="group kdm-public-review-box block p-6 sm:p-8"><div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0 flex-1">{card.image_url ? <div className="relative mb-5 aspect-[16/7] overflow-hidden rounded-[1.25rem] bg-[#09090b]"><Image src={card.image_url} alt={card.title} fill unoptimized className="object-cover transition duration-700 group-hover:scale-105" /></div> : null}<div className="text-sm font-semibold text-[#71717a]">Gelişim alanı</div><h3 className="mt-2 text-3xl font-semibold leading-tight text-[#292c2e]" style={{ letterSpacing: '-0.015em' }}>{card.title}</h3><p className="mt-4 max-w-2xl text-base leading-7 text-[#71717a]">{card.description}</p></div><span className="inline-flex shrink-0 items-center gap-3"><span className="hidden text-xs font-black uppercase tracking-[0.14em] text-[#71717a] transition group-hover:text-[#fd3a25] sm:inline">{card.cta_label || "İncele"}</span><span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#272727] text-white shadow-[0_-3px_0_#080808_inset,0_10px_22px_rgba(9,9,11,0.2)] transition group-hover:bg-[#fd3a25]"><ArrowRight className="h-5 w-5" /></span></span></div></Link></motion.div>)}</div></div></div></section>,
+    stats: <section className="kdm-public-flat-spacing kdm-public-dark-gradient text-white"><div className="container mx-auto px-4 sm:px-6"><SectionHeading center dark eyebrow="Etki" title="KADEME rakamlarda" description="KADEME proje, faaliyet ve gelişim ritmini hızlıca tarayın." /><div className="grid grid-cols-2 gap-5 lg:grid-cols-4">{stats.map((stat, index) => <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45, delay: index * 0.06 }} className="kdm-public-stat-card kdm-public-stat-card-live kdm-public-stat-card-dark"><div className="mb-5 flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-[#fd3a25] text-white shadow-[0_16px_32px_rgba(253,58,37,0.36),inset_0_1px_0_rgba(255,255,255,0.2)]"><stat.icon className="h-7 w-7" /></div><div className="text-4xl font-black tracking-tight"><AnimatedStatValue value={stat.value} /></div><div className="mt-2 text-[11px] font-black uppercase tracking-[0.16em] text-zinc-400">{stat.label}</div></motion.div>)}</div></div></section>,
+    projects: <section className="kdm-public-flat-spacing bg-white"><div className="container mx-auto px-4 sm:px-6"><div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><SectionHeading eyebrow="Öne Çıkan Projeler" title={resolvedSettings.homepage.projects_title} description={resolvedSettings.homepage.projects_description} /><PublicButton href="/projects" variant="dark" icon={<ChevronRight className="h-4 w-4" />}>Tümünü Gör</PublicButton></div>{featuredProjects.length === 0 ? <div className="kdm-public-card p-8 text-center text-[#52525b]">Şu an aktif proje bulunmuyor.</div> : <div className="grid gap-6 lg:grid-cols-2">{featuredProjects.map((project, index) => { const imageSrc = project.cover_image || projectShowcaseImages[index % projectShowcaseImages.length]; return <Link key={project.id} href={"/projects/" + project.slug} className="group kdm-public-project-card relative min-h-[27rem] overflow-hidden rounded-[32px] bg-[#09090b] text-white"><Image src={imageSrc} alt={project.name} fill unoptimized className="object-cover opacity-78 transition duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,9,11,0.02),rgba(9,9,11,0.90)),radial-gradient(circle_at_22%_18%,rgba(253,58,37,0.34),transparent_18rem)]" /><div className="relative z-10 flex min-h-[27rem] flex-col justify-between p-6 sm:p-8"><div className="flex items-center justify-between gap-4"><span className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] backdrop-blur">KADEME Projesi</span><span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#09090b] transition group-hover:bg-[#fd3a25] group-hover:text-white"><ArrowRight className="h-5 w-5" /></span></div><div><h3 className="max-w-xl text-4xl font-semibold leading-tight text-white sm:text-5xl" style={{ letterSpacing: '-0.02em' }}>{project.name}</h3><p className="mt-5 line-clamp-3 max-w-xl text-base leading-8 text-zinc-200">{project.short_description || "Proje tanıtımı yakında eklenecek."}</p><div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/10 pt-5"><div><div className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">Proje Türü</div><div className="mt-1 text-sm font-semibold text-zinc-200">KADEME Projesi</div></div><div><div className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">Durum</div><div className="mt-1 text-sm font-semibold text-[#fd3a25]">Aktif</div></div></div></div></div></Link>; })}</div>}</div></section>,
+    activities: <section className="kdm-public-flat-spacing kdm-public-dark-gradient text-white"><div className="container mx-auto px-4 sm:px-6"><div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><SectionHeading dark eyebrow="Faaliyet Akışı" title={resolvedSettings.homepage.activities_title} description={resolvedSettings.homepage.activities_description} /><PublicButton href="/activities" variant="primary" icon={<ChevronRight className="h-4 w-4" />}>Tüm Faaliyetler</PublicButton></div>{featuredActivities.length === 0 ? <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-8 text-center text-zinc-300">Henüz yayınlanmış faaliyet bulunmuyor.</div> : <div className="grid gap-5 lg:grid-cols-3">{featuredActivities.map((activity, index) => <Link key={activity.id} href={"/activities/" + activity.id} className="group rounded-[32px] border border-white/10 bg-white/[0.04] p-4 transition hover:-translate-y-1 hover:border-[#fd3a25]/45 hover:bg-white/[0.07]"><div className="relative mb-6 aspect-[1.15] overflow-hidden rounded-[24px] bg-zinc-900"><Image src={activityShowcaseImages[index % activityShowcaseImages.length]} alt={activity.title} fill className="object-cover opacity-78 transition duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/86 to-transparent" /><span className="absolute left-4 top-4 rounded-full bg-[#fd3a25] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">Faaliyet</span></div><span className="text-[11px] font-black uppercase tracking-[0.16em] text-[#fd3a25]">{activity.project?.name || "Program"}</span><h3 className="mt-3 text-3xl font-semibold leading-tight transition group-hover:text-orange-100">{activity.title}</h3><div className="mt-6 space-y-3 text-sm leading-6 text-zinc-400"><div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-zinc-500" />{formatDate(activity.start_at)}</div><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-zinc-500" />{activity.location || "Konum bilgisi yok"}</div></div></Link>)}</div>}</div></section>,
+    about: <section className="kdm-public-flat-spacing bg-[#edecec]"><div className="container mx-auto grid gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_0.9fr] lg:items-center"><div><SectionHeading eyebrow="Hakkımızda" title={resolvedSettings.homepage.about_teaser_title} description={resolvedSettings.homepage.about_teaser_description} /><div className="mt-8 flex flex-col gap-3 sm:flex-row"><PublicButton href="/about" variant="dark" icon={<ArrowRight className="h-4 w-4" />}>Bizi Tanıyın</PublicButton><PublicButton href="/contact" variant="secondary">İletişime Geçin</PublicButton></div></div><div className="kdm-public-review-box p-6 sm:p-8"><div className="kdm-public-dark-gradient relative mb-6 h-64 overflow-hidden rounded-[28px]">{resolvedSettings.homepage.about_teaser_image_url ? <Image src={resolvedSettings.homepage.about_teaser_image_url} alt={resolvedSettings.homepage.about_teaser_title} fill unoptimized className="object-cover" /> : <Image src="/aigocy/images/section/quotes-1.jpg" alt="KADEME" fill className="object-cover opacity-86" />}<div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/65 to-transparent" /></div><h3 className="text-3xl font-semibold leading-tight text-[#292c2e]">{resolvedSettings.about.journey_title}</h3><p className="mt-4 text-base leading-8 text-[#71717a]">{resolvedSettings.about.journey_text}</p><div className="mt-7 grid grid-cols-2 gap-3"><div className="rounded-3xl bg-white p-5 shadow-[0px_7.77px_16px_rgba(0,0,0,0.06),0px_-3px_0_rgba(0,0,0,0.04)_inset]"><div className="text-4xl font-black text-[#292c2e]">{projects.length}</div><div className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#71717a]">Proje</div></div><div className="rounded-3xl bg-white p-5 shadow-[0px_7.77px_16px_rgba(0,0,0,0.06),0px_-3px_0_rgba(0,0,0,0.04)_inset]"><div className="text-4xl font-black text-[#292c2e]">{activities.length}</div><div className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#71717a]">Faaliyet</div></div></div></div></div></section>,
+    blog: <section className="kdm-public-flat-spacing bg-white"><div className="container mx-auto px-4 sm:px-6"><SectionHeading center eyebrow="Blog" title={resolvedSettings.homepage.blog_title} description={resolvedSettings.homepage.blog_description} />{featuredBlogs.length === 0 ? <div className="grid gap-5 md:grid-cols-3">{[1, 2, 3].map((card) => <div key={card} className="kdm-public-card h-80 opacity-70" />)}</div> : <div className="grid gap-5 md:grid-cols-3">{featuredBlogs.map((blog, index) => { const imageSrc = blog.cover_image || blogShowcaseImages[index % blogShowcaseImages.length]; return <Link href={"/blog/" + blog.slug} key={blog.id} className="group kdm-public-card kdm-public-blog-card overflow-hidden p-0"><div className="relative h-64 bg-[#09090b]"><Image src={imageSrc} alt={blog.title} fill unoptimized className="object-cover transition duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/74 via-transparent to-transparent" /><span className="absolute bottom-4 left-4 rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#09090b]">{getBlogCategory(blog)}</span></div><div className="p-6"><h3 className="line-clamp-2 text-2xl font-semibold leading-tight text-[#292c2e] transition group-hover:text-[#fd3a25]">{blog.title}</h3><p className="mt-3 line-clamp-3 text-sm leading-7 text-[#71717a]">{blog.excerpt || (blog.content?.slice(0, 120) || "") + "..."}</p><div className="mt-5 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-[#fd3a25]">Oku <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></div></div></Link>; })}</div>}</div></section>,
+    newsletter: <section className="kdm-public-flat-spacing bg-[#edecec]"><div className="container mx-auto px-4 sm:px-6"><div className="section-contact kdm-public-dark-gradient relative overflow-hidden rounded-[40px] p-6 text-white shadow-[0_32px_90px_rgba(9,9,11,0.22)] sm:p-10 lg:p-14"><div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 12% 16%, rgba(253,58,37,0.42), transparent 22rem), radial-gradient(circle at 88% 84%, rgba(255,100,40,0.16), transparent 16rem), linear-gradient(135deg, rgba(9,9,11,0.97), rgba(9,9,11,0.82))' }} /><div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_0.86fr] lg:items-center"><div><div className="kdm-public-heading-sub mb-6"><Mail className="mr-2 h-4 w-4" /> E-Bülten</div><h2 className="text-balance text-4xl font-semibold leading-tight text-white sm:text-5xl" style={{ letterSpacing: '-0.02em' }}>{resolvedSettings.homepage.newsletter_title}</h2><p className="mt-5 max-w-2xl text-base leading-8 text-zinc-300">{resolvedSettings.homepage.newsletter_description}</p></div><div className="rounded-[28px] border border-white/10 bg-white/[0.08] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl sm:p-6"><div className="grid gap-3"><input value={newsletterName} onChange={(event) => setNewsletterName(event.target.value)} placeholder="Adınız Soyadınız (isteğe bağlı)" className="kdm-public-input" /><input value={newsletterEmail} onChange={(event) => setNewsletterEmail(event.target.value)} placeholder="E-posta adresiniz" className="kdm-public-input" /><PublicButton type="button" onClick={() => void handleNewsletterSubmit()} disabled={newsletterSubmitting} variant="primary" className="w-full">{newsletterSubmitting ? "Kaydediliyor..." : "E-Bültene Katıl"}</PublicButton>{newsletterFeedback ? <div className="rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 text-sm font-semibold text-zinc-200">{newsletterFeedback}</div> : null}</div></div></div></div></div></section>,
+    marquee: <PublicMarquee items={resolvedSettings.homepage.marquee_items ?? defaultSiteSettings.homepage.marquee_items} durationSeconds={resolvedSettings.homepage.marquee_speed_seconds ?? defaultSiteSettings.homepage.marquee_speed_seconds} />,
+    certificate_verify: <section className="bg-[#edecec] px-4 pb-20 sm:px-6"><div className="container mx-auto"><div className="kdm-public-card-dark overflow-hidden rounded-[32px] p-6 sm:p-8 lg:p-10"><div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center"><div><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-orange-300/30 bg-orange-400/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-orange-100"><ShieldCheck className="h-4 w-4" /> Kamusal Doğrulama</div><h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{resolvedSettings.homepage.certificate_verify_title}</h2><p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">{resolvedSettings.homepage.certificate_verify_description}</p></div><PublicButton href={resolvedSettings.homepage.certificate_verify_cta_href} variant="primary" size="lg" icon={<ArrowRight className="h-4 w-4" />}>{resolvedSettings.homepage.certificate_verify_cta_label}</PublicButton></div></div></div></section>,
   };
 
-  const sectionMap: Record<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify", ReactNode> = {
-    hero: (
-      <section className="relative flex min-h-[calc(100svh-4rem)] items-center justify-center overflow-hidden px-0 py-16 pt-20 sm:min-h-[92vh]">
-        {resolvedSettings.homepage.hero_background_image_url ? (
-          <Image
-            src={resolvedSettings.homepage.hero_background_image_url}
-            alt={resolvedSettings.general.site_name}
-            fill
-            priority
-            unoptimized
-            className="object-cover opacity-20"
-          />
-        ) : null}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_28%,oklch(0.74_0.18_45/0.16),transparent_42%),radial-gradient(circle_at_80%_76%,oklch(0.56_0.12_255/0.12),transparent_48%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/78 to-background" />
-        <div className="container relative z-10 mx-auto px-4 text-center sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 inline-flex max-w-full items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-bold text-primary sm:mb-8 sm:text-sm"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-            </span>
-            {resolvedSettings.homepage.hero_badge}
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-6 text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl md:mb-8 md:text-8xl"
-          >
-            {resolvedSettings.homepage.hero_title_line_1}
-            <br />
-            <span className="text-primary">{resolvedSettings.homepage.hero_title_line_2}</span>, {resolvedSettings.homepage.hero_title_line_3}
-            <br />
-            {resolvedSettings.homepage.hero_title_line_4}.
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mx-auto mb-8 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg md:mb-12 md:text-xl"
-          >
-            {resolvedSettings.homepage.hero_description}
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4"
-          >
-            {isAuthenticated ? (
-              <Link
-                href={dashboardLink}
-                className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 sm:px-10"
-              >
-                Panelime Git
-                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href={resolvedSettings.homepage.hero_primary_href}
-                  className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 sm:px-10"
-                >
-                  {resolvedSettings.homepage.hero_primary_label}
-                  <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-                </Link>
-                <Link
-                  href={resolvedSettings.homepage.hero_secondary_href}
-                  className="inline-flex items-center justify-center rounded-2xl border border-border/80 bg-card px-8 py-4 font-bold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/50 hover:shadow-md sm:px-10"
-                >
-                  {resolvedSettings.homepage.hero_secondary_label}
-                </Link>
-              </>
-            )}
-          </motion.div>
-        </div>
-      </section>
-    ),
-    intro: (
-      <section className="py-14 sm:py-24">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {resolvedSettings.homepage.intro_cards.map((card, index) => (
-              <motion.div
-                key={`${card.title}-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="glass-panel group overflow-hidden rounded-2xl border border-border/80 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5 sm:rounded-[32px]"
-              >
-                <div className="relative h-52 w-full bg-muted/30">
-                  {card.image_url ? (
-                    <Image src={card.image_url} alt={card.title} fill unoptimized className="object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/15 to-accent/15" />
-                  )}
-                </div>
-                <div className="space-y-4 p-5 sm:p-8">
-                  <h3 className="text-xl font-black text-foreground sm:text-2xl">{card.title}</h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{card.description}</p>
-                  <Link href={card.cta_href} className="group/cta inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/30">
-                    {card.cta_label}
-                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/cta:translate-x-1" />
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-    ),
-    stats: (
-      <section className="border-y border-border/40 bg-muted/30 py-14 sm:py-24">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
-            {stats.map((stat) => (
-              <motion.div key={stat.label} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="group rounded-2xl border border-border/60 bg-card/60 px-3 py-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg hover:shadow-slate-900/5 sm:rounded-3xl sm:px-4 sm:py-6">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110 sm:mb-6 sm:h-16 sm:w-16">
-                  <stat.icon className="h-6 w-6 sm:h-8 sm:w-8" />
-                </div>
-                <h3 className="mb-2 text-2xl font-black sm:text-4xl">{stat.value}</h3>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-    ),
-    projects: (
-      <section className="relative overflow-hidden py-16 sm:py-32">
-        <div className="absolute inset-0 origin-right -skew-y-3 transform bg-primary/5" />
-        <div className="container relative mx-auto px-4 sm:px-6">
-          <div className="mb-10 flex flex-col justify-between gap-5 md:mb-20 md:flex-row md:items-end">
-            <div className="max-w-2xl">
-              <h2 className="mb-4 text-3xl font-black sm:text-4xl md:mb-6 md:text-6xl">{resolvedSettings.homepage.projects_title}</h2>
-              <p className="text-base text-muted-foreground sm:text-lg">{resolvedSettings.homepage.projects_description}</p>
-            </div>
-            <Link href="/projects" className="flex items-center gap-2 font-bold text-primary hover:underline">
-              Tumunu Gor
-              <ChevronRight className="h-5 w-5" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {loading ? (
-              <div className="col-span-full flex justify-center py-10">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              </div>
-            ) : featuredProjects.length === 0 ? (
-              <div className="col-span-full text-center text-muted-foreground">Su an aktif proje bulunmuyor.</div>
-            ) : (
-              featuredProjects.map((project, index) => (
-                <Link href={`/projects/${project.slug}`} key={project.id}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                    className="glass-panel group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/70 p-5 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-900/10 sm:rounded-[32px] sm:p-8"
-                  >
-                    <div className={`absolute right-0 top-0 h-32 w-32 bg-gradient-to-br ${projectColors[index % projectColors.length]} opacity-0 blur-3xl transition-opacity group-hover:opacity-10`} />
-                    <h3 className="mb-4 text-2xl font-bold">{project.name}</h3>
-                    <p className="mb-8 flex-1 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                      {project.short_description || "Proje tanitimi yakinda eklenecek."}
-                    </p>
-                    <div className="mt-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
-                      <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5" />
-                    </div>
-                  </motion.div>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-      </section>
-    ),
-    activities: (
-      <section className="bg-muted/20 py-16 sm:py-32">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="mb-10 flex flex-col justify-between gap-5 md:mb-16 md:flex-row md:items-end">
-            <div className="max-w-2xl">
-              <h2 className="mb-4 text-3xl font-black sm:text-4xl">{resolvedSettings.homepage.activities_title}</h2>
-              <p className="text-muted-foreground">{resolvedSettings.homepage.activities_description}</p>
-            </div>
-            <Link href="/activities" className="flex items-center gap-2 font-bold text-primary hover:underline">
-              Tum Faaliyetler
-              <ChevronRight className="h-5 w-5" />
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            </div>
-          ) : featuredActivities.length === 0 ? (
-            <div className="glass-panel rounded-3xl p-12 text-center text-muted-foreground">
-              Henuz yayinlanmis faaliyet bulunmuyor.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {featuredActivities.map((activity) => (
-                <Link key={activity.id} href={`/activities/${activity.id}`} className="glass-panel group rounded-3xl border border-border/70 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-900/10">
-                  <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-primary">
-                    {activity.project?.name || "Program"}
-                  </div>
-                  <h3 className="text-2xl font-bold text-foreground transition-colors duration-300 group-hover:text-primary">{activity.title}</h3>
-                  <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      {new Date(activity.start_at).toLocaleDateString("tr-TR")}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      {activity.location || "Konum bilgisi yok"}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-    ),
-    about: (
-      <section className="relative overflow-hidden py-16 sm:py-32">
-        <div className="container mx-auto grid grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-6">
-            <div className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Hakkımızda</div>
-            <h2 className="text-3xl font-black sm:text-4xl md:text-6xl">{resolvedSettings.homepage.about_teaser_title}</h2>
-            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              {resolvedSettings.homepage.about_teaser_description}
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Link href="/about" className="group flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-primary/30">
-                Bizi Tanıyın
-                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
-              <Link
-                href="/contact"
-                className="rounded-2xl border border-border/80 bg-card px-8 py-4 font-bold text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md"
-              >
-                İletişime Geçin
-              </Link>
-            </div>
-          </div>
-
-          <div className="glass-panel overflow-hidden rounded-3xl border border-border/40 sm:rounded-[40px]">
-            <div className="relative h-56 w-full bg-muted/30">
-              {resolvedSettings.homepage.about_teaser_image_url ? (
-                <Image
-                  src={resolvedSettings.homepage.about_teaser_image_url}
-                  alt={resolvedSettings.homepage.about_teaser_title}
-                  fill
-                  unoptimized
-                  className="object-cover"
-                />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20" />
-              )}
-            </div>
-            <div className="p-8">
-              <h3 className="text-2xl font-black text-foreground">{resolvedSettings.about.journey_title}</h3>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{resolvedSettings.about.journey_text}</p>
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                <div className="rounded-3xl border border-border/80 bg-muted/40 p-5">
-                  <div className="text-2xl font-black text-foreground">{projects.length}</div>
-                  <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">Proje</div>
-                </div>
-                <div className="rounded-3xl border border-border/80 bg-muted/40 p-5">
-                  <div className="text-2xl font-black text-foreground">{activities.length}</div>
-                  <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">Faaliyet</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    ),
-    blog: (
-      <section className="bg-muted/20 py-16 sm:py-32">
-        <div className="container mx-auto mb-10 px-4 text-center sm:mb-16 sm:px-6">
-          <h2 className="mb-4 text-3xl font-black sm:text-4xl">{resolvedSettings.homepage.blog_title}</h2>
-        <p className="text-muted-foreground">{resolvedSettings.homepage.blog_description}</p>
-        </div>
-        <div className="container mx-auto px-4 sm:px-6">
-          {loading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            </div>
-          ) : featuredBlogs.length === 0 ? (
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {[1, 2, 3].map((card) => (
-                <div key={card} className="glass-panel group cursor-pointer overflow-hidden rounded-3xl border border-border/70 opacity-50 grayscale transition-all duration-300 hover:-translate-y-1">
-                  <div className="relative h-48 bg-muted">
-                    <div className="absolute inset-0 bg-primary/5" />
-                    <div className="absolute bottom-4 left-4 rounded bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
-                      HABERLER
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <h4 className="mb-3 text-xl font-bold transition-colors group-hover:text-primary">Icerik Hazirlaniyor</h4>
-                    <p className="line-clamp-2 text-sm text-muted-foreground">
-                      Blog yazilari en kisa surede buraya eklenecektir.
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {featuredBlogs.map((blog) => (
-                <Link href={`/blog/${blog.slug}`} key={blog.id}>
-                  <div className="glass-panel group cursor-pointer overflow-hidden rounded-3xl border border-border/70 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/10">
-                    <div className="relative h-48 bg-muted">
-                      {blog.cover_image ? (
-                        <Image src={blog.cover_image} alt={blog.title} fill className="object-cover transition-transform group-hover:scale-105" />
-                      ) : (
-                        <div className="absolute inset-0 bg-primary/5" />
-                      )}
-                      <div className="absolute bottom-4 left-4 rounded bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground shadow-md">
-                        {typeof blog.category === "string" ? blog.category : blog.category?.name || "HABERLER"}
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <h4 className="mb-3 line-clamp-2 text-xl font-bold transition-colors group-hover:text-primary">{blog.title}</h4>
-                      <p className="line-clamp-2 text-sm text-muted-foreground">
-                        {blog.excerpt || `${blog.content?.slice(0, 100) || ""}...`}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-    ),
-    newsletter: (
-      <section className="py-16 sm:py-28">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="glass-panel rounded-3xl border border-primary/20 p-5 sm:rounded-[40px] sm:p-10 md:p-14">
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_0.9fr] lg:items-center">
-              <div>
-                <div className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">E-Bulten</div>
-                <h2 className="text-3xl font-black sm:text-4xl md:text-5xl">{resolvedSettings.homepage.newsletter_title}</h2>
-                <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                  {resolvedSettings.homepage.newsletter_description}
-                </p>
-              </div>
-              <div className="space-y-4 rounded-2xl border border-border/80 bg-muted/30 p-4 sm:rounded-[32px] sm:p-6">
-                <input
-                  value={newsletterName}
-                  onChange={(event) => setNewsletterName(event.target.value)}
-                  placeholder="Adiniz Soyadiniz (opsiyonel)"
-                  className="w-full rounded-2xl border border-input bg-card px-4 py-4 text-foreground outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <input
-                  value={newsletterEmail}
-                  onChange={(event) => setNewsletterEmail(event.target.value)}
-                  placeholder="E-posta adresiniz"
-                  className="w-full rounded-2xl border border-input bg-card px-4 py-4 text-foreground outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <button
-                  type="button"
-                  onClick={() => void handleNewsletterSubmit()}
-                  disabled={newsletterSubmitting}
-                  className="inline-flex w-full items-center justify-center rounded-2xl bg-primary px-6 py-4 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-60"
-                >
-                  {newsletterSubmitting ? "Kaydediliyor..." : "E-Bultene Katil"}
-                </button>
-                {newsletterFeedback ? (
-                  <div className="rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground">
-                    {newsletterFeedback}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    ),
-    certificate_verify: (
-      <section className="pb-16 sm:pb-28">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="glass-panel rounded-3xl border border-primary/20 p-5 sm:rounded-[34px] sm:p-8 md:p-10">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div className="max-w-3xl">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
-                  <ShieldCheck className="h-4 w-4" />
-                  Kamusal Dogrulama
-                </div>
-                <h2 className="text-3xl font-black md:text-4xl">{resolvedSettings.homepage.certificate_verify_title}</h2>
-                <p className="mt-4 text-muted-foreground">{resolvedSettings.homepage.certificate_verify_description}</p>
-              </div>
-              <Link
-                href={resolvedSettings.homepage.certificate_verify_cta_href}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-4 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:shadow-primary/30"
-              >
-                {resolvedSettings.homepage.certificate_verify_cta_label}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-    ),
-  };
-
-  return (
-    <div className="flex w-full flex-col">
-      {visibleBlockOrder.map((block) => (
-        <div key={block}>{sectionMap[block]}</div>
-      ))}
-    </div>
-  );
+  return <div className="kdm-public-shell flex w-full flex-col bg-[#edecec] font-[var(--font-urbanist)]">{visibleBlockOrder.map((block) => <div key={block}>{sectionMap[block]}</div>)}</div>;
 }
 

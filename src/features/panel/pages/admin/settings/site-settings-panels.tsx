@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import type { SiteSettingsPayload } from "@/lib/site-config";
 
+type HomepageBlockKey = SiteSettingsPayload["homepage"]["block_order"][number];
+
 export type SettingsModuleId =
   | "general"
   | "navigation"
@@ -144,18 +146,13 @@ export interface SiteSettingsPanelsProps {
   toggleFeaturedBlog: (slug: string) => void;
   toggleFeaturedActivity: (id: number) => void;
   moveBlock: (index: number, direction: -1 | 1) => void;
-  toggleBlockVisibility: (
-    key: "hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify",
-  ) => void;
+  toggleBlockVisibility: (key: HomepageBlockKey) => void;
   updateIntroCard: (
     index: number,
     field: "title" | "description" | "image_url" | "cta_label" | "cta_href",
     value: string,
   ) => void;
-  homepageBlockLabels: Record<
-    "hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify",
-    string
-  >;
+  homepageBlockLabels: Record<HomepageBlockKey, string>;
 }
 
 export function SettingsModuleNav({
@@ -609,6 +606,50 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+        <div className={subCard}>
+          <h3 className="mb-4 text-sm font-semibold text-slate-800">Kayan yazilar</h3>
+          <div className="grid gap-4 md:grid-cols-[1fr_180px]">
+            <Field label="Metinler" hint="Her satir bir kayan yazi ogesi olarak gosterilir.">
+              <textarea
+                disabled={disabled}
+                value={settings.homepage.marquee_items.join("\n")}
+                onChange={(e) =>
+                  setSettings((c) => ({
+                    ...c,
+                    homepage: {
+                      ...c.homepage,
+                      marquee_items: e.target.value
+                        .split(/\\r?\\n/)
+                        .map((item) => item.trim())
+                        .filter(Boolean),
+                    },
+                  }))
+                }
+                rows={5}
+                className={fieldBase}
+              />
+            </Field>
+            <Field label="Sure (sn)" hint="8-90 saniye arasi.">
+              <input
+                disabled={disabled}
+                type="number"
+                min={8}
+                max={90}
+                value={settings.homepage.marquee_speed_seconds}
+                onChange={(e) =>
+                  setSettings((c) => ({
+                    ...c,
+                    homepage: {
+                      ...c.homepage,
+                      marquee_speed_seconds: Math.min(90, Math.max(8, Number(e.target.value) || 30)),
+                    },
+                  }))
+                }
+                className={fieldBase}
+              />
+            </Field>
           </div>
         </div>
         <div className={subCard}>

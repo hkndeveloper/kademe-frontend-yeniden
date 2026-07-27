@@ -13,7 +13,6 @@ import {
   Loader2,
   Plus,
   Save,
-  Sparkles,
   Trash2,
   User,
 } from "lucide-react";
@@ -74,6 +73,10 @@ interface CvCertificate {
   period?: string | null;
   verification_code?: string | null;
   issued_at?: string | null;
+  title?: string | null;
+  issuer?: string | null;
+  included_in_cv?: boolean | null;
+  source?: string | null;
 }
 
 interface CvCreditLog {
@@ -124,6 +127,7 @@ interface CvForm {
   education: ManualItem[];
   projects: ManualItem[];
   certificates: ManualItem[];
+  certificateIds: number[];
 }
 
 const emptyItem = (): ManualItem => ({
@@ -148,10 +152,11 @@ const emptyForm: CvForm = {
   instagram: "",
   skills: "",
   languages: "",
-  experience: [emptyItem()],
+  experience: [],
   education: [],
   projects: [],
   certificates: [],
+  certificateIds: [],
 };
 
 const localKey = (mode: CvMode, userId?: number | string | null) => `kademe-digital-cv-${mode}-${userId ?? "guest"}`;
@@ -174,6 +179,26 @@ const sanitizeFileName = (value: string) =>
     .toLocaleLowerCase("tr-TR")
     .replace(/[^a-z0-9]+/gi, "-")
     .replace(/^-+|-+$/g, "") || "kademe-dijital-cv";
+const UNIVERSITY_OPTIONS = [
+  "Ankara Universitesi",
+  "Istanbul Universitesi",
+  "Marmara Universitesi",
+  "Hacettepe Universitesi",
+  "Gazi Universitesi",
+  "Ege Universitesi",
+  "Dokuz Eylul Universitesi",
+  "Selcuk Universitesi",
+  "Necmettin Erbakan Universitesi",
+  "Karadeniz Teknik Universitesi",
+  "Diger",
+];
+
+const CLASS_YEAR_OPTIONS = ["Hazirlik", "1", "2", "3", "4", "5", "6", "Mezun"];
+
+const numericOnly = (value: string) => value.replace(/\D/g, "");
+
+const manualItemIsComplete = (item: ManualItem) =>
+  Boolean(item.title.trim() && item.subtitle.trim() && item.date.trim() && item.description.trim() && /^\d+$/.test(item.date.trim()));
 
 interface CvExportContext {
   form: CvForm;
@@ -226,10 +251,11 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
         instagram: draftForm.instagram ?? profile.instagram_url ?? "",
         skills: draftForm.skills ?? "",
         languages: draftForm.languages ?? "",
-        experience: draftForm.experience?.length ? draftForm.experience : [emptyItem()],
+        experience: draftForm.experience ?? [],
         education: draftForm.education ?? [],
         projects: draftForm.projects ?? [],
         certificates: draftForm.certificates ?? [],
+        certificateIds: draftForm.certificateIds?.length ? draftForm.certificateIds : (nextPayload.certificates ?? []).filter((certificate) => certificate.included_in_cv !== false).map((certificate) => certificate.id),
       });
     } catch (error) {
       console.error("Dijital CV verileri yuklenemedi", error);
@@ -253,6 +279,7 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
   const verifiedProjects = payload.projects ?? [];
   const badges = payload.badges ?? [];
   const certificates = payload.certificates ?? [];
+  const selectedCertificates = certificates.filter((certificate) => form.certificateIds.includes(certificate.id));
   const creditHistory = payload.credit_history ?? [];
 
   const updateItem = (section: "experience" | "education" | "projects" | "certificates", id: string, field: keyof ManualItem, value: string) => {
@@ -270,10 +297,33 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
     setForm((prev) => ({ ...prev, [section]: prev[section].filter((item) => item.id !== id) }));
   };
 
+  const toggleCertificate = (certificateId: number) => {
+    setForm((prev) => ({
+      ...prev,
+      certificateIds: prev.certificateIds.includes(certificateId)
+        ? prev.certificateIds.filter((id) => id !== certificateId)
+        : [...prev.certificateIds, certificateId],
+    }));
+  };
+
+  const validateManualRows = () => {
+    const rows = [...form.experience, ...form.education, ...form.certificates];
+    const invalid = rows.find((item) => !manualItemIsComplete(item));
+
+    if (invalid) {
+      setMessage("Eklenen manuel bilgi satirlarinda baslik, kurum/rol, sadece rakamdan olusan tarih ve aciklama zorunludur.");
+      return false;
+    }
+
+    return true;
+  };
   const saveDraft = async (notify = true) => {
-    window.localStorage.setItem(localKey(mode, userId), JSON.stringify(form));
+    if (!validateManualRows()) return;
+
+    const cvForm = { ...form, projects: [] };
+    window.localStorage.setItem(localKey(mode, userId), JSON.stringify(cvForm));
     try {
-      const response = await api.put<{ saved_draft?: DigitalCvPayload["saved_draft"] }>("/dashboard/digital-cv", { form });
+      const response = await api.put<{ saved_draft?: DigitalCvPayload["saved_draft"] }>("/dashboard/digital-cv", { form: cvForm });
       setPayload((current) => ({ ...current, saved_draft: response.data.saved_draft ?? current.saved_draft }));
       if (notify) {
         setMessage("CV taslagi kaydedildi ve profil verilerine baglandi.");
@@ -307,18 +357,19 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
   };
 
   const exportPdf = async () => {
+    if (!validateManualRows()) return;
     await saveDraft(false);
     setMessage("PDF hazirlaniyor...");
     try {
       const response = await api.post(
         "/dashboard/digital-cv/pdf",
         {
-          form,
+          form: { ...form, projects: [] },
           approved,
           projects: verifiedProjects,
           badges,
-          certificates,
-          credit_history: creditHistory,
+          certificates: selectedCertificates,
+          credit_history: [],
         },
         { responseType: "blob" },
       );
@@ -332,8 +383,8 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
         approved,
         verifiedProjects,
         badges,
-        certificates,
-        creditHistory,
+        certificates: selectedCertificates,
+        creditHistory: [],
         skills,
         languages,
       }));
@@ -341,14 +392,15 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
   };
 
   const exportWord = () => {
+    if (!validateManualRows()) return;
     void saveDraft(false);
     const html = buildCvHtmlDocument({
       form,
       approved,
       verifiedProjects,
       badges,
-      certificates,
-      creditHistory,
+      certificates: selectedCertificates,
+      creditHistory: [],
       skills,
       languages,
     });
@@ -357,14 +409,15 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
   };
 
   const exportText = () => {
+    if (!validateManualRows()) return;
     void saveDraft(false);
     const lines = buildAtsText({
       form,
       approved,
       verifiedProjects,
       badges,
-      certificates,
-      creditHistory,
+      certificates: selectedCertificates,
+      creditHistory: [],
       skills,
       languages,
     });
@@ -453,14 +506,27 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
       </div>
 
       {message && <div className="cv-no-print rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">{message}</div>}
-
-      <div className="cv-no-print grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Metric label="Onayli proje" value={approved.completed_project_count ?? verifiedProjects.length} />
-        <Metric label="Toplam kredi" value={approved.total_credit ?? 0} />
-        <Metric label="Rozet" value={approved.badge_count ?? badges.length} />
-        <Metric label="Sertifika" value={approved.certificate_count ?? certificates.length} />
-      </div>
-
+      {certificates.length > 0 ? (
+        <div className="cv-no-print rounded-lg border border-slate-200 bg-white p-4">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-600">CV'ye eklenecek sertifikalar</h2>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {certificates.map((certificate) => (
+              <label key={certificate.id} className="flex items-start gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={form.certificateIds.includes(certificate.id)}
+                  onChange={() => toggleCertificate(certificate.id)}
+                  className="mt-1"
+                />
+                <span>
+                  <span className="block font-bold text-slate-950">{certificate.title || certificate.type || "Sertifika"}</span>
+                  <span className="text-xs text-slate-500">{[certificate.issuer, certificate.project, formatDate(certificate.issued_at)].filter(Boolean).join(" | ")}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
         <div className="cv-no-print space-y-4">
           <div className="flex gap-2 overflow-x-auto rounded-lg border border-slate-200 bg-white p-1">
@@ -504,9 +570,9 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
 
           {activeSection === "education" && (
             <FormPanel title="Egitim" icon={<GraduationCap className="h-5 w-5" />} onAdd={() => addItem("education")}>
-              <Input label="Universite" value={form.university} onChange={(value) => setForm((prev) => ({ ...prev, university: value }))} />
+              <Select label="Universite" value={form.university} options={UNIVERSITY_OPTIONS} onChange={(value) => setForm((prev) => ({ ...prev, university: value }))} />
               <Input label="Bolum" value={form.department} onChange={(value) => setForm((prev) => ({ ...prev, department: value }))} />
-              <Input label="Sinif / Mezuniyet" value={form.classYear} onChange={(value) => setForm((prev) => ({ ...prev, classYear: value }))} />
+              <Select label="Sinif / Mezuniyet" value={form.classYear} options={CLASS_YEAR_OPTIONS} onChange={(value) => setForm((prev) => ({ ...prev, classYear: value }))} />
               {form.education.map((item) => (
                 <ItemEditor key={item.id} item={item} onChange={(field, value) => updateItem("education", item.id, field, value)} onRemove={() => removeItem("education", item.id)} />
               ))}
@@ -515,11 +581,6 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
 
           {activeSection === "manual" && (
             <div className="space-y-4">
-              <FormPanel title="Manuel Projeler" icon={<Sparkles className="h-5 w-5" />} onAdd={() => addItem("projects")}>
-                {form.projects.map((item) => (
-                  <ItemEditor key={item.id} item={item} onChange={(field, value) => updateItem("projects", item.id, field, value)} onRemove={() => removeItem("projects", item.id)} />
-                ))}
-              </FormPanel>
               <FormPanel title="Manuel Sertifikalar" icon={<Award className="h-5 w-5" />} onAdd={() => addItem("certificates")}>
                 {form.certificates.map((item) => (
                   <ItemEditor key={item.id} item={item} onChange={(field, value) => updateItem("certificates", item.id, field, value)} onRemove={() => removeItem("certificates", item.id)} />
@@ -534,8 +595,8 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
           approved={approved}
           verifiedProjects={verifiedProjects}
           badges={badges}
-          certificates={certificates}
-          creditHistory={creditHistory}
+          certificates={selectedCertificates}
+          creditHistory={[]}
           skills={skills}
           languages={languages}
         />
@@ -572,20 +633,37 @@ function FormPanel({ title, icon, children, onAdd }: { title: string; icon: Reac
   );
 }
 
-function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function Input({ label, value, onChange, required = false, inputMode, pattern }: { label: string; value?: string | null; onChange: (value: string) => void; required?: boolean; inputMode?: "numeric"; pattern?: string }) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-indigo-500" />
+      <input value={value ?? ""} required={required} inputMode={inputMode} pattern={pattern} onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-indigo-500" />
     </label>
   );
 }
 
-function Textarea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+
+function Select({ label, value, options, onChange }: { label: string; value?: string | null; options: string[]; onChange: (value: string) => void }) {
+  const safeValue = value ?? "";
+  const normalizedOptions = safeValue && !options.includes(safeValue) ? [safeValue, ...options] : options;
+
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} className="min-h-28 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-indigo-500" />
+      <select value={safeValue} onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-indigo-500">
+        <option value="">Seciniz</option>
+        {normalizedOptions.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+function Textarea({ label, value, onChange, required = false }: { label: string; value?: string | null; onChange: (value: string) => void; required?: boolean }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
+      <textarea value={value ?? ""} required={required} onChange={(event) => onChange(event.target.value)} className="min-h-28 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-indigo-500" />
     </label>
   );
 }
@@ -599,14 +677,14 @@ function ItemEditor({ item, onChange, onRemove }: { item: ManualItem; onChange: 
         </button>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Input label="Baslik" value={item.title} onChange={(value) => onChange("title", value)} />
-        <Input label="Kurum / Rol" value={item.subtitle} onChange={(value) => onChange("subtitle", value)} />
+        <Input label="Baslik *" value={item.title} required onChange={(value) => onChange("title", value)} />
+        <Input label="Kurum / Rol *" value={item.subtitle} required onChange={(value) => onChange("subtitle", value)} />
       </div>
       <div className="mt-3">
-        <Input label="Tarih" value={item.date} onChange={(value) => onChange("date", value)} />
+        <Input label="Tarih *" value={item.date} required inputMode="numeric" pattern="[0-9]*" onChange={(value) => onChange("date", numericOnly(value))} />
       </div>
       <div className="mt-3">
-        <Textarea label="Aciklama" value={item.description} onChange={(value) => onChange("description", value)} />
+        <Textarea label="Aciklama *" value={item.description} required onChange={(value) => onChange("description", value)} />
       </div>
     </div>
   );
@@ -633,7 +711,7 @@ function CvPreview({
 }) {
   const manualExperience = form.experience.filter((item) => item.title || item.subtitle || item.description);
   const manualEducation = form.education.filter((item) => item.title || item.subtitle || item.description);
-  const manualProjects = form.projects.filter((item) => item.title || item.subtitle || item.description);
+
   const manualCertificates = form.certificates.filter((item) => item.title || item.subtitle || item.description);
 
   return (
@@ -666,16 +744,7 @@ function CvPreview({
       <div className="mt-5 space-y-5">
         <CvSection title="Profesyonel Ozet">
           <p>{form.summary || "KADEME programlari, proje deneyimleri ve manuel eklemelerle olusturulan ATS uyumlu dijital CV."}</p>
-        </CvSection>
-
-        <CvSection title="KADEME Onayli Kazanimlar">
-          <div className="grid gap-2 text-sm sm:grid-cols-4 print:grid-cols-4">
-            <strong>{approved.completed_project_count ?? verifiedProjects.length} proje</strong>
-            <strong>{approved.total_credit ?? 0} kredi</strong>
-            <strong>{approved.badge_count ?? badges.length} rozet</strong>
-            <strong>{approved.certificate_count ?? certificates.length} sertifika</strong>
-          </div>
-        </CvSection>
+        </CvSection>
 
         <CvSection title="Egitim">
           <Entry title={form.university || "Universite"} subtitle={form.department} date={form.classYear} />
@@ -690,26 +759,7 @@ function CvPreview({
               <Entry key={item.id} title={item.title} subtitle={item.subtitle} date={item.date} description={item.description} />
             ))}
           </CvSection>
-        )}
-
-        <CvSection title="Tamamlanan / Katilinan KADEME Projeleri">
-          {verifiedProjects.length === 0 ? (
-            <p>Kayitli KADEME proje katilimi bulunamadi.</p>
-          ) : (
-            verifiedProjects.map((project) => (
-              <Entry
-                key={project.id}
-                title={project.name}
-                subtitle={[project.type, project.period, project.graduation_status || project.status].filter(Boolean).join(" | ")}
-                date={formatDate(project.graduated_at)}
-                description={[project.description, project.credit != null ? `Kredi: ${project.credit}` : null].filter(Boolean).join(" ")}
-              />
-            ))
-          )}
-          {manualProjects.map((item) => (
-            <Entry key={item.id} title={item.title} subtitle={item.subtitle} date={item.date} description={item.description} />
-          ))}
-        </CvSection>
+        )}
 
         {(skills.length > 0 || languages.length > 0) && (
           <CvSection title="Yetkinlikler ve Diller">
@@ -718,27 +768,16 @@ function CvPreview({
           </CvSection>
         )}
 
-        {(badges.length > 0 || certificates.length > 0 || manualCertificates.length > 0) && (
-          <CvSection title="Rozetler ve Sertifikalar">
-            {badges.map((badge) => (
-              <Entry key={`badge-${badge.id}`} title={badge.title_label || badge.name} subtitle={[badge.project, badge.tier].filter(Boolean).join(" | ")} date={formatDate(badge.awarded_at)} description={badge.description ?? ""} />
-            ))}
+        {(certificates.length > 0 || manualCertificates.length > 0) && (
+          <CvSection title="Sertifikalar">
             {certificates.map((certificate) => (
-              <Entry key={`certificate-${certificate.id}`} title={certificate.type || "Sertifika"} subtitle={[certificate.project, certificate.period].filter(Boolean).join(" | ")} date={formatDate(certificate.issued_at)} description={certificate.verification_code ? `Dogrulama kodu: ${certificate.verification_code}` : ""} />
+              <Entry key={`certificate-${certificate.id}`} title={certificate.title || certificate.type || "Sertifika"} subtitle={[certificate.issuer, certificate.project, certificate.period].filter(Boolean).join(" | ")} date={formatDate(certificate.issued_at)} description={certificate.verification_code ? `Dogrulama kodu: ${certificate.verification_code}` : ""} />
             ))}
             {manualCertificates.map((item) => (
               <Entry key={item.id} title={item.title} subtitle={item.subtitle} date={item.date} description={item.description} />
             ))}
           </CvSection>
-        )}
-
-        {creditHistory.length > 0 && (
-          <CvSection title="Kredi Gecmisi Ozeti">
-            {creditHistory.slice(0, 8).map((log, index) => (
-              <Entry key={`${log.created_at}-${index}`} title={`${log.amount > 0 ? "+" : ""}${log.amount} kredi`} subtitle={[log.project, log.program, log.type].filter(Boolean).join(" | ")} date={formatDate(log.created_at)} description={log.reason ?? ""} />
-            ))}
-          </CvSection>
-        )}
+        )}
       </div>
     </article>
   );
@@ -811,35 +850,19 @@ function exportSection(title: string, content: string) {
 
 function buildCvHtmlDocument({
   form,
-  approved,
-  verifiedProjects,
-  badges,
   certificates,
-  creditHistory,
   skills,
   languages,
 }: CvExportContext) {
   const manualExperience = form.experience.filter((item) => item.title || item.subtitle || item.description);
   const manualEducation = form.education.filter((item) => item.title || item.subtitle || item.description);
-  const manualProjects = form.projects.filter((item) => item.title || item.subtitle || item.description);
   const manualCertificates = form.certificates.filter((item) => item.title || item.subtitle || item.description);
   const fullName = form.fullName || "Ad Soyad";
   const contact = [form.email, form.phone, form.location].filter(Boolean).map(escapeHtml).join(" | ");
   const links = [form.linkedin, form.github, form.instagram].filter(Boolean).map(escapeHtml).join(" | ");
 
   const sections = [
-    exportSection("Profesyonel Ozet", `<p>${htmlParagraph(form.summary || "KADEME programlari, proje deneyimleri ve manuel eklemelerle olusturulan ATS uyumlu dijital CV.")}</p>`),
-    exportSection(
-      "KADEME Onayli Kazanimlar",
-      `
-        <div class="metrics">
-          <span><strong>${escapeHtml(approved.completed_project_count ?? verifiedProjects.length)}</strong> proje</span>
-          <span><strong>${escapeHtml(approved.total_credit ?? 0)}</strong> kredi</span>
-          <span><strong>${escapeHtml(approved.badge_count ?? badges.length)}</strong> rozet</span>
-          <span><strong>${escapeHtml(approved.certificate_count ?? certificates.length)}</strong> sertifika</span>
-        </div>
-      `,
-    ),
+    exportSection("Profesyonel Ozet", `<p>${htmlParagraph(form.summary || "")}</p>`),
     exportSection(
       "Egitim",
       [
@@ -849,21 +872,6 @@ function buildCvHtmlDocument({
     ),
     exportSection("Deneyim", manualExperience.map((item) => exportEntry(item)).join("")),
     exportSection(
-      "Tamamlanan / Katilinan KADEME Projeleri",
-      [
-        verifiedProjects.length === 0 ? "<p>Kayitli KADEME proje katilimi bulunamadi.</p>" : "",
-        ...verifiedProjects.map((project) =>
-          exportEntry({
-            title: project.name,
-            subtitle: [project.type, project.period, project.graduation_status || project.status].filter(Boolean).join(" | "),
-            date: formatDate(project.graduated_at),
-            description: [project.description, project.credit != null ? `Kredi: ${project.credit}` : null].filter(Boolean).join(" "),
-          }),
-        ),
-        ...manualProjects.map((item) => exportEntry(item)),
-      ].join(""),
-    ),
-    exportSection(
       "Yetkinlikler ve Diller",
       [
         skills.length > 0 ? `<p><strong>Yetkinlikler:</strong> ${skills.map(escapeHtml).join(", ")}</p>` : "",
@@ -871,20 +879,12 @@ function buildCvHtmlDocument({
       ].join(""),
     ),
     exportSection(
-      "Rozetler ve Sertifikalar",
+      "Sertifikalar",
       [
-        ...badges.map((badge) =>
-          exportEntry({
-            title: badge.title_label || badge.name,
-            subtitle: [badge.project, badge.tier].filter(Boolean).join(" | "),
-            date: formatDate(badge.awarded_at),
-            description: badge.description ?? "",
-          }),
-        ),
         ...certificates.map((certificate) =>
           exportEntry({
-            title: certificate.type || "Sertifika",
-            subtitle: [certificate.project, certificate.period].filter(Boolean).join(" | "),
+            title: certificate.title || certificate.type || "Sertifika",
+            subtitle: [certificate.issuer, certificate.project, certificate.period].filter(Boolean).join(" | "),
             date: formatDate(certificate.issued_at),
             description: certificate.verification_code ? `Dogrulama kodu: ${certificate.verification_code}` : "",
           }),
@@ -892,99 +892,30 @@ function buildCvHtmlDocument({
         ...manualCertificates.map((item) => exportEntry(item)),
       ].join(""),
     ),
-    exportSection(
-      "Kredi Gecmisi Ozeti",
-      creditHistory
-        .slice(0, 8)
-        .map((log) =>
-          exportEntry({
-            title: `${log.amount > 0 ? "+" : ""}${log.amount} kredi`,
-            subtitle: [log.project, log.program, log.type].filter(Boolean).join(" | "),
-            date: formatDate(log.created_at),
-            description: log.reason ?? "",
-          }),
-        )
-        .join(""),
-    ),
   ].join("");
 
   return `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>${escapeHtml(fullName)} - KADEME Dijital CV</title>
+    <title>${escapeHtml(fullName)} - CV</title>
     <style>
       @page { size: A4; margin: 14mm; }
       * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        background: #ffffff;
-        color: #0f172a;
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: 11pt;
-        line-height: 1.45;
-      }
+      body { margin: 0; background: #ffffff; color: #0f172a; font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.45; }
       article { width: 100%; max-width: 190mm; margin: 0 auto; }
-      header {
-        display: flex;
-        justify-content: space-between;
-        gap: 18px;
-        border-bottom: 1px solid #cbd5e1;
-        padding-bottom: 14px;
-        margin-bottom: 18px;
-      }
+      header { display: flex; justify-content: space-between; gap: 18px; border-bottom: 1px solid #cbd5e1; padding-bottom: 14px; margin-bottom: 18px; }
       h1 { margin: 0 0 7px; font-size: 24pt; line-height: 1.1; }
-      h2 {
-        margin: 0 0 8px;
-        border-bottom: 1px solid #e2e8f0;
-        padding-bottom: 4px;
-        color: #111827;
-        font-size: 10pt;
-        letter-spacing: 1.6px;
-        text-transform: uppercase;
-      }
+      h2 { margin: 0 0 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; color: #111827; font-size: 10pt; letter-spacing: 1.6px; text-transform: uppercase; }
       section { break-inside: avoid; margin: 0 0 16px; }
       p { margin: 4px 0 0; color: #334155; }
       .muted, .date, .contact, .links { color: #475569; }
-      .badge {
-        border: 1px solid #cbd5e1;
-        padding: 7px 10px;
-        text-align: right;
-        white-space: nowrap;
-      }
-      .badge small {
-        display: block;
-        color: #64748b;
-        font-size: 8pt;
-        font-weight: 700;
-        letter-spacing: 1.4px;
-        text-transform: uppercase;
-      }
-      .metrics {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 8px;
-      }
-      .metrics span {
-        border: 1px solid #e2e8f0;
-        padding: 8px;
-      }
-      .metrics strong { display: block; font-size: 15pt; }
+      .badge { border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; white-space: nowrap; }
+      .badge small { display: block; color: #64748b; font-size: 8pt; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; }
       .entry { break-inside: avoid; margin-bottom: 10px; }
-      .entry-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-      }
-      .date {
-        flex: 0 0 auto;
-        font-size: 9pt;
-        font-weight: 700;
-        text-align: right;
-      }
-      @media print {
-        html, body { background: #ffffff !important; }
-      }
+      .entry-head { display: flex; justify-content: space-between; gap: 16px; }
+      .date { flex: 0 0 auto; font-size: 9pt; font-weight: 700; text-align: right; }
+      @media print { html, body { background: #ffffff !important; } }
     </style>
   </head>
   <body>
@@ -996,7 +927,7 @@ function buildCvHtmlDocument({
           ${links ? `<div class="links">${links}</div>` : ""}
         </div>
         <div class="badge">
-          <small>KADEME Onayli</small>
+          <small>KADEME</small>
           <strong>Dijital CV</strong>
         </div>
       </header>
@@ -1005,7 +936,6 @@ function buildCvHtmlDocument({
   </body>
 </html>`;
 }
-
 function printCvDocument(html: string) {
   const iframe = document.createElement("iframe");
   let printed = false;
@@ -1082,14 +1012,10 @@ function buildAtsText({
     [form.linkedin, form.github, form.instagram].filter(Boolean).join(" | "),
   ].filter(Boolean).join("\n"));
   sections.push(`PROFESYONEL OZET\n${form.summary || ""}`);
-  sections.push(`KADEME ONAYLI DIJITAL CV\nOnayli proje: ${approved.completed_project_count ?? verifiedProjects.length}\nToplam kredi: ${approved.total_credit ?? 0}\nRozet: ${approved.badge_count ?? badges.length}\nSertifika: ${approved.certificate_count ?? certificates.length}`);
   sections.push(`EGITIM\n${[form.university, form.department, form.classYear].filter(Boolean).join(" | ")}`);
   sections.push(`DENEYIM\n${form.experience.filter((item) => item.title || item.description).map((item) => `${item.title}\n${[item.subtitle, item.date].filter(Boolean).join(" | ")}\n${item.description}`).join("\n\n")}`);
-  sections.push(`KADEME PROJELERI\n${verifiedProjects.map((project) => `${project.name}\n${[project.type, project.period, project.graduation_status || project.status].filter(Boolean).join(" | ")}\n${project.description || ""}\nKredi: ${project.credit ?? 0}`).join("\n\n")}`);
   sections.push(`YETKINLIKLER\n${skills.join(", ")}`);
   sections.push(`DILLER\n${languages.join(", ")}`);
-  sections.push(`ROZETLER\n${badges.map((badge) => [badge.title_label || badge.name, badge.project, badge.tier, formatDate(badge.awarded_at)].filter(Boolean).join(" | ")).join("\n")}`);
-  sections.push(`SERTIFIKALAR\n${certificates.map((certificate) => [certificate.type || "Sertifika", certificate.project, certificate.period, certificate.verification_code].filter(Boolean).join(" | ")).join("\n")}`);
-  sections.push(`KREDI GECMISI\n${creditHistory.map((log) => [`${log.amount > 0 ? "+" : ""}${log.amount} kredi`, log.project, log.program, log.reason, formatDate(log.created_at)].filter(Boolean).join(" | ")).join("\n")}`);
+  sections.push(`SERTIFIKALAR\n${certificates.map((certificate) => [certificate.title || certificate.type || "Sertifika", certificate.issuer, certificate.project, certificate.period, certificate.verification_code].filter(Boolean).join(" | ")).join("\n")}`);
   return sections.join("\n\n");
 }

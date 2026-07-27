@@ -27,7 +27,7 @@ export function PublicBreadcrumbs({ items, className = "", variant = "default" }
 
   return (
     <nav aria-label="Sayfa konumu" className={`text-sm ${variant === "onDark" ? "text-slate-200" : "text-muted-foreground"} ${className}`}>
-      <ol className="flex flex-wrap items-center gap-1">
+      <ol className={`flex flex-wrap items-center gap-1 ${className.includes("justify-center") ? "justify-center" : ""}`}>
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           return (

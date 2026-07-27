@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Calendar, Clock, CreditCard, Download, Loader2, MessageSquareText, Quote, Star, TrendingDown, TrendingUp, Zap } from "lucide-react";
+import { ArrowRight, Bell, BookOpen, Calendar, Clock, CreditCard, Download, Loader2, MessageSquareText, Quote, Star, TrendingDown, TrendingUp, Zap } from "lucide-react";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
 import { defaultSiteSettings } from "@/lib/site-config";
+import { LinkifiedText } from "@/components/shared/LinkifiedText";
+import { formatIstanbulDate, formatIstanbulDayNumber, formatIstanbulTime, formatIstanbulWeekdayShort } from "@/lib/istanbul-time";
 
 interface DashboardParticipation {
   id: number;
@@ -50,6 +52,14 @@ interface BohcaMaterial {
   file_type?: string | null;
 }
 
+interface AnnouncementItem {
+  id: number;
+  title: string;
+  content: string;
+  created_at?: string | null;
+  published_at?: string | null;
+}
+
 interface CreditLog {
   id: number;
   amount?: number | null;
@@ -85,6 +95,7 @@ export default function StudentDashboardPage() {
   const [badges, setBadges] = useState<DashboardBadge[]>([]);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [materials, setMaterials] = useState<BohcaMaterial[]>([]);
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [creditHistory, setCreditHistory] = useState<CreditLog[]>([]);
   const [monthlyTitles, setMonthlyTitles] = useState<string[]>([]);
   const [profileBadgeFrame, setProfileBadgeFrame] = useState<string | null>(null);
@@ -96,10 +107,11 @@ export default function StudentDashboardPage() {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [summaryResponse, programsResponse, bohcaResponse, motivationResponse] = await Promise.all([
+        const [summaryResponse, programsResponse, bohcaResponse, announcementsResponse, motivationResponse] = await Promise.all([
           api.get<DashboardSummaryResponse>("/dashboard/summary"),
           api.get<{ programs: ProgramItem[] }>("/programs"),
           api.get<{ materials: BohcaMaterial[] }>("/digital-bohca"),
+          api.get<{ announcements: AnnouncementItem[] }>("/announcements").catch(() => ({ data: { announcements: [] } })),
           api.get<MotivationResponse>("/motivation/current").catch(() => null),
         ]);
 
@@ -111,6 +123,7 @@ export default function StudentDashboardPage() {
         setProfileBadgeFrame(summaryResponse.data.profile_badge_frame ?? null);
         setPrograms(programsResponse.data.programs ?? []);
         setMaterials((bohcaResponse.data.materials ?? []).slice(0, 3));
+        setAnnouncements((announcementsResponse.data.announcements ?? []).slice(0, 3));
         const msg = motivationResponse?.data?.motivation?.quote;
         if (msg) setMotivationMessage(msg);
         setMotivationSpeaker(motivationResponse?.data?.motivation?.speaker || "KADEME");
@@ -143,6 +156,7 @@ export default function StudentDashboardPage() {
   const attendedPrograms = programs.filter((program) => program.attendance_status === "present");
   const pendingFeedbackCount = programs.filter((program) => program.status === "completed" && program.attendance_status === "present" && !program.feedback_submitted).length;
   const recentCreditHistory = creditHistory.slice(0, 5);
+  const recentAnnouncements = announcements.slice(0, 3);
 
   return (
     <div className="space-y-10">
@@ -305,18 +319,18 @@ export default function StudentDashboardPage() {
                 <div className="text-sm text-muted-foreground">Yaklasan program bulunmuyor.</div>
               ) : (
                 upcomingPrograms.map((program) => {
-                  const date = program.start_at ? new Date(program.start_at) : null;
+                  const date = program.start_at ?? null;
                   return (
                     <div key={program.id} className="flex items-center gap-4">
                       <div className="flex h-10 w-10 flex-col items-center justify-center rounded-xl border border-white/5 bg-white/5">
-                        <span className="text-[8px] font-bold text-muted-foreground">{date ? date.toLocaleDateString("tr-TR", { weekday: "short" }).toUpperCase() : "TAR"}</span>
-                        <span className="text-sm font-black text-slate-900">{date ? date.getDate() : "-"}</span>
+                        <span className="text-[8px] font-bold text-muted-foreground">{date ? formatIstanbulWeekdayShort(date).toUpperCase() : "TAR"}</span>
+                        <span className="text-sm font-black text-slate-900">{date ? formatIstanbulDayNumber(date) : "-"}</span>
                       </div>
                       <div className="flex-1">
                         <h5 className="text-xs font-bold text-slate-900">{program.title}</h5>
                         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {date ? date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "Saat belirtilmedi"}
+                          {date ? formatIstanbulTime(date) : "Saat belirtilmedi"}
                         </div>
                       </div>
                     </div>
@@ -326,6 +340,37 @@ export default function StudentDashboardPage() {
             </div>
           </div>
 
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Guncel Duyurular</h4>
+              <Bell className="h-4 w-4 text-primary" />
+            </div>
+            <div className="space-y-3">
+              {recentAnnouncements.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Henuz duyuru bulunmuyor.</div>
+              ) : (
+                recentAnnouncements.map((announcement) => {
+                  const dateValue = announcement.published_at ?? announcement.created_at ?? null;
+                  return (
+                    <div key={announcement.id} className="rounded-2xl border border-white/5 bg-white/5 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <h5 className="min-w-0 flex-1 text-xs font-black text-slate-900">{announcement.title}</h5>
+                        {dateValue ? (
+                          <span className="shrink-0 text-[9px] font-bold text-muted-foreground">
+                            {formatIstanbulDate(dateValue)}
+                          </span>
+                        ) : null}
+                      </div>
+                      <LinkifiedText text={announcement.content} className="mt-2 line-clamp-3 whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground" />
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <Link href="/student/announcements" className="mt-6 block w-full rounded-xl py-2 text-center text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-primary/5">
+              Tum duyurulari gor
+            </Link>
+          </div>
           <div className="glass-panel rounded-3xl p-6">
             <div className="mb-6 flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dijital Bohca</h4>

@@ -1,23 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Eye, Target } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, Eye, HelpCircle, Loader2, Sparkles, Target } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { PublicBadge, PublicButton, PublicCard, PublicCounter, PublicGradientTitle, PublicHeroSection, PublicIconBadge } from "@/components/public";
 import api from "@/lib/api/axios";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
 
-interface BlogSummary {
-  id: number;
-  title: string;
-  slug: string;
-}
-
+type BlogSummary = { id: number; title: string; slug: string };
 type FaqGroups = Record<string, Array<{ id: number; question: string }>>;
 
 export default function AboutPage() {
   const [settings, setSettings] = useState<SiteSettingsPayload | null>(null);
-  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [blogCount, setBlogCount] = useState(0);
   const [faqCount, setFaqCount] = useState(0);
   const [featuredBlogs, setFeaturedBlogs] = useState<BlogSummary[]>([]);
@@ -33,148 +29,115 @@ export default function AboutPage() {
         ]);
 
         setSettings(configResponse.data.settings ?? null);
-
         const rawBlogs = blogResponse.data.blogs;
-        const normalizedBlogs = Array.isArray(rawBlogs) ? rawBlogs : rawBlogs?.data ?? [];
-        setBlogCount(normalizedBlogs.length);
-        setFeaturedBlogs(normalizedBlogs.slice(0, 2));
+        const blogs = Array.isArray(rawBlogs) ? rawBlogs : rawBlogs?.data ?? [];
+        const faqs = faqResponse.data.faqs ?? {};
 
-        const faqGroups = faqResponse.data.faqs ?? {};
-        const totalFaqs = Object.values(faqGroups).reduce((sum, group) => sum + group.length, 0);
-        setFaqCount(totalFaqs);
-        setFeaturedFaqs(
-          Object.entries(faqGroups)
-            .flatMap(([category, items]) => items.map((item) => ({ ...item, category })))
-            .slice(0, 3),
-        );
+        setBlogCount(blogs.length);
+        setFaqCount(Object.values(faqs).reduce((sum, group) => sum + group.length, 0));
+        setFeaturedBlogs(blogs.slice(0, 2));
+        setFeaturedFaqs(Object.entries(faqs).flatMap(([category, items]) => items.map((item) => ({ ...item, category }))).slice(0, 3));
       } catch (error) {
         console.error("Hakkımızda verileri çekilemedi", error);
       } finally {
-        setSettingsLoading(false);
+        setLoading(false);
       }
     };
 
     void loadAbout();
   }, []);
 
-  const journeyStats = useMemo(
+  const pageSettings = settings ?? defaultSiteSettings;
+  const stats = useMemo(
     () => [
-      { label: "Blog Yazisi", value: String(blogCount) },
-      { label: "SSS Maddesi", value: String(faqCount) },
+      { label: "Blog Yazısı", value: blogCount, tone: "text-slate-950" },
+      { label: "SSS Maddesi", value: faqCount, tone: "text-[#fd3a25]" },
     ],
     [blogCount, faqCount],
   );
 
-  if (settingsLoading) {
+  if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Sayfa ayarlari yukleniyor...</div>
-      </div>
+      <main className="kdm-public-shell flex min-h-[70vh] items-center justify-center bg-[#edecec] pt-24">
+        <div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-white/80 px-8 py-7 shadow-xl shadow-slate-900/5 backdrop-blur">
+          <Loader2 className="h-10 w-10 animate-spin text-orange-600" />
+          <span className="text-sm font-bold text-slate-600">Sayfa ayarları yükleniyor...</span>
+        </div>
+      </main>
     );
   }
 
-  const pageSettings = settings ?? defaultSiteSettings;
-
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <section className="relative overflow-hidden border-b border-border/40 py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_25%,oklch(0.74_0.18_45/0.14),transparent_42%),radial-gradient(circle_at_85%_75%,oklch(0.56_0.12_255/0.1),transparent_45%)]" />
-        <div className="container relative z-10 mx-auto px-6 text-center">
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 text-4xl font-black md:text-6xl">
-            {pageSettings.about.hero_title}
-          </motion.h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">{pageSettings.about.hero_description}</p>
+    <main className="kdm-public-shell relative min-h-screen overflow-hidden bg-[#edecec] pb-24">
+      <PublicHeroSection
+        badge={<PublicBadge><Sparkles className="h-3.5 w-3.5" /> KADEME Hakkında</PublicBadge>}
+        title={<h1 className="kdm-public-heading-title max-w-5xl text-balance" style={{ letterSpacing: '-0.02em' }}>{pageSettings.about.hero_title}</h1>}
+        description={<p className="mt-7 max-w-3xl text-base leading-8 text-[#3f4653] sm:text-lg">{pageSettings.about.hero_description}</p>}
+        aside={
+          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="grid gap-3 sm:grid-cols-2">
+            {stats.map((item) => (
+              <div key={item.label} className="kdm-public-stat-card">
+                <div className={`text-3xl font-black ${item.tone}`}><PublicCounter value={item.value} /></div>
+                <div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">{item.label}</div>
+              </div>
+            ))}
+            <div className="kdm-public-stat-card sm:col-span-2">
+              <div className="flex justify-center text-[#fd3a25]"><CalendarDays className="h-8 w-8" /></div>
+              <div className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Dinamik Vitrin</div>
+            </div>
+          </motion.div>
+        }
+      />
+
+      <section className="container mx-auto px-4 py-14 sm:px-6 lg:py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]"
+        >
+          <PublicCard className="p-7 sm:p-8">
+            <PublicIconBadge className="mb-7 h-16 w-16 rounded-[1.25rem] bg-slate-950 shadow-[0_16px_32px_rgba(9,9,11,0.24),inset_0_1px_0_rgba(255,255,255,0.06)]">
+              <Target className="h-8 w-8" />
+            </PublicIconBadge>
+            <h2 className="text-3xl font-semibold text-slate-950" style={{ letterSpacing: '-0.02em' }}>{pageSettings.about.mission_title}</h2>
+            <p className="mt-5 text-base leading-8 text-slate-600">{pageSettings.about.mission_text}</p>
+          </PublicCard>
+          <PublicCard tone="gradient" className="p-7 sm:p-8">
+            <PublicIconBadge className="mb-7 h-16 w-16 rounded-[1.25rem] bg-orange-600 shadow-[0_16px_32px_rgba(253,58,37,0.28),inset_0_1px_0_rgba(255,255,255,0.16)]">
+              <Eye className="h-8 w-8" />
+            </PublicIconBadge>
+            <h2 className="text-3xl font-black text-slate-950">{pageSettings.about.vision_title}</h2>
+            <p className="mt-5 text-base leading-8 text-slate-700">{pageSettings.about.vision_text}</p>
+          </PublicCard>
+        </motion.div>
+
+        <div className="mt-8 grid gap-5 lg:grid-cols-3">
+          <PublicCard>
+            <PublicIconBadge className="mb-5 bg-slate-950"><HelpCircle className="h-6 w-6" /></PublicIconBadge>
+            <h3 className="text-xl font-black text-slate-950">{pageSettings.about.faq_teaser_title}</h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{pageSettings.about.faq_teaser_text}</p>
+            <div className="mt-5 space-y-2">
+              {featuredFaqs.length ? featuredFaqs.map((faq) => <Link key={faq.id} href="/faq" className="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700">{faq.question}</Link>) : <p className="text-sm text-slate-500">SSS içerikleri yakında listelenecek.</p>}
+            </div>
+          </PublicCard>
+          <PublicCard>
+            <PublicIconBadge className="mb-5 bg-slate-950"><CalendarDays className="h-6 w-6" /></PublicIconBadge>
+            <h3 className="text-xl font-black text-slate-950">{pageSettings.about.activities_teaser_title}</h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{pageSettings.about.activities_teaser_text}</p>
+            <PublicButton href="/activities" variant="secondary" size="sm" className="mt-5" icon={<ArrowRight className="h-4 w-4" />}>Faaliyetlere Git</PublicButton>
+          </PublicCard>
+          <PublicCard>
+            <PublicIconBadge className="mb-5 bg-orange-600"><BookOpen className="h-6 w-6" /></PublicIconBadge>
+            <h3 className="text-xl font-black text-slate-950">{pageSettings.about.blog_teaser_title}</h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{pageSettings.about.blog_teaser_text}</p>
+            <div className="mt-5 space-y-2">
+              {featuredBlogs.length ? featuredBlogs.map((blog) => <Link key={blog.id} href={`/blog/${blog.slug}`} className="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700">{blog.title}</Link>) : <p className="text-sm text-slate-500">Blog içerikleri yakında listelenecek.</p>}
+            </div>
+          </PublicCard>
         </div>
       </section>
-
-      <div className="container mx-auto mt-20 space-y-24 px-6">
-        <section className="grid grid-cols-1 gap-12 md:grid-cols-2">
-          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="glass-panel rounded-[40px] border border-border/70 p-10 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10">
-            <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Target className="h-8 w-8" />
-            </div>
-            <h2 className="mb-6 text-3xl font-black">{pageSettings.about.mission_title}</h2>
-            <p className="leading-relaxed text-muted-foreground">{pageSettings.about.mission_text}</p>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="glass-panel rounded-[40px] border border-accent/20 p-10 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10">
-            <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-              <Eye className="h-8 w-8" />
-            </div>
-            <h2 className="mb-6 text-3xl font-black text-accent">{pageSettings.about.vision_title}</h2>
-            <p className="leading-relaxed text-muted-foreground">{pageSettings.about.vision_text}</p>
-          </motion.div>
-        </section>
-
-        <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-          <div className="space-y-8">
-            <h2 className="text-4xl font-black">
-              {pageSettings.about.ecosystem_title.split(" ").slice(0, -1).join(" ")}
-              <br />
-              <span className="text-primary">{pageSettings.about.ecosystem_title.split(" ").slice(-1)}</span>
-            </h2>
-            <p className="text-lg leading-relaxed text-muted-foreground">{pageSettings.about.ecosystem_description}</p>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-3xl border border-border/80 bg-muted/30 p-6 shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md">
-                <h3 className="mb-2 font-bold text-foreground">{pageSettings.about.faq_teaser_title}</h3>
-                <p className="mb-4 text-sm text-muted-foreground">{pageSettings.about.faq_teaser_text}</p>
-                <div className="space-y-2">
-                  {featuredFaqs.map((faq) => (
-                    <Link
-                      key={faq.id}
-                      href="/faq"
-                      className="block rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-foreground"
-                    >
-                      {faq.question}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-3xl border border-border/80 bg-muted/30 p-6 shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md">
-                <h3 className="mb-2 font-bold text-foreground">{pageSettings.about.blog_teaser_title}</h3>
-                <p className="mb-4 text-sm text-muted-foreground">{pageSettings.about.blog_teaser_text}</p>
-                <div className="space-y-2">
-                  {featuredBlogs.map((blog) => (
-                    <Link
-                      key={blog.id}
-                      href={`/blog/${blog.slug}`}
-                      className="block rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-foreground"
-                    >
-                      {blog.title}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <Link href="/projects" className="group flex items-center gap-2 rounded-xl bg-primary px-8 py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30">
-                Projeleri Incele
-                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
-              <Link href="/activities" className="glass-panel rounded-xl px-8 py-3 font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
-                Faaliyetlere Git
-              </Link>
-              <Link href="/contact" className="glass-panel rounded-xl px-8 py-3 font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
-                Iletisim
-              </Link>
-            </div>
-          </div>
-
-          <div className="glass-panel flex min-h-[320px] flex-col justify-center rounded-[40px] border border-border/50 bg-muted/30 p-10 shadow-sm">
-            <BookOpen className="mb-4 h-16 w-16 text-primary/40" />
-            <h3 className="text-2xl font-black text-foreground">{pageSettings.about.journey_title}</h3>
-            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">{pageSettings.about.journey_text}</p>
-            <div className="mt-8 grid grid-cols-2 gap-4">
-              {journeyStats.map((item) => (
-                <div key={item.label} className="rounded-3xl border border-border/80 bg-muted/40 p-4">
-                  <div className="text-2xl font-black text-foreground">{item.value}</div>
-                  <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">{item.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
+    </main>
   );
 }

@@ -25,6 +25,7 @@ import PanelContentPage from "@/features/panel/pages/panel/content/page";
 import PanelSettingsPage from "@/features/panel/pages/panel/settings/page";
 import PanelApplicationsPage from "@/features/panel/pages/panel/applications/page";
 import PanelVolunteerPage from "@/features/panel/pages/panel/volunteer/page";
+import PanelForumPage from "@/features/panel/pages/panel/forum/page";
 import PanelCalendarPage from "@/features/panel/pages/panel/calendar/page";
 import PanelDashboardPage from "@/features/panel/pages/panel/dashboard/page";
 import PanelChatbotPage from "@/features/panel/pages/panel/chatbot/page";
@@ -52,6 +53,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   dashboard: PanelDashboardPage,
   applications: PanelApplicationsPage,
   volunteer: PanelVolunteerPage,
+  forum: PanelForumPage,
   programs: PanelProgramsPage,
   projects: PanelProjectsPage,
   diplomasi360: Diplomasi360PanelPage,

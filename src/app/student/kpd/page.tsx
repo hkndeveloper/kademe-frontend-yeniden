@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, BrainCircuit, CalendarClock, Download, HeartPulse, Loader2, Plus, User, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 import { downloadBlobResponse } from "@/lib/download";
+import { formatIstanbulDate, formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
 
 interface Participation {
   id: number;
@@ -164,8 +165,8 @@ export default function StudentKpdPage() {
       const response = await api.post<{ message: string; appointment: KpdAppointment }>("/kpd/appointments", {
         counselor_id: Number(form.counselor_id),
         room_id: Number(form.room_id),
-        start_at: form.start_at,
-        end_at: form.end_at,
+        start_at: withIstanbulOffset(form.start_at),
+        end_at: withIstanbulOffset(form.end_at),
         notes: form.notes.trim() || null,
       });
 
@@ -292,7 +293,7 @@ export default function StudentKpdPage() {
                             </h3>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {formatDateTime(appointment.start_at)} - {formatDateTime(appointment.end_at)}
+                            {formatIstanbulDateTime(appointment.start_at)} - {formatIstanbulDateTime(appointment.end_at)}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Oda: {appointment.room?.name || "Belirtilmedi"}
@@ -351,7 +352,7 @@ export default function StudentKpdPage() {
                     <div>
                       <div className="font-bold text-slate-900">{report.title}</div>
                       <div className="mt-1 text-xs text-muted-foreground">
-                        {report.created_at ? new Date(report.created_at).toLocaleDateString("tr-TR") : "Tarih yok"}
+                        {report.created_at ? formatIstanbulDate(report.created_at) : "Tarih yok"}
                         {report.counselor ? ` / ${report.counselor.name} ${report.counselor.surname}` : ""}
                       </div>
                     </div>

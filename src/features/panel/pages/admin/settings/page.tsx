@@ -21,6 +21,15 @@ type HomepageBlockKey = SiteSettingsPayload["homepage"]["block_order"][number];
 
 const homepageBlockKeys = Object.keys(defaultSiteSettings.homepage.block_visibility) as HomepageBlockKey[];
 
+const completeHomepageBlockOrder = (order: HomepageBlockKey[]) => {
+  const baseOrder = order.length > 0 ? order : defaultSiteSettings.homepage.block_order;
+
+  return [
+    ...baseOrder,
+    ...homepageBlockKeys.filter((key) => !baseOrder.includes(key)),
+  ];
+};
+
 const isRecord = (value: unknown): value is SiteSettingsRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -87,8 +96,7 @@ const normalizeSiteSettings = (rawSettings: unknown): SiteSettingsPayload => {
   const normalizedBlockOrder = arrayOr(homepage.block_order, defaultSiteSettings.homepage.block_order).filter(
     (key): key is HomepageBlockKey => typeof key === "string" && homepageBlockKeys.includes(key as HomepageBlockKey),
   );
-
-  return {
+return {
     general: mergeGroup(defaultSiteSettings.general, raw.general),
     contact: mergeGroup(defaultSiteSettings.contact, raw.contact),
     social_media: mergeGroup(defaultSiteSettings.social_media, raw.social_media),
@@ -107,7 +115,7 @@ const normalizeSiteSettings = (rawSettings: unknown): SiteSettingsPayload => {
     homepage: {
       ...homepage,
       stats_mode: homepage.stats_mode === "manual" ? "manual" : "auto",
-      block_order: normalizedBlockOrder.length > 0 ? normalizedBlockOrder : defaultSiteSettings.homepage.block_order,
+      block_order: completeHomepageBlockOrder(normalizedBlockOrder),
       block_visibility: homepageBlockKeys.reduce(
         (visibility, key) => ({
           ...visibility,
@@ -125,6 +133,8 @@ const normalizeSiteSettings = (rawSettings: unknown): SiteSettingsPayload => {
         homepage.featured_activity_ids,
         defaultSiteSettings.homepage.featured_activity_ids,
       ),
+      marquee_items: normalizeStringList(homepage.marquee_items, defaultSiteSettings.homepage.marquee_items),
+      marquee_speed_seconds: Math.min(90, Math.max(8, Number(homepage.marquee_speed_seconds) || defaultSiteSettings.homepage.marquee_speed_seconds)),
       stats: normalizeStats(homepage.stats, defaultSiteSettings.homepage.stats),
     },
     about: mergeGroup(defaultSiteSettings.about, raw.about),
@@ -367,7 +377,7 @@ export default function AdminSettingsPage() {
   }, []);
 
   const toggleBlockVisibility = useCallback(
-    (key: "hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify") => {
+    (key: HomepageBlockKey) => {
       setSettings((current) => ({
         ...current,
         homepage: {
@@ -408,6 +418,7 @@ export default function AdminSettingsPage() {
       blog: "Blog",
       newsletter: "E-Bulten",
       certificate_verify: "Sertifika dogrulama",
+      marquee: "Kayan yazilar",
     }),
     [],
   );

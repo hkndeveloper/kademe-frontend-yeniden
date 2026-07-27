@@ -1,10 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Handshake, Loader2, Plus, Trash2 } from "lucide-react";
+import { Handshake, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/store/useAuth";
+import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 
 type Project = { id: number; name: string };
 
@@ -17,6 +19,7 @@ type Opportunity = {
   link_url?: string | null;
   project_id?: number | null;
   project?: Project | null;
+  creator?: { id: number; name?: string | null; surname?: string | null } | null;
   target_audience?: string[] | null;
   published_at?: string | null;
   expires_at?: string | null;
@@ -24,7 +27,20 @@ type Opportunity = {
 
 type Paginated<T> = { data: T[] };
 
-const emptyForm = {
+type OpportunityForm = {
+  project_id: string;
+  title: string;
+  kind: string;
+  summary: string;
+  body: string;
+  link_url: string;
+  target_student: boolean;
+  target_alumni: boolean;
+  published_at: string;
+  expires_at: string;
+};
+
+const emptyForm: OpportunityForm = {
   project_id: "",
   title: "",
   kind: "internship",
@@ -39,25 +55,54 @@ const emptyForm = {
 
 const KIND_LABEL: Record<string, string> = {
   internship: "Staj",
+  job: "Is Firsati",
   network: "Ag / Network",
   event: "Etkinlik",
   other: "Diger",
 };
 
+
+function formFromRow(row: Opportunity): OpportunityForm {
+  const audience = row.target_audience ?? [];
+  const isAllAudience = audience.length === 0;
+
+  return {
+    project_id: row.project_id != null ? String(row.project_id) : "",
+    title: row.title ?? "",
+    kind: row.kind ?? "internship",
+    summary: row.summary ?? "",
+    body: row.body ?? "",
+    link_url: row.link_url ?? "",
+    target_student: isAllAudience || audience.includes("student"),
+    target_alumni: isAllAudience || audience.includes("alumni"),
+    published_at: toIstanbulDateTimeLocal(row.published_at),
+    expires_at: toIstanbulDateTimeLocal(row.expires_at),
+  };
+}
+
 export default function PanelAlumniOpportunitiesPage() {
-  const { canAccessProject, hasPermission } = usePermissions();
+  const user = useAuth((state) => state.user);
+  const { canAccessProject, hasPermission, hasGlobalScope } = usePermissions();
   const [rows, setRows] = useState<Opportunity[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<OpportunityForm>(emptyForm);
 
   const manageableForCreate = useMemo(
-    () => projects.filter((p) => canAccessProject("announcements.create", p.id)),
+    () => projects.filter((project) => canAccessProject("announcements.create", project.id)),
     [projects, canAccessProject],
   );
+
+  const manageableForUpdate = useMemo(
+    () => projects.filter((project) => canAccessProject("announcements.update", project.id)),
+    [projects, canAccessProject],
+  );
+
+  const manageableForForm = editingId ? manageableForUpdate : manageableForCreate;
 
   useEffect(() => {
     let active = true;
@@ -67,12 +112,19 @@ export default function PanelAlumniOpportunitiesPage() {
       hasPermission("announcements.create")
         ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "announcements.create" } })
         : Promise.resolve({ data: { projects: [] as Project[] } }),
+      hasPermission("announcements.update")
+        ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "announcements.update" } })
+        : Promise.resolve({ data: { projects: [] as Project[] } }),
     ])
-      .then(([oppRes, viewRes, createRes]) => {
+      .then(([opportunityResponse, viewResponse, createResponse, updateResponse]) => {
         if (!active) return;
         const merged = new Map<number, Project>();
-        [...(viewRes.data.projects ?? []), ...(createRes.data.projects ?? [])].forEach((p) => merged.set(p.id, p));
-        setRows(oppRes.data.opportunities?.data ?? []);
+        [
+          ...(viewResponse.data.projects ?? []),
+          ...(createResponse.data.projects ?? []),
+          ...(updateResponse.data.projects ?? []),
+        ].forEach((project) => merged.set(project.id, project));
+        setRows(opportunityResponse.data.opportunities?.data ?? []);
         setProjects(Array.from(merged.values()));
       })
       .finally(() => {
@@ -84,36 +136,71 @@ export default function PanelAlumniOpportunitiesPage() {
   }, [hasPermission]);
 
   function audiencePayload(): string[] | null {
-    const a: string[] = [];
-    if (form.target_student) a.push("student");
-    if (form.target_alumni) a.push("alumni");
-    if (a.length === 2) return null;
-    return a;
+    const audience: string[] = [];
+    if (form.target_student) audience.push("student");
+    if (form.target_alumni) audience.push("alumni");
+    if (audience.length === 2) return null;
+    return audience;
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function payloadFromForm() {
+    return {
+      title: form.title,
+      kind: form.kind,
+      summary: form.summary || null,
+      body: form.body || null,
+      link_url: form.link_url || null,
+      project_id: form.project_id ? Number(form.project_id) : null,
+      published_at: withIstanbulOffset(form.published_at),
+      expires_at: withIstanbulOffset(form.expires_at),
+      target_audience: audiencePayload(),
+    };
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  }
+
+  function openCreateForm() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(true);
+  }
+
+  function startEdit(row: Opportunity) {
+    setEditingId(row.id);
+    setForm(formFromRow(row));
+    setShowForm(true);
+    setFeedback(null);
+  }
+
+  function canEditRow(row: Opportunity) {
+    if (!hasPermission("announcements.update")) return false;
+    if (row.project_id != null) return canAccessProject("announcements.update", row.project_id);
+    return hasGlobalScope("announcements.update") || row.creator?.id === user?.id;
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setSaving(true);
     setFeedback(null);
     try {
-      const res = await api.post<{ message: string; opportunity: Opportunity }>("/panel/alumni-opportunities", {
-        title: form.title,
-        kind: form.kind,
-        summary: form.summary || null,
-        body: form.body || null,
-        link_url: form.link_url || null,
-        project_id: form.project_id ? Number(form.project_id) : null,
-        published_at: form.published_at || null,
-        expires_at: form.expires_at || null,
-        target_audience: audiencePayload(),
-      });
-      setRows((c) => [res.data.opportunity, ...c]);
-      setFeedback(res.data.message);
-      setForm(emptyForm);
-      setShowForm(false);
-    } catch (err) {
-      console.error(err);
-      setFeedback("Kayit olusturulamadi.");
+      const response = editingId
+        ? await api.put<{ message: string; opportunity: Opportunity }>(`/panel/alumni-opportunities/${editingId}`, payloadFromForm())
+        : await api.post<{ message: string; opportunity: Opportunity }>("/panel/alumni-opportunities", payloadFromForm());
+
+      setRows((current) =>
+        editingId
+          ? current.map((item) => (item.id === editingId ? response.data.opportunity : item))
+          : [response.data.opportunity, ...current],
+      );
+      setFeedback(response.data.message);
+      closeForm();
+    } catch (error) {
+      console.error(error);
+      setFeedback(editingId ? "Kayit guncellenemedi." : "Kayit olusturulamadi.");
     } finally {
       setSaving(false);
     }
@@ -131,9 +218,9 @@ export default function PanelAlumniOpportunitiesPage() {
     }
     try {
       await api.delete(`/panel/alumni-opportunities/${row.id}`);
-      setRows((c) => c.filter((x) => x.id !== row.id));
-    } catch (err) {
-      console.error(err);
+      setRows((current) => current.filter((item) => item.id !== row.id));
+    } catch (error) {
+      console.error(error);
       setFeedback("Silinemedi.");
     }
   }
@@ -149,11 +236,7 @@ export default function PanelAlumniOpportunitiesPage() {
   return (
     <PermissionGate
       permission="announcements.view"
-      fallback={
-        <div className="panel-empty-card text-amber-700">
-          Firsat kayitlarini goruntuleme yetkiniz bulunmuyor.
-        </div>
-      }
+      fallback={<div className="panel-empty-card text-amber-700">Firsat kayitlarini goruntuleme yetkiniz bulunmuyor.</div>}
     >
       <div className="space-y-8">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -169,11 +252,7 @@ export default function PanelAlumniOpportunitiesPage() {
             </div>
           </div>
           <PermissionGate permission="announcements.create">
-            <button
-              type="button"
-              onClick={() => setShowForm((s) => !s)}
-              className="panel-button panel-button-primary h-11"
-            >
+            <button type="button" onClick={openCreateForm} className="panel-button panel-button-primary h-11">
               <Plus className="h-4 w-4" />
               Yeni kayit
             </button>
@@ -183,8 +262,14 @@ export default function PanelAlumniOpportunitiesPage() {
         {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
 
         {showForm ? (
-          <PermissionGate permission="announcements.create">
+          <PermissionGate permission={editingId ? "announcements.update" : "announcements.create"}>
             <form onSubmit={handleSubmit} className="panel-section-card">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-bold text-slate-900">{editingId ? "Firsati Duzenle" : "Yeni Firsat"}</h2>
+                <button type="button" onClick={closeForm} className="rounded-full p-2 text-slate-500 hover:bg-slate-100">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
               <div className="panel-form-grid">
                 <div className="lg:col-span-2">
                   <label className="panel-label">Baslik</label>
@@ -192,7 +277,7 @@ export default function PanelAlumniOpportunitiesPage() {
                     required
                     className="panel-control"
                     value={form.title}
-                    onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
                   />
                 </div>
                 <div>
@@ -200,10 +285,10 @@ export default function PanelAlumniOpportunitiesPage() {
                   <select
                     className="panel-control"
                     value={form.kind}
-                    onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, kind: event.target.value }))}
                   >
-                    {Object.entries(KIND_LABEL).map(([k, label]) => (
-                      <option key={k} value={k}>
+                    {Object.entries(KIND_LABEL).map(([key, label]) => (
+                      <option key={key} value={key}>
                         {label}
                       </option>
                     ))}
@@ -214,12 +299,12 @@ export default function PanelAlumniOpportunitiesPage() {
                   <select
                     className="panel-control"
                     value={form.project_id}
-                    onChange={(e) => setForm((f) => ({ ...f, project_id: e.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))}
                   >
                     <option value="">Genel (tum uygun katilimcilar)</option>
-                    {manageableForCreate.map((p) => (
-                      <option key={p.id} value={String(p.id)}>
-                        {p.name}
+                    {manageableForForm.map((project) => (
+                      <option key={project.id} value={String(project.id)}>
+                        {project.name}
                       </option>
                     ))}
                   </select>
@@ -229,7 +314,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   <textarea
                     className="panel-textarea min-h-20"
                     value={form.summary}
-                    onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, summary: event.target.value }))}
                   />
                 </div>
                 <div className="lg:col-span-2">
@@ -237,7 +322,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   <textarea
                     className="panel-textarea min-h-24"
                     value={form.body}
-                    onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, body: event.target.value }))}
                   />
                 </div>
                 <div className="lg:col-span-2">
@@ -245,7 +330,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   <input
                     className="panel-control"
                     value={form.link_url}
-                    onChange={(e) => setForm((f) => ({ ...f, link_url: e.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, link_url: event.target.value }))}
                   />
                 </div>
                 <div>
@@ -254,7 +339,7 @@ export default function PanelAlumniOpportunitiesPage() {
                     type="datetime-local"
                     className="panel-control"
                     value={form.published_at}
-                    onChange={(e) => setForm((f) => ({ ...f, published_at: e.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, published_at: event.target.value }))}
                   />
                 </div>
                 <div>
@@ -263,7 +348,7 @@ export default function PanelAlumniOpportunitiesPage() {
                     type="datetime-local"
                     className="panel-control"
                     value={form.expires_at}
-                    onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, expires_at: event.target.value }))}
                   />
                 </div>
                 <div className="panel-card-muted flex flex-wrap gap-6 lg:col-span-2">
@@ -271,7 +356,7 @@ export default function PanelAlumniOpportunitiesPage() {
                     <input
                       type="checkbox"
                       checked={form.target_student}
-                      onChange={(e) => setForm((f) => ({ ...f, target_student: e.target.checked }))}
+                      onChange={(event) => setForm((current) => ({ ...current, target_student: event.target.checked }))}
                     />
                     Ogrenciler
                   </label>
@@ -279,18 +364,14 @@ export default function PanelAlumniOpportunitiesPage() {
                     <input
                       type="checkbox"
                       checked={form.target_alumni}
-                      onChange={(e) => setForm((f) => ({ ...f, target_alumni: e.target.checked }))}
+                      onChange={(event) => setForm((current) => ({ ...current, target_alumni: event.target.checked }))}
                     />
                     Mezunlar
                   </label>
                 </div>
               </div>
               <div className="panel-modal-footer mt-6">
-                <button
-                  type="button"
-                  className="panel-button panel-button-secondary h-11"
-                  onClick={() => setShowForm(false)}
-                >
+                <button type="button" className="panel-button panel-button-secondary h-11" onClick={closeForm}>
                   Iptal
                 </button>
                 <button
@@ -298,7 +379,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   disabled={saving || (!form.target_student && !form.target_alumni)}
                   className="panel-button panel-button-primary h-11 px-6"
                 >
-                  {saving ? "Kaydediliyor..." : "Kaydet"}
+                  {saving ? "Kaydediliyor..." : editingId ? "Guncelle" : "Kaydet"}
                 </button>
               </div>
             </form>
@@ -312,9 +393,7 @@ export default function PanelAlumniOpportunitiesPage() {
             rows.map((row) => (
               <div key={row.id} className="panel-list-card flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <p className="panel-chip panel-chip-warning">
-                    {KIND_LABEL[row.kind] ?? row.kind}
-                  </p>
+                  <p className="panel-chip panel-chip-warning">{KIND_LABEL[row.kind] ?? row.kind}</p>
                   <h3 className="text-lg font-bold text-slate-900">{row.title}</h3>
                   <p className="text-xs text-muted-foreground">
                     {row.project?.name ?? "Genel"}
@@ -322,16 +401,20 @@ export default function PanelAlumniOpportunitiesPage() {
                   </p>
                   {row.summary ? <p className="mt-2 text-sm text-muted-foreground">{row.summary}</p> : null}
                 </div>
-                <PermissionGate permission="announcements.delete">
-                  <button
-                    type="button"
-                    onClick={() => void removeRow(row)}
-                    className="panel-card-action panel-card-action-danger"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Sil
-                  </button>
-                </PermissionGate>
+                <div className="flex flex-wrap gap-2">
+                  {canEditRow(row) ? (
+                    <button type="button" onClick={() => startEdit(row)} className="panel-card-action">
+                      <Pencil className="h-4 w-4" />
+                      Duzenle
+                    </button>
+                  ) : null}
+                  <PermissionGate permission="announcements.delete">
+                    <button type="button" onClick={() => void removeRow(row)} className="panel-card-action panel-card-action-danger">
+                      <Trash2 className="h-4 w-4" />
+                      Sil
+                    </button>
+                  </PermissionGate>
+                </div>
               </div>
             ))
           )}

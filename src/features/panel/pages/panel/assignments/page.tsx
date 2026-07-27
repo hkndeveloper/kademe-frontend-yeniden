@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileStack, Loader2, Trash2 } from "lucide-react";
+import { Download, FileStack, Loader2, Trash2, Upload } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
+import { withIstanbulOffset } from "@/lib/istanbul-time";
 
 type Project = {
   id: number;
@@ -16,6 +17,13 @@ type Project = {
   periods?: PeriodOption[];
 };
 
+
+type AssignmentAttachment = {
+  id: number;
+  original_name?: string | null;
+  file_type?: string | null;
+  download_url?: string | null;
+};
 type Submission = {
   id: number;
   title?: string | null;
@@ -36,12 +44,33 @@ type Assignment = {
   project?: Project | null;
   period?: { id: number; name: string } | null;
   submissions?: Submission[];
+  attachments?: AssignmentAttachment[];
   submissions_count?: number;
 };
 
 type Paginated<T> = {
   data: T[];
 };
+
+const submissionStatusLabel: Record<Submission["status"], string> = {
+  submitted: "Teslim Edildi",
+  reviewed: "Incelendi",
+  approved: "Onaylandi",
+  rejected: "Reddedildi",
+};
+
+const submissionStatusChipClass: Record<Submission["status"], string> = {
+  submitted: "panel-chip-info",
+  reviewed: "panel-chip-warning",
+  approved: "panel-chip-success",
+  rejected: "panel-chip-danger",
+};
+
+const submissionReviewActions: Array<{ status: Submission["status"]; label: string; className: string }> = [
+  { status: "reviewed", label: "Incelendi", className: "panel-card-action-warning" },
+  { status: "approved", label: "Onayla", className: "panel-card-action-success" },
+  { status: "rejected", label: "Reddet", className: "panel-card-action-danger" },
+];
 
 export default function PanelAssignmentsPage() {
   const { canAccessProject } = usePermissions();
@@ -56,6 +85,7 @@ export default function PanelAssignmentsPage() {
     title: "",
     description: "",
     due_date: "",
+    attachments: [] as File[],
   });
   const [projectFilter, setProjectFilter] = useState(() => {
     if (typeof window === "undefined") return "all";
@@ -121,21 +151,24 @@ export default function PanelAssignmentsPage() {
     setSaving(true);
     setFeedback(null);
     try {
-      const response = await api.post<{ message: string; assignment: Assignment }>("/panel/assignments", {
-        project_id: selectedProject.id,
-        period_id: Number(selectedPeriodId),
-        title: form.title,
-        description: form.description || null,
-        due_date: form.due_date || null,
+      const formData = new FormData();
+      formData.append("project_id", String(selectedProject.id));
+      formData.append("period_id", String(selectedPeriodId));
+      formData.append("title", form.title);
+      if (form.description) formData.append("description", form.description);
+      if (form.due_date) formData.append("due_date", withIstanbulOffset(form.due_date) ?? "");
+      form.attachments.forEach((file) => formData.append("attachments[]", file));
+
+      const response = await api.post<{ message: string; assignment: Assignment }>("/panel/assignments", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       setAssignments((current) => [response.data.assignment, ...current]);
       setFeedback(response.data.message);
-      setForm({ project_id: "", period_id: "", title: "", description: "", due_date: "" });
+      setForm({ project_id: "", period_id: "", title: "", description: "", due_date: "", attachments: [] });
     } finally {
       setSaving(false);
     }
   }
-
   async function handleDelete(assignment: Assignment) {
     await api.delete(`/panel/assignments/${assignment.id}`);
     setAssignments((current) => current.filter((item) => item.id !== assignment.id));
@@ -163,7 +196,17 @@ export default function PanelAssignmentsPage() {
       setFeedback("Teslim dosyasi indirilemedi.");
     }
   }
+  async function handleDownloadAttachment(attachment: AssignmentAttachment) {
+    if (!attachment.download_url) return;
 
+    try {
+      const response = await api.get(attachment.download_url, { responseType: "blob" });
+      await downloadBlobResponse(response.data, response.headers, attachment.original_name || `odev_eki_${attachment.id}`);
+    } catch (error) {
+      console.error("Odev eki indirilemedi", error);
+      setFeedback("Odev eki indirilemedi.");
+    }
+  }
   return (
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -244,6 +287,23 @@ export default function PanelAssignmentsPage() {
             placeholder="Odev aciklamasi"
             className="panel-textarea mt-4"
           />
+          <label className="panel-file-drop mt-4 flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-bold text-slate-700">
+            <Upload className="h-4 w-4" />
+            {form.attachments.length ? `${form.attachments.length} dosya secildi` : "Odev dosyasi ekle"}
+            <input
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(event) => setForm((current) => ({ ...current, attachments: Array.from(event.target.files ?? []) }))}
+            />
+          </label>
+          {form.attachments.length ? (
+            <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+              {form.attachments.map((file) => (
+                <span key={`${file.name}-${file.size}`} className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">{file.name}</span>
+              ))}
+            </div>
+          ) : null}
           <div className="panel-modal-footer mt-4">
             <button disabled={saving || !selectedProject || !selectedPeriodId} className="panel-button panel-button-primary h-11 px-6">
               {saving ? "Kaydediliyor..." : "Odev Olustur"}
@@ -287,6 +347,21 @@ export default function PanelAssignmentsPage() {
                         {assignment.project?.name ?? "-"} / {assignment.period?.name ?? "Donem yok"} / {assignment.submissions_count ?? 0} teslim
                       </div>
                       {assignment.description ? <p className="mt-2 text-sm text-muted-foreground">{assignment.description}</p> : null}
+                      {assignment.attachments?.length ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {assignment.attachments.map((attachment) => (
+                            <button
+                              key={attachment.id}
+                              type="button"
+                              onClick={() => void handleDownloadAttachment(attachment)}
+                              className="panel-card-action panel-card-action-info py-1"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              {attachment.original_name || "Odev ekini indir"}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                     <PermissionGate permission="assignments.delete" requireProjectAccess={{ permission: "assignments.delete", projectId: assignment.project_id }}>
                       <button onClick={() => void handleDelete(assignment)} className="panel-card-action panel-card-action-danger">
@@ -303,7 +378,7 @@ export default function PanelAssignmentsPage() {
                             <div className="font-bold text-slate-900">
                               {submission.user?.name} {submission.user?.surname}
                             </div>
-                            <div className="text-xs uppercase tracking-widest text-muted-foreground">{submission.status}</div>
+                            <span className={`panel-chip mt-1 ${submissionStatusChipClass[submission.status]}`}>{submissionStatusLabel[submission.status]}</span>
                             {submission.title ? <div className="mt-1 text-xs font-bold text-slate-700">{submission.title}</div> : null}
                             {submission.description ? <div className="mt-1 text-xs text-muted-foreground">{submission.description}</div> : null}
                           </div>
@@ -315,9 +390,9 @@ export default function PanelAssignmentsPage() {
                                   Indir
                                 </button>
                               ) : null}
-                              {(["reviewed", "approved", "rejected"] as const).map((status) => (
-                                <button key={status} onClick={() => void handleReview(submission, status)} className="panel-card-action py-1">
-                                  {status}
+                              {submissionReviewActions.map((action) => (
+                                <button key={action.status} onClick={() => void handleReview(submission, action.status)} className={`panel-card-action ${action.className} py-1`}>
+                                  {action.label}
                                 </button>
                               ))}
                             </div>

@@ -1,37 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Loader2, MapPin, Search } from "lucide-react";
+import { ArrowRight, Calendar, ChevronLeft, ChevronRight, Loader2, MapPin, Search, Sparkles } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { PublicBadge, PublicCard, PublicCounter, PublicGradientTitle, PublicHeroSection } from "@/components/public";
 import api from "@/lib/api/axios";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
 
-interface Project {
-  id: number;
-  name: string;
-  slug: string;
-}
+type Project = { id: number; name: string; slug: string };
+type Program = { id: number; title: string; location?: string | null; start_at: string; status: string; project_id?: number; project?: Project };
+type Paginated<T> = { data: T[]; current_page: number; last_page: number; total: number };
 
-interface Program {
-  id: number;
-  title: string;
-  location?: string | null;
-  start_at: string;
-  status: string;
-  project_id?: number;
-  project?: {
-    id: number;
-    name: string;
-    slug: string;
-  };
-}
+const statusLabels: Record<string, string> = {
+  scheduled: "Planlandı",
+  active: "Devam Ediyor",
+  completed: "Tamamlandı",
+  cancelled: "İptal Edildi",
+};
 
-interface Paginated<T> {
-  data: T[];
-  current_page: number;
-  last_page: number;
-  total: number;
+const activityImages = [
+  "/aigocy/images/section/hero-1.jpg",
+  "/aigocy/images/section/service-4.jpg",
+  "/aigocy/images/section/quotes-1.jpg",
+  "/aigocy/images/section/tes-1.jpg",
+  "/aigocy/images/section/tes-2.jpg",
+  "/aigocy/images/section/tes-3.jpg",
+];
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Tarih bilgisi yok";
+  return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 export default function ActivitiesPage() {
@@ -52,14 +53,12 @@ export default function ActivitiesPage() {
           api.get<{ projects: Project[] }>("/projects").catch(() => ({ data: { projects: [] as Project[] } })),
           api.get<SiteSettingsResponse>("/site-config"),
         ]);
-
         setProjects(projectsResponse.data.projects ?? []);
         setSiteSettings(configResponse.data.settings ?? null);
       } catch (error) {
-        console.error("Faaliyet statik verileri cekilemedi", error);
+        console.error("Faaliyet statik verileri çekilemedi", error);
       }
     };
-
     void loadStaticData();
   }, []);
 
@@ -75,13 +74,12 @@ export default function ActivitiesPage() {
             project_id: selectedProject === "all" ? undefined : selectedProject,
           },
         });
-
         const payload = response.data.programs;
         setPrograms(payload.data ?? []);
         setLastPage(payload.last_page ?? 1);
         setTotal(payload.total ?? 0);
       } catch (error) {
-        console.error("Faaliyet verileri cekilemedi", error);
+        console.error("Faaliyet verileri çekilemedi", error);
         setPrograms([]);
         setLastPage(1);
         setTotal(0);
@@ -89,144 +87,73 @@ export default function ActivitiesPage() {
         setLoading(false);
       }
     };
-
-    const timer = window.setTimeout(() => {
-      void loadPrograms();
-    }, 250);
-
+    const timer = window.setTimeout(() => void loadPrograms(), 250);
     return () => window.clearTimeout(timer);
   }, [page, searchTerm, selectedProject]);
-
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-    setPage(1);
-  };
-
-  const handleProjectChange = (value: string) => {
-    setSelectedProject(value);
-    setPage(1);
-  };
 
   const pageSettings = siteSettings ?? defaultSiteSettings;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <section className="relative overflow-hidden border-b border-border/40 py-14 sm:py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,oklch(0.74_0.18_45/0.13),transparent_42%),radial-gradient(circle_at_80%_80%,oklch(0.56_0.12_255/0.1),transparent_45%)]" />
-        <div className="container relative z-10 mx-auto px-4 text-center sm:px-6">
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 text-3xl font-black sm:mb-6 sm:text-4xl md:text-6xl">
-            {pageSettings.homepage.activities_title}
-          </motion.h1>
-          <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">{pageSettings.homepage.activities_description}</p>
-        </div>
-      </section>
+    <main className="kdm-public-shell relative min-h-screen overflow-hidden bg-[#edecec] pb-20 sm:pb-28">
+      <PublicHeroSection
+        badge={<PublicBadge><Sparkles className="h-3.5 w-3.5" /> KADEME Faaliyet Takvimi</PublicBadge>}
+        title={<h1 className="kdm-public-heading-title max-w-5xl text-balance">{pageSettings.homepage.activities_title || "Faaliyetler"} <PublicGradientTitle>akışı</PublicGradientTitle></h1>}
+        description={<p className="mt-7 max-w-2xl text-base leading-8 text-[#3f4653] sm:text-lg">{pageSettings.homepage.activities_description}</p>}
+        aside={
+          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:justify-self-end">
+            <div className="kdm-public-stat-card"><div className="text-3xl font-black text-slate-950"><PublicCounter value={total} /></div><div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Toplam</div></div>
+            <div className="kdm-public-stat-card"><div className="text-3xl font-black text-[#fd3a25]"><PublicCounter value={programs.length} /></div><div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Gösterilen</div></div>
+            <div className="kdm-public-stat-card col-span-2 sm:col-span-1"><div className="text-3xl font-black text-slate-950"><PublicCounter value={projects.length} /></div><div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Proje</div></div>
+          </motion.div>
+        }
+        bottom={
+          <div className="kdm-public-surface rounded-[2rem] border border-white/80 bg-white/72 p-4 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-5 lg:p-6">
+            <div className="grid gap-4 lg:grid-cols-[1fr_18rem] lg:items-center">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <input value={searchTerm} onChange={(event) => { setSearchTerm(event.target.value); setPage(1); }} placeholder="Faaliyet adı, proje veya konum ara..." className="kdm-public-input pl-12" />
+              </label>
+              <select value={selectedProject} onChange={(event) => { setSelectedProject(event.target.value); setPage(1); }} className="kdm-public-select">
+                <option value="all">Tüm Projeler</option>
+                {projects.map((project) => <option key={project.id} value={String(project.id)}>{project.name}</option>)}
+              </select>
+            </div>
 
-      <div className="container mx-auto mt-10 px-4 sm:mt-16 sm:px-6">
-        <div className="mb-8 flex flex-col gap-3 md:mb-12 md:flex-row md:gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Faaliyet ara..."
-              value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full rounded-2xl border border-border bg-input py-3.5 pl-12 pr-6 outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md sm:py-4"
-            />
           </div>
-          <select
-            value={selectedProject}
-            onChange={(e) => handleProjectChange(e.target.value)}
-            className="rounded-2xl border border-border bg-input px-5 py-3.5 text-sm font-bold outline-none transition-all duration-300 focus:ring-2 focus:ring-primary focus:shadow-md sm:px-6 sm:py-4"
-          >
-            <option value="all">Tum Projeler</option>
-            {projects.map((project) => (
-              <option key={project.id} value={String(project.id)}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        }
+      />
 
+      <section className="container mx-auto px-4 py-14 sm:px-6 lg:py-20">
         {loading ? (
-          <div className="flex justify-center py-24">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
+          <div className="flex justify-center py-20"><div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-white/80 px-8 py-7 shadow-xl shadow-slate-900/5 backdrop-blur"><Loader2 className="h-10 w-10 animate-spin text-orange-600" /><span className="text-sm font-bold text-slate-600">Faaliyetler yükleniyor...</span></div></div>
         ) : programs.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-8 text-center sm:p-16">
-            <h3 className="mb-3 text-xl font-bold text-foreground sm:text-2xl">Gosterilecek faaliyet bulunamadi</h3>
-            <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Henuz yayinlanmis bir faaliyet bulunmuyor veya mevcut filtreye uygun program kaydi yok.
-            </p>
-          </div>
+          <PublicCard className="py-16 text-center"><h2 className="text-2xl font-black text-slate-950">Gösterilecek faaliyet bulunamadı</h2><p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-600">Henüz yayına alınmış faaliyet bulunmuyor veya mevcut filtreye uygun program kaydı yok.</p></PublicCard>
         ) : (
-          <div className="grid grid-cols-1 gap-6">
-            {programs.map((program) => (
-              <Link key={program.id} href={`/activities/${program.id}`}>
-              <motion.div
-                key={program.id}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                className="glass-panel group rounded-2xl border border-border/70 p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-900/10 sm:rounded-3xl md:p-8"
-              >
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex flex-1 items-start gap-4 sm:items-center sm:gap-6">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-xl font-black text-primary sm:h-16 sm:w-16 sm:text-2xl">
-                      {(program.project?.name || "P")[0]}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {programs.map((program, index) => (
+              <motion.article key={program.id} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: Math.min(index * 0.04, 0.2) }} className="group h-full">
+                <Link href={`/activities/${program.id}`}>
+                  <PublicCard interactive className="flex h-full flex-col overflow-hidden p-4 sm:p-5">
+                    <div className="kdm-public-media-frame relative mb-5 aspect-[16/10] overflow-hidden rounded-[1.35rem] bg-[#e7e7e4]">
+                      <Image src={activityImages[index % activityImages.length]} alt={program.title} fill className="object-cover transition duration-700 group-hover:scale-105" sizes="(min-width: 1280px) 380px, (min-width: 768px) 50vw, 100vw" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                      <span className="absolute left-4 top-4 rounded-full bg-[#fd3a25] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white">{statusLabels[program.status] ?? program.status}</span>
                     </div>
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                        {program.project?.name || "Program"}
-                      </span>
-                      <h3 className="text-xl font-bold text-foreground transition-colors duration-300 group-hover:text-primary sm:text-2xl">{program.title}</h3>
-                      <div className="mt-2 flex flex-col gap-2 text-sm font-medium text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-6">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(program.start_at).toLocaleDateString("tr-TR")}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          {program.location || "Konum bilgisi yok"}
-                        </div>
-                      </div>
+                    <div className="flex flex-1 flex-col">
+                      <div className="mb-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500"><span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-[#fd3a25]" />{formatDate(program.start_at)}</span>{program.location ? <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-[#fd3a25]" />{program.location}</span> : null}</div>
+                      <h2 className="text-2xl font-black leading-tight text-slate-950 transition group-hover:text-[#fd3a25]">{program.title}</h2>
+                      <p className="mt-3 text-sm font-semibold text-slate-500">{program.project?.name ?? projects.find((p) => p.id === program.project_id)?.name ?? "KADEME"}</p>
+                      <div className="mt-auto flex items-center gap-2 pt-6 text-sm font-black text-[#fd3a25]">Detayı İncele <ArrowRight className="h-4 w-4" /></div>
                     </div>
-                  </div>
-
-                  <div className="w-fit rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs font-bold uppercase tracking-widest text-muted-foreground md:ml-4">
-                    {program.status}
-                  </div>
-                </div>
-              </motion.div>
-              </Link>
+                  </PublicCard>
+                </Link>
+              </motion.article>
             ))}
           </div>
         )}
 
-        {!loading && total > 0 ? (
-          <div className="mt-10 flex flex-col items-center justify-between gap-4 rounded-2xl border border-border bg-card/60 p-4 text-sm text-muted-foreground sm:flex-row">
-            <span>{total.toLocaleString("tr-TR")} faaliyet icinden {programs.length} kayit gosteriliyor.</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPage((current) => Math.max(current - 1, 1))}
-                disabled={page <= 1}
-                className="rounded-xl border border-border px-4 py-2 font-bold disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Onceki
-              </button>
-              <span className="px-3 font-bold text-foreground">{page} / {lastPage}</span>
-              <button
-                type="button"
-                onClick={() => setPage((current) => Math.min(current + 1, lastPage))}
-                disabled={page >= lastPage}
-                className="rounded-xl border border-border px-4 py-2 font-bold disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Sonraki
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </div>
+        {lastPage > 1 ? <div className="mt-10 flex items-center justify-center gap-3"><button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page === 1} className="kdm-public-page-button"><ChevronLeft className="h-4 w-4" /></button><span className="text-sm font-black text-slate-600">{page} / {lastPage}</span><button type="button" onClick={() => setPage((value) => Math.min(lastPage, value + 1))} disabled={page === lastPage} className="kdm-public-page-button"><ChevronRight className="h-4 w-4" /></button></div> : null}
+      </section>
+    </main>
   );
 }

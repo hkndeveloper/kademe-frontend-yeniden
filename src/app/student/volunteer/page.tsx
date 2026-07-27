@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, HeartHandshake, Loader2, Send } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
+import { formatIstanbulDateTime } from "@/lib/istanbul-time";
 
 interface Project {
   id: number;
@@ -54,6 +55,9 @@ function formatDate(value?: string | null) {
     timeStyle: "short",
   });
 }
+
+const MOTIVATION_MAX = 4000;
+const NOTES_MAX = 2000;
 
 function getStatusLabel(status: VolunteerApplication["status"]) {
   switch (status) {
@@ -252,26 +256,28 @@ export default function StudentVolunteerPage() {
                 ) : (
                   <form className="space-y-4" onSubmit={handleApply}>
                     <label className="block space-y-2">
-                      <span className="text-sm font-semibold text-slate-900">Neden bu gonulluluk ilanina basvuruyorsun?</span>
+                      <span className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-900"><span>Neden bu gonulluluk ilanina basvuruyorsun? *</span><span className="text-xs text-muted-foreground">{motivationText.length}/{MOTIVATION_MAX}</span></span>
                       <textarea
                         value={motivationText}
                         onChange={(event) => setMotivationText(event.target.value)}
                         rows={6}
                         minLength={20}
+                        maxLength={MOTIVATION_MAX}
                         required
                         placeholder="Motivasyonunu, bu calismaya nasil katki verecegini ve neden uygun oldugunu yaz."
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary"
+                        className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       />
                     </label>
 
                     <label className="block space-y-2">
-                      <span className="text-sm font-semibold text-slate-900">Ek not</span>
+                      <span className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-900"><span>Ek not</span><span className="text-xs text-muted-foreground">{notes.length}/{NOTES_MAX}</span></span>
                       <textarea
                         value={notes}
                         onChange={(event) => setNotes(event.target.value)}
                         rows={3}
+                        maxLength={NOTES_MAX}
                         placeholder="Varsa eklemek istedigin detaylari yaz."
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary"
+                        className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       />
                     </label>
 

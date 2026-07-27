@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Roboto, Urbanist } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/shared/auth-provider";
 import { AppShell } from "@/components/shared/AppShell";
 import { PwaRegister } from "@/components/shared/pwa-register";
 
-const inter = Inter({ subsets: ["latin", "latin-ext"] });
+const inter = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-inter" });
+const urbanist = Urbanist({ subsets: ["latin", "latin-ext"], variable: "--font-urbanist", weight: ["300", "400", "500", "600", "700", "800", "900"] });
+const roboto = Roboto({ subsets: ["latin", "latin-ext"], variable: "--font-roboto", weight: ["300", "400", "500", "700", "900"] });
 
 export const metadata: Metadata = {
   title: "KADEME Yönetim Sistemi",
@@ -15,7 +17,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "KADEME",
+    title: "KADEME Yönetim Sistemi",
   },
   formatDetection: {
     telephone: false,
@@ -39,8 +41,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr" className="scroll-smooth" data-scroll-behavior="smooth">
-      <body className={`${inter.className} flex min-h-screen flex-col bg-background text-foreground antialiased`}>
+    <html lang="tr">
+      <body className={`${inter.variable} ${urbanist.variable} ${roboto.variable} flex min-h-screen flex-col bg-background text-foreground antialiased`}>
         <AuthProvider>
           <PwaRegister />
           <AppShell>{children}</AppShell>

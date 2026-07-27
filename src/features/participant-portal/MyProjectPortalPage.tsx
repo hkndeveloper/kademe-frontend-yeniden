@@ -42,12 +42,6 @@ interface Assignment {
   }>;
 }
 
-interface BohcaMaterial {
-  id: number;
-  title: string;
-  file_type?: string | null;
-}
-
 interface KademeModuleRow {
   id: number;
   title: string;
@@ -127,7 +121,6 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
   const [loading, setLoading] = useState(true);
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [materials, setMaterials] = useState<BohcaMaterial[]>([]);
   const [specials, setSpecials] = useState<ProjectSpecial[]>([]);
   const [leaderboardByProject, setLeaderboardByProject] = useState<Record<number, LeaderboardRow[]>>({});
   const [enrolling, setEnrolling] = useState<{ projectId: number; moduleId: number } | null>(null);
@@ -136,16 +129,14 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
   useEffect(() => {
     const loadProjectData = async () => {
       try {
-        const [summaryResponse, assignmentsResponse, bohcaResponse, specialsResponse] = await Promise.all([
+        const [summaryResponse, assignmentsResponse, specialsResponse] = await Promise.all([
           api.get<DashboardSummaryResponse>("/dashboard/summary"),
           api.get<{ assignments: Assignment[] }>("/assignments"),
-          api.get<{ materials: BohcaMaterial[] }>("/digital-bohca"),
           api.get<{ projects: ProjectSpecial[] }>("/dashboard/project-specials"),
         ]);
 
         setParticipations(summaryResponse.data.participations ?? []);
         setAssignments(assignmentsResponse.data.assignments ?? []);
-        setMaterials(bohcaResponse.data.materials ?? []);
         const projects = specialsResponse.data.projects ?? [];
         setSpecials(projects);
 
@@ -306,21 +297,6 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
                 </InfoPanel>
               </div>
 
-              <div className="mt-8 rounded-3xl border border-white/40 bg-white/60 p-6">
-                <h4 className="mb-4 text-lg font-bold text-slate-900">Son Materyaller</h4>
-                <div className="space-y-3">
-                  {materials.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">Bu proje icin gorunur materyal bulunmuyor.</div>
-                  ) : (
-                    materials.slice(0, 3).map((material) => (
-                      <div key={material.id} className="flex items-center justify-between rounded-2xl bg-slate-100 p-3">
-                        <span className="text-sm font-semibold text-slate-900">{material.title}</span>
-                        <span className="text-xs uppercase text-muted-foreground">{material.file_type || "dosya"}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
 
               {activeSpecial ? (
                 <ProjectSpecialSection
@@ -484,7 +460,7 @@ function ProjectSpecialSection({
                   className="block w-full rounded-2xl bg-slate-100 p-3 text-left transition hover:bg-slate-200"
                 >
                   <div className="font-bold text-slate-900">{item.title}</div>
-                  <div>{item.file_type || "dosya"}</div>
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary"><Download className="h-3.5 w-3.5" /> Indir {item.file_type ? `(${item.file_type})` : ""}</div>
                 </button>
               ))
             )}

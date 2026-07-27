@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, Calendar, Loader2, Pin, Star } from "lucide-react";
 import api from "@/lib/api/axios";
+import { LinkifiedText } from "@/components/shared/LinkifiedText";
 
 interface InboxMessage {
   type: string;
+  source_label?: string | null;
   source_type: string;
   source_id: number;
   title: string;
@@ -60,6 +62,12 @@ export function ParticipantInboxPage() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [fetchInbox]);
+
+  const typeFallbackLabels: Record<string, string> = {
+    announcement: "Duyuru",
+    opportunity: "Kariyer Firsati",
+    forum_post: "Forum",
+  };
 
   const projects = Array.from(
     new Map(
@@ -155,7 +163,7 @@ export function ParticipantInboxPage() {
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">{item.title}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {item.type}
+                    {item.source_label || typeFallbackLabels[item.type] || item.type}
                     {item.project?.name ? ` · ${item.project.name}` : ""}
                     {item.category ? ` · ${item.category}` : ""}
                   </p>
@@ -165,7 +173,7 @@ export function ParticipantInboxPage() {
                   {new Date(item.timestamp ?? "1970-01-01").toLocaleDateString("tr-TR")}
                 </span>
               </div>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{item.content ?? "-"}</p>
+              <LinkifiedText text={item.content ?? "-"} className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground" />
               <div className="mt-4 flex flex-wrap gap-2">
                 <button type="button" onClick={() => void updateState(item, { is_read: !item.state.is_read })} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
                   {item.state.is_read ? "Okunmamis yap" : "Okundu yap"}

@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ShieldCheck, ArrowRight, Loader2, Info } from "lucide-react";
+import { ArrowRight, Info, Loader2, ShieldCheck } from "lucide-react";
 import { isAxiosError } from "axios";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { PublicButton, PublicCard, PublicGradientTitle, PublicIconBadge } from "@/components/public";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
 import { homePathForUser } from "@/lib/role-home";
@@ -36,92 +38,78 @@ export default function KvkkConsentPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 py-20">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-2xl"
-      >
-        <div className="glass-panel relative overflow-hidden rounded-3xl p-8 md:p-12">
-          <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-primary via-accent to-primary" />
-
-          <div className="mb-8 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary">
-              <ShieldCheck className="h-7 w-7" />
+    <main className="kdm-public-shell relative min-h-screen overflow-hidden bg-[#edecec] pb-16">
+      <div className="absolute inset-x-4 bottom-8 top-4 overflow-hidden rounded-[2rem] bg-[#e7e7e4] sm:inset-x-6 lg:inset-x-10">
+        <Image src="/aigocy/images/section/hero-1.jpg" alt="" fill priority className="object-cover opacity-55" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.92),transparent_20rem),radial-gradient(circle_at_82%_18%,rgba(253,58,37,0.15),transparent_17rem),linear-gradient(180deg,rgba(255,255,255,0.4),rgba(231,231,228,0.9))]" />
+      </div>
+      <section className="container relative z-10 mx-auto flex min-h-screen items-center px-4 pb-10 pt-36 sm:px-6 sm:pt-40 lg:pt-44">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="mx-auto w-full max-w-3xl">
+          <PublicCard className="p-6 sm:p-8 lg:p-10">
+            <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start">
+              <PublicIconBadge className="h-16 w-16 bg-orange-600">
+                <ShieldCheck className="h-8 w-8" />
+              </PublicIconBadge>
+              <div>
+                <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                  <PublicGradientTitle>KVKK Aydınlatma Metni</PublicGradientTitle>
+                </h1>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Kişisel verilerinizin korunması hakkında bilgilendirme.
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">KVKK Aydınlatma Metni</h1>
-              <p className="text-sm text-muted-foreground">
-                Kişisel verilerinizin korunması hakkında bilgilendirme.
-              </p>
+
+            <div className="mb-8 max-h-[22rem] space-y-5 overflow-y-auto rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700 sm:p-6">
+              <section>
+                <h2 className="font-black text-slate-950">1. Veri Sorumlusu</h2>
+                <p className="mt-2">
+                  KADEME Yönetim Sistemi olarak, kişisel verilerinizin güvenliği hususuna azami hassasiyet göstermekteyiz.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="font-black text-slate-950">2. Kişisel Verilerin İşlenme Amacı</h2>
+                <p className="mt-2">
+                  Kişisel verileriniz; eğitim süreçlerinin yürütülmesi, yoklama takibi, kredi ve rozet sisteminin işletilmesi, kariyer danışmanlığı hizmetlerinin sunulması ve KADEME duyurularının tarafınıza ulaştırılması amaçlarıyla işlenmektedir.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="font-black text-slate-950">3. İşlenen Veriler</h2>
+                <p className="mt-2">
+                  Ad, soyad, T.C. kimlik numarası, iletişim bilgileri, üniversite ve bölüm bilgileri, GPS tabanlı konum verileri yalnızca yoklama anında işlenmektedir.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="font-black text-slate-950">4. Haklarınız</h2>
+                <p className="mt-2">
+                  6698 sayılı KVKK uyarınca verilerinizin silinmesini, güncellenmesini veya işlenip işlenmediğini öğrenme hakkına sahipsiniz.
+                </p>
+              </section>
+
+              <div className="flex items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-orange-900">
+                <Info className="mt-0.5 h-5 w-5 shrink-0" />
+                <p className="text-xs font-semibold leading-6">
+                  Bu metni onaylayarak sistemin tüm fonksiyonlarını kullanmayı ve verilerinizin belirtilen amaçlarla işlenmesini kabul etmiş sayılırsınız.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="mb-8 h-80 space-y-4 overflow-y-auto rounded-2xl border border-border/50 bg-input/30 p-6 text-sm leading-relaxed text-muted-foreground">
-            <p className="font-bold text-foreground">1. Veri Sorumlusu</p>
-            <p>
-              T3 Vakfı KADEME Yönetim Sistemi olarak, kişisel verilerinizin güvenliği hususuna azami hassasiyet
-              göstermekteyiz.
-            </p>
+            {error ? <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-center text-sm font-semibold text-red-800">{error}</div> : null}
 
-            <p className="font-bold text-foreground">2. Kişisel Verilerin İşlenme Amacı</p>
-            <p>
-              Kişisel verileriniz; eğitim süreçlerinin yürütülmesi, yoklama takibi, kredi ve rozet sisteminin
-              işletilmesi, kariyer danışmanlığı hizmetlerinin sunulması ve vakıf duyurularının tarafınıza
-              ulaştırılması amaçlarıyla işlenmektedir.
-            </p>
-
-            <p className="font-bold text-foreground">3. İşlenen Veriler</p>
-            <p>
-              Ad, soyad, T.C. kimlik numarası, iletişim bilgileri, üniversite ve bölüm bilgileri, GPS tabanlı
-              konum verileri yalnızca yoklama anında işlenmektedir.
-            </p>
-
-            <p className="font-bold text-foreground">4. Haklarınız</p>
-            <p>
-              6698 sayılı KVKK uyarınca verilerinizin silinmesini, güncellenmesini veya işlenip işlenmediğini
-              öğrenme hakkına sahipsiniz.
-            </p>
-
-            <div className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/10 p-4 text-primary">
-              <Info className="mt-0.5 h-5 w-5 shrink-0" />
-              <p className="text-xs">
-                Bu metni onaylayarak sistemin tüm fonksiyonlarını kullanmayı ve verilerinizin belirtilen amaçlarla
-                işlenmesini kabul etmiş sayılırsınız.
-              </p>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <PublicButton type="button" onClick={() => router.push("/auth/login")} variant="secondary" size="lg" className="flex-1">
+                Vazgeç ve Çıkış Yap
+              </PublicButton>
+              <PublicButton type="button" onClick={handleConsent} disabled={loading} variant="dark" size="lg" className="flex-[2]" icon={loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRight className="h-5 w-5" />}>
+                Okudum, Onaylıyorum
+              </PublicButton>
             </div>
-          </div>
-
-          {error && (
-            <div className="mb-6 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-center text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <button
-              onClick={() => router.push("/auth/login")}
-              className="flex-1 rounded-xl border border-border py-4 font-semibold transition-colors hover:bg-muted"
-            >
-              Vazgeç ve Çıkış Yap
-            </button>
-            <button
-              onClick={handleConsent}
-              disabled={loading}
-              className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-primary-foreground shadow-lg transition-all hover:shadow-primary/50"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>
-                  Okudum, Onaylıyorum
-                  <ArrowRight className="h-5 w-5" />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </div>
+          </PublicCard>
+        </motion.div>
+      </section>
+    </main>
   );
 }

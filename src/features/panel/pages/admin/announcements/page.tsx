@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bell, CheckCircle2, Download, FileText, Loader2, Mail, MessageSquare, Send, Users, X } from "lucide-react";
+import { Bell, CheckCircle2, Download, FileText, Loader2, Mail, MessageSquare, Pencil, Send, Users, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, periodsForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { formatIstanbulDate, formatIstanbulDateTime, toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 
 interface Project {
   id: number;
@@ -26,7 +27,8 @@ interface Announcement {
   project?: { id: number; name: string } | null;
   period?: PeriodOption | null;
   creator?: { id: number; name: string; surname: string } | null;
-  published_at: string;
+  published_at: string | null;
+  expires_at?: string | null;
 }
 
 interface CommunicationLog {
@@ -73,6 +75,7 @@ const targetUnitAliases: Record<string, string[]> = {
   finance: ["finance", "finans", "mali", "muhasebe"],
   official_affairs: ["official_affairs", "official affairs", "resmi", "evrak", "idari"],
 };
+
 
 const normalizeUnit = (value?: string | null) =>
   (value ?? "")
@@ -129,9 +132,23 @@ export default function AdminAnnouncementsPage() {
   const [sendSms, setSendSms] = useState(false);
   const [sendEmail, setSendEmail] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    content: "",
+    category: "",
+    project_id: "",
+    period_id: "",
+    published_at: "",
+    expires_at: "",
+    target_roles: [] as string[],
+    target_units: [] as string[],
+  });
+  const [updating, setUpdating] = useState(false);
   const canViewAnnouncements = hasPermission("announcements.view");
   const canCreateAnnouncements = hasPermission("announcements.create");
   const canDeleteAnnouncements = hasPermission("announcements.delete");
+  const canUpdateAnnouncements = hasPermission("announcements.update");
   const canSendSms = hasPermission("announcements.send_sms");
   const canSendEmail = hasPermission("announcements.send_email");
   const formProject = useMemo(
@@ -139,6 +156,11 @@ export default function AdminAnnouncementsPage() {
     [projectId, projects]
   );
   const formPeriods = useMemo(() => periodsForProject(formProject), [formProject]);
+  const editProject = useMemo(
+    () => projects.find((project) => String(project.id) === editForm.project_id),
+    [editForm.project_id, projects]
+  );
+  const editPeriods = useMemo(() => periodsForProject(editProject), [editProject]);
   const availableTargetUnits = useMemo(() => {
     const units = Object.keys(targetUnitLabels);
     if (hasGlobalScope("announcements.create")) return units;
@@ -154,6 +176,20 @@ export default function AdminAnnouncementsPage() {
     );
   }, [hasGlobalScope, user?.authorization_context?.manageable_unit, user?.department]);
 
+  const availableEditTargetUnits = useMemo(() => {
+    const units = Object.keys(targetUnitLabels);
+    if (hasGlobalScope("announcements.update")) return units;
+
+    const manageableUnit = normalizeUnit(user?.authorization_context?.manageable_unit ?? user?.department);
+    if (!manageableUnit) return [];
+
+    return units.filter((unit) =>
+      (targetUnitAliases[unit] ?? [unit]).some((alias) => {
+        const normalizedAlias = normalizeUnit(alias);
+        return manageableUnit.includes(normalizedAlias) || normalizedAlias.includes(manageableUnit);
+      })
+    );
+  }, [hasGlobalScope, user?.authorization_context?.manageable_unit, user?.department]);
   const loadAnnouncements = useCallback(async () => {
     setListLoading(true);
     setErrorMessage("");
@@ -218,7 +254,7 @@ export default function AdminAnnouncementsPage() {
         ]);
         const raw = projectRes.data.projects ?? [];
         setProjects(
-          raw.filter((p) => canAccessProject("announcements.create", p.id) || canAccessProject("announcements.view", p.id))
+          raw.filter((p) => canAccessProject("announcements.create", p.id) || canAccessProject("announcements.update", p.id) || canAccessProject("announcements.view", p.id))
         );
       } catch (error) {
         console.error("Veriler yuklenemedi", error);
@@ -237,6 +273,93 @@ export default function AdminAnnouncementsPage() {
     return hasGlobalScope("announcements.delete") || announcement.creator?.id === user?.id;
   };
 
+  const canUpdateAnnouncement = (announcement: Announcement): boolean => {
+    if (!canUpdateAnnouncements) return false;
+    if (announcement.project?.id) return canAccessProject("announcements.update", announcement.project.id);
+    return hasGlobalScope("announcements.update") || announcement.creator?.id === user?.id;
+  };
+
+  const openEdit = (announcement: Announcement) => {
+    setEditingAnnouncement(announcement);
+    setEditForm({
+      title: announcement.title ?? "",
+      content: announcement.content ?? "",
+      category: announcement.category ?? "",
+      project_id: announcement.project?.id ? String(announcement.project.id) : "",
+      period_id: announcement.period?.id ? String(announcement.period.id) : "",
+      published_at: toIstanbulDateTimeLocal(announcement.published_at),
+      expires_at: toIstanbulDateTimeLocal(announcement.expires_at),
+      target_roles: announcement.target_roles ?? [],
+      target_units: announcement.target_units ?? [],
+    });
+  };
+
+  const toggleEditRole = (role: string) => {
+    setEditForm((prev) => ({
+      ...prev,
+      target_roles: prev.target_roles.includes(role)
+        ? prev.target_roles.filter((item) => item !== role)
+        : [...prev.target_roles, role],
+    }));
+  };
+
+  const toggleEditTargetUnit = (unit: string) => {
+    setEditForm((prev) => ({
+      ...prev,
+      target_units: prev.target_units.includes(unit)
+        ? prev.target_units.filter((item) => item !== unit)
+        : [...prev.target_units, unit],
+    }));
+  };
+
+  const handleUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingAnnouncement) return;
+
+    if (!editForm.title.trim() || !editForm.content.trim()) {
+      setErrorMessage("Baslik ve icerik zorunludur.");
+      return;
+    }
+
+    const editProjectIdNum = editForm.project_id ? parseInt(editForm.project_id, 10) : NaN;
+    if (editForm.project_id && (Number.isNaN(editProjectIdNum) || !canAccessProject("announcements.update", editProjectIdNum))) {
+      setErrorMessage("Secilen proje icin duyuru guncelleme yetkiniz yok.");
+      return;
+    }
+
+    setUpdating(true);
+    setSuccessMessage("");
+    setErrorMessage("");
+
+    try {
+      const payload: Record<string, string | number | null | string[]> = {
+        title: editForm.title.trim(),
+        content: editForm.content.trim(),
+        category: editForm.category.trim() || null,
+        target_roles: editForm.target_roles,
+        target_units: editForm.target_units.filter((unit) => availableEditTargetUnits.includes(unit)),
+        published_at: withIstanbulOffset(editForm.published_at),
+        expires_at: withIstanbulOffset(editForm.expires_at),
+      };
+
+      if (editForm.project_id || editingAnnouncement.project?.id) {
+        payload.project_id = editForm.project_id ? Number(editForm.project_id) : null;
+      }
+      if (editForm.period_id || editingAnnouncement.period?.id) {
+        payload.period_id = editForm.period_id ? Number(editForm.period_id) : null;
+      }
+
+      await api.put(`/panel/announcements/${editingAnnouncement.id}`, payload);
+      setSuccessMessage("Duyuru guncellendi.");
+      setEditingAnnouncement(null);
+      await loadAnnouncements();
+    } catch (error) {
+      console.error("Duyuru guncellenemedi", error);
+      setErrorMessage("Duyuru guncellenirken bir hata olustu.");
+    } finally {
+      setUpdating(false);
+    }
+  };
   const resetForm = () => {
     setTitle("");
     setContent("");
@@ -512,7 +635,7 @@ export default function AdminAnnouncementsPage() {
                 ) : (
                   announcements.map((announcement) => (
                     <tr key={announcement.id}>
-                      <td className="px-6 py-4">{new Date(announcement.published_at).toLocaleDateString("tr-TR")}</td>
+                      <td className="px-6 py-4">{formatIstanbulDate(announcement.published_at)}</td>
                       <td className="px-6 py-4">
                         <div className="line-clamp-1 font-bold text-slate-900">{announcement.title}</div>
                       </td>
@@ -560,15 +683,26 @@ export default function AdminAnnouncementsPage() {
                           : "-"}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {canDeleteAnnouncement(announcement) && (
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(announcement.id)}
-                            className="panel-table-action panel-table-action-icon panel-table-action-danger"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
+                        <div className="inline-flex items-center gap-2">
+                          {canUpdateAnnouncement(announcement) && (
+                            <button
+                              type="button"
+                              onClick={() => openEdit(announcement)}
+                              className="panel-table-action panel-table-action-icon panel-table-action-info"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                          {canDeleteAnnouncement(announcement) && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(announcement.id)}
+                              className="panel-table-action panel-table-action-icon panel-table-action-danger"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -690,7 +824,7 @@ export default function AdminAnnouncementsPage() {
                     <div>
                       <div className="text-sm font-bold text-slate-900">{log.subject || log.type.toUpperCase()}</div>
                       <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        {log.type} / {log.recipients_count} kisi / {new Date(log.created_at).toLocaleString("tr-TR")}
+                        {log.type} / {log.recipients_count} kisi / {formatIstanbulDateTime(log.created_at)}
                       </div>
                       {log.project?.name ? <div className="mt-1 text-xs text-indigo-400">{log.project.name}</div> : null}
                     </div>
@@ -949,6 +1083,182 @@ export default function AdminAnnouncementsPage() {
           </div>
         </form>
       )}
+
+      {editingAnnouncement ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <form onSubmit={handleUpdate} className="panel-section-card max-h-[90vh] w-full max-w-4xl overflow-y-auto space-y-6 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-slate-900">Duyuruyu Guncelle</h2>
+                <p className="panel-label">{editingAnnouncement.project?.name || "Genel duyuru"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingAnnouncement(null)}
+                className="panel-table-action panel-table-action-icon"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="panel-form-grid">
+              <div className="panel-field">
+                <label className="panel-label">Duyuru Basligi</label>
+                <input
+                  value={editForm.title}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                  required
+                  className="panel-control"
+                />
+              </div>
+              <div className="panel-field">
+                <label className="panel-label">Kategori</label>
+                <input
+                  value={editForm.category}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, category: e.target.value }))}
+                  className="panel-control"
+                />
+              </div>
+            </div>
+
+            <div className="panel-field">
+              <label className="panel-label">Duyuru Icerigi</label>
+              <textarea
+                value={editForm.content}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, content: e.target.value }))}
+                required
+                className="panel-textarea min-h-[150px]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="panel-field">
+                <label className="panel-label">Proje</label>
+                <select
+                  value={editForm.project_id}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const project = projects.find((item) => String(item.id) === value);
+                    setEditForm((prev) => ({
+                      ...prev,
+                      project_id: value,
+                      period_id: value ? defaultPeriodIdForProject(project) : "",
+                    }));
+                  }}
+                  className="panel-control"
+                >
+                  <option value="">Tum Projeler</option>
+                  {projects.filter((project) => canAccessProject("announcements.update", project.id)).map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="panel-field">
+                <label className="panel-label">Donem</label>
+                <select
+                  value={editForm.period_id}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, period_id: e.target.value }))}
+                  disabled={!editForm.project_id || editPeriods.length === 0}
+                  className="panel-control"
+                >
+                  <option value="">Donem secilmedi</option>
+                  {editPeriods.map((period) => (
+                    <option key={period.id} value={period.id}>
+                      {period.name}
+                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="panel-field">
+                <label className="panel-label">Yayin Tarihi</label>
+                <input
+                  type="datetime-local"
+                  value={editForm.published_at}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, published_at: e.target.value }))}
+                  className="panel-control"
+                />
+              </div>
+              <div className="panel-field">
+                <label className="panel-label">Bitis Tarihi</label>
+                <input
+                  type="datetime-local"
+                  value={editForm.expires_at}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, expires_at: e.target.value }))}
+                  className="panel-control"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 border-t border-slate-200 pt-6 md:grid-cols-2">
+              <div className="panel-field">
+                <label className="panel-label">Rol Bazli Secim</label>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(roleLabels).map(([role, label]) => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => toggleEditRole(role)}
+                      className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
+                        editForm.target_roles.includes(role)
+                          ? "border-indigo-600 bg-indigo-600 text-white"
+                          : "border-slate-200 bg-white text-muted-foreground hover:border-orange-200 hover:bg-orange-50/40"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="panel-field">
+                <label className="panel-label">Birim Bazli Secim</label>
+                {availableEditTargetUnits.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {availableEditTargetUnits.map((unit) => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => toggleEditTargetUnit(unit)}
+                        className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
+                          editForm.target_units.includes(unit)
+                            ? "border-indigo-600 bg-indigo-600 text-white"
+                            : "border-slate-200 bg-white text-muted-foreground hover:border-orange-200 hover:bg-orange-50/40"
+                        }`}
+                      >
+                        {targetUnitLabels[unit] || unit}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-xs text-muted-foreground">
+                    Birim hedefi icin global yetki veya tanimli personel birimi gerekir.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="panel-modal-footer">
+              <button
+                type="button"
+                onClick={() => setEditingAnnouncement(null)}
+                className="panel-button panel-button-secondary"
+              >
+                Vazgec
+              </button>
+              <button
+                type="submit"
+                disabled={updating || !editForm.title.trim() || !editForm.content.trim()}
+                className="panel-button panel-button-primary"
+              >
+                {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {updating ? "Guncelleniyor..." : "Duyuruyu Guncelle"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
       </PermissionGate>
     </div>
   );

@@ -38,6 +38,10 @@ interface Program {
   title: string;
   description?: string | null;
   location?: string | null;
+  location_place_name?: string | null;
+  location_place_address?: string | null;
+  location_place_id?: string | null;
+  location_place_provider?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
   radius_meters?: number | null;
@@ -83,9 +87,12 @@ const attendanceStyles: Record<Program["attendance_status"], string> = {
   pending: "border-slate-300 bg-slate-100 text-slate-600",
 };
 
+const ISTANBUL_TIME_ZONE = "Europe/Istanbul";
+
 function formatDate(value?: string | null) {
   if (!value) return "-";
   return new Date(value).toLocaleDateString("tr-TR", {
+    timeZone: ISTANBUL_TIME_ZONE,
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -94,7 +101,7 @@ function formatDate(value?: string | null) {
 
 function formatTime(value?: string | null) {
   if (!value) return "-";
-  return new Date(value).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleTimeString("tr-TR", { timeZone: ISTANBUL_TIME_ZONE, hour: "2-digit", minute: "2-digit" });
 }
 
 const hasProgramCoordinates = (program: Program) =>
@@ -255,6 +262,10 @@ export default function AlumniProgramsPage() {
                         latitude={program.latitude}
                         longitude={program.longitude}
                         radiusMeters={program.radius_meters}
+                        placeName={program.location_place_name}
+                        placeAddress={program.location_place_address}
+                        placeId={program.location_place_id}
+                        placeProvider={program.location_place_provider}
                         heightClassName="h-44"
                       />
                     </div>

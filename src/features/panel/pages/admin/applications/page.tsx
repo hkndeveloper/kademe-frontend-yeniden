@@ -22,6 +22,7 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
+import { formatIstanbulDate, formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
 
 interface Project {
   id: number;
@@ -322,7 +323,7 @@ export default function AdminApplicationsPage() {
         });
       } else if (status === "interview_planned") {
         await api.put(`/panel/applications/${id}/interview`, {
-          interview_at: interviewAt,
+          interview_at: withIstanbulOffset(interviewAt),
         });
       } else {
         await api.put(`/panel/applications/${id}/status`, {
@@ -338,7 +339,7 @@ export default function AdminApplicationsPage() {
           const next: Application = {
             ...application,
             status,
-            interview_at: status === "interview_planned" && interviewAt ? interviewAt : application.interview_at,
+            interview_at: status === "interview_planned" && interviewAt ? withIstanbulOffset(interviewAt) : application.interview_at,
             evaluation_note: note || application.evaluation_note,
             rejection_reason:
               status === "rejected" ? note || application.rejection_reason || "Yonetim degerlendirmesi sonucunda reddedildi." : application.rejection_reason,
@@ -408,7 +409,7 @@ export default function AdminApplicationsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900">BAŞVURU YÖNETİMİ</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Tek Panel - Scope Tabanli Degerlendirme</p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Mulakatli ve mulakatsiz basvuru akislari proje ayarina gore yonetilir</p>
           </div>
         </div>
         <PermissionGate permission="applications.export">
@@ -519,9 +520,9 @@ export default function AdminApplicationsPage() {
                         )}
                         <span className="panel-chip">{statusLabel(application.status)}</span>
                         {application.hasInterview ? (
-                          <span className="panel-chip panel-chip-warning">Mulakatli</span>
+                          <span className="panel-chip panel-chip-warning">Akis: Mulakatli</span>
                         ) : (
-                          <span className="panel-chip panel-chip-success">Mulakatsiz</span>
+                          <span className="panel-chip panel-chip-success">Akis: Mulakatsiz / Nihai Karar</span>
                         )}
                       </div>
                     </div>
@@ -530,7 +531,7 @@ export default function AdminApplicationsPage() {
                       {application.user.phone && <div>{application.user.phone}</div>}
                       <div className="flex items-center gap-1 font-bold">
                         <Calendar className="h-4 w-4" />
-                        {new Date(application.created_at).toLocaleDateString("tr-TR")}
+                        {formatIstanbulDate(application.created_at)}
                       </div>
                     </div>
                   </div>
@@ -568,7 +569,7 @@ export default function AdminApplicationsPage() {
                     />
                   ) : application.interview_at ? (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-amber-700">
-                      Mulakat: {new Date(application.interview_at).toLocaleString("tr-TR")}
+                      Mulakat: {formatIstanbulDateTime(application.interview_at)}
                     </div>
                   ) : null}
 

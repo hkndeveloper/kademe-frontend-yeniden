@@ -7,6 +7,7 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
+import { downloadBlobResponse } from "@/lib/download";
 
 interface Project {
   id: number;
@@ -184,25 +185,7 @@ export default function AdminCertificatesPage() {
     try {
       const endpoint = certificate.download_url.replace(/^.*\/api/, "");
       const response = await api.get(endpoint, { responseType: "blob" });
-      const contentType = String(response.headers["content-type"] ?? "");
-
-      if (contentType.includes("application/json")) {
-        const payload = JSON.parse(await response.data.text()) as { download_url?: string; message?: string };
-        if (payload.download_url) {
-          window.open(payload.download_url, "_blank", "noopener,noreferrer");
-          return;
-        }
-        throw new Error(payload.message ?? "Sertifika indirilemedi.");
-      }
-
-      const blobUrl = URL.createObjectURL(response.data);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = `sertifika_${certificate.verification_code}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(blobUrl);
+      await downloadBlobResponse(response.data, response.headers, `sertifika_${certificate.verification_code}`);
     } catch (error) {
       console.error("Sertifika indirilemedi", error);
       alert("Sertifika indirilemedi.");

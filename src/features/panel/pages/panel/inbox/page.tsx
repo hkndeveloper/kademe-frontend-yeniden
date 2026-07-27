@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Bell, Loader2, Pin, Star } from "lucide-react";
 import api from "@/lib/api/axios";
+import { LinkifiedText } from "@/components/shared/LinkifiedText";
 
 type InboxMessage = {
   source_type: string;
   source_id: number;
   type: string;
+  source_label?: string | null;
+  source_action_label?: string | null;
+  source_action_url?: string | null;
   title: string;
   content?: string | null;
   category?: string | null;
@@ -28,6 +33,12 @@ export default function PanelInboxPage() {
   const [starredOnly, setStarredOnly] = useState(false);
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [projectFilter, setProjectFilter] = useState("all");
+
+  const typeFallbackLabels: Record<string, string> = {
+    announcement: "Duyuru",
+    opportunity: "Kariyer Firsati",
+    forum_post: "Forum",
+  };
 
   const projects = Array.from(
     new Map(
@@ -118,7 +129,7 @@ export default function PanelInboxPage() {
               <div>
                 <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {item.type}
+                  {item.source_label || typeFallbackLabels[item.type] || item.type}
                   {item.project?.name ? ` · ${item.project.name}` : ""}
                   {item.category ? ` · ${item.category}` : ""}
                 </p>
@@ -127,7 +138,7 @@ export default function PanelInboxPage() {
                 {new Date(item.timestamp ?? "1970-01-01").toLocaleDateString("tr-TR")}
               </span>
             </div>
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{item.content ?? "-"}</p>
+            <LinkifiedText text={item.content ?? "-"} className="whitespace-pre-wrap text-sm text-muted-foreground" />
             <div className="mt-4 flex flex-wrap gap-2">
               <button type="button" onClick={() => void updateState(item, { is_read: !item.state.is_read })} className="panel-card-action">
                 {item.state.is_read ? "Okunmamis yap" : "Okundu yap"}
@@ -138,6 +149,11 @@ export default function PanelInboxPage() {
               <button type="button" onClick={() => void updateState(item, { is_pinned: !item.state.is_pinned })} className="panel-card-action">
                 <Pin className={`h-3.5 w-3.5 ${item.state.is_pinned ? "fill-current" : ""}`} /> {item.state.is_pinned ? "Sabiti kaldir" : "Sabitle"}
               </button>
+              {item.source_action_url ? (
+                <Link href={item.source_action_url} className="panel-card-action">
+                  {item.source_action_label || "Kaynak"}
+                </Link>
+              ) : null}
             </div>
           </div>
         ))

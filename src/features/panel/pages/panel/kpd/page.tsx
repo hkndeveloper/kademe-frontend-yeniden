@@ -8,6 +8,7 @@ import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { downloadBlobResponse } from "@/lib/download";
+import { formatIstanbulDate, formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
 
 type Paginated<T> = {
   data: T[];
@@ -242,8 +243,8 @@ export default function PanelKpdPage() {
         counselee_id: Number(appointmentForm.counselee_id),
         period_id: appointmentForm.period_id ? Number(appointmentForm.period_id) : null,
         room_id: Number(appointmentForm.room_id),
-        start_at: appointmentForm.start_at,
-        end_at: appointmentForm.end_at,
+        start_at: withIstanbulOffset(appointmentForm.start_at),
+        end_at: withIstanbulOffset(appointmentForm.end_at),
         notes: appointmentForm.notes.trim() || null,
       });
 
@@ -521,7 +522,7 @@ export default function PanelKpdPage() {
                       <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                         {report.user ? `${report.user.name} ${report.user.surname}` : `Kullanici #${report.user_id}`}
                         {report.period?.name ? ` / ${report.period.name}` : ""}
-                        {report.created_at ? ` / ${new Date(report.created_at).toLocaleDateString("tr-TR")}` : ""}
+                        {report.created_at ? ` / ${formatIstanbulDate(report.created_at)}` : ""}
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -588,7 +589,7 @@ export default function PanelKpdPage() {
                         room.appointments.map((appointment) => (
                           <div key={appointment.id} className="panel-card-muted">
                             <div className="flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-widest text-slate-500">
-                              <span>{appointment.start_at ? new Date(appointment.start_at).toLocaleString("tr-TR") : "Tarih yok"}</span>
+                              <span>{appointment.start_at ? formatIstanbulDateTime(appointment.start_at) : "Tarih yok"}</span>
                               <span className="panel-chip">{appointment.status}</span>
                             </div>
                             <div className="mt-2 text-sm font-bold text-slate-900">
@@ -625,7 +626,7 @@ export default function PanelKpdPage() {
                       {appointment.counselee ? `${appointment.counselee.name} ${appointment.counselee.surname}` : "Ogrenci"}
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {new Date(appointment.start_at).toLocaleString("tr-TR")} - {new Date(appointment.end_at).toLocaleString("tr-TR")}
+                      {formatIstanbulDateTime(appointment.start_at)} - {formatIstanbulDateTime(appointment.end_at)}
                       {appointment.period?.name ? ` / ${appointment.period.name}` : ""}
                     </div>
                   </div>

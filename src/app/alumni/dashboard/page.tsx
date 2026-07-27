@@ -7,6 +7,7 @@ import { Award, Bell, BookOpen, Briefcase, Calendar, CheckCircle2, HeartHandshak
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
 import { defaultSiteSettings } from "@/lib/site-config";
+import { formatIstanbulDate, formatIstanbulDateTime } from "@/lib/istanbul-time";
 
 interface BohcaMaterial {
   id: number;
@@ -216,7 +217,7 @@ export default function AlumniDashboardPage() {
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate text-sm font-black text-slate-900">{program.title}</h3>
                     <p className="text-xs font-medium text-muted-foreground">
-                      {program.project?.name || "Program"} {program.start_at ? `- ${new Date(program.start_at).toLocaleDateString("tr-TR")}` : ""}
+                      {program.project?.name || "Program"} {program.start_at ? `- ${formatIstanbulDate(program.start_at)}` : ""}
                     </p>
                   </div>
                   <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -252,7 +253,7 @@ export default function AlumniDashboardPage() {
                   </span>
                 </div>
                 {program.feedback_deadline_at && !program.feedback_submitted ? (
-                  <p className="mt-2 text-xs text-muted-foreground">Son tarih: {new Date(program.feedback_deadline_at).toLocaleString("tr-TR")}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Son tarih: {formatIstanbulDateTime(program.feedback_deadline_at)}</p>
                 ) : null}
               </div>
             ))}

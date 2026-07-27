@@ -23,7 +23,7 @@ export interface SiteSettingsPayload {
     footer_project_links: Array<{ label: string; href: string }>;
   };
   homepage: {
-    block_order: Array<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify">;
+    block_order: Array<"hero" | "intro" | "stats" | "projects" | "activities" | "about" | "blog" | "newsletter" | "certificate_verify" | "marquee">;
     block_visibility: {
       hero: boolean;
       intro: boolean;
@@ -34,6 +34,7 @@ export interface SiteSettingsPayload {
       blog: boolean;
       newsletter: boolean;
       certificate_verify: boolean;
+      marquee: boolean;
     };
     hero_badge: string;
     hero_title_line_1: string;
@@ -58,6 +59,8 @@ export interface SiteSettingsPayload {
     activities_title: string;
     activities_description: string;
     featured_activity_ids: number[];
+    marquee_items: string[];
+    marquee_speed_seconds: number;
     about_teaser_title: string;
     about_teaser_description: string;
     about_teaser_image_url: string;
@@ -130,7 +133,7 @@ export const defaultSiteSettings: SiteSettingsPayload = {
   contact: {
     contact_email: "info@kademe.org",
     contact_phone: "0212 XXX XX XX",
-    contact_address: "T3 Vakfi Genel Merkezi, Istanbul, Turkiye",
+    contact_address: "KADEME İletişim Merkezi, İstanbul, Türkiye",
   },
   social_media: {
     instagram_url: "",
@@ -160,7 +163,7 @@ export const defaultSiteSettings: SiteSettingsPayload = {
     footer_project_links: [],
   },
   homepage: {
-    block_order: ["hero", "intro", "stats", "projects", "activities", "about", "blog", "newsletter", "certificate_verify"],
+    block_order: ["hero", "intro", "stats", "projects", "activities", "about", "blog", "newsletter", "certificate_verify", "marquee"],
     block_visibility: {
       hero: true,
       intro: true,
@@ -171,13 +174,14 @@ export const defaultSiteSettings: SiteSettingsPayload = {
       blog: true,
       newsletter: true,
       certificate_verify: true,
+      marquee: true,
     },
     hero_badge: "KADEME: Geleceğin Liderlik Okulu",
     hero_title_line_1: "YETENEĞİNİ",
     hero_title_line_2: "KEŞFET",
     hero_title_line_3: "GELECEĞİ",
     hero_title_line_4: "YÖNET",
-    hero_description: "T3 Vakfı bünyesinde, Türkiye ekosisteminde kapsamlı kariyer ve yetenek gelişim programlarına dahil olun.",
+    hero_description: "KADEME ekosisteminde kapsamlı kariyer ve yetenek gelişim programlarına dahil olun.",
     hero_background_image_url: "",
     hero_primary_label: "Hemen Başvur",
     hero_primary_href: "/auth/register",
@@ -199,58 +203,60 @@ export const defaultSiteSettings: SiteSettingsPayload = {
         cta_href: "/projects",
       },
       {
-        title: "Etkinlik ve Basvuru Akisi",
-        description: "Yaklasan faaliyetler, blog yazilari, duyurular ve basvuru surecleri ayni dijital deneyim icinde sunulur.",
+        title: "Etkinlik ve Başvuru Akışı",
+        description: "Yaklaşan faaliyetler, blog yazıları, duyurular ve başvuru süreçleri aynı dijital deneyim içinde sunulur.",
         image_url: "",
         cta_label: "Faaliyetlere Git",
         cta_href: "/activities",
       },
     ],
-    projects_title: "PROJELERIMIZ",
-    projects_description: "KADEME catisi altinda farkli alanlara ozel gelisim programlari.",
-    activities_title: "FAALIYETLERIMIZ",
-    activities_description: "Yaklasan etkinlikler, programlar ve proje bazli faaliyet ozeti.",
+    projects_title: "PROJELERİMİZ",
+    projects_description: "KADEME çatısı altında farklı alanlara özel gelişim programları.",
+    activities_title: "FAALİYETLERİMİZ",
+    activities_description: "Yaklaşan etkinlikler, programlar ve proje bazlı faaliyet özeti.",
     featured_activity_ids: [],
-    about_teaser_title: "KADEME VE PROJE EKOSISTEMI",
-    about_teaser_description: "Mentorluk, psikolojik danismanlik, rozet sistemi, dijital bohca ve proje bazli etkinlik akislariyla cok katmanli bir gelisim yapisi sunuyoruz.",
+    marquee_items: ["KADEME", "Projeler", "Faaliyetler", "Mentorluk", "Gelişim", "Başvuru", "Sertifika"],
+    marquee_speed_seconds: 45,
+    about_teaser_title: "KADEME VE PROJE EKOSİSTEMİ",
+    about_teaser_description: "Mentorluk, psikolojik danışmanlık, rozet sistemi, dijital bohça ve proje bazlı etkinlik akışlarıyla çok katmanlı bir gelişim yapısı sunuyoruz.",
     about_teaser_image_url: "",
-    blog_title: "GUNCEL BLOG",
-    blog_description: "KADEME dunyasindan son haberler ve makaleler.",
+    blog_title: "GÜNCEL BLOG",
+    blog_description: "KADEME dünyasından son haberler ve makaleler.",
     stats_mode: "auto",
     featured_project_slugs: [],
     featured_blog_slugs: [],
-    newsletter_title: "KADEME E-Bultenine Katil",
-    newsletter_description: "Yeni faaliyetler, proje duyurulari ve blog icerikleri yayinlandiginda ilk sen haberdar ol.",
-    certificate_verify_title: "Sertifika Dogrula",
-    certificate_verify_description: "KADEME tarafindan verilen sertifikalari dogrulama kodu ile kamusal olarak sorgulayabilirsiniz.",
-    certificate_verify_cta_label: "Dogrulama Ekranina Git",
+    newsletter_title: "KADEME E-Bültenine Katıl",
+    newsletter_description: "Yeni faaliyetler, proje duyuruları ve blog içerikleri yayınlandığında ilk sen haberdar ol.",
+    certificate_verify_title: "Sertifika Doğrula",
+    certificate_verify_description: "KADEME tarafından verilen sertifikaları doğrulama kodu ile kamusal olarak sorgulayabilirsiniz.",
+    certificate_verify_cta_label: "Doğrulama Ekranına Git",
     certificate_verify_cta_href: "/certificates/verify",
-    footer_description: "T3 Vakfi Kariyer Gelisim Merkezi. Gelecegin liderlerini bugunden yetistiriyoruz.",
-    footer_copyright: "© 2026 KADEME YÖNETİM SİSTEMİ | T3 VAKFI. TÜM HAKLARI SAKLIDIR.",
+    footer_description: "KADEME Kariyer Gelişim Merkezi. Geleceğin liderlerini bugünden yetiştiriyoruz.",
+    footer_copyright: "© 2026 KADEME YÖNETİM SİSTEMİ. TÜM HAKLARI SAKLIDIR.",
     stats: [
-      { label: "Aktif Ogrenci", value: "2,500+", icon: "users" },
+      { label: "Aktif Öğrenci", value: "2,500+", icon: "users" },
       { label: "Tamamlanan Proje", value: "450+", icon: "trophy" },
-      { label: "Yillik Etkinlik", value: "1,200+", icon: "calendar" },
-      { label: "Sehir", value: "81", icon: "globe" },
+      { label: "Yıllık Etkinlik", value: "1,200+", icon: "calendar" },
+      { label: "Şehir", value: "81", icon: "globe" },
     ],
-    monthly_motivation_message: "Gelecek, bugunden ona hazirlananlara aittir. KADEME'deki her adim, seni daha guclu bir vizyona tasir.",
+    monthly_motivation_message: "Gelecek, bugünden ona hazırlananlara aittir. KADEME'deki her adım, seni daha güçlü bir vizyona taşır.",
   },
   about: {
     hero_title: "Biz Kimiz?",
-    hero_description: "KADEME, T3 Vakfi bunyesinde yetenek, kariyer ve liderlik gelisimi odakli bir ekosistemdir. Ogrenciler, mezunlar ve profesyoneller icin surekli gelisim alanlari uretir.",
+    hero_description: "KADEME, yetenek, kariyer ve liderlik gelişimi odaklı bir ekosistemdir. Öğrenciler, mezunlar ve profesyoneller için sürekli gelişim alanları üretir.",
     mission_title: "Misyonumuz",
-    mission_text: "Genc yeteneklerin potansiyelini ortaya cikarmak, onlara cagimizin gerektirdigi bilgi ve becerileri kazandirmak ve uzun vadeli bir gelisim yolculugu sunmak.",
+    mission_text: "Genç yeteneklerin potansiyelini ortaya çıkarmak, onlara çağımızın gerektirdiği bilgi ve becerileri kazandırmak ve uzun vadeli bir gelişim yolculuğu sunmak.",
     vision_title: "Vizyonumuz",
-    vision_text: "Turkiye'nin ihtiyac duydugu nitelikli insan kaynagini destekleyen, projeleriyle fark yaratan ve katilimcilarina gercek bir gelisim agi sunan oncu bir merkez olmak.",
+    vision_text: "Türkiye'nin ihtiyaç duyduğu nitelikli insan kaynağını destekleyen, projeleriyle fark yaratan ve katılımcılarına gerçek bir gelişim ağı sunan öncü bir merkez olmak.",
     ecosystem_title: "KADEME ve Proje Ekosistemi",
-    ecosystem_description: "Diplomasi, mentorluk, psikolojik danismanlik, rozet sistemi, dijital bohca ve proje bazli etkinlik akislariyla farkli alanlara dokunan cok katmanli bir yapi kuruyoruz.",
+    ecosystem_description: "Diplomasi, mentorluk, psikolojik danışmanlık, rozet sistemi, dijital bohça ve proje bazlı etkinlik akışlarıyla farklı alanlara dokunan çok katmanlı bir yapı kuruyoruz.",
     faq_teaser_title: "SSS ve Blog",
     faq_teaser_text: "Sık sorulan sorular ve içerik akışı public tarafta erişilebilir.",
-    blog_teaser_title: "Blog Yazilari",
+    blog_teaser_title: "Blog Yazıları",
     blog_teaser_text: "KADEME dünyasından seçili yazılar ve güncel içerikler burada yer alır.",
     activities_teaser_title: "Faaliyetler",
-    activities_teaser_text: "Program ve etkinlik akislarimiz proje bazli ilerler.",
-    journey_title: "Gelisim Yolculugu",
+    activities_teaser_text: "Program ve etkinlik akışlarımız proje bazlı ilerler.",
+    journey_title: "Gelişim Yolculuğu",
     journey_text: "Projeler, faaliyetler, blog, SSS ve iletişim akışları birlikte KADEME'nin public katmanını oluşturur.",
   },
   blog_page: {

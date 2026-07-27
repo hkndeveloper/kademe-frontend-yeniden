@@ -26,6 +26,7 @@ import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { PublicBreadcrumbs } from "@/components/shared/PublicBreadcrumbs";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
+import { PublicBadge, PublicGradientTitle } from "@/components/public";
 import { useAuth } from "@/store/useAuth";
 
 interface ActivePeriod {
@@ -86,7 +87,7 @@ interface ProjectDetail {
   slug: string;
   type: string;
   description: string;
-  short_description: string;
+  shoet_description: string;
   cover_image: string | null;
   status: string;
   is_application_open: boolean;
@@ -123,6 +124,10 @@ interface PublicProgram {
   title: string;
   description?: string | null;
   location?: string | null;
+  location_place_name?: string | null;
+  location_place_address?: string | null;
+  location_place_id?: string | null;
+  location_place_provider?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
   radius_meters?: number | null;
@@ -202,11 +207,22 @@ const hasProgramCoordinates = (program: PublicProgram) =>
   program.longitude !== "";
 function programStatusLabel(status: string): string {
   const map: Record<string, string> = {
-    scheduled: "Planlandi",
+    scheduled: "Planlandı",
     active: "Aktif",
-    completed: "Tamamlandi",
-    cancelled: "Iptal",
+    completed: "Tamamlandı",
+    cancelled: "İptal",
   };
+  return map[status] ?? status;
+}
+function projectStatusLabel(status?: string | null): string {
+  const map: Record<string, string> = {
+    active: "Aktif",
+    inactive: "Pasif",
+    draft: "Taslak",
+    archived: "Arşivlendi",
+    completed: "Tamamlandı",
+  };
+  if (!status) return "Belirtilmedi";
   return map[status] ?? status;
 }
 
@@ -333,11 +349,11 @@ export default function ProjectDetailPage() {
   const validateApplicationInputs = (): string | null => {
     if (!isAuthenticated) {
       if (!guestApplicant.name.trim() || !guestApplicant.surname.trim() || !guestApplicant.email.trim()) {
-        return "Lutfen ad, soyad ve e-posta bilgilerinizi doldurun.";
+        return "Lütfen ad, soyad ve e-posta bilgilerinizi doldurun.";
       }
       const email = guestApplicant.email.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return "Gecerli bir e-posta adresi girin.";
+        return "Geçerli bir e-posta adresi girin.";
       }
     }
     for (const field of applicationForm?.fields ?? []) {
@@ -348,11 +364,11 @@ export default function ProjectDetailPage() {
       const val = formValues[fieldId];
       if (field.type === "checkbox") {
         if (!Array.isArray(val) || val.length === 0) {
-          return `"${field.label}" secenegi zorunludur.`;
+          return `"${field.label}" seçeneği zorunludur.`;
         }
       } else if (field.type === "file") {
         if (!val) {
-          return `"${field.label}" icin dosya yuklemeniz gerekir.`;
+          return `"${field.label}" için dosya yüklemeniz gerekir.`;
         }
       } else if (!String(val ?? "").trim()) {
         return `"${field.label}" zorunludur.`;
@@ -372,11 +388,11 @@ export default function ProjectDetailPage() {
     setSelectedProgramId(nextProgramId ?? null);
 
     if (!project.active_period) {
-      setErrorMessage("Bu proje icin aktif donem bulunmuyor.");
+      setErrorMessage("Bu proje için aktif dönem bulunmuyor.");
       return;
     }
 
-    const needsApplicationModal = (applicationForm?.fields?.length ?? 0) > 0 || Boolean(applicationForm?.require_consent);
+    const needsApplicationModal = !isAuthenticated || (applicationForm?.fields?.length ?? 0) > 0 || Boolean(applicationForm?.require_consent);
 
     if (!showApplicationForm && needsApplicationModal) {
       setShowApplicationForm(true);
@@ -384,7 +400,7 @@ export default function ProjectDetailPage() {
     }
 
     if (applicationForm?.require_consent && !consentAccepted) {
-      setErrorMessage("Basvuru kosullarini kabul etmeniz gerekiyor.");
+      setErrorMessage("Başvuru koşullarını kabul etmeniz gerekiyor.");
       return;
     }
 
@@ -411,14 +427,14 @@ export default function ProjectDetailPage() {
               },
           config,
         );
-        setMessage("Basvurunuz alindi. Durumu ogrenci panelinizde gorebilirsiniz.");
+        setMessage("Başvurunuz alındı. Durumu öğrenci panelinizde görebilirsiniz.");
         router.push("/student/applications");
       } else {
         await api.post("/applications/public", payload, config);
         setGuestApplySuccess(true);
         setShowApplicationForm(false);
         setMessage(
-          "Basvurunuz alindi. E-posta adresinize bilgilendirme gelebilir. Basvurularinizi takip etmek icin hesap olusturabilirsiniz.",
+          "Başvurunuz alındı. E-posta adresinize bilgilendirme gelebilir. Başvurularınızı takip etmek için hesap oluşturabilirsiniz.",
         );
       }
     } catch (error: unknown) {
@@ -428,9 +444,9 @@ export default function ProjectDetailPage() {
           Object.values(error.response?.data?.errors ?? {})
             .flat()
             .join(" ");
-        setErrorMessage(responseMessage || "Basvuru sirasinda bir hata olustu.");
+        setErrorMessage(responseMessage || "Başvuru sırasında bir hata oluştu.");
       } else {
-        setErrorMessage("Basvuru sirasinda bir hata olustu.");
+        setErrorMessage("Başvuru sırasında bir hata oluştu.");
       }
     } finally {
       setApplying(false);
@@ -521,6 +537,13 @@ export default function ProjectDetailPage() {
     }).format(new Date(value));
   };
 
+  const formatCalendarMonthLabel = (month: { label: string; year?: number; month?: number }) => {
+    if (typeof month.year === "number" && typeof month.month === "number") {
+      return new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric" }).format(new Date(month.year, month.month - 1, 1));
+    }
+    return month.label;
+  };
+
   const updateFormValue = (fieldId: string, value: string | string[] | File | null) => {
     setFormValues((current) => ({
       ...current,
@@ -533,7 +556,7 @@ export default function ProjectDetailPage() {
     if (!fieldId) return null;
 
     const commonClassName =
-      "w-full rounded-2xl border border-border bg-input px-4 py-3 outline-none transition-all focus:ring-2 focus:ring-primary";
+      "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100";
     const value = formValues[fieldId];
 
     if (field.type === "longtext") {
@@ -555,7 +578,7 @@ export default function ProjectDetailPage() {
           onChange={(event) => updateFormValue(fieldId, event.target.value)}
           className={commonClassName}
         >
-          <option value="">Secim yapin</option>
+          <option value="">Seçim yapın</option>
           {(field.options ?? []).map((option) => (
             <option key={option} value={option}>
               {option}
@@ -569,7 +592,7 @@ export default function ProjectDetailPage() {
       return (
         <div className="space-y-3">
           {(field.options ?? []).map((option) => (
-            <label key={option} className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+            <label key={option} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
               <input
                 type="radio"
                 name={fieldId}
@@ -591,7 +614,7 @@ export default function ProjectDetailPage() {
           {(field.options ?? []).map((option) => {
             const checked = currentValue.includes(option);
             return (
-              <label key={option} className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+              <label key={option} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                 <input
                   type="checkbox"
                   checked={checked}
@@ -632,35 +655,39 @@ export default function ProjectDetailPage() {
   };
 
   const renderProgramCard = (program: PublicProgram) => (
-    <div key={program.id} className="rounded-2xl border border-border/70 bg-muted/30 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/50">
+    <div key={program.id} className="kdm-public-magnetic-card rounded-[1.5rem] border border-white bg-white/90 p-4 shadow-[0_16px_40px_rgba(9,9,11,0.08)] transition duration-300 hover:-translate-y-1 hover:border-[#fd3a25]/30">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="font-bold text-foreground">{program.title}</p>
-          {program.period?.name ? <p className="mt-1 text-xs text-muted-foreground">{program.period.name}</p> : null}
+          <p className="font-bold text-[#292c2e]">{program.title}</p>
+          {program.period?.name ? <p className="mt-1 text-xs text-[#71717a]">{program.period.name}</p> : null}
         </div>
-        <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+        <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-orange-600">
           {programStatusLabel(program.status)}
         </span>
       </div>
-      <div className="space-y-2 text-xs text-muted-foreground">
+      <div className="space-y-2 text-xs text-[#71717a]">
         <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-primary" />
+          <Clock className="h-4 w-4 text-orange-600" />
           <span>{formatDateTime(program.start_at)}</span>
         </div>
         {program.location ? (
           <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary" />
+            <MapPin className="h-4 w-4 text-orange-600" />
             <span>{program.location}</span>
           </div>
         ) : null}
       </div>
-      {program.description ? <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{program.description}</p> : null}
+      {program.description ? <p className="mt-3 line-clamp-3 text-sm text-[#71717a]">{program.description}</p> : null}
       {hasProgramCoordinates(program) ? (
         <div className="mt-4">
           <ProgramLocationMap
             latitude={program.latitude}
             longitude={program.longitude}
             radiusMeters={program.radius_meters}
+            placeName={program.location_place_name}
+            placeAddress={program.location_place_address}
+            placeId={program.location_place_id}
+            placeProvider={program.location_place_provider}
             heightClassName="h-44"
           />
         </div>
@@ -669,9 +696,9 @@ export default function ProjectDetailPage() {
         <button
           type="button"
           onClick={() => void handleApply(program.id)}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary transition hover:bg-primary hover:text-primary-foreground"
+          className="kdm-public-btn-shine kdm-public-btn-brand mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-bold uppercase tracking-widest text-white transition hover:-translate-y-0.5"
         >
-          Programa Basvur
+          Programa Başvur
         </button>
       ) : null}
     </div>
@@ -679,8 +706,8 @@ export default function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="kdm-public-shell flex min-h-screen items-center justify-center bg-[#edecec]">
+        <Loader2 className="h-12 w-12 animate-spin text-orange-600" />
       </div>
     );
   }
@@ -688,135 +715,152 @@ export default function ProjectDetailPage() {
   if (!project) return null;
 
   const StudentCard = ({ student, alumni = false }: { student: PublicStudent | Alumni; alumni?: boolean }) => (
-    <div className="flex items-center gap-4 rounded-2xl bg-muted/30 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/50">
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
+    <div className="flex items-center gap-4 rounded-[1.35rem] border border-white bg-white/72 p-4 shadow-[0_12px_36px_rgba(9,9,11,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-white">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[#f4f4f5]">
         {student.image ? <Image src={student.image} alt={student.name} fill unoptimized className="object-cover" /> : null}
       </div>
       <div className="min-w-0">
-        <p className="truncate font-bold text-foreground">{student.name}</p>
-        <p className="text-xs text-muted-foreground">
-          {student.university || "Universite bilgisi yok"}
+        <p className="truncate font-bold text-[#292c2e]">{student.name}</p>
+        <p className="text-xs text-[#71717a]">
+          {student.university || "Üniversite bilgisi yok"}
           {student.department ? ` / ${student.department}` : ""}
-          {student.class_year ? ` / ${student.class_year}. Sinif` : ""}
+          {student.class_year ? ` / ${student.class_year}. Sınıf` : ""}
         </p>
         {student.period_name ? (
-          <p className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+          <p className="mt-1 inline-flex rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-orange-600">
             Dönem: {student.period_name}
           </p>
         ) : null}
-        {alumni && "job" in student && student.job ? <p className="mt-1 text-[10px] text-primary">{student.job}</p> : null}
+        {alumni && "job" in student && student.job ? <p className="mt-1 text-[10px] text-orange-600">{student.job}</p> : null}
       </div>
     </div>
   );
 
   const hasDynamicForm = (applicationForm?.fields?.length ?? 0) > 0;
-  const needsApplicationModal = hasDynamicForm || Boolean(applicationForm?.require_consent);
+  const needsApplicationModal = !isAuthenticated || hasDynamicForm || Boolean(applicationForm?.require_consent);
+  const detailHeroImage = project.cover_image || "/aigocy/images/section/work-single-1.jpg";
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="relative flex h-[400px] w-full items-end overflow-hidden bg-muted md:h-[500px]">
-        {project.cover_image ? (
-          <Image src={project.cover_image} alt={project.name} fill unoptimized className="object-cover transition-transform duration-700 hover:scale-[1.02]" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+    <div className="kdm-public-shell min-h-screen bg-[#edecec] pb-24">
+      <section className="relative isolate overflow-hidden px-4 pb-12 pt-36 sm:px-6 sm:pt-40 lg:pt-44">
+        <div className="kdm-public-detail-hero-bg absolute inset-x-4 bottom-0 top-4 -z-10 overflow-hidden sm:inset-x-6 lg:inset-x-10">
+          <Image src="/aigocy/images/section/hero-1.jpg" alt="" fill className="object-cover opacity-55" priority />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_24%,rgba(255,255,255,0.88),transparent_20rem),radial-gradient(circle_at_82%_18%,rgba(253,58,37,0.15),transparent_16rem),linear-gradient(180deg,rgba(255,255,255,0.36),rgba(231,231,228,0.86))]" />
+        </div>
 
-        <div className="container relative z-10 mx-auto px-6 pb-12">
+        <div className="container relative z-10 mx-auto">
           <PublicBreadcrumbs
-            variant="onDark"
-            className="mb-4"
+            className="mb-6 justify-center"
             items={[
               { label: "Ana Sayfa", href: "/" },
               { label: "Projeler", href: "/projects" },
               { label: project.name },
             ]}
           />
-          <Link
-            href="/projects"
-            className="mb-6 inline-flex items-center gap-2 text-muted-foreground transition-all duration-300 hover:gap-3 hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Tum projelere don
-          </Link>
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1 text-sm font-bold uppercase tracking-wider text-primary">
-            {project.type || "Proje"}
-          </div>
-          <h1 className="mb-4 text-4xl font-extrabold tracking-tight md:text-6xl">{project.name}</h1>
-          <p className="max-w-3xl text-xl text-muted-foreground">{project.short_description || "Bu proje icin kisa tanitim metni bulunmuyor."}</p>
-        </div>
-      </div>
 
-      <div className="container mx-auto mt-12 grid grid-cols-1 gap-12 px-6 lg:grid-cols-3">
+          <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
+            <Link
+              href="/projects"
+              className="kdm-public-btn-shine mb-6 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#09090b] shadow-[0_10px_30px_rgba(9,9,11,0.10)] transition hover:-translate-y-0.5 hover:text-[#fd3a25]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Tüm projelere dön
+            </Link>
+            <PublicBadge className="mb-6 border-white/80 bg-white/90 text-[#fd3a25] shadow-[0_4px_12px_rgba(9,9,11,0.10)]">
+              <Sparkles className="h-3.5 w-3.5" />
+              {project.type || "Proje"}
+            </PublicBadge>
+            <h1 className="max-w-5xl text-balance text-5xl font-semibold leading-[0.95] tracking-normal text-[#2f3437] sm:text-6xl lg:text-8xl">
+              {project.name}
+            </h1>
+            <p className="mt-7 max-w-3xl text-base leading-8 text-[#3f4653] sm:text-lg">
+              {project.shoet_description || "Bu proje için kısa tanıtım metni bulunmuyor."}
+            </p>
+          </div>
+
+          <div className="kdm-public-media-frame relative mx-auto mt-12 max-w-6xl overflow-hidden rounded-[2rem] border-[10px] border-[#09090b] bg-[#09090b] kdm-public-dark-gradient shadow-[0_34px_90px_rgba(9,9,11,0.22)]">
+            <div className="relative aspect-[16/8] min-h-[280px]">
+              <Image src={detailHeroImage} alt={project.name} fill unoptimized priority className="object-cover" sizes="(min-width: 1024px) 1100px, 100vw" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/72 via-transparent to-transparent" />
+              <div className="absolute bottom-5 left-5 right-5 flex flex-wrap items-center gap-3">
+                <span className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white backdrop-blur">{projectStatusLabel(project.status)}</span>
+                <span className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white backdrop-blur">{project.active_period?.name || "Aktif dönem yok"}</span>
+                <span className="rounded-full bg-[#fd3a25] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white shadow-[0_12px_28px_rgba(253,58,37,0.35)]">{project.is_application_open ? "Başvuru açık" : "Başvuru kapalı"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-14 sm:px-6 lg:grid-cols-3 lg:gap-10 lg:py-20">
         <div className="space-y-10 lg:col-span-2">
-          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+          <section className="kdm-public-card rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-8">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-              <Sparkles className="h-6 w-6 text-primary" />
-              Proje Hakkinda
+              <Sparkles className="h-6 w-6 text-orange-600" />
+              Proje Hakkında
             </h2>
-            <div className="leading-relaxed text-muted-foreground">
-              {project.description || "Bu proje icin detayli aciklama henuz eklenmemis."}
+            <div className="leading-8 text-[#52525b]">
+              {project.description || "Bu proje için detaylı açıklama henüz eklenmemiş."}
             </div>
           </section>
 
-          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+          <section className="kdm-public-card rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-8">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-              <CheckCircle2 className="h-6 w-6 text-primary" />
+              <CheckCircle2 className="h-6 w-6 text-orange-600" />
               Proje Durumu
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div className="rounded-2xl bg-muted/30 p-4 transition-colors duration-300 hover:bg-muted/50">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Durum</p>
-                <p className="mt-2 text-sm font-bold text-foreground">{project.status || "Belirtilmedi"}</p>
+              <div className="kdm-public-info-tile rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-orange-200 hover:bg-orange-50/40">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Durum</p>
+                <p className="mt-2 text-sm font-bold text-[#292c2e]">{projectStatusLabel(project.status)}</p>
               </div>
-              <div className="rounded-2xl bg-muted/30 p-4 transition-colors duration-300 hover:bg-muted/50">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif Donem</p>
-                <p className="mt-2 text-sm font-bold text-foreground">{project.active_period?.name || "Yok"}</p>
+              <div className="kdm-public-info-tile rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-orange-200 hover:bg-orange-50/40">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Aktif Dönem</p>
+                <p className="mt-2 text-sm font-bold text-[#292c2e]">{project.active_period?.name || "Yok"}</p>
               </div>
-              <div className="rounded-2xl bg-muted/30 p-4 transition-colors duration-300 hover:bg-muted/50">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Basvuru</p>
-                <p className="mt-2 text-sm font-bold text-foreground">{project.is_application_open ? "Acik" : "Kapali"}</p>
+              <div className="kdm-public-info-tile rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-orange-200 hover:bg-orange-50/40">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Başvuru</p>
+                <p className="mt-2 text-sm font-bold text-[#292c2e]">{project.is_application_open ? "Açık" : "Kapalı"}</p>
               </div>
-              <div className="rounded-2xl bg-muted/30 p-4 transition-colors duration-300 hover:bg-muted/50">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Akis</p>
-                <p className="mt-2 text-sm font-bold text-foreground">{project.has_interview ? "Mulakatli" : "Mulakatsiz"}</p>
+              <div className="kdm-public-info-tile rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-orange-200 hover:bg-orange-50/40">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Akış</p>
+                <p className="mt-2 text-sm font-bold text-[#292c2e]">{project.has_interview ? "Mülakatlı" : "Mülakatsız"}</p>
               </div>
             </div>
           </section>
 
-          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+          <section className="kdm-public-card rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-8">
             <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <h2 className="flex items-center gap-2 text-2xl font-bold">
-                <Calendar className="h-6 w-6 text-primary" />
-                Program Akisi ve Takvim
+                <Calendar className="h-6 w-6 text-orange-600" />
+                Program Akışı ve Takvim
               </h2>
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="rounded-xl bg-muted/40 px-3 py-2">
-                  <p className="font-extrabold text-foreground">{programs?.summary.total ?? 0}</p>
-                  <p className="text-muted-foreground">Toplam</p>
+                <div className="rounded-xl bg-slate-100/40 px-3 py-2">
+                  <p className="font-extrabold text-[#292c2e]">{programs?.summary.total ?? 0}</p>
+                  <p className="text-[#71717a]">Toplam</p>
                 </div>
-                <div className="rounded-xl bg-muted/40 px-3 py-2">
-                  <p className="font-extrabold text-foreground">{programs?.summary.upcoming ?? 0}</p>
-                  <p className="text-muted-foreground">Yaklasan</p>
+                <div className="rounded-xl bg-slate-100/40 px-3 py-2">
+                  <p className="font-extrabold text-[#292c2e]">{programs?.summary.upcoming ?? 0}</p>
+                  <p className="text-[#71717a]">Yaklaşan</p>
                 </div>
-                <div className="rounded-xl bg-muted/40 px-3 py-2">
-                  <p className="font-extrabold text-foreground">{programs?.summary.completed ?? 0}</p>
-                  <p className="text-muted-foreground">Gecmis</p>
+                <div className="rounded-xl bg-slate-100/40 px-3 py-2">
+                  <p className="font-extrabold text-[#292c2e]">{programs?.summary.completed ?? 0}</p>
+                  <p className="text-[#71717a]">Geçmiş</p>
                 </div>
               </div>
             </div>
 
             {calendarMonths.length > 0 ? (
-              <div className="mb-6 rounded-2xl border border-border/60 bg-muted/20 p-4">
-                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Program yogunlugu (ay)</p>
+              <div className="mb-6 rounded-2xl border border-slate-200/60 bg-slate-100/20 p-4">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Program yoğunluğu (ay)</p>
                 <div className="flex flex-wrap gap-2">
                   {calendarMonths.map((month) => (
                     <span
                       key={month.key}
-                      className="inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-[#292c2e] shadow-sm"
                     >
-                      {month.label}
-                      <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">{month.count}</span>
+                      {formatCalendarMonthLabel(month)}
+                      <span className="rounded-full bg-orange-600/15 px-2 py-0.5 text-[10px] font-bold text-orange-600">{month.count}</span>
                     </span>
                   ))}
                 </div>
@@ -825,53 +869,53 @@ export default function ProjectDetailPage() {
 
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
               <div>
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">Yaklasan Programlar</h3>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-[#71717a]">Yaklaşan Programlar</h3>
                 {upcomingPrograms.length > 0 ? (
                   <div className="space-y-3">{upcomingPrograms.map(renderProgramCard)}</div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
-                    Yaklasan program henuz eklenmemis.
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-[#71717a]">
+                    Yaklaşan program henüz eklenmemiş.
                   </div>
                 )}
               </div>
               <div>
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">Gecmis Programlar</h3>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-[#71717a]">Geçmiş Programlar</h3>
                 {completedPrograms.length > 0 ? (
                   <div className="space-y-3">{completedPrograms.map(renderProgramCard)}</div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
-                    Gecmis program henuz eklenmemis.
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-[#71717a]">
+                    Geçmiş program henüz eklenmemiş.
                   </div>
                 )}
               </div>
             </div>
           </section>
 
-          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+          <section className="kdm-public-card rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-8">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-              <BriefcaseBusiness className="h-6 w-6 text-primary" />
-              Projeye Ozel Icerikler
+              <BriefcaseBusiness className="h-6 w-6 text-orange-600" />
+              Projeye Özel İçerikler
             </h2>
 
             {hasSpecialContent ? (
               <div className="space-y-5">
                 {projectSpecials?.internships ? (
-                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
                     <div className="mb-4 flex items-center gap-2 font-bold">
-                      <BriefcaseBusiness className="h-5 w-5 text-primary" />
+                      <BriefcaseBusiness className="h-5 w-5 text-orange-600" />
                       Staj Bilgileri
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
-                      <div className="rounded-xl bg-background/60 p-3">
-                        <p className="text-xs text-muted-foreground">Toplam</p>
+                      <div className="rounded-xl bg-white/60 p-3">
+                        <p className="text-xs text-[#71717a]">Toplam</p>
                         <p className="text-lg font-extrabold">{projectSpecials.internships.total}</p>
                       </div>
-                      <div className="rounded-xl bg-background/60 p-3">
-                        <p className="text-xs text-muted-foreground">Aktif</p>
+                      <div className="rounded-xl bg-white/60 p-3">
+                        <p className="text-xs text-[#71717a]">Aktif</p>
                         <p className="text-lg font-extrabold">{projectSpecials.internships.active}</p>
                       </div>
-                      <div className="rounded-xl bg-background/60 p-3 md:col-span-2">
-                        <p className="text-xs text-muted-foreground">Kurumlar</p>
+                      <div className="rounded-xl bg-white/60 p-3 md:col-span-2">
+                        <p className="text-xs text-[#71717a]">Kurumlar</p>
                         <p className="mt-1 text-sm font-semibold">{projectSpecials.internships.companies.join(", ") || "Belirtilmedi"}</p>
                       </div>
                     </div>
@@ -879,21 +923,21 @@ export default function ProjectDetailPage() {
                 ) : null}
 
                 {(projectSpecials?.mentors?.length ?? 0) > 0 ? (
-                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
                     <div className="mb-4 flex items-center gap-2 font-bold">
-                      <GraduationCap className="h-5 w-5 text-primary" />
-                      Mentorler
+                      <GraduationCap className="h-5 w-5 text-orange-600" />
+                      Mentörler
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       {projectSpecials?.mentors?.map((mentor) => (
-                        <div key={mentor.id} className="flex gap-4 rounded-xl bg-background/60 p-4">
-                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
+                        <div key={mentor.id} className="flex gap-4 rounded-xl bg-white/60 p-4">
+                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[#f4f4f5]">
                             {mentor.photo ? <Image src={mentor.photo} alt={mentor.name} fill unoptimized className="object-cover" /> : null}
                           </div>
                           <div>
-                            <p className="font-bold text-foreground">{mentor.name}</p>
-                            {mentor.expertise ? <p className="text-xs text-primary">{mentor.expertise}</p> : null}
-                            {mentor.bio ? <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">{mentor.bio}</p> : null}
+                            <p className="font-bold text-[#292c2e]">{mentor.name}</p>
+                            {mentor.expertise ? <p className="text-xs text-orange-600">{mentor.expertise}</p> : null}
+                            {mentor.bio ? <p className="mt-2 line-clamp-3 text-xs text-[#71717a]">{mentor.bio}</p> : null}
                           </div>
                         </div>
                       ))}
@@ -902,19 +946,19 @@ export default function ProjectDetailPage() {
                 ) : null}
 
                 {(projectSpecials?.reward_tiers?.length ?? 0) > 0 ? (
-                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
                     <div className="mb-4 flex items-center gap-2 font-bold">
-                      <Gift className="h-5 w-5 text-primary" />
-                      Rozet ve Odul Esikleri
+                      <Gift className="h-5 w-5 text-orange-600" />
+                      Rozet ve Ödül Eşikleri
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {projectSpecials?.reward_tiers?.map((tier) => (
-                        <div key={tier.id} className="rounded-xl bg-background/60 p-4">
-                          <p className="font-bold text-foreground">{tier.name}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">
+                        <div key={tier.id} className="rounded-xl bg-white/60 p-4">
+                          <p className="font-bold text-[#292c2e]">{tier.name}</p>
+                          <p className="mt-1 text-xs text-[#71717a]">
                             {tier.min_badges ?? 0} rozet / {tier.min_credits ?? 0} kredi
                           </p>
-                          {tier.reward_description ? <p className="mt-3 text-sm text-primary">{tier.reward_description}</p> : null}
+                          {tier.reward_description ? <p className="mt-3 text-sm text-orange-600">{tier.reward_description}</p> : null}
                         </div>
                       ))}
                     </div>
@@ -922,25 +966,25 @@ export default function ProjectDetailPage() {
                 ) : null}
 
                 {(projectSpecials?.eurodesk_projects?.length ?? 0) > 0 ? (
-                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
                     <div className="mb-4 flex items-center gap-2 font-bold">
-                      <Sparkles className="h-5 w-5 text-primary" />
+                      <Sparkles className="h-5 w-5 text-orange-600" />
                       Eurodesk Projeleri
                     </div>
                     <div className="space-y-3">
                       {projectSpecials?.eurodesk_projects?.map((item) => (
-                        <div key={item.id} className="rounded-xl bg-background/60 p-4">
+                        <div key={item.id} className="rounded-xl bg-white/60 p-4">
                           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                             <div>
-                              <p className="font-bold text-foreground">{item.title}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">
+                              <p className="font-bold text-[#292c2e]">{item.title}</p>
+                              <p className="mt-1 text-xs text-[#71717a]">
                                 {formatDate(item.start_date)} - {formatDate(item.end_date)}
                               </p>
                             </div>
-                            {item.grant_status ? <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{item.grant_status}</span> : null}
+                            {item.grant_status ? <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">{item.grant_status}</span> : null}
                           </div>
                           {(item.partner_organizations?.length ?? 0) > 0 ? (
-                            <p className="mt-3 text-sm text-muted-foreground">{item.partner_organizations?.join(", ")}</p>
+                            <p className="mt-3 text-sm text-[#71717a]">{item.partner_organizations?.join(", ")}</p>
                           ) : null}
                         </div>
                       ))}
@@ -949,16 +993,16 @@ export default function ProjectDetailPage() {
                 ) : null}
 
                 {(projectSpecials?.kpd?.rooms?.length ?? 0) > 0 ? (
-                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-5">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
                     <div className="mb-4 flex items-center gap-2 font-bold">
-                      <Calendar className="h-5 w-5 text-primary" />
-                      KPD Oturum Odalari
+                      <Calendar className="h-5 w-5 text-orange-600" />
+                      KPD Oturum Odaları
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {projectSpecials?.kpd?.rooms.map((room) => (
-                        <div key={room.id} className="rounded-xl bg-background/60 p-4">
-                          <p className="font-bold text-foreground">{room.name}</p>
-                          {room.description ? <p className="mt-2 text-sm text-muted-foreground">{room.description}</p> : null}
+                        <div key={room.id} className="rounded-xl bg-white/60 p-4">
+                          <p className="font-bold text-[#292c2e]">{room.name}</p>
+                          {room.description ? <p className="mt-2 text-sm text-[#71717a]">{room.description}</p> : null}
                         </div>
                       ))}
                     </div>
@@ -966,29 +1010,29 @@ export default function ProjectDetailPage() {
                 ) : null}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
-                Bu proje icin public tarafta gosterilecek ozel icerik henuz eklenmemis.
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-[#71717a]">
+                Bu proje için özel içerik henüz eklenmemiş.
               </div>
             )}
           </section>
 
-          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+          <section className="kdm-public-card rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-8">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-              <ImageIcon className="h-6 w-6 text-primary" />
+              <ImageIcon className="h-6 w-6 text-orange-600" />
               Galeri
             </h2>
             {galleryItems.length > 0 ? (
               <div className="space-y-6">
                 {Object.entries(groupedGalleryItems).map(([group, items]) => (
                   <div key={group}>
-                    <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-muted-foreground">{group}</h3>
+                    <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-[#71717a]">{group}</h3>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                       {items.map((item, index) => (
                         <button
                           key={`${item.url}-${index}`}
                           type="button"
                           onClick={() => setLightboxUrl(item.url)}
-                          className="group relative h-32 overflow-hidden rounded-xl border border-transparent text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-primary md:h-40"
+                          className="group relative h-32 overflow-hidden rounded-xl border border-transparent text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-orange-400 md:h-40"
                         >
                           <Image src={item.url} alt={item.caption || `${project.name} galeri ${index + 1}`} fill unoptimized className="object-cover transition-transform group-hover:scale-110" />
                           <span className="absolute inset-0 flex items-center justify-center bg-slate-950/0 transition-colors group-hover:bg-slate-950/40">
@@ -1006,24 +1050,24 @@ export default function ProjectDetailPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
-                Bu proje icin henuz galeri eklenmemis.
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-[#71717a]">
+                Bu proje için henüz galeri eklenmemiş.
               </div>
             )}
           </section>
 
-          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+          <section className="kdm-public-card rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-8">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-              <Users className="h-6 w-6 text-primary" />
-              Aktif Ogrenciler
+              <Users className="h-6 w-6 text-orange-600" />
+              Aktif Öğrenciler
             </h2>
             {activeStudentGroups.length > 0 ? (
               <div className="space-y-8">
                 {activeStudentGroups.map((group) => (
                   <div key={group.year}>
-                    <div className="mb-4 flex items-center justify-between border-b border-border pb-2">
+                    <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-2">
                       <h3 className="text-lg font-bold">{group.year}</h3>
-                      <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{group.students.length} kisi</span>
+                      <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">{group.students.length} kişi</span>
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       {group.students.map((student) => <StudentCard key={student.id} student={student} />)}
@@ -1032,24 +1076,24 @@ export default function ProjectDetailPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
-                Aktif ogrenci gorsel listesi henuz eklenmemis.
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-[#71717a]">
+                Aktif öğrenci görsel listesi henüz eklenmemiş.
               </div>
             )}
           </section>
 
-          <section className="glass-panel rounded-3xl border border-border/60 p-8 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/10">
+          <section className="kdm-public-card rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-8">
             <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-              <Users className="h-6 w-6 text-primary" />
+              <Users className="h-6 w-6 text-orange-600" />
               Mezunlar
             </h2>
             {alumniGroups.length > 0 ? (
               <div className="space-y-8">
                 {alumniGroups.map((group) => (
                     <div key={group.year}>
-                      <div className="mb-4 flex items-center justify-between border-b border-border pb-2">
+                      <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-2">
                         <h3 className="text-lg font-bold">{group.year}</h3>
-                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{group.students.length} mezun</span>
+                        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">{group.students.length} mezun</span>
                       </div>
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {group.students.map((student) => <StudentCard key={student.id} student={student} alumni />)}
@@ -1058,259 +1102,297 @@ export default function ProjectDetailPage() {
                   ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
-                Mezun gorsel listesi henuz eklenmemis.
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-[#71717a]">
+                Mezun görsel listesi henüz eklenmemiş.
               </div>
             )}
           </section>
         </div>
 
         <div className="lg:col-span-1">
-          <div className="glass-panel sticky top-28 rounded-3xl border border-primary/20 p-8 shadow-sm">
-            <h3 className="mb-6 text-xl font-bold">Basvuru Bilgileri</h3>
+          <div className="sticky top-28 overflow-hidden rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_24px_70px_rgba(9,9,11,0.14)] backdrop-blur sm:p-8">
+            <h3 className="mb-6 text-xl font-bold">Başvuru Bilgileri</h3>
 
             <div className="mb-8 space-y-4">
-              <div className="flex items-center gap-4 rounded-2xl bg-input/50 p-4">
-                <Calendar className="h-8 w-8 text-primary" />
+              <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <Calendar className="h-8 w-8 text-orange-600" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aktif Donem</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#71717a]">Aktif Dönem</p>
                   <p className="font-bold">{project.active_period?.name || "Belirsiz"}</p>
                 </div>
               </div>
-              <div className="rounded-2xl bg-input/50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Basvuru Akisi</p>
-                <p className="mt-2 font-bold">{project.has_interview ? "Mulakatli degerlendirme" : "Mulakatsiz degerlendirme"}</p>
-                {project.quota ? <p className="mt-1 text-xs text-muted-foreground">Kontenjan: {project.quota}</p> : null}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#71717a]">Başvuru Akışı</p>
+                <p className="mt-2 font-bold">{project.has_interview ? "Mülakatlı değerlendirme" : "Mülakatsız değerlendirme"}</p>
+                {project.quota ? <p className="mt-1 text-xs text-[#71717a]">Kontenjan: {project.quota}</p> : null}
               </div>
             </div>
 
-            {message ? <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-300">{message}</div> : null}
-            {errorMessage ? <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">{errorMessage}</div> : null}
+            {message ? <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-700 ">{message}</div> : null}
+            {errorMessage ? <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 ">{errorMessage}</div> : null}
 
             {guestApplySuccess && !isAuthenticated ? (
               <div className="space-y-4 rounded-2xl border border-green-500/30 bg-green-500/5 p-5">
                 <div className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-8 w-8 shrink-0 text-green-600 dark:text-green-400" />
+                  <CheckCircle2 className="mt-0.5 h-8 w-8 shrink-0 text-green-600" />
                   <div>
-                    <p className="font-bold text-foreground">Basvurunuz alindi</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      E-posta kutunuzu kontrol edin. Basvurularinizi izlemek ve panele erismek icin ucretsiz hesap olusturabilirsiniz.
+                    <p className="font-bold text-[#292c2e]">Başvurunuz alındı</p>
+                    <p className="mt-2 text-sm text-[#71717a]">
+                      E-posta kutunuzu kontrol edin. Başvurularınızı izlemek ve panele erişmek için ücretsiz hesap oluşturabilirsiniz.
                     </p>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Link
                     href="/auth/register"
-                    className="inline-flex flex-1 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center text-sm font-bold text-primary-foreground transition hover:opacity-95"
+                    className="inline-flex flex-1 items-center justify-center rounded-xl bg-orange-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:opacity-95"
                   >
-                    Hesap olustur
+                    Hesap oluştur
                   </Link>
                   <Link
                     href="/auth/login"
-                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-center text-sm font-bold text-foreground transition hover:bg-muted"
+                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-bold text-[#292c2e] transition hover:bg-slate-100"
                   >
-                    Giris yap
+                    Giriş yap
                   </Link>
                 </div>
               </div>
             ) : project.is_application_open ? (
               <div className="space-y-5">
-                {!isAuthenticated && !needsApplicationModal ? (
-                  <div className="space-y-2 rounded-2xl border border-border/70 bg-muted/40 p-4">
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Basvuru iletisimi</p>
-                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                      <input
-                        value={guestApplicant.name}
-                        onChange={(event) => setGuestApplicant((current) => ({ ...current, name: event.target.value }))}
-                        placeholder="Ad *"
-                        autoComplete="given-name"
-                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
-                      />
-                      <input
-                        value={guestApplicant.surname}
-                        onChange={(event) => setGuestApplicant((current) => ({ ...current, surname: event.target.value }))}
-                        placeholder="Soyad *"
-                        autoComplete="family-name"
-                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
-                      />
-                      <input
-                        value={guestApplicant.email}
-                        onChange={(event) => setGuestApplicant((current) => ({ ...current, email: event.target.value }))}
-                        placeholder="E-posta *"
-                        type="email"
-                        autoComplete="email"
-                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground md:col-span-2"
-                      />
-                      <input
-                        value={guestApplicant.phone}
-                        onChange={(event) => setGuestApplicant((current) => ({ ...current, phone: event.target.value }))}
-                        placeholder="Telefon (opsiyonel)"
-                        type="tel"
-                        autoComplete="tel"
-                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground md:col-span-2"
-                      />
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">Başvuruya hazır</p>
+                  <p className="mt-2 text-sm leading-relaxed text-[#71717a]">
+                    Form, yalnızca başvuruya başladığınızda açılır. Bilgilerinizi tek ekranda kontrol edip gönderebilirsiniz.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">1</div>
+                    <div>
+                      <p className="text-sm font-bold text-[#292c2e]">İletişim bilgileri</p>
+                      <p className="mt-1 text-xs leading-relaxed text-[#71717a]">
+                        {!isAuthenticated ? "Ad, soyad ve e-posta bilgileri başvuru formunda alınır." : "Oturum bilgilerinizle başvuru yapılır."}
+                      </p>
                     </div>
                   </div>
-                ) : null}
-
-                {hasDynamicForm ? (
-                  <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                    Basvuru formu &quot;Basvuruyu Gonder&quot; butonuna tikladiginizda popup olarak acilacaktir.
+                  <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">2</div>
+                    <div>
+                      <p className="text-sm font-bold text-[#292c2e]">Başvuru formu</p>
+                      <p className="mt-1 text-xs leading-relaxed text-[#71717a]">
+                        {hasDynamicForm ? "Proje için tanımlanan özel sorular başvuru formunda gösterilir." : "Bu proje temel başvuru akışını kullanır."}
+                      </p>
+                    </div>
                   </div>
-                ) : applicationForm?.require_consent ? (
-                  <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                    Basvuru onayi &quot;Basvuruyu Gonder&quot; butonuna tikladiginizda acilacaktir.
+                  <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">3</div>
+                    <div>
+                      <p className="text-sm font-bold text-[#292c2e]">Değerlendirme</p>
+                      <p className="mt-1 text-xs leading-relaxed text-[#71717a]">
+                        {project.has_interview ? "Başvuru sonrası mülakatlı değerlendirme süreci işletilir." : "Başvuru mülakatsız değerlendirme akışına alınır."}
+                      </p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                    Bu proje icin ozel form tanimi bulunmuyor. Varsayilan basvuru akisi kullanilacak.
-                  </div>
-                )}
+                </div>
 
                 <button
                   type="button"
                   onClick={() => void handleApply(null)}
                   disabled={applying}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70"
+                  className="kdm-public-btn-shine kdm-public-btn-brand flex w-full items-center justify-center gap-2 rounded-full py-4 font-bold text-white shadow-[0_16px_36px_rgba(253,58,37,0.24)] transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-70"
                 >
                   {applying ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
                       <MessageSquareText className="h-5 w-5" />
-                      {needsApplicationModal ? "Basvuruyu Gonder" : "Hemen Basvur"}
+                      Hemen Başvur
                     </>
                   )}
                 </button>
+
+                {!isAuthenticated ? (
+                  <p className="text-center text-xs leading-relaxed text-[#71717a]">
+                    Üyelik zorunlu değildir; iletişim bilgilerinizi form açıldığında girebilirsiniz.
+                  </p>
+                ) : null}
               </div>
             ) : (
               <div className="w-full space-y-2">
-                <div className="rounded-xl border border-border bg-muted py-4 text-center font-semibold text-muted-foreground">
-                  Basvurular Kapali
+                <div className="rounded-xl border border-slate-200 bg-slate-100 py-4 text-center font-semibold text-[#71717a]">
+                  Başvurular Kapalı
                 </div>
                 {project.next_application_date ? (
-                  <p className="text-center text-xs text-amber-600 dark:text-amber-500">
-                    Bir sonraki basvuru tarihi:
+                  <p className="text-center text-xs text-amber-600 ">
+                    Bir sonraki başvuru tarihi:
                     <br />
-                    <strong className="text-amber-700 dark:text-amber-400">{formatDate(project.next_application_date)}</strong>
+                    <strong className="text-amber-700 ">{formatDate(project.next_application_date)}</strong>
                   </p>
                 ) : (
-                  <p className="text-center text-xs text-muted-foreground">Bir sonraki basvuru tarihi henuz belirtilmemis.</p>
+                  <p className="text-center text-xs text-[#71717a]">Bir sonraki başvuru tarihi henüz belirtilmemiş.</p>
                 )}
               </div>
             )}
-
-            {!isAuthenticated && project.is_application_open && !guestApplySuccess ? (
-              <p className="mt-4 text-center text-xs text-muted-foreground">
-                {needsApplicationModal
-                  ? "Popup icinde iletisim bilgilerinizi girebilirsiniz. Uyelik zorunlu degildir."
-                  : "Uyelik zorunlu degil; yukaridaki bilgilerle basvuru yapabilirsiniz."}
-              </p>
-            ) : null}
           </div>
         </div>
       </div>
 
       {showApplicationForm && needsApplicationModal ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <div className="glass-panel max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border/70 p-6 shadow-2xl md:p-8">
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                  <FileText className="h-4 w-4 text-primary" />
-                  Dinamik Basvuru Formu
-                </div>
-                {selectedProgramTitle ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Secilen program: <span className="font-semibold text-foreground">{selectedProgramTitle}</span>
+          <div className="max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-600">
+                    <FileText className="h-4 w-4" />
+                    Başvuru Formu
+                  </div>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-[#292c2e]">{project.name}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-[#71717a]">
+                    Bilgilerinizi kontrol ederek başvurunuzu güvenli şekilde gönderebilirsiniz.
                   </p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-[#71717a]">
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Dönem: {project.active_period?.name || "Belirsiz"}</span>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Akış: {project.has_interview ? "Mülakatlı" : "Mülakatsız"}</span>
+                    {selectedProgramTitle ? <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Program: {selectedProgramTitle}</span> : null}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowApplicationForm(false)}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#71717a] transition-all duration-300 hover:bg-slate-100 hover:text-[#292c2e]"
+                  aria-label="Başvuru formunu kapat"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[calc(92vh-220px)] overflow-y-auto px-6 py-6 md:px-8">
+              <div className="space-y-6">
+                {!isAuthenticated ? (
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-[#292c2e]">1. Başvuru Sahibi</p>
+                        <p className="mt-1 text-xs text-[#71717a]">Sizinle iletişim kurabilmemiz için temel bilgileri doldurun.</p>
+                      </div>
+                      <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-orange-600">Zorunlu</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a]">
+                        Ad
+                        <input
+                          value={guestApplicant.name}
+                          onChange={(event) => setGuestApplicant((current) => ({ ...current, name: event.target.value }))}
+                          placeholder="Adınızı yazın"
+                          autoComplete="given-name"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
+                        />
+                      </label>
+                      <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a]">
+                        Soyad
+                        <input
+                          value={guestApplicant.surname}
+                          onChange={(event) => setGuestApplicant((current) => ({ ...current, surname: event.target.value }))}
+                          placeholder="Soyadınızı yazın"
+                          autoComplete="family-name"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
+                        />
+                      </label>
+                      <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a] md:col-span-2">
+                        E-posta
+                        <input
+                          value={guestApplicant.email}
+                          onChange={(event) => setGuestApplicant((current) => ({ ...current, email: event.target.value }))}
+                          placeholder="ornek@e-posta.com"
+                          type="email"
+                          autoComplete="email"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
+                        />
+                      </label>
+                      <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a] md:col-span-2">
+                        Telefon
+                        <input
+                          value={guestApplicant.phone}
+                          onChange={(event) => setGuestApplicant((current) => ({ ...current, phone: event.target.value }))}
+                          placeholder="İsteğe bağlı"
+                          type="tel"
+                          autoComplete="tel"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
+                        />
+                      </label>
+                    </div>
+                  </section>
+                ) : null}
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="mb-4">
+                    <p className="text-sm font-bold text-[#292c2e]">{!isAuthenticated ? "2. Form Bilgileri" : "1. Form Bilgileri"}</p>
+                    <p className="mt-1 text-xs text-[#71717a]">
+                      {hasDynamicForm ? "Proje için tanımlanan soruları eksiksiz doldurun." : "Bu proje için özel soru tanımlanmamış; temel başvuru akışı kullanılacak."}
+                    </p>
+                  </div>
+                  {hasDynamicForm ? (
+                    <div className="space-y-5">
+                      {applicationForm?.fields.map((field) => {
+                        const fieldId = field.id ?? field.key;
+                        return (
+                          <div key={fieldId} className="space-y-2">
+                            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#71717a]">
+                              {field.label}
+                              {field.required ? <span className="text-red-500">*</span> : null}
+                            </label>
+                            {renderField(field)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-[#71717a]">
+                      Başvurunuzu göndermek için iletişim bilgileri ve varsa onay alanı yeterlidir.
+                    </div>
+                  )}
+                </section>
+
+                {applicationForm?.require_consent ? (
+                  <section className="rounded-2xl border border-orange-200 bg-orange-50/70 p-5">
+                    <p className="mb-3 text-sm font-bold text-[#292c2e]">Onay</p>
+                    <label className="flex items-start gap-3 text-sm leading-relaxed text-[#292c2e]">
+                      <input
+                        type="checkbox"
+                        checked={consentAccepted}
+                        onChange={(event) => setConsentAccepted(event.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-slate-200 text-orange-600"
+                      />
+                      <span>
+                        {applicationForm.consent_text ||
+                          "Başvuru koşullarını, uyarıları ve yaptırımları okudum; verdiğim bilgilerin doğru olduğunu kabul ediyorum."}
+                      </span>
+                    </label>
+                  </section>
                 ) : null}
               </div>
+
+              {errorMessage ? <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 ">{errorMessage}</div> : null}
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-slate-200 bg-white px-6 py-4 sm:flex-row md:px-8">
               <button
                 type="button"
                 onClick={() => setShowApplicationForm(false)}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all duration-300 hover:bg-muted hover:text-foreground"
-                aria-label="Basvuru formunu kapat"
+                className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-[#71717a] transition-all duration-300 hover:bg-slate-100"
               >
-                <X className="h-4 w-4" />
+                Vazgeç
               </button>
-            </div>
-
-            <div className="space-y-5">
-              {!isAuthenticated ? (
-                <div className="grid grid-cols-1 gap-3 rounded-2xl border border-border/70 bg-muted/40 p-4 md:grid-cols-2">
-                  <input
-                    value={guestApplicant.name}
-                    onChange={(event) => setGuestApplicant((current) => ({ ...current, name: event.target.value }))}
-                    placeholder="Ad"
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
-                  />
-                  <input
-                    value={guestApplicant.surname}
-                    onChange={(event) => setGuestApplicant((current) => ({ ...current, surname: event.target.value }))}
-                    placeholder="Soyad"
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
-                  />
-                  <input
-                    value={guestApplicant.email}
-                    onChange={(event) => setGuestApplicant((current) => ({ ...current, email: event.target.value }))}
-                    placeholder="E-posta"
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground md:col-span-2"
-                  />
-                  <input
-                    value={guestApplicant.phone}
-                    onChange={(event) => setGuestApplicant((current) => ({ ...current, phone: event.target.value }))}
-                    placeholder="Telefon (opsiyonel)"
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground md:col-span-2"
-                  />
-                </div>
-              ) : null}
-
-              {applicationForm?.fields.map((field) => {
-                const fieldId = field.id ?? field.key;
-                return (
-                  <div key={fieldId} className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      {field.label}
-                      {field.required ? <span className="text-red-400">*</span> : null}
-                    </label>
-                    {renderField(field)}
-                  </div>
-                );
-              })}
-
-              {applicationForm?.require_consent ? (
-                <label className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-foreground">
-                  <input
-                    type="checkbox"
-                    checked={consentAccepted}
-                    onChange={(event) => setConsentAccepted(event.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-border text-primary"
-                  />
-                  <span>
-                    {applicationForm.consent_text ||
-                      "Basvuru kosullarini, uyarilari ve yaptirimlari okudum; verdigim bilgilerin dogru oldugunu kabul ediyorum."}
-                  </span>
-                </label>
-              ) : null}
-            </div>
-
-            {errorMessage ? <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{errorMessage}</div> : null}
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
-                onClick={() => setShowApplicationForm(false)}
-                className="w-full rounded-xl border border-border bg-muted/60 py-3 text-sm font-bold text-muted-foreground transition-all duration-300 hover:bg-muted"
-              >
-                Vazgec
-              </button>
-              <button
                 onClick={() => void handleApply(selectedProgramId)}
                 disabled={applying}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 py-3 font-bold text-white shadow-md shadow-orange-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-600/30 disabled:opacity-70"
               >
-                {applying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Basvuruyu Gonder"}
+                {applying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Başvuruyu Gönder"}
               </button>
             </div>
           </div>
@@ -1332,11 +1414,39 @@ export default function ProjectDetailPage() {
             <X className="h-5 w-5" />
           </button>
           <div className="relative h-[min(85vh,800px)] w-full max-w-5xl cursor-default" onClick={(event) => event.stopPropagation()}>
-            <Image src={lightboxUrl} alt="Galeri buyutulmus" fill unoptimized className="object-contain" sizes="100vw" />
+            <Image src={lightboxUrl} alt="Galeri büyütülmüş" fill unoptimized className="object-contain" sizes="100vw" />
           </div>
         </div>
       ) : null}
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

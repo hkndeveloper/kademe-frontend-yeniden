@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useState } from "react";
-import { motion } from "framer-motion";
-import { KeyRound, Loader2 } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2 } from "lucide-react";
 import { isAxiosError } from "axios";
-import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { PublicButton, PublicCard, PublicGradientTitle, PublicIconBadge } from "@/components/public";
 import api, { getCsrfCookie } from "@/lib/api/axios";
 
 function ResetPasswordForm() {
@@ -26,7 +26,7 @@ function ResetPasswordForm() {
     setError("");
     setSuccess("");
     if (!token || !emailEffective.trim()) {
-      setError("Baglanti eksik veya gecersiz. E-postadaki linki kullanin.");
+      setError("Bağlantı eksik veya geçersiz. E-postadaki linki kullanın.");
       return;
     }
     setLoading(true);
@@ -38,116 +38,98 @@ function ResetPasswordForm() {
         password,
         password_confirmation: passwordConfirmation,
       });
-      setSuccess(res.data?.message ?? "Sifreniz guncellendi.");
+      setSuccess(res.data?.message ?? "Şifreniz güncellendi.");
       setTimeout(() => router.replace("/auth/login"), 2000);
     } catch (err) {
       if (isAxiosError(err)) {
-        setError((err.response?.data as { message?: string })?.message ?? "Sifre guncellenemedi.");
+        setError((err.response?.data as { message?: string })?.message ?? "Şifre güncellenemedi.");
       } else {
-        setError("Sifre guncellenemedi.");
+        setError("Şifre güncellenemedi.");
       }
     } finally {
       setLoading(false);
     }
   };
 
+  const inputClass = "h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-100";
+  const labelClass = "text-xs font-black uppercase tracking-[0.14em] text-slate-500";
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-xl"
-    >
-      <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-        <KeyRound className="h-7 w-7" />
-      </div>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Yeni sifre belirle</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Guclu bir sifre secin. Islem tamamlandiktan sonra giris yapabilirsiniz.
+    <PublicCard className="mx-auto w-full max-w-md p-7 sm:p-9">
+      <PublicIconBadge className="mb-6 bg-orange-600">
+        <KeyRound className="h-6 w-6" />
+      </PublicIconBadge>
+      <h1 className="text-3xl font-black tracking-tight text-slate-950">
+        <PublicGradientTitle>Yeni Şifre Belirle</PublicGradientTitle>
+      </h1>
+      <p className="mt-3 text-sm leading-7 text-slate-600">
+        Güçlü bir şifre seçin. İşlem tamamlandıktan sonra giriş yapabilirsiniz.
       </p>
 
       {success ? (
-        <div className="mt-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-800 dark:text-emerald-200">
+        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold leading-7 text-emerald-900">
           {success}
-          <p className="mt-2 text-xs">Giris sayfasina yonlendiriliyorsunuz...</p>
+          <p className="mt-2 text-xs">Giriş sayfasına yönlendiriliyorsunuz...</p>
         </div>
       ) : null}
-      {error ? (
-        <div className="mt-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
-      ) : null}
+      {error ? <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">{error}</div> : null}
 
       {!success ? (
         <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4">
-          <div>
-            <label className="ml-1 text-sm font-medium">E-posta</label>
+          <label className="block space-y-2">
+            <span className={labelClass}>E-posta</span>
             <input
+              name="email"
               type="email"
               required
               value={emailFromUrl || emailManual}
               onChange={(e) => {
-                if (!emailFromUrl) {
-                  setEmailManual(e.target.value);
-                }
+                if (!emailFromUrl) setEmailManual(e.target.value);
               }}
               readOnly={Boolean(emailFromUrl)}
-              className={`mt-1 w-full rounded-xl border border-border py-3 px-4 text-sm outline-none focus:ring-2 focus:ring-primary ${
-                emailFromUrl ? "cursor-not-allowed bg-muted/50 text-muted-foreground" : "bg-input"
-              }`}
+              className={`${inputClass} ${emailFromUrl ? "cursor-not-allowed bg-slate-50 text-slate-500" : ""}`}
             />
-          </div>
-          <div>
-            <label className="ml-1 text-sm font-medium">Yeni sifre</label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-border bg-input py-3 px-4 outline-none focus:ring-2 focus:ring-primary"
-              autoComplete="new-password"
-            />
-          </div>
-          <div>
-            <label className="ml-1 text-sm font-medium">Yeni sifre (tekrar)</label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={passwordConfirmation}
-              onChange={(e) => setPasswordConfirmation(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-border bg-input py-3 px-4 outline-none focus:ring-2 focus:ring-primary"
-              autoComplete="new-password"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60"
-          >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-            Sifreyi kaydet
-          </button>
+          </label>
+          <label className="block space-y-2">
+            <span className={labelClass}>Yeni Şifre</span>
+            <input name="password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} autoComplete="new-password" />
+          </label>
+          <label className="block space-y-2">
+            <span className={labelClass}>Yeni Şifre (Tekrar)</span>
+            <input name="password_confirmation" type="password" required minLength={8} value={passwordConfirmation} onChange={(e) => setPasswordConfirmation(e.target.value)} className={inputClass} autoComplete="new-password" />
+          </label>
+          <PublicButton type="submit" disabled={loading} variant="dark" className="w-full" icon={loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <KeyRound className="h-5 w-5" />} iconPosition="left">
+            Şifreyi Kaydet
+          </PublicButton>
         </form>
       ) : null}
 
-      <Link href="/auth/login" className="mt-6 inline-block text-sm text-primary hover:underline">
-        Girise don
-      </Link>
-    </motion.div>
+      <PublicButton href="/auth/login" variant="ghost" size="sm" className="mt-6" icon={<ArrowLeft className="h-4 w-4" />} iconPosition="left">
+        Girişe Dön
+      </PublicButton>
+    </PublicCard>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
-      <Suspense
-        fallback={
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin" /> Yukleniyor...
-          </div>
-        }
-      >
-        <ResetPasswordForm />
-      </Suspense>
-    </div>
+    <main className="kdm-public-shell relative min-h-screen overflow-hidden bg-[#edecec] pb-16">
+      <div className="absolute inset-x-4 bottom-8 top-4 overflow-hidden rounded-[2rem] bg-[#e7e7e4] sm:inset-x-6 lg:inset-x-10">
+        <Image src="/aigocy/images/section/hero-1.jpg" alt="" fill priority className="object-cover opacity-55" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.92),transparent_20rem),radial-gradient(circle_at_82%_18%,rgba(253,58,37,0.15),transparent_17rem),linear-gradient(180deg,rgba(255,255,255,0.4),rgba(231,231,228,0.9))]" />
+      </div>
+      <section className="container relative z-10 mx-auto flex min-h-screen items-center px-4 pb-10 pt-36 sm:px-6 sm:pt-40 lg:pt-44">
+        <Suspense
+          fallback={
+            <div className="mx-auto flex items-center gap-2 text-slate-500">
+              <Loader2 className="h-6 w-6 animate-spin" /> Yükleniyor...
+            </div>
+          }
+        >
+          <ResetPasswordForm />
+        </Suspense>
+      </section>
+    </main>
   );
 }
+

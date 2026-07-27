@@ -68,6 +68,10 @@ interface Program {
   title: string;
   description?: string | null;
   location?: string | null;
+  location_place_name?: string | null;
+  location_place_address?: string | null;
+  location_place_id?: string | null;
+  location_place_provider?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
   start_at: string;
@@ -210,6 +214,10 @@ interface ProgramFormState {
   title: string;
   description: string;
   location: string;
+  location_place_name: string;
+  location_place_address: string;
+  location_place_id: string;
+  location_place_provider: string;
   latitude: string;
   longitude: string;
   start_at: string;
@@ -230,6 +238,10 @@ const initialForm: ProgramFormState = {
   title: "",
   description: "",
   location: "",
+  location_place_name: "",
+  location_place_address: "",
+  location_place_id: "",
+  location_place_provider: "",
   latitude: "",
   longitude: "",
   start_at: "",
@@ -240,7 +252,7 @@ const initialForm: ProgramFormState = {
   feedback_form_template_id: "",
   target_audience: ["student"],
   status: "scheduled",
-  is_public: true,
+  is_public: false,
   is_featured: false,
 };
 
@@ -277,6 +289,54 @@ const statusConfig: Record<ProgramFormState["status"], { bg: string; text: strin
   cancelled: { bg: "bg-red-50 border-red-200", text: "text-red-700", dot: "bg-red-400" },
 };
 
+const ISTANBUL_TIME_ZONE = "Europe/Istanbul";
+
+const formatIstanbulDateTimeInput = (value?: string | null) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("tr-TR", {
+    timeZone: ISTANBUL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .formatToParts(date)
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+};
+
+const toIstanbulOffsetDateTime = (value: string) => {
+  if (!value) return value;
+  return `${value}${value.length === 16 ? ":00" : ""}+03:00`;
+};
+
+const formatIstanbulDateTimeDisplay = (value?: string | null) => {
+  if (!value) return "-";
+  return new Date(value).toLocaleString("tr-TR", {
+    timeZone: ISTANBUL_TIME_ZONE,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatIstanbulTimeDisplay = (value: Date) =>
+  value.toLocaleTimeString("tr-TR", {
+    timeZone: ISTANBUL_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 
 const isProgramAttendanceWindowOpen = (program: Program) => {
   const now = Date.now();
@@ -517,9 +577,9 @@ export default function PanelProgramsPage() {
         .filter((p) => (selectedPeriodId === "all" ? true : String(p.period?.id ?? "") === selectedPeriodId))
         .filter((p) => {
           const projectName = p.project?.name ?? projectNameMap[p.project_id] ?? "";
-          return `${p.title} ${projectName} ${p.location ?? ""}`.toLowerCase().includes(searchTerm.toLowerCase());
+          return `${p.title} ${projectName} ${p.location ?? ""} ${p.location_place_name ?? ""} ${p.location_place_address ?? ""}`.toLowerCase().includes(searchTerm.toLowerCase());
         })
-        .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()),
+        .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime()),
     [programs, projectNameMap, searchTerm, selectedPeriodId, selectedProjectId],
   );
 
@@ -658,17 +718,21 @@ export default function PanelProgramsPage() {
       title: fixMojibake(program.title),
       description: fixMojibake(program.description),
       location: fixMojibake(program.location),
+      location_place_name: fixMojibake(program.location_place_name),
+      location_place_address: fixMojibake(program.location_place_address),
+      location_place_id: program.location_place_id ?? "",
+      location_place_provider: program.location_place_provider ?? "",
       latitude: program.latitude != null ? String(program.latitude) : "",
       longitude: program.longitude != null ? String(program.longitude) : "",
-      start_at: program.start_at ? new Date(program.start_at).toISOString().slice(0, 16) : "",
-      end_at: program.end_at ? new Date(program.end_at).toISOString().slice(0, 16) : "",
+      start_at: formatIstanbulDateTimeInput(program.start_at),
+      end_at: formatIstanbulDateTimeInput(program.end_at),
       radius_meters: String(program.radius_meters ?? 100),
       credit_deduction: String(program.credit_deduction ?? 10),
       application_quota: program.application_quota != null ? String(program.application_quota) : "",
       feedback_form_template_id: program.feedback_form_template_id != null ? String(program.feedback_form_template_id) : "",
       target_audience: program.target_audience?.length ? program.target_audience : ["student"],
       status: (program.status as ProgramFormState["status"]) || "scheduled",
-      is_public: program.is_public !== false,
+      is_public: program.is_public === true,
       is_featured: program.is_featured === true,
     });
     setShowForm(true);
@@ -698,6 +762,10 @@ export default function PanelProgramsPage() {
       title: form.title,
       description: form.description || null,
       location: form.location || null,
+      location_place_name: form.location_place_name || null,
+      location_place_address: form.location_place_address || null,
+      location_place_id: form.location_place_id || null,
+      location_place_provider: form.location_place_provider || null,
       latitude: form.latitude ? Number(form.latitude) : null,
       longitude: form.longitude ? Number(form.longitude) : null,
       radius_meters: Number(form.radius_meters),
@@ -705,8 +773,8 @@ export default function PanelProgramsPage() {
       application_quota: form.application_quota ? Number(form.application_quota) : null,
       target_audience: form.target_audience,
       feedback_form_template_id: form.feedback_form_template_id ? Number(form.feedback_form_template_id) : null,
-      start_at: form.start_at,
-      end_at: form.end_at,
+      start_at: toIstanbulOffsetDateTime(form.start_at),
+      end_at: toIstanbulOffsetDateTime(form.end_at),
       status: form.status,
       is_public: form.is_public,
       is_featured: form.is_featured,
@@ -1047,7 +1115,7 @@ export default function PanelProgramsPage() {
                 <input
                   type="text"
                   value={form.location}
-                  onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
+                  onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value, location_place_name: "", location_place_address: "", location_place_id: "", location_place_provider: "" }))}
                   placeholder="Adres veya yer adi"
                   className={inputClass}
                 />
@@ -1181,7 +1249,7 @@ export default function PanelProgramsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, latitude: "", longitude: "" }))}
+                  onClick={() => setForm((prev) => ({ ...prev, latitude: "", longitude: "", location_place_name: "", location_place_address: "", location_place_id: "", location_place_provider: "" }))}
                   className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
                 >
                   Konumu temizle
@@ -1192,11 +1260,20 @@ export default function PanelProgramsPage() {
                 latitude={form.latitude}
                 longitude={form.longitude}
                 radiusMeters={form.radius_meters}
-                onChange={(coordinates) =>
+                placeName={form.location_place_name}
+                placeAddress={form.location_place_address}
+                placeId={form.location_place_id}
+                placeProvider={form.location_place_provider}
+                onChange={(selection) =>
                   setForm((prev) => ({
                     ...prev,
-                    latitude: formatCoordinate(coordinates.latitude),
-                    longitude: formatCoordinate(coordinates.longitude),
+                    location: selection.placeName || selection.placeAddress || prev.location,
+                    location_place_name: selection.placeName ?? "",
+                    location_place_address: selection.placeAddress ?? "",
+                    location_place_id: selection.placeId ?? "",
+                    location_place_provider: selection.placeProvider ?? "",
+                    latitude: formatCoordinate(selection.latitude),
+                    longitude: formatCoordinate(selection.longitude),
                   }))
                 }
               />
@@ -1571,9 +1648,9 @@ export default function PanelProgramsPage() {
                         <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                            {new Date(program.start_at).toLocaleString("tr-TR")}
+                            {formatIstanbulDateTimeDisplay(program.start_at)}
                             {program.end_at && (
-                              <span className="text-slate-400"> - {new Date(program.end_at).toLocaleString("tr-TR")}</span>
+                              <span className="text-slate-400"> - {formatIstanbulDateTimeDisplay(program.end_at)}</span>
                             )}
                           </span>
                           {program.location && (
@@ -1702,6 +1779,10 @@ export default function PanelProgramsPage() {
                         latitude={program.latitude}
                         longitude={program.longitude}
                         radiusMeters={program.radius_meters}
+                        placeName={program.location_place_name}
+                        placeAddress={program.location_place_address}
+                        placeId={program.location_place_id}
+                        placeProvider={program.location_place_provider}
                         heightClassName="h-48"
                       />
                     </div>
@@ -1721,7 +1802,7 @@ export default function PanelProgramsPage() {
                   <h2 className="text-lg font-black text-slate-900">Yoklama Detaylari</h2>
                   <p className="mt-0.5 text-xs text-slate-500">
                     {attendanceModalProgram.title}
-                    {attendanceUpdatedAt ? ` - Son guncelleme: ${attendanceUpdatedAt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : ""}
+                    {attendanceUpdatedAt ? ` - Son guncelleme: ${formatIstanbulTimeDisplay(attendanceUpdatedAt)}` : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1825,7 +1906,7 @@ export default function PanelProgramsPage() {
                             {record.feedback_submitted ? "Gonderdi" : record.is_valid ? "Bekliyor" : "Hak yok"}
                           </td>
                           <td className="px-5 py-3 text-xs text-slate-500">
-                            {record.recorded_at ? new Date(record.recorded_at).toLocaleString("tr-TR") : "-"}
+                            {record.recorded_at ? formatIstanbulDateTimeDisplay(record.recorded_at) : "-"}
                           </td>
                           {canManageAttendance && canAccessProject("programs.attendance.manage", attendanceModalProgram.project_id) && (
                             <td className="px-5 py-3 text-right">
@@ -2008,7 +2089,7 @@ export default function PanelProgramsPage() {
                             <MessageSquareText className="h-3.5 w-3.5 text-emerald-500" />
                             <span>{comment.program_title}</span>
                             <span>{comment.question}</span>
-                            {comment.submitted_at ? <span className="ml-auto">{new Date(comment.submitted_at).toLocaleString("tr-TR")}</span> : null}
+                            {comment.submitted_at ? <span className="ml-auto">{formatIstanbulDateTimeDisplay(comment.submitted_at)}</span> : null}
                           </div>
                           <p className="text-sm leading-relaxed text-slate-700">{comment.comment}</p>
                         </div>
@@ -2158,7 +2239,7 @@ export default function PanelProgramsPage() {
                             <span className="rounded-full bg-blue-50 px-2 py-0.5 font-bold text-blue-700">Anonim #{item.anonymous_report_id}</span>
                             <span>{item.question}</span>
                             {item.submitted_at && (
-                              <span className="ml-auto">{new Date(item.submitted_at).toLocaleString("tr-TR")}</span>
+                              <span className="ml-auto">{formatIstanbulDateTimeDisplay(item.submitted_at)}</span>
                             )}
                           </div>
                           <p className="text-sm leading-relaxed text-slate-700">{item.answer}</p>

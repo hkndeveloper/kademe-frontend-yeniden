@@ -50,6 +50,7 @@ interface FinancialTransaction {
   approver?: { id: number; name: string; surname: string };
   type: "expense" | "payment";
   category: string;
+  category_note?: string | null;
   spending_unit?: string | null;
   payee_name: string;
   amount: number;
@@ -129,6 +130,7 @@ export default function AdminFinancialsPage() {
   const [formProjectId, setFormProjectId] = useState("");
   const [formPeriodId, setFormPeriodId] = useState("");
   const [formCategory, setFormCategory] = useState("food");
+  const [formCategoryNote, setFormCategoryNote] = useState("");
   const [formSpendingUnit, setFormSpendingUnit] = useState("");
   const [formPayee, setFormPayee] = useState("");
   const [formAmount, setFormAmount] = useState("");
@@ -288,6 +290,7 @@ export default function AdminFinancialsPage() {
     setFormProjectId("");
     setFormPeriodId("");
     setFormCategory("food");
+    setFormCategoryNote("");
     setFormSpendingUnit("");
     setFormPayee("");
     setFormAmount("");
@@ -301,8 +304,8 @@ export default function AdminFinancialsPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!formProjectId || !formPayee.trim() || !formAmount || !formFile) {
-      setErrorMessage("Proje, kategori, alici, tutar ve belge zorunludur.");
+    if (!formProjectId || !formPayee.trim() || !formAmount || !formFile || (formCategory === "other" && !formCategoryNote.trim())) {
+      setErrorMessage(formCategory === "other" && !formCategoryNote.trim() ? "Diger kategori secildiginde not alani zorunludur." : "Proje, kategori, alici, tutar ve belge zorunludur.");
       return;
     }
 
@@ -324,6 +327,7 @@ export default function AdminFinancialsPage() {
       }
       formData.append("type", "expense");
       formData.append("category", formCategory);
+      if (formCategory === "other") formData.append("category_note", formCategoryNote.trim());
       if (formSpendingUnit.trim()) formData.append("spending_unit", formSpendingUnit.trim());
       formData.append("payee_name", formPayee.trim());
       formData.append("amount", formAmount);
@@ -760,6 +764,9 @@ export default function AdminFinancialsPage() {
                       <div className="text-xs">
                         {categoryLabels[transaction.category] || transaction.category}
                       </div>
+                      {transaction.category === "other" && transaction.category_note ? (
+                        <div className="mt-1 text-[10px] font-semibold text-slate-500">Not: {transaction.category_note}</div>
+                      ) : null}
                       {transaction.spending_unit ? (
                         <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                           Birim: {transaction.spending_unit}
@@ -960,6 +967,20 @@ export default function AdminFinancialsPage() {
                 ))}
               </select>
             </div>
+
+            {formCategory === "other" ? (
+              <div className="panel-field">
+                <label className="panel-label">Diger kategori notu</label>
+                <textarea
+                  value={formCategoryNote}
+                  onChange={(event) => setFormCategoryNote(event.target.value)}
+                  required
+                  rows={3}
+                  className="panel-control min-h-24"
+                  placeholder="Harcamanin kategorisini kisaca aciklayin"
+                />
+              </div>
+            ) : null}
 
             <div className="panel-field">
               <label className="panel-label">

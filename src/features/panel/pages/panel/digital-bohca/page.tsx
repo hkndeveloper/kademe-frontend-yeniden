@@ -55,6 +55,7 @@ export default function PanelDigitalBohcaPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackIsError, setFeedbackIsError] = useState(false);
   const [form, setForm] = useState({
     project_id: "",
     period_id: "",
@@ -63,7 +64,7 @@ export default function PanelDigitalBohcaPage() {
     category: "general",
     visible_to_student: true,
   });
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [projectFilter, setProjectFilter] = useState(() => {
     if (typeof window === "undefined") return "all";
     return new URLSearchParams(window.location.search).get("project_id") ?? "all";
@@ -129,12 +130,14 @@ export default function PanelDigitalBohcaPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!file) {
-      setFeedback("Lutfen yuklemek icin bir dosya secin.");
+    if (files.length === 0) {
+      setFeedbackIsError(true);
+      setFeedback("Lutfen yuklemek icin en az bir dosya secin.");
       return;
     }
     setSaving(true);
     setFeedback(null);
+    setFeedbackIsError(false);
     try {
       const formData = new FormData();
       if (form.project_id) formData.append("project_id", form.project_id);
@@ -143,18 +146,21 @@ export default function PanelDigitalBohcaPage() {
       formData.append("description", form.description);
       formData.append("category", form.category);
       formData.append("visible_to_student", form.visible_to_student ? "1" : "0");
-      formData.append("file", file);
-      const response = await api.post<{ message: string; material: Material }>("/panel/digital-bohca", formData, {
+      files.forEach((selectedFile) => formData.append("files[]", selectedFile));
+      const response = await api.post<{ message: string; material?: Material; materials?: Material[] }>("/panel/digital-bohca", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setMaterials((current) => [response.data.material, ...current]);
+      const uploadedMaterials = response.data.materials ?? (response.data.material ? [response.data.material] : []);
+      setMaterials((current) => [...uploadedMaterials, ...current]);
+      setFeedbackIsError(false);
       setFeedback(response.data.message);
       setForm({ project_id: "", period_id: "", title: "", description: "", category: "general", visible_to_student: true });
-      setFile(null);
+      setFiles([]);
     } catch (error) {
       const message = isAxiosError(error)
         ? String((error.response?.data as { message?: string })?.message ?? "Materyal yuklenemedi.")
         : "Materyal yuklenemedi.";
+      setFeedbackIsError(true);
       setFeedback(message);
     } finally {
       setSaving(false);
@@ -199,7 +205,7 @@ export default function PanelDigitalBohcaPage() {
         </PermissionGate>
       </div>
 
-      {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
+      {feedback ? <div className={`panel-notice ${feedbackIsError ? "panel-notice-error" : "panel-notice-success"}`}>{feedback}</div> : null}
 
       <PermissionGate permission="digital_bohca.create">
         <form onSubmit={handleSubmit} className="panel-section-card">
@@ -252,8 +258,8 @@ export default function PanelDigitalBohcaPage() {
             />
             <label className="panel-file-drop flex cursor-pointer items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-slate-700">
               <Upload className="h-4 w-4" />
-              {file ? file.name : "Dosya sec"}
-              <input name="bohca_file" type="file" className="hidden" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+              {files.length ? `${files.length} dosya secildi` : "Dosya sec"}
+              <input name="bohca_file" type="file" multiple className="hidden" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} />
             </label>
           </div>
           <textarea
