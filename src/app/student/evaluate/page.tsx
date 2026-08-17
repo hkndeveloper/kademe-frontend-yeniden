@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, CheckCircle2, Loader2, MessageSquare, Send } from "lucide-react";
+import Link from "next/link";
+import { Calendar, CheckCircle2, Loader2, MessageSquare, MessagesSquare, Send } from "lucide-react";
 import api from "@/lib/api/axios";
 import { formatIstanbulDateTime } from "@/lib/istanbul-time";
 
@@ -212,16 +213,19 @@ export default function EvaluatePage() {
                       <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                         {program.feedback_submitted ? "Gonderildi" : "Bekliyor"}
                       </span>
-                      {program.anonymous_feedback_id ? (
-                        <span className="text-[10px] text-muted-foreground">
-                          Anonim ID: {program.anonymous_feedback_id.slice(0, 8).toUpperCase()}
-                        </span>
-                      ) : null}
                       {program.feedback_deadline_at && !program.feedback_submitted ? (
                         <span className="text-[10px] text-muted-foreground">
                           Son tarih: {formatIstanbulDateTime(program.feedback_deadline_at)}
                         </span>
                       ) : null}
+                      <Link
+                        href="/student/forum"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary transition hover:bg-primary/20"
+                      >
+                        <MessagesSquare className="h-3 w-3" />
+                        Forum
+                      </Link>
                     </div>
                   </div>
                 </button>
