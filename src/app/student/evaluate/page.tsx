@@ -244,7 +244,6 @@ export default function EvaluatePage() {
             <div className="rounded-2xl border border-primary/20 bg-primary/10 p-6 text-sm text-muted-foreground">
               Bu oturum icin degerlendirme zaten gonderildi.
               {selectedProgram.submitted_at ? ` Gonderim zamani: ${formatIstanbulDateTime(selectedProgram.submitted_at)}` : ""}
-              {selectedProgram.anonymous_feedback_id ? ` Anonim takip ID: ${selectedProgram.anonymous_feedback_id.slice(0, 8).toUpperCase()}` : ""}
             </div>
           ) : selectedProgram.feedback_open === false ? (
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-6 text-sm font-medium text-amber-700">
