@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Download, FileStack, Loader2, Trash2, Upload } from "lucide-react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { Download, FileStack, Loader2, Pencil, Trash2, Upload, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
-import { withIstanbulOffset } from "@/lib/istanbul-time";
+import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 
 type Project = {
   id: number;
@@ -41,6 +41,7 @@ type Assignment = {
   description?: string | null;
   due_date?: string | null;
   project_id: number;
+  period_id: number;
   project?: Project | null;
   period?: { id: number; name: string } | null;
   submissions?: Submission[];
@@ -79,6 +80,7 @@ export default function PanelAssignmentsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
   const [form, setForm] = useState({
     project_id: "",
     period_id: "",
@@ -100,9 +102,14 @@ export default function PanelAssignmentsPage() {
     () => projects.filter((project) => project.active_period?.id && canAccessProject("assignments.create", project.id)),
     [projects, canAccessProject],
   );
-  const selectedProject = createProjects.find((project) => String(project.id) === form.project_id);
-  const selectedPeriodId = form.period_id || (selectedProject?.active_period?.id ? String(selectedProject.active_period.id) : "");
-
+  const updateProjects = useMemo(
+    () => projects.filter((project) => canAccessProject("assignments.update", project.id)),
+    [projects, canAccessProject],
+  );
+  const formProjects = editingAssignment ? updateProjects : createProjects;
+  const selectedProject = formProjects.find((project) => String(project.id) === form.project_id);
+  const selectedPeriodId = form.period_id || (!editingAssignment && selectedProject?.active_period?.id ? String(selectedProject.active_period.id) : "");
+  const editingHasSubmissions = Boolean((editingAssignment?.submissions_count ?? editingAssignment?.submissions?.length ?? 0) > 0);
   useEffect(() => {
     let isActive = true;
     const initialProjectId = new URLSearchParams(window.location.search).get("project_id");
@@ -145,7 +152,26 @@ export default function PanelAssignmentsPage() {
     setAssignments(response.data.assignments?.data ?? []);
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function resetForm() {
+    setEditingAssignment(null);
+    setForm({ project_id: "", period_id: "", title: "", description: "", due_date: "", attachments: [] });
+  }
+
+  function startEdit(assignment: Assignment) {
+    setEditingAssignment(assignment);
+    setForm({
+      project_id: String(assignment.project_id),
+      period_id: String(assignment.period_id ?? assignment.period?.id ?? ""),
+      title: assignment.title,
+      description: assignment.description ?? "",
+      due_date: toIstanbulDateTimeLocal(assignment.due_date),
+      attachments: [],
+    });
+    setFeedback(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedProject || !selectedPeriodId) return;
     setSaving(true);
@@ -158,17 +184,32 @@ export default function PanelAssignmentsPage() {
       if (form.description) formData.append("description", form.description);
       if (form.due_date) formData.append("due_date", withIstanbulOffset(form.due_date) ?? "");
       form.attachments.forEach((file) => formData.append("attachments[]", file));
+      if (editingAssignment) formData.append("_method", "PUT");
 
-      const response = await api.post<{ message: string; assignment: Assignment }>("/panel/assignments", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setAssignments((current) => [response.data.assignment, ...current]);
+      const response = editingAssignment
+        ? await api.post<{ message: string; assignment: Assignment }>(`/panel/assignments/${editingAssignment.id}`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+        : await api.post<{ message: string; assignment: Assignment }>("/panel/assignments", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+
+      setAssignments((current) =>
+        editingAssignment
+          ? current.map((item) => (item.id === editingAssignment.id ? response.data.assignment : item))
+          : [response.data.assignment, ...current],
+      );
       setFeedback(response.data.message);
-      setForm({ project_id: "", period_id: "", title: "", description: "", due_date: "", attachments: [] });
+      resetForm();
+    } catch (error) {
+      console.error("Odev kaydedilemedi", error);
+      const apiMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setFeedback(apiMessage ?? "Odev kaydedilemedi.");
     } finally {
       setSaving(false);
     }
   }
+
   async function handleDelete(assignment: Assignment) {
     await api.delete(`/panel/assignments/${assignment.id}`);
     setAssignments((current) => current.filter((item) => item.id !== assignment.id));
@@ -236,28 +277,44 @@ export default function PanelAssignmentsPage() {
 
       {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
 
-      <PermissionGate permission="assignments.create">
+      <PermissionGate permissions={["assignments.create", "assignments.update"]} require="any">
         <form onSubmit={handleSubmit} className="panel-section-card">
+          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">{editingAssignment ? "Odevi Duzenle" : "Yeni Odev"}</h2>
+              {editingAssignment && editingHasSubmissions ? (
+                <p className="mt-1 text-xs font-semibold text-amber-700">Teslimi olan odevlerde proje ve donem degistirilemez.</p>
+              ) : null}
+            </div>
+            {editingAssignment ? (
+              <button type="button" onClick={resetForm} className="panel-card-action">
+                <X className="h-4 w-4" />
+                Duzenlemeyi iptal et
+              </button>
+            ) : null}
+          </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_220px]">
             <select
               value={form.project_id}
               onChange={(event) => {
                 const projectId = event.target.value;
-                const project = createProjects.find((item) => String(item.id) === projectId);
-                setForm((current) => ({ ...current, project_id: projectId, period_id: defaultPeriodIdForProject(project) }));
+                const project = formProjects.find((item) => String(item.id) === projectId);
+                const nextPeriod = editingAssignment ? "" : defaultPeriodIdForProject(project);
+                setForm((current) => ({ ...current, project_id: projectId, period_id: nextPeriod }));
               }}
+              disabled={Boolean(editingAssignment && editingHasSubmissions)}
               required
               className="panel-control"
             >
               <option value="">Proje sec</option>
-              {createProjects.map((project) => (
+              {formProjects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
               ))}
             </select>
             <select
               value={form.period_id}
               onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))}
-              disabled={!form.project_id}
+              disabled={!form.project_id || Boolean(editingAssignment && editingHasSubmissions)}
               required
               className="panel-control"
             >
@@ -289,8 +346,9 @@ export default function PanelAssignmentsPage() {
           />
           <label className="panel-file-drop mt-4 flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-bold text-slate-700">
             <Upload className="h-4 w-4" />
-            {form.attachments.length ? `${form.attachments.length} dosya secildi` : "Odev dosyasi ekle"}
+            {form.attachments.length ? `${form.attachments.length} dosya secildi` : editingAssignment ? "Yeni odev dosyasi ekle" : "Odev dosyasi ekle"}
             <input
+              key={editingAssignment?.id ?? "new-assignment"}
               type="file"
               multiple
               className="hidden"
@@ -304,14 +362,18 @@ export default function PanelAssignmentsPage() {
               ))}
             </div>
           ) : null}
-          <div className="panel-modal-footer mt-4">
+          <div className="panel-modal-footer mt-4 gap-2">
+            {editingAssignment ? (
+              <button type="button" onClick={resetForm} className="panel-button panel-button-secondary h-11 px-6">
+                Vazgec
+              </button>
+            ) : null}
             <button disabled={saving || !selectedProject || !selectedPeriodId} className="panel-button panel-button-primary h-11 px-6">
-              {saving ? "Kaydediliyor..." : "Odev Olustur"}
+              {saving ? "Kaydediliyor..." : editingAssignment ? "Odevi Guncelle" : "Odev Olustur"}
             </button>
           </div>
         </form>
       </PermissionGate>
-
       <PermissionGate permission="assignments.view">
         <div className="panel-filter-card">
           <ProjectPeriodFilters
@@ -363,12 +425,20 @@ export default function PanelAssignmentsPage() {
                         </div>
                       ) : null}
                     </div>
-                    <PermissionGate permission="assignments.delete" requireProjectAccess={{ permission: "assignments.delete", projectId: assignment.project_id }}>
-                      <button onClick={() => void handleDelete(assignment)} className="panel-card-action panel-card-action-danger">
-                        <Trash2 className="h-4 w-4" />
-                        Sil
-                      </button>
-                    </PermissionGate>
+                    <div className="flex flex-wrap gap-2 md:justify-end">
+                      <PermissionGate permission="assignments.update" requireProjectAccess={{ permission: "assignments.update", projectId: assignment.project_id }}>
+                        <button type="button" onClick={() => startEdit(assignment)} className="panel-card-action panel-card-action-info">
+                          <Pencil className="h-4 w-4" />
+                          Duzenle
+                        </button>
+                      </PermissionGate>
+                      <PermissionGate permission="assignments.delete" requireProjectAccess={{ permission: "assignments.delete", projectId: assignment.project_id }}>
+                        <button type="button" onClick={() => void handleDelete(assignment)} className="panel-card-action panel-card-action-danger">
+                          <Trash2 className="h-4 w-4" />
+                          Sil
+                        </button>
+                      </PermissionGate>
+                    </div>
                   </div>
                   {assignment.submissions?.length ? (
                     <div className="mt-4 space-y-2">

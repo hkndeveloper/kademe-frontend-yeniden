@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { CheckCircle2, Download, FileText, GraduationCap, Loader2, Mail, Phone, Search, Star, Users, X, XCircle } from "lucide-react";
+import { CheckCircle2, Coins, Download, FileText, GraduationCap, History, Loader2, Mail, Phone, Save, Search, Star, Users, X, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -17,12 +17,21 @@ interface Project {
   active_period?: PeriodOption | null;
 }
 
+interface CreditLogItem {
+  id: number;
+  amount: number;
+  type?: string | null;
+  reason?: string | null;
+  created_at?: string | null;
+  created_by?: string | null;
+}
 interface ParticipantItem {
   id: number;
   status: string;
   graduation_status?: string | null;
   graduation_note?: string | null;
   credit?: number | null;
+  credit_logs?: CreditLogItem[];
   enrolled_at?: string | null;
   graduated_at?: string | null;
   project: {
@@ -181,6 +190,10 @@ export default function PanelParticipantsPage() {
   const [cvDownloadingId, setCvDownloadingId] = useState<number | null>(null);
   const [graduationLoadingId, setGraduationLoadingId] = useState<number | null>(null);
   const [visibilityLoadingId, setVisibilityLoadingId] = useState<number | null>(null);
+  const [creditParticipant, setCreditParticipant] = useState<ParticipantItem | null>(null);
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditReason, setCreditReason] = useState("");
+  const [creditSubmitting, setCreditSubmitting] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [message, setMessage] = useState("");
@@ -391,6 +404,105 @@ export default function PanelParticipantsPage() {
     }
   };
 
+  const openCreditModal = (participant: ParticipantItem) => {
+    if (!hasPermission("projects.participants.manage") || !canAccessProject("projects.participants.manage", participant.project.id)) {
+      setMessage("Kredi guncellemek icin katilimci yonetim yetkisi gerekir.");
+      return;
+    }
+
+    setCreditParticipant(participant);
+    setCreditAmount("");
+    setCreditReason("");
+    setMessage("");
+  };
+
+  const closeCreditModal = () => {
+    if (creditSubmitting) return;
+    setCreditParticipant(null);
+    setCreditAmount("");
+    setCreditReason("");
+  };
+
+  const creditAmountNumber = Number.parseInt(creditAmount, 10);
+  const creditPreview = creditParticipant && Number.isInteger(creditAmountNumber)
+    ? (creditParticipant.credit ?? 0) + creditAmountNumber
+    : null;
+
+  const adjustCredit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!creditParticipant) return;
+
+    if (!hasPermission("projects.participants.manage") || !canAccessProject("projects.participants.manage", creditParticipant.project.id)) {
+      setMessage("Kredi guncellemek icin katilimci yonetim yetkisi gerekir.");
+      return;
+    }
+
+    if (!Number.isInteger(creditAmountNumber) || creditAmountNumber === 0) {
+      setMessage("Kredi miktari sifirdan farkli bir tam sayi olmalidir.");
+      return;
+    }
+
+    const reason = creditReason.trim();
+    if (!reason) {
+      setMessage("Kredi guncelleme aciklamasi zorunludur.");
+      return;
+    }
+
+    setCreditSubmitting(true);
+    setMessage("");
+    try {
+      const response = await api.post<{
+        message?: string;
+        current_credit: number;
+        log?: {
+          id: number;
+          amount: number;
+          type?: string | null;
+          reason?: string | null;
+          created_at?: string | null;
+          creator?: { name?: string | null; surname?: string | null } | null;
+        };
+      }>("/admin/credits/adjust", {
+        participant_id: creditParticipant.id,
+        amount: creditAmountNumber,
+        reason,
+      });
+
+      const nextLog: CreditLogItem | null = response.data.log
+        ? {
+            id: response.data.log.id,
+            amount: response.data.log.amount,
+            type: response.data.log.type,
+            reason: response.data.log.reason,
+            created_at: response.data.log.created_at,
+            created_by: response.data.log.creator
+              ? `${response.data.log.creator.name ?? ""} ${response.data.log.creator.surname ?? ""}`.trim()
+              : null,
+          }
+        : null;
+
+      const updateCredit = (participant: ParticipantItem): ParticipantItem => ({
+        ...participant,
+        credit: response.data.current_credit,
+        credit_logs: nextLog
+          ? [nextLog, ...(participant.credit_logs ?? [])].slice(0, 5)
+          : participant.credit_logs ?? [],
+      });
+
+      setParticipants((current) => current.map((item) => (item.id === creditParticipant.id ? updateCredit(item) : item)));
+      setCreditParticipant((current) => (current ? updateCredit(current) : current));
+      setCreditAmount("");
+      setCreditReason("");
+      setMessage(response.data.message ?? "Kredi basariyla guncellendi.");
+      await refreshParticipants();
+    } catch (error) {
+      console.error("Kredi guncellenemedi", error);
+      const apiMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setMessage(apiMessage ?? "Kredi guncellenemedi.");
+    } finally {
+      setCreditSubmitting(false);
+    }
+  };
   const downloadCvPdf = async (participant: ParticipantItem) => {
     if (!participant.user.cv?.digital_cv_data) {
       setMessage("Kayitli CV verisi bulunamadi.");
@@ -689,6 +801,17 @@ export default function PanelParticipantsPage() {
                     Kredi
                   </div>
                   <div className="mt-1 text-2xl font-black text-slate-900">{participant.credit ?? 0}</div>
+                  {hasPermission("projects.participants.manage") && canAccessProject("projects.participants.manage", participant.project.id) ? (
+                    <button
+                      type="button"
+                      disabled={creditSubmitting && creditParticipant?.id === participant.id}
+                      onClick={() => openCreditModal(participant)}
+                      className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-amber-800 transition hover:border-amber-400 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {creditSubmitting && creditParticipant?.id === participant.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Coins className="h-3.5 w-3.5" />}
+                      Guncelle
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
@@ -830,6 +953,114 @@ export default function PanelParticipantsPage() {
           ))}
         </div>
       )}
+      {creditParticipant ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <form onSubmit={(event) => void adjustCredit(event)} className="panel-modal-card w-full max-w-2xl p-6">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <Coins className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">Kredi Guncelle</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {creditParticipant.user.name} {creditParticipant.user.surname} / {creditParticipant.project.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeCreditModal}
+                disabled={creditSubmitting}
+                className="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-slate-900 disabled:opacity-50"
+                aria-label="Kredi penceresini kapat"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Mevcut Kredi</div>
+                <div className="mt-2 text-3xl font-black text-slate-900">{creditParticipant.credit ?? 0}</div>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Islem Sonrasi</div>
+                <div className="mt-2 text-3xl font-black text-slate-900">{creditPreview ?? "-"}</div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-[180px,1fr]">
+              <label className="panel-field">
+                <span className="panel-label">Miktar</span>
+                <input
+                  type="number"
+                  step="1"
+                  value={creditAmount}
+                  onChange={(event) => setCreditAmount(event.target.value)}
+                  className="panel-control"
+                  placeholder="Orn: 10 veya -10"
+                  required
+                />
+              </label>
+              <label className="panel-field">
+                <span className="panel-label">Aciklama</span>
+                <input
+                  value={creditReason}
+                  onChange={(event) => setCreditReason(event.target.value)}
+                  className="panel-control"
+                  maxLength={255}
+                  placeholder="Aylik manuel kredi guncelleme nedeni"
+                  required
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-border bg-white p-4">
+              <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                <History className="h-4 w-4" />
+                Son Kredi Hareketleri
+              </div>
+              {creditParticipant.credit_logs?.length ? (
+                <div className="space-y-2">
+                  {creditParticipant.credit_logs.map((log) => (
+                    <div key={log.id} className="flex flex-col gap-1 rounded-xl bg-muted px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="font-bold text-slate-900">{log.reason || "Manuel guncelleme"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {log.created_at ? new Date(log.created_at).toLocaleString("tr-TR") : "-"}
+                          {log.created_by ? ` / ${log.created_by}` : ""}
+                        </div>
+                      </div>
+                      <div className={`text-sm font-black ${log.amount >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        {log.amount > 0 ? "+" : ""}{log.amount}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl bg-muted px-3 py-3 text-sm text-muted-foreground">
+                  Bu katilimci icin gosterilecek son manuel kredi hareketi yok.
+                </div>
+              )}
+            </div>
+
+            <div className="panel-modal-footer mt-6">
+              <button type="button" onClick={closeCreditModal} disabled={creditSubmitting} className="panel-button panel-button-secondary">
+                Vazgec
+              </button>
+              <button
+                type="submit"
+                disabled={creditSubmitting || !creditAmount.trim() || !creditReason.trim() || creditAmountNumber === 0}
+                className="panel-button panel-button-primary"
+              >
+                {creditSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Kaydet
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
       {cvParticipant ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="panel-modal-card w-full max-w-4xl p-6">
@@ -919,3 +1150,10 @@ export default function PanelParticipantsPage() {
     </PermissionGate>
   );
 }
+
+
+
+
+
+
+
