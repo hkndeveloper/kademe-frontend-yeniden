@@ -23,6 +23,7 @@ import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { formatIstanbulDate, formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
+import { panelStatusChipClass } from "@/lib/status-style";
 
 interface Project {
   id: number;
@@ -133,7 +134,7 @@ const statusOptions = [
 const quickActions: Array<{ label: string; status: ActionStatus; tone: string }> = [
   { label: "Kabul Et", status: "accepted", tone: "panel-card-action-success" },
   { label: "Yedege Al", status: "waitlisted", tone: "panel-card-action-info" },
-  { label: "Mulakat Planla", status: "interview_planned", tone: "panel-card-action-warning" },
+  { label: "Mulakat Planla", status: "interview_planned", tone: "panel-card-action-info" },
   { label: "Reddet", status: "rejected", tone: "panel-card-action-danger" },
 ];
 
@@ -518,7 +519,7 @@ export default function AdminApplicationsPage() {
                         {application.period?.name && (
                           <span className="panel-chip">{application.period.name}</span>
                         )}
-                        <span className="panel-chip">{statusLabel(application.status)}</span>
+                        <span className={`panel-chip ${panelStatusChipClass(application.status)}`}>{statusLabel(application.status)}</span>
                         {application.hasInterview ? (
                           <span className="panel-chip panel-chip-warning">Akis: Mulakatli</span>
                         ) : (

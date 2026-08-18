@@ -417,7 +417,7 @@ export default function AdminUsersPage() {
                             ? "bg-green-500/10 text-green-500"
                             : user.status === "passive"
                               ? "bg-red-500/10 text-red-500"
-                              : "bg-amber-500/10 text-amber-500"
+                              : "bg-blue-500/10 text-blue-700"
                         }`}
                       >
                         {user.status}

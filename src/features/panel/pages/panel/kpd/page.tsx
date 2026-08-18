@@ -9,6 +9,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import type { PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { downloadBlobResponse } from "@/lib/download";
 import { formatIstanbulDate, formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
+import { panelStatusChipClass } from "@/lib/status-style";
 
 type Paginated<T> = {
   data: T[];
@@ -85,6 +86,13 @@ const initialAppointmentForm = {
   start_at: "",
   end_at: "",
   notes: "",
+};
+
+const appointmentStatusLabels: Record<string, string> = {
+  scheduled: "Planlandı",
+  completed: "Tamamlandı",
+  cancelled: "İptal edildi",
+  no_show: "Katılmadı",
 };
 
 export default function PanelKpdPage() {
@@ -590,7 +598,9 @@ export default function PanelKpdPage() {
                           <div key={appointment.id} className="panel-card-muted">
                             <div className="flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-widest text-slate-500">
                               <span>{appointment.start_at ? formatIstanbulDateTime(appointment.start_at) : "Tarih yok"}</span>
-                              <span className="panel-chip">{appointment.status}</span>
+                              <span className={`panel-chip ${panelStatusChipClass(appointment.status)}`}>
+                                {appointmentStatusLabels[appointment.status] ?? appointment.status}
+                              </span>
                             </div>
                             <div className="mt-2 text-sm font-bold text-slate-900">
                               {appointment.counselee ? `${appointment.counselee.name} ${appointment.counselee.surname}` : "Danisan"}
@@ -631,8 +641,8 @@ export default function PanelKpdPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="panel-chip">
-                      {appointment.status}
+                    <span className={`panel-chip ${panelStatusChipClass(appointment.status)}`}>
+                      {appointmentStatusLabels[appointment.status] ?? appointment.status}
                     </span>
                     {canManageAppointments ? (
                       <select

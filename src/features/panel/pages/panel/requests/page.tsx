@@ -8,6 +8,7 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { useAuth } from "@/store/useAuth";
+import { panelStatusChipClass } from "@/lib/status-style";
 
 interface Project {
   id: number;
@@ -67,6 +68,13 @@ const targetUnitLabels: Record<string, string> = {
   finance: "Finans",
   official_affairs: "Resmi Evrak",
   general: "Genel",
+};
+
+const requestStatusLabels: Record<RequestItem["status"], string> = {
+  pending: "Bekliyor",
+  in_progress: "İşlemde",
+  completed: "Tamamlandı",
+  rejected: "Reddedildi",
 };
 
 export default function PanelSharedRequestsPage() {
@@ -427,7 +435,7 @@ export default function PanelSharedRequestsPage() {
                             <option value="rejected">Reddedildi</option>
                           </select>
                         ) : (
-                          <span className="panel-chip">{request.status}</span>
+                          <span className={`panel-chip ${panelStatusChipClass(request.status)}`}>{requestStatusLabels[request.status]}</span>
                         )}
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground">

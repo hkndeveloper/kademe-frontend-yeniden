@@ -175,7 +175,7 @@ export default function StudentAssignmentsPage() {
                   <div className="space-y-5 p-6 md:p-7">
                     <div className="flex flex-wrap items-start gap-3">
                       <h3 className="min-w-0 flex-1 text-xl font-black text-slate-900">{assignment.title}</h3>
-                      <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold uppercase ${submitted ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-600"}`}>
+                      <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold uppercase ${submitted ? "bg-green-500/10 text-green-600" : "bg-blue-500/10 text-blue-700"}`}>
                         {submitted ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
                         {submitted ? "Teslim Edildi" : "Bekliyor"}
                       </div>

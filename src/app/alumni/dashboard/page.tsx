@@ -248,7 +248,7 @@ export default function AlumniDashboardPage() {
               <div key={program.id} className="rounded-2xl border border-border bg-background/60 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="text-sm font-bold text-slate-900">{program.title}</h3>
-                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${program.feedback_submitted ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${program.feedback_submitted ? "bg-emerald-500/10 text-emerald-600" : "bg-blue-500/10 text-blue-700"}`}>
                     {program.feedback_submitted ? "Gonderildi" : "Bekliyor"}
                   </span>
                 </div>

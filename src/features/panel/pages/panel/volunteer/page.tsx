@@ -8,6 +8,7 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
+import { panelStatusActionClass, panelStatusChipClass } from "@/lib/status-style";
 
 type Project = {
   id: number;
@@ -80,17 +81,6 @@ const applicationStatusLabel: Record<VolunteerApplication["status"], string> = {
   waitlisted: "Beklemede / Yedek",
   rejected: "Olumsuz",
 };
-
-const statusChipClass: Record<string, string> = {
-  open: "panel-chip-success",
-  accepted: "panel-chip-success",
-  pending: "panel-chip-info",
-  waitlisted: "panel-chip-info",
-  closed: "panel-chip-warning",
-  archived: "panel-chip-muted",
-  rejected: "panel-chip-danger",
-};
-
 
 function formPayload(form: VolunteerForm) {
   return {
@@ -427,7 +417,7 @@ export default function PanelVolunteerPage() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-base font-bold text-slate-900">{opportunity.title}</span>
-                        <span className={`panel-chip ${statusChipClass[opportunity.status] ?? ""}`}>{opportunityStatusLabel[opportunity.status]}</span>
+                        <span className={`panel-chip ${panelStatusChipClass(opportunity.status)}`}>{opportunityStatusLabel[opportunity.status]}</span>
                       </div>
                       <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                         {opportunity.project?.name ?? "-"} {opportunity.period?.name ? `/ ${opportunity.period.name}` : ""} / {opportunity.applications_count ?? opportunity.applications?.length ?? 0} basvuru
@@ -458,14 +448,14 @@ export default function PanelVolunteerPage() {
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                               <span>{application.user?.email}</span>
-                              <span className={`panel-chip ${statusChipClass[application.status] ?? ""}`}>{applicationStatusLabel[application.status]}</span>
+                              <span className={`panel-chip ${panelStatusChipClass(application.status)}`}>{applicationStatusLabel[application.status]}</span>
                             </div>
                             {application.motivation_text ? <p className="mt-2 text-xs text-muted-foreground">{application.motivation_text}</p> : null}
                           </div>
                           <PermissionGate permission="volunteer.manage" requireProjectAccess={{ permission: "volunteer.manage", projectId: opportunity.project_id }}>
                             <div className="flex flex-wrap gap-2">
                               {(["accepted", "waitlisted", "rejected"] as const).map((status) => (
-                                <button key={status} onClick={() => void updateApplication(application, status)} className={`panel-card-action py-1 ${statusChipClass[status] ?? ""}`}>
+                                <button key={status} onClick={() => void updateApplication(application, status)} className={`panel-card-action py-1 ${panelStatusActionClass(status)}`}>
                                   <UserCheck className="h-3 w-3" />
                                   {applicationStatusLabel[status]}
                                 </button>

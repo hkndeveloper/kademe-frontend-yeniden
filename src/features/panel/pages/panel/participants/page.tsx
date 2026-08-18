@@ -9,6 +9,7 @@ import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
+import { panelStatusChipClass } from "@/lib/status-style";
 
 interface Project {
   id: number;
@@ -781,7 +782,7 @@ export default function PanelParticipantsPage() {
                       <h3 className="text-lg font-bold text-slate-900">
                         {participant.user.name} {participant.user.surname}
                       </h3>
-                      <span className={`panel-chip ${participant.status === "active" ? "panel-chip-success" : ""}`}>
+                      <span className={`panel-chip ${panelStatusChipClass(participant.status)}`}>
                         {participant.status}
                       </span>
                       {participant.graduation_status ? (

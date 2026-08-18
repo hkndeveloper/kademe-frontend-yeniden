@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { CheckCircle2, HeartHandshake, Loader2, MapPin, Send, Users } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
+import { VolunteerTextAreaField } from "@/components/shared/VolunteerTextAreaField";
+import { statusBadgeClass } from "@/lib/status-style";
 
 interface VolunteerOpportunity {
   id: number;
@@ -59,17 +61,10 @@ const applicationStatusLabel: Record<string, string> = {
   rejected: "Olumsuz",
 };
 
-const applicationStatusClass: Record<string, string> = {
-  pending: "bg-blue-500/10 text-blue-700",
-  accepted: "bg-green-500/10 text-green-700",
-  waitlisted: "bg-blue-500/10 text-blue-700",
-  rejected: "bg-red-500/10 text-red-700",
-};
-
 function applicationStatus(status: string) {
   return {
     label: applicationStatusLabel[status] ?? status,
-    className: applicationStatusClass[status] ?? "bg-slate-100 text-slate-600",
+    className: statusBadgeClass(status),
   };
 }
 
@@ -227,42 +222,44 @@ export default function AlumniVolunteerPage() {
             <h2 className="mb-4 text-xl font-bold text-slate-900">Basvuru Formu</h2>
             {selectedOpportunity ? (
               selectedOpportunity.my_application ? (
-                <div className="rounded-2xl bg-green-500/10 p-5 text-sm text-green-300">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
                   <div className="mb-3 flex items-center gap-2 font-bold">
                     <CheckCircle2 className="h-4 w-4" />
                     Bu ilan icin daha once basvuru yaptiniz.
                   </div>
-                  <p>Durum: {applicationStatus(selectedOpportunity.my_application.status).label}</p>
-                  <p className="mt-2 text-green-200/80">
+                  <p className="flex flex-wrap items-center gap-2">
+                    <span>Durum:</span>
+                    <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${applicationStatus(selectedOpportunity.my_application.status).className}`}>
+                      {applicationStatus(selectedOpportunity.my_application.status).label}
+                    </span>
+                  </p>
+                  <p className="mt-2 text-slate-500">
                     Basvuru tarihi: {new Date(selectedOpportunity.my_application.created_at).toLocaleString("tr-TR")}
                   </p>
                 </div>
               ) : (
                 <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
-                  <div>
-                    <label className="mb-2 flex items-center justify-between gap-3 text-sm font-bold text-muted-foreground"><span>Motivasyon Metni *</span><span className="text-xs">{motivationText.length}/{MOTIVATION_MAX}</span></label>
-                    <textarea
-                      value={motivationText}
-                      onChange={(event) => setMotivationText(event.target.value)}
-                      rows={6}
-                      minLength={20}
-                      maxLength={MOTIVATION_MAX}
-                      placeholder="Bu gonulluluk ilanina neden katilmak istediginizi detayli yazin."
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 flex items-center justify-between gap-3 text-sm font-bold text-muted-foreground"><span>Ek Notlar</span><span className="text-xs">{notes.length}/{NOTES_MAX}</span></label>
-                    <textarea
-                      value={notes}
-                      onChange={(event) => setNotes(event.target.value)}
-                      rows={3}
-                      maxLength={NOTES_MAX}
-                      placeholder="Uygunluk, deneyim veya ek aciklamalarinizi yazabilirsiniz."
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
+                  <VolunteerTextAreaField
+                    id="alumni-volunteer-motivation"
+                    label="Motivasyon metni"
+                    value={motivationText}
+                    onChange={(event) => setMotivationText(event.target.value)}
+                    rows={6}
+                    minLength={20}
+                    maxLength={MOTIVATION_MAX}
+                    required
+                    helperText="Başvuruyu gönderebilmek için en az 20 karakter yazmalısınız."
+                    placeholder="Bu gönüllülük ilanına neden katılmak istediğinizi detaylı yazın."
+                  />
+                  <VolunteerTextAreaField
+                    id="alumni-volunteer-notes"
+                    label="Ek notlar"
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    rows={3}
+                    maxLength={NOTES_MAX}
+                    placeholder="Uygunluk, deneyim veya ek açıklamalarınızı yazabilirsiniz."
+                  />
                   <button
                     type="submit"
                     disabled={submitting || motivationText.trim().length < 20}
@@ -293,7 +290,7 @@ export default function AlumniVolunteerPage() {
                   <div key={application.id} className="rounded-2xl bg-white/5 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <h4 className="text-sm font-bold text-slate-900">{application.opportunity?.title || "Gonulluluk ilani"}</h4>
-                      <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${applicationStatus(application.status).className}`}>
+                      <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${applicationStatus(application.status).className}`}>
                         {applicationStatus(application.status).label}
                       </span>
                     </div>

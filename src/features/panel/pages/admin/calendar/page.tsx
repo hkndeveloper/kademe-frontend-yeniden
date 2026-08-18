@@ -135,7 +135,7 @@ const initialForm = {
 const statusStyles: Record<string, { label: string; dot: string; chip: string; text: string }> = {
   scheduled: { label: "Planlandi", dot: "bg-sky-500", chip: "bg-sky-50 border-sky-200", text: "text-sky-700" },
   active: { label: "Aktif", dot: "bg-emerald-500", chip: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
-  completed: { label: "Tamamlandi", dot: "bg-slate-400", chip: "bg-slate-100 border-slate-200", text: "text-slate-600" },
+  completed: { label: "Tamamlandi", dot: "bg-emerald-500", chip: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
   cancelled: { label: "Iptal", dot: "bg-red-400", chip: "bg-red-50 border-red-200", text: "text-red-700" },
 };
 
@@ -1345,6 +1345,5 @@ export default function AdminCalendarPage() {
     </PermissionGate>
   );
 }
-
 
 

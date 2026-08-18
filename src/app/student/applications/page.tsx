@@ -36,11 +36,11 @@ interface Application {
 type StatusIcon = typeof Clock;
 
 const statusConfig: Record<string, { label: string; color: string; icon: StatusIcon }> = {
-  pending: { label: "Beklemede", color: "bg-yellow-500/10 text-yellow-500", icon: Clock },
+  pending: { label: "Beklemede", color: "border border-blue-200 bg-blue-50 text-blue-700", icon: Clock },
   accepted: { label: "Kabul Edildi", color: "bg-green-500/10 text-green-500", icon: CheckCircle2 },
   rejected: { label: "Reddedildi", color: "bg-red-500/10 text-red-500", icon: XCircle },
-  waitlisted: { label: "Yedek Listede", color: "bg-blue-500/10 text-blue-500", icon: AlertCircle },
-  interview_planned: { label: "Mulakat Planlandi", color: "bg-purple-500/10 text-purple-500", icon: UserCheck },
+  waitlisted: { label: "Yedek Listede", color: "border border-blue-200 bg-blue-50 text-blue-700", icon: AlertCircle },
+  interview_planned: { label: "Mulakat Planlandi", color: "border border-blue-200 bg-blue-50 text-blue-700", icon: UserCheck },
   interview_passed: { label: "Mulakat Gecildi", color: "bg-emerald-500/10 text-emerald-500", icon: CheckCircle2 },
   interview_failed: { label: "Mulakat Olumsuz", color: "bg-rose-500/10 text-rose-500", icon: XCircle },
 };

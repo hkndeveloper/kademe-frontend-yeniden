@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, ShieldAlert } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { panelStatusChipClass } from "@/lib/status-style";
 
 type ForgetStatus = "pending" | "completed" | "rejected";
 
@@ -143,7 +144,7 @@ export default function PanelKvkkForgetPage() {
                     <div className="text-sm font-bold text-slate-900">
                       #{item.id} - {item.user.name} {item.user.surname}
                     </div>
-                    <span className="panel-chip">
+                    <span className={`panel-chip ${panelStatusChipClass(item.status)}`}>
                       {statusLabel[item.status]}
                     </span>
                   </div>

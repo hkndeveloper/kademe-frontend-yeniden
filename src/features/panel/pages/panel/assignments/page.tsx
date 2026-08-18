@@ -62,13 +62,13 @@ const submissionStatusLabel: Record<Submission["status"], string> = {
 
 const submissionStatusChipClass: Record<Submission["status"], string> = {
   submitted: "panel-chip-info",
-  reviewed: "panel-chip-warning",
+  reviewed: "panel-chip-info",
   approved: "panel-chip-success",
   rejected: "panel-chip-danger",
 };
 
 const submissionReviewActions: Array<{ status: Submission["status"]; label: string; className: string }> = [
-  { status: "reviewed", label: "Incelendi", className: "panel-card-action-warning" },
+  { status: "reviewed", label: "Incelendi", className: "panel-card-action-info" },
   { status: "approved", label: "Onayla", className: "panel-card-action-success" },
   { status: "rejected", label: "Reddet", className: "panel-card-action-danger" },
 ];

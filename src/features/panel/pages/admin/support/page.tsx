@@ -79,10 +79,10 @@ const statusLabels: Record<Ticket["status"], string> = {
 };
 
 const statusClasses: Record<Ticket["status"], string> = {
-  open: "panel-chip-warning",
+  open: "panel-chip-info",
   in_progress: "panel-chip-info",
   resolved: "panel-chip-success",
-  closed: "",
+  closed: "panel-chip-danger",
 };
 
 export default function AdminSupportPage() {

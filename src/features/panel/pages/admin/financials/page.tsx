@@ -90,8 +90,8 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusClasses: Record<string, string> = {
-  pending: "text-amber-700 bg-amber-50 ring-1 ring-amber-200",
-  approved: "text-blue-700 bg-blue-50 ring-1 ring-blue-200",
+  pending: "text-blue-700 bg-blue-50 ring-1 ring-blue-200",
+  approved: "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200",
   rejected: "text-red-700 bg-red-50 ring-1 ring-red-200",
   paid: "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200",
 };

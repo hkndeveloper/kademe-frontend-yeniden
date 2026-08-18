@@ -82,9 +82,9 @@ const attendanceLabels: Record<Program["attendance_status"], string> = {
 
 const attendanceStyles: Record<Program["attendance_status"], string> = {
   present: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700",
-  invalid: "border-amber-500/20 bg-amber-500/10 text-amber-700",
+  invalid: "border-red-500/20 bg-red-500/10 text-red-700",
   absent: "border-red-500/20 bg-red-500/10 text-red-700",
-  pending: "border-slate-300 bg-slate-100 text-slate-600",
+  pending: "border-blue-500/20 bg-blue-500/10 text-blue-700",
 };
 
 const ISTANBUL_TIME_ZONE = "Europe/Istanbul";
@@ -346,5 +346,4 @@ function EmptyState({ text }: { text: string }) {
     </div>
   );
 }
-
 

@@ -108,10 +108,10 @@ function moduleEnrollmentLabel(status?: string | null): string {
 
 function moduleEnrollmentClass(status?: string | null): string {
   const classes: Record<string, string> = {
-    pending: "border-amber-300 bg-amber-50 text-amber-800",
+    pending: "border-blue-300 bg-blue-50 text-blue-800",
     approved: "border-emerald-300 bg-emerald-50 text-emerald-800",
     rejected: "border-rose-300 bg-rose-50 text-rose-800",
-    revoked: "border-slate-300 bg-slate-100 text-slate-500",
+    revoked: "border-red-300 bg-red-50 text-red-800",
   };
   return status && classes[status] ? classes[status] : "border-slate-200 bg-slate-50 text-slate-600";
 }

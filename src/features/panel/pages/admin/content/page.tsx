@@ -927,7 +927,7 @@ export default function AdminContentPage() {
                           </span>
                           <span
                             className={`rounded-full px-2 py-0.5 ring-1 ${
-                              blog.status === "published" ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : "bg-amber-50 text-amber-900 ring-amber-200"
+                              blog.status === "published" ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : "bg-blue-50 text-blue-800 ring-blue-200"
                             }`}
                           >
                             {blog.status}

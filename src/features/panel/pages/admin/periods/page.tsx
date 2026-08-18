@@ -7,6 +7,7 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
+import { panelStatusChipClass } from "@/lib/status-style";
 
 interface Project {
   id: number;
@@ -410,7 +411,7 @@ export default function AdminPeriodsPage() {
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span className={`panel-chip ${period.status === "active" ? "panel-chip-success" : period.status === "completed" ? "panel-chip-info" : ""}`}>
+                        <span className={`panel-chip ${panelStatusChipClass(period.status)}`}>
                           {period.status}
                         </span>
                         <span className="panel-chip">

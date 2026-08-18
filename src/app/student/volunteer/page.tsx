@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { AlertCircle, HeartHandshake, Loader2, Send } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
-import { formatIstanbulDateTime } from "@/lib/istanbul-time";
+import { VolunteerTextAreaField } from "@/components/shared/VolunteerTextAreaField";
+import { statusBadgeClass } from "@/lib/status-style";
 
 interface Project {
   id: number;
@@ -207,7 +208,7 @@ export default function StudentVolunteerPage() {
                         </div>
                       </div>
                       {opportunity.my_application ? (
-                        <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+                        <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${statusBadgeClass(opportunity.my_application.status)}`}>
                           {getStatusLabel(opportunity.my_application.status)}
                         </span>
                       ) : null}
@@ -244,8 +245,11 @@ export default function StudentVolunteerPage() {
                 {selectedOpportunity.my_application ? (
                   <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
                     <div className="text-sm font-semibold text-slate-900">Bu ilana zaten basvurdun.</div>
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      Durum: {getStatusLabel(selectedOpportunity.my_application.status)}
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                      <span>Durum:</span>
+                      <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${statusBadgeClass(selectedOpportunity.my_application.status)}`}>
+                        {getStatusLabel(selectedOpportunity.my_application.status)}
+                      </span>
                     </div>
                     {selectedOpportunity.my_application.evaluation_note ? (
                       <div className="mt-2 text-sm text-muted-foreground">
@@ -255,31 +259,28 @@ export default function StudentVolunteerPage() {
                   </div>
                 ) : (
                   <form className="space-y-4" onSubmit={handleApply}>
-                    <label className="block space-y-2">
-                      <span className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-900"><span>Neden bu gonulluluk ilanina basvuruyorsun? *</span><span className="text-xs text-muted-foreground">{motivationText.length}/{MOTIVATION_MAX}</span></span>
-                      <textarea
-                        value={motivationText}
-                        onChange={(event) => setMotivationText(event.target.value)}
-                        rows={6}
-                        minLength={20}
-                        maxLength={MOTIVATION_MAX}
-                        required
-                        placeholder="Motivasyonunu, bu calismaya nasil katki verecegini ve neden uygun oldugunu yaz."
-                        className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      />
-                    </label>
+                    <VolunteerTextAreaField
+                      id="student-volunteer-motivation"
+                      label="Neden bu gönüllülük ilanına başvuruyorsun?"
+                      value={motivationText}
+                      onChange={(event) => setMotivationText(event.target.value)}
+                      rows={6}
+                      minLength={20}
+                      maxLength={MOTIVATION_MAX}
+                      required
+                      helperText="Başvuruyu gönderebilmek için en az 20 karakter yazmalısın."
+                      placeholder="Motivasyonunu, bu çalışmaya nasıl katkı vereceğini ve neden uygun olduğunu yaz."
+                    />
 
-                    <label className="block space-y-2">
-                      <span className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-900"><span>Ek not</span><span className="text-xs text-muted-foreground">{notes.length}/{NOTES_MAX}</span></span>
-                      <textarea
-                        value={notes}
-                        onChange={(event) => setNotes(event.target.value)}
-                        rows={3}
-                        maxLength={NOTES_MAX}
-                        placeholder="Varsa eklemek istedigin detaylari yaz."
-                        className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      />
-                    </label>
+                    <VolunteerTextAreaField
+                      id="student-volunteer-notes"
+                      label="Ek not"
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value)}
+                      rows={3}
+                      maxLength={NOTES_MAX}
+                      placeholder="Varsa eklemek istediğin detayları yaz."
+                    />
 
                     <button
                       type="submit"

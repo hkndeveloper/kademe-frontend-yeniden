@@ -210,7 +210,11 @@ export default function EvaluatePage() {
                       </div>
                     </div>
                     <div className="flex flex-col items-start gap-2 md:items-end">
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                        program.feedback_submitted
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : "border-blue-200 bg-blue-50 text-blue-700"
+                      }`}>
                         {program.feedback_submitted ? "Gonderildi" : "Bekliyor"}
                       </span>
                       {program.feedback_deadline_at && !program.feedback_submitted ? (

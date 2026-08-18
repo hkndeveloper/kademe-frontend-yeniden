@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Database, Download, Loader2, Trash2, Upload } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Database, Download, File, Loader2, Trash2, Upload, X } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
@@ -48,8 +48,39 @@ type Paginated<T> = {
   data: T[];
 };
 
+type UploadErrorPayload = {
+  message?: string;
+  errors?: Record<string, string[]>;
+};
+
+function uploadErrorMessage(error: unknown): string {
+  if (!isAxiosError<UploadErrorPayload>(error)) {
+    return "Dosyalar yüklenemedi. Lütfen tekrar deneyin.";
+  }
+
+  if (!error.response) {
+    return "Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.";
+  }
+
+  if (error.response.status === 413) {
+    return "Seçilen dosyalardan biri sunucunun izin verdiği yükleme boyutunu aşıyor.";
+  }
+
+  if (error.response.status === 403) {
+    return "Bu materyalleri yüklemek için yetkiniz bulunmuyor.";
+  }
+
+  if (error.response.status === 422) {
+    const validationMessage = Object.values(error.response.data?.errors ?? {}).flat().find(Boolean);
+    return validationMessage ?? "Yükleme bilgileri geçersiz. Alanları ve dosya boyutlarını kontrol edin.";
+  }
+
+  return "Dosyalar yüklenirken bir hata oluştu. Lütfen tekrar deneyin.";
+}
+
 export default function PanelDigitalBohcaPage() {
   const { canAccessProject, hasGlobalScope } = usePermissions();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +163,7 @@ export default function PanelDigitalBohcaPage() {
     event.preventDefault();
     if (files.length === 0) {
       setFeedbackIsError(true);
-      setFeedback("Lutfen yuklemek icin en az bir dosya secin.");
+      setFeedback("Lütfen yüklemek için en az bir dosya seçin.");
       return;
     }
     setSaving(true);
@@ -156,12 +187,10 @@ export default function PanelDigitalBohcaPage() {
       setFeedback(response.data.message);
       setForm({ project_id: "", period_id: "", title: "", description: "", category: "general", visible_to_student: true });
       setFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
-      const message = isAxiosError(error)
-        ? String((error.response?.data as { message?: string })?.message ?? "Materyal yuklenemedi.")
-        : "Materyal yuklenemedi.";
       setFeedbackIsError(true);
-      setFeedback(message);
+      setFeedback(uploadErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -205,7 +234,15 @@ export default function PanelDigitalBohcaPage() {
         </PermissionGate>
       </div>
 
-      {feedback ? <div className={`panel-notice ${feedbackIsError ? "panel-notice-error" : "panel-notice-success"}`}>{feedback}</div> : null}
+      {feedback ? (
+        <div
+          className={`panel-notice ${feedbackIsError ? "panel-notice-error" : "panel-notice-success"}`}
+          role={feedbackIsError ? "alert" : "status"}
+          aria-live={feedbackIsError ? "assertive" : "polite"}
+        >
+          {feedback}
+        </div>
+      ) : null}
 
       <PermissionGate permission="digital_bohca.create">
         <form onSubmit={handleSubmit} className="panel-section-card">
@@ -258,10 +295,54 @@ export default function PanelDigitalBohcaPage() {
             />
             <label className="panel-file-drop flex cursor-pointer items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-slate-700">
               <Upload className="h-4 w-4" />
-              {files.length ? `${files.length} dosya secildi` : "Dosya sec"}
-              <input name="bohca_file" type="file" multiple className="hidden" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} />
+              {files.length ? `${files.length} dosya seçildi` : "Dosyaları seç"}
+              <input
+                ref={fileInputRef}
+                name="bohca_files"
+                type="file"
+                multiple
+                className="hidden"
+                aria-describedby="bohca-file-help"
+                onChange={(event) => {
+                  const selectedFiles = Array.from(event.target.files ?? []);
+                  setFiles((current) => {
+                    const mergedFiles = [...current, ...selectedFiles];
+                    return mergedFiles.filter(
+                      (file, index) =>
+                        mergedFiles.findIndex(
+                          (candidate) =>
+                            candidate.name === file.name &&
+                            candidate.size === file.size &&
+                            candidate.lastModified === file.lastModified,
+                        ) === index,
+                    );
+                  });
+                  event.target.value = "";
+                }}
+              />
             </label>
           </div>
+          <p id="bohca-file-help" className="mt-3 text-xs text-slate-500">
+            Birden fazla dosyayı aynı anda veya art arda seçebilirsiniz. Tüm dosya türleri kabul edilir; her dosya en fazla 20 MB olabilir.
+          </p>
+          {files.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2" aria-label="Yüklenecek dosyalar">
+              {files.map((file) => (
+                <span key={`${file.name}-${file.size}-${file.lastModified}`} className="panel-chip max-w-full normal-case tracking-normal">
+                  <File className="h-3.5 w-3.5 shrink-0" />
+                  <span className="max-w-56 truncate">{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setFiles((current) => current.filter((candidate) => candidate !== file))}
+                    className="ml-1 rounded-full p-0.5 transition hover:bg-red-100 hover:text-red-700"
+                    aria-label={`${file.name} dosyasını kaldır`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
           <textarea
             value={form.description}
             onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}

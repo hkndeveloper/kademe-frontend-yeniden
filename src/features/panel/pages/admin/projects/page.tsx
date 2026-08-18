@@ -18,6 +18,7 @@ import {
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { panelStatusChipClass } from "@/lib/status-style";
 
 interface ActivePeriod {
   id: number;
@@ -187,9 +188,7 @@ export default function AdminProjectsPage() {
                   </div>
                 </div>
                 <span
-                  className={`panel-chip shrink-0 ${
-                    project.status === "active" ? "panel-chip-success" : ""
-                  }`}
+                  className={`panel-chip shrink-0 ${panelStatusChipClass(project.status)}`}
                 >
                   {project.status === "active" ? "Aktif" : project.status}
                 </span>

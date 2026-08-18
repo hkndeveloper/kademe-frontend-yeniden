@@ -191,10 +191,10 @@ const eurodeskStatusMeta: Record<string, { label: string; className: string }> =
   applied: { label: "Basvuruldu", className: "border-sky-200 bg-sky-50 text-sky-700" },
   approved: { label: "Onaylandi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   rejected: { label: "Reddedildi", className: "border-red-200 bg-red-50 text-red-700" },
-  completed: { label: "Tamamlandi", className: "border-violet-200 bg-violet-50 text-violet-700" },
+  completed: { label: "Tamamlandi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
 };
 const rewardStatusMeta: Record<string, { label: string; className: string }> = {
-  planned: { label: "Planlandi", className: "border-amber-200 bg-amber-50 text-amber-700" },
+  planned: { label: "Planlandi", className: "border-blue-200 bg-blue-50 text-blue-700" },
   given: { label: "Verildi", className: "border-sky-200 bg-sky-50 text-sky-700" },
   delivered: { label: "Teslim edildi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   cancelled: { label: "Iptal", className: "border-red-200 bg-red-50 text-red-700" },

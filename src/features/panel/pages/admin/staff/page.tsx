@@ -699,7 +699,7 @@ export default function AdminStaffPage() {
                           <span
                             className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
                               leave.status === "pending"
-                                ? "bg-amber-500/10 text-amber-500"
+                                ? "bg-blue-500/10 text-blue-700"
                                 : leave.status === "approved"
                                   ? "bg-green-500/10 text-green-500"
                                   : "bg-red-500/10 text-red-500"
