@@ -235,6 +235,13 @@ export function canAccessPanelPath(
       Number(projectSpecialModules[1])
     );
   }
+  const programDetail = normalized.match(/^\/panel\/programs\/(\d+)$/);
+  if (programDetail) {
+    // URL'deki kimlik program kimligidir; proje kapsami bu katmanda guvenilir
+    // bicimde cikarilamaz. Kesin programs.view + project scope kontrolu detay
+    // API'sinde programin project_id degeri uzerinden yapilir.
+    return hasPermission("programs.view");
+  }
   const programQr = normalized.match(/^\/panel\/programs\/(\d+)\/qr$/);
   if (programQr) {
     return hasPermission("programs.qr.manage");

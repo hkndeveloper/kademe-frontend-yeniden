@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import Image from "next/image";
 import Link from "next/link";
 import {
+  ArrowRight,
   BarChart3,
   Calendar,
   CheckCircle2,
@@ -374,14 +375,6 @@ const audienceLabels: Record<"student" | "alumni", string> = {
 
 const formatCoordinate = (value: number) => value.toFixed(8);
 
-const hasProgramCoordinates = (program: Program) =>
-  program.latitude !== null &&
-  program.latitude !== undefined &&
-  program.latitude !== "" &&
-  program.longitude !== null &&
-  program.longitude !== undefined &&
-  program.longitude !== "";
-
 export default function PanelProgramsPage() {
   const { hasPermission, canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -432,13 +425,15 @@ export default function PanelProgramsPage() {
   const [photoCaption, setPhotoCaption] = useState("");
   const [visibilityTogglingId, setVisibilityTogglingId] = useState<number | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const handledDeepLinkRef = useRef<string | null>(null);
 
   const canViewAttendanceStats = hasPermission("programs.attendance.view");
   const canManageAttendance = hasPermission("programs.attendance.manage");
   const canUpdatePrograms = hasPermission("programs.update");
   const canCompletePrograms = hasPermission("programs.complete");
   const canManageQr = hasPermission("programs.qr.manage");
-  const canManageMedia = hasPermission("programs.media.upload") || hasPermission("programs.update");
+  const canViewMedia = hasPermission("programs.view");
+  const canManageMedia = hasPermission("programs.media.upload");
   const canManageTemplates = hasPermission("programs.create") || hasPermission("programs.update");
 
   const normalizeProjectsPayload = useCallback((payload: ProjectsPayload | undefined): Project[] => {
@@ -952,6 +947,49 @@ export default function PanelProgramsPage() {
       setFeedbackSummaryLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (loading || programs.length === 0 || typeof window === "undefined") return;
+
+    const query = new URLSearchParams(window.location.search);
+    const actionEntries = [
+      ["edit_id", "edit"],
+      ["attendance_id", "attendance"],
+      ["gallery_id", "gallery"],
+      ["feedback_id", "feedback"],
+    ] as const;
+    const requested = actionEntries.find(([param]) => query.has(param));
+    if (!requested) return;
+
+    const [param, action] = requested;
+    const requestedId = Number(query.get(param));
+    const program = programs.find((item) => item.id === requestedId);
+    const deepLinkKey = `${action}:${requestedId}`;
+    if (!program || handledDeepLinkRef.current === deepLinkKey) return;
+
+    const actionAllowed =
+      (action === "edit" && canUpdatePrograms && canAccessProject("programs.update", program.project_id)) ||
+      (action === "attendance" && canViewAttendanceStats && canAccessProject("programs.attendance.view", program.project_id)) ||
+      (action === "gallery" && canViewMedia && canAccessProject("programs.view", program.project_id)) ||
+      (action === "feedback" && normalizeStatus(program.status) === "completed" && canAccessProject("programs.view", program.project_id));
+
+    handledDeepLinkRef.current = deepLinkKey;
+    query.delete(param);
+    window.history.replaceState(null, "", `${window.location.pathname}${query.size ? `?${query.toString()}` : ""}`);
+
+    const timer = window.setTimeout(() => {
+      if (!actionAllowed) {
+        setErrorMessage("Bu program işlemi için gerekli yetkiniz veya proje kapsamınız bulunmuyor.");
+        return;
+      }
+      if (action === "edit") openEditForm(program);
+      if (action === "attendance") void openAttendanceModal(program);
+      if (action === "gallery") void openGalleryModal(program);
+      if (action === "feedback") void openFeedbackModal(program);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [canAccessProject, canUpdatePrograms, canViewAttendanceStats, canViewMedia, loading, programs]);
 
   return (
     <PermissionGate
@@ -1583,7 +1621,7 @@ export default function PanelProgramsPage() {
             <p className="text-sm text-slate-500">Secili filtrelerde program bulunamadi.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {filteredPrograms.map((program, index) => {
               const programStatus = normalizeStatus(program.status);
               const cfg = statusConfig[programStatus];
@@ -1593,94 +1631,83 @@ export default function PanelProgramsPage() {
               const canShowQrStatus = canManageQr && (programStatus === "scheduled" || programStatus === "active") && canAccessProject("programs.qr.manage", program.project_id);
 
               return (
-                <motion.div
+                <motion.article
                   key={program.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.035 }}
-                  className="panel-list-card"
+                  className="panel-list-card flex h-full flex-col overflow-hidden p-0 md:p-0"
                 >
-                  <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                    {/* Sol: meta */}
-                    <div className="flex min-w-0 gap-4">
-                      <div
-                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${cfg.bg}`}
-                      >
-                        <Calendar className={`h-5 w-5 ${cfg.text}`} />
+                  <Link href={`/panel/programs/${program.id}`} className="group flex flex-1 flex-col px-5 pb-4 pt-5 md:px-5">
+                    <div className="flex items-start gap-3">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${cfg.bg}`}>
+                        <Calendar className={`h-4.5 w-4.5 ${cfg.text}`} />
                       </div>
-                      <div className="min-w-0 space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-lg font-bold text-slate-900">{fixMojibake(program.title)}</h3>
-                          <span className="panel-chip panel-chip-info">
-                            {fixMojibake(program.project?.name ?? projectNameMap[program.project_id] ?? `Proje #${program.project_id}`)}
-                          </span>
-                          {(program.target_audience?.length ? program.target_audience : (["student"] as Array<"student" | "alumni">)).map((audience) => (
-                            <span
-                              key={audience}
-                              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                                audience === "alumni"
-                                  ? "bg-amber-50 text-amber-700"
-                                  : "bg-emerald-50 text-emerald-700"
-                              }`}
-                            >
-                              {audienceLabels[audience]}
-                            </span>
-                          ))}
-                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
-                            {statusLabels[programStatus]}
-                          </span>
-                          {program.is_public === false ? (
-                            <span className="panel-chip">
-                              <EyeOff className="h-3 w-3" />Gizli
-                            </span>
-                          ) : (
-                            <span className="panel-chip panel-chip-success">
-                              <Eye className="h-3 w-3" />Herkese acik
-                            </span>
-                          )}
-                          {program.is_featured && (
-                            <span className="panel-chip panel-chip-warning">
-                              <Sparkles className="h-3 w-3" />One cikan
-                            </span>
-                          )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="line-clamp-2 text-base font-black leading-6 text-slate-900 transition group-hover:text-accent">
+                            {fixMojibake(program.title)}
+                          </h3>
+                          <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-accent" />
                         </div>
-                        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                            {formatIstanbulDateTimeDisplay(program.start_at)}
-                            {program.end_at && (
-                              <span className="text-slate-400"> - {formatIstanbulDateTimeDisplay(program.end_at)}</span>
-                            )}
-                          </span>
-                          {program.location && (
-                            <span className="flex items-center gap-1.5">
-                              <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                              {fixMojibake(program.location)}
-                            </span>
-                          )}
-                          {program.period?.name && (
-                            <span className="font-medium text-slate-600">{fixMojibake(program.period.name)}</span>
-                          )}
-                          {canViewAttendanceStats && (
-                            <>
-                              <span>Yoklama: <strong className="text-slate-700">{program.attendance_count ?? 0}</strong></span>
-                              <span>Degerlendirme: <strong className="text-slate-700">{program.feedback_count ?? 0}</strong></span>
-                            </>
-                          )}
-                          {program.application_quota != null && (
-                            <span>Kontenjan: <strong className="text-slate-700">{program.application_quota}</strong></span>
-                          )}
-                        </div>
+                        <p className="mt-1 truncate text-xs font-bold text-indigo-700">
+                          {fixMojibake(program.project?.name ?? projectNameMap[program.project_id] ?? `Proje #${program.project_id}`)}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Panel bolumu */}
-                    <div className="flex shrink-0 flex-wrap gap-2 xl:justify-end">
+                    <div className="mt-4 flex flex-wrap gap-1.5">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />{statusLabels[programStatus]}
+                      </span>
+                      {program.is_public === false ? (
+                        <span className="panel-chip px-2.5"><EyeOff className="h-3 w-3" />Gizli</span>
+                      ) : (
+                        <span className="panel-chip panel-chip-success px-2.5"><Eye className="h-3 w-3" />Yayında</span>
+                      )}
+                      {program.is_featured ? <span className="panel-chip panel-chip-warning px-2.5"><Sparkles className="h-3 w-3" />Öne çıkan</span> : null}
+                    </div>
+
+                    <p className="mt-4 line-clamp-2 min-h-10 text-xs leading-5 text-slate-600">
+                      {fixMojibake(program.description) || "Program açıklaması girilmemiş."}
+                    </p>
+
+                    <div className="mt-4 space-y-2 text-xs text-slate-500">
+                      <div className="flex items-start gap-2">
+                        <Calendar className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <span className="line-clamp-2">{formatIstanbulDateTimeDisplay(program.start_at)}{program.end_at ? ` – ${formatIstanbulDateTimeDisplay(program.end_at)}` : ""}</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <span className="line-clamp-1">{fixMojibake(program.location_place_name ?? program.location) || "Konum belirtilmemiş"}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                      {program.period?.name ? <span className="panel-chip px-2.5">{fixMojibake(program.period.name)}</span> : null}
+                      {(program.target_audience?.length ? program.target_audience : (["student"] as Array<"student" | "alumni">)).map((audience) => (
+                        <span key={audience} className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${audience === "alumni" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+                          {audienceLabels[audience]}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="mt-auto grid grid-cols-3 gap-2 pt-5 text-center">
+                      <div className="rounded-xl bg-slate-50 px-2 py-2"><p className="text-sm font-black text-slate-800">{program.application_quota ?? "∞"}</p><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Kontenjan</p></div>
+                      {canViewAttendanceStats && canAccessProject("programs.attendance.view", program.project_id) ? (
+                        <>
+                          <div className="rounded-xl bg-emerald-50 px-2 py-2"><p className="text-sm font-black text-emerald-700">{program.attendance_count ?? 0}</p><p className="text-[9px] font-bold uppercase tracking-wider text-emerald-600/70">Yoklama</p></div>
+                          <div className="rounded-xl bg-indigo-50 px-2 py-2"><p className="text-sm font-black text-indigo-700">{program.feedback_count ?? 0}</p><p className="text-[9px] font-bold uppercase tracking-wider text-indigo-600/70">Görüş</p></div>
+                        </>
+                      ) : <div className="col-span-2 flex items-center justify-center rounded-xl bg-orange-50 px-2 py-2 text-[10px] font-bold text-orange-700">Detayı görüntüle</div>}
+                    </div>
+                  </Link>
+
+                  <div className="grid grid-cols-2 gap-2 border-t border-slate-100 bg-slate-50/70 p-3">
                       {canViewAttendanceStats && canAccessProject("programs.attendance.view", program.project_id) && (
                         <button
                           onClick={() => void openAttendanceModal(program)}
-                          className="panel-card-action"
+                          className="panel-card-action w-full px-2.5"
                         >
                           <SquareCheckBig className="h-3.5 w-3.5" />
                           Yoklama
@@ -1689,16 +1716,16 @@ export default function PanelProgramsPage() {
                       {programStatus === "completed" && canAccessProject("programs.view", program.project_id) && (
                         <button
                           onClick={() => void openFeedbackModal(program)}
-                          className="panel-card-action panel-card-action-info"
+                          className="panel-card-action panel-card-action-info w-full px-2.5"
                         >
                           <BarChart3 className="h-3.5 w-3.5" />
                           Degerlendirme
                         </button>
                       )}
-                      {canManageMedia && canAccessProject("programs.update", program.project_id) && (
+                      {canViewMedia && canAccessProject("programs.view", program.project_id) && (
                         <button
                           onClick={() => void openGalleryModal(program)}
-                          className="panel-card-action"
+                          className="panel-card-action w-full px-2.5"
                         >
                           <ImageIcon className="h-3.5 w-3.5" />
                           Galeri
@@ -1709,7 +1736,7 @@ export default function PanelProgramsPage() {
                           type="button"
                           disabled={visibilityTogglingId === program.id}
                           onClick={() => void handleToggleVisibility(program, "is_public")}
-                          className={`panel-card-action ${
+                          className={`panel-card-action w-full px-2.5 ${
                             program.is_public !== false
                               ? ""
                               : "panel-card-action-success"
@@ -1728,7 +1755,7 @@ export default function PanelProgramsPage() {
                       {canUpdatePrograms && canAccessProject("programs.update", program.project_id) && (
                         <button
                           onClick={() => openEditForm(program)}
-                          className="panel-card-action"
+                          className="panel-card-action w-full px-2.5"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                           Duzenle
@@ -1737,7 +1764,7 @@ export default function PanelProgramsPage() {
                       {canCompletePrograms && canCompleteThisProgram && canAccessProject("programs.complete", program.project_id) && (
                         <button
                           onClick={() => void handleComplete(program.id)}
-                          className="panel-card-action panel-card-action-success"
+                          className="panel-card-action panel-card-action-success w-full px-2.5"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Tamamla
@@ -1746,7 +1773,7 @@ export default function PanelProgramsPage() {
                       {canShowQrStatus && canStartQrForProgram && (
                         <Link
                           href={`/panel/programs/${program.id}/qr?title=${encodeURIComponent(fixMojibake(program.title))}`}
-                          className="panel-card-action panel-card-action-primary"
+                          className="panel-card-action panel-card-action-primary w-full px-2.5"
                         >
                           <Play className="h-3.5 w-3.5 fill-current" />
                           QR Yoklama
@@ -1757,37 +1784,14 @@ export default function PanelProgramsPage() {
                           type="button"
                           disabled
                           title="QR yoklama sadece program saat araliginda baslatilabilir."
-                          className="panel-card-action cursor-not-allowed bg-slate-100 text-slate-500"
+                          className="panel-card-action w-full cursor-not-allowed bg-slate-100 px-2.5 text-slate-500"
                         >
                           <Clock className="h-3.5 w-3.5" />
                           QR Saat Disi
                         </button>
                       )}
-                    </div>
                   </div>
-
-                  {hasProgramCoordinates(program) ? (
-                    <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-700">
-                          <MapPin className="h-3.5 w-3.5 text-accent" />
-                          Harita onizlemesi
-                        </span>
-                        <span>Yoklama yaricapi: {program.radius_meters ?? 100} m</span>
-                      </div>
-                      <ProgramLocationMap
-                        latitude={program.latitude}
-                        longitude={program.longitude}
-                        radiusMeters={program.radius_meters}
-                        placeName={program.location_place_name}
-                        placeAddress={program.location_place_address}
-                        placeId={program.location_place_id}
-                        placeProvider={program.location_place_provider}
-                        heightClassName="h-48"
-                      />
-                    </div>
-                  ) : null}
-                </motion.div>
+                </motion.article>
               );
             })}
           </div>
@@ -1815,7 +1819,13 @@ export default function PanelProgramsPage() {
                     {attendanceLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                     Yenile
                   </button>
-                  <PermissionGate permission="programs.attendance.export">
+                  <PermissionGate
+                    permission="programs.attendance.export"
+                    requireProjectAccess={{
+                      permission: "programs.attendance.export",
+                      projectId: attendanceModalProgram.project_id,
+                    }}
+                  >
                     <ExportButtons
                       endpoint={`/panel/programs/${attendanceModalProgram.id}/attendances/export`}
                       filename={`program_${attendanceModalProgram.id}_yoklama`}
@@ -2266,19 +2276,21 @@ export default function PanelProgramsPage() {
                   <p className="mt-0.5 text-xs text-slate-500">{galleryModalProgram.title}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={visibilityTogglingId === galleryModalProgram.id}
-                    onClick={() => void handleToggleVisibility(galleryModalProgram, "is_featured")}
-                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition ${
-                      galleryModalProgram.is_featured
-                        ? "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    {galleryModalProgram.is_featured ? "Öne çıkan (kaldır)" : "Öne çıkanlara ekle"}
-                  </button>
+                  {canUpdatePrograms && canAccessProject("programs.update", galleryModalProgram.project_id) ? (
+                    <button
+                      type="button"
+                      disabled={visibilityTogglingId === galleryModalProgram.id}
+                      onClick={() => void handleToggleVisibility(galleryModalProgram, "is_featured")}
+                      className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition ${
+                        galleryModalProgram.is_featured
+                          ? "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      {galleryModalProgram.is_featured ? "Öne çıkan (kaldır)" : "Öne çıkanlara ekle"}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => setGalleryModalProgram(null)}
@@ -2296,7 +2308,9 @@ export default function PanelProgramsPage() {
                   </div>
                 ) : galleryPhotos.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center text-sm text-slate-400">
-                    Henuz fotograf eklenmemis. Asagidan bir fotograf yukleyin.
+                    {canManageMedia && canAccessProject("programs.media.upload", galleryModalProgram.project_id)
+                      ? "Henüz fotoğraf eklenmemiş. Aşağıdan bir fotoğraf yükleyin."
+                      : "Henüz fotoğraf eklenmemiş."}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -2323,22 +2337,25 @@ export default function PanelProgramsPage() {
                           <p className="min-w-0 flex-1 text-xs font-medium text-slate-600 line-clamp-2">
                             {photo.caption || "Aciklama yok"}
                           </p>
-                          <button
-                            type="button"
-                            disabled={photoDeletingId === photo.id}
-                            onClick={() => void handleDeletePhoto(photo.id)}
-                            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
-                            title="Fotografi sil"
-                          >
-                            {photoDeletingId === photo.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                            Sil
-                          </button>
+                          {canManageMedia && canAccessProject("programs.media.upload", galleryModalProgram.project_id) ? (
+                            <button
+                              type="button"
+                              disabled={photoDeletingId === photo.id}
+                              onClick={() => void handleDeletePhoto(photo.id)}
+                              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                              title="Fotoğrafı sil"
+                            >
+                              {photoDeletingId === photo.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                              Sil
+                            </button>
+                          ) : null}
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
 
+                {canManageMedia && canAccessProject("programs.media.upload", galleryModalProgram.project_id) ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
                   <h3 className="mb-4 text-sm font-semibold text-slate-800">Yeni fotograf ekle</h3>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -2382,6 +2399,7 @@ export default function PanelProgramsPage() {
                   </div>
                   <p className="mt-2 text-xs text-slate-400">JPEG, PNG veya WEBP. Birden fazla dosya secebilirsiniz; sunucu PHP limitleri (upload_max_filesize / post_max_size) gecerli olur.</p>
                 </div>
+                ) : null}
               </div>
             </div>
           </div>

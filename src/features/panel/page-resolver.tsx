@@ -10,6 +10,7 @@ import AdminLogsPage from "@/features/panel/pages/admin/logs/page";
 import AdminCertificatesPage from "@/features/panel/pages/admin/certificates/page";
 import PanelProgramsPage from "@/features/panel/pages/panel/programs/page";
 import PanelParticipantsPage from "@/features/panel/pages/panel/participants/page";
+import PanelProgramDetailPage from "@/features/panel/pages/panel/programs/[id]/page";
 import PanelProgramQrPage from "@/features/panel/pages/panel/programs/[id]/qr/page";
 import PanelMyProjectPage from "@/features/panel/pages/panel/my-project/page";
 import PanelMembersPage from "@/features/panel/pages/panel/members/page";
@@ -92,6 +93,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   "projects/[id]": PanelUnifiedProjectDetailPage,
   "projects/[id]/content": PanelUnifiedProjectContentPage,
   "projects/[id]/special-modules": PanelProjectSpecialModulesPage,
+  "programs/[id]": PanelProgramDetailPage,
   "programs/[id]/qr": PanelProgramQrPage,
 };
 
