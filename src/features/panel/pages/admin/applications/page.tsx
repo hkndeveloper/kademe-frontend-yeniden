@@ -20,7 +20,7 @@ import {
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { formatIstanbulDate, formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
 import { panelStatusChipClass } from "@/lib/status-style";
@@ -41,6 +41,7 @@ interface Application {
     phone?: string | null;
   };
   period?: {
+    id: number;
     name: string;
   } | null;
   projectId: number;
@@ -83,6 +84,7 @@ interface ApplicationApiItem {
     phone?: string | null;
   };
   period?: {
+    id: number;
     name: string;
   } | null;
   status: string;
@@ -494,7 +496,10 @@ export default function AdminApplicationsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {applications.map((application, index) => (
+          {applications.map((application, index) => {
+            const applicationPeriod = periodOptionById(projects, application.period?.id);
+            const canResolveApplication = periodHasWriteCapability(applicationPeriod, "resolve_operations");
+            return (
             <motion.div
               key={application.id}
               initial={{ opacity: 0, y: 10 }}
@@ -585,8 +590,9 @@ export default function AdminApplicationsPage() {
                           key={action.status}
                           type="button"
                           onClick={() => void handleStatusChange(application.id, action.status)}
-                          disabled={actionLoading === application.id || (action.status === "interview_planned" && !interviewPlanAt[application.id])}
-                          className={`panel-card-action ${action.tone}`}
+                          disabled={!canResolveApplication || actionLoading === application.id || (action.status === "interview_planned" && !interviewPlanAt[application.id])}
+                          title={!canResolveApplication ? "Bu dönemde başvuru sonuçlandırma işlemi kapalıdır." : undefined}
+                          className={`panel-card-action ${action.tone} disabled:cursor-not-allowed disabled:opacity-40`}
                         >
                           {actionLoading === application.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -602,8 +608,9 @@ export default function AdminApplicationsPage() {
                           <button
                             type="button"
                             onClick={() => void handleStatusChange(application.id, "interview_passed")}
-                            disabled={actionLoading === application.id}
-                            className="panel-card-action panel-card-action-success"
+                            disabled={!canResolveApplication || actionLoading === application.id}
+                            title={!canResolveApplication ? "Bu dönemde başvuru sonuçlandırma işlemi kapalıdır." : undefined}
+                            className="panel-card-action panel-card-action-success disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             {actionLoading === application.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -616,8 +623,9 @@ export default function AdminApplicationsPage() {
                           <button
                             type="button"
                             onClick={() => void handleStatusChange(application.id, "interview_failed")}
-                            disabled={actionLoading === application.id}
-                            className="panel-card-action panel-card-action-danger"
+                            disabled={!canResolveApplication || actionLoading === application.id}
+                            title={!canResolveApplication ? "Bu dönemde başvuru sonuçlandırma işlemi kapalıdır." : undefined}
+                            className="panel-card-action panel-card-action-danger disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             {actionLoading === application.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -688,7 +696,8 @@ export default function AdminApplicationsPage() {
                 </div>
               ) : null}
             </motion.div>
-          ))}
+            );
+          })}
 
           <div className="panel-pagination">
             <div className="font-bold">

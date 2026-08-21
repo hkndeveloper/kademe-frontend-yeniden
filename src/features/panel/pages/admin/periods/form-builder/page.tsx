@@ -7,16 +7,19 @@ import Link from "next/link";
 import { CheckCircle2, ChevronLeft, GripVertical, Loader2, Save, Settings2, Trash2, Type, List, Upload, Eye, CheckSquare } from "lucide-react";
 import { Reorder } from "framer-motion";
 import api from "@/lib/api/axios";
+import {
+  isPeriodArchiveMode,
+  periodHasWriteCapability,
+  PeriodArchiveModeNotice,
+  type PeriodOption,
+} from "@/components/shared/ProjectPeriodFilters";
 
 interface Project {
   id: number;
   name: string;
 }
 
-interface PeriodItem {
-  id: number;
-  name: string;
-}
+type PeriodItem = PeriodOption;
 
 interface ProgramItem {
   id: number;
@@ -104,7 +107,7 @@ export default function FormBuilderPage() {
 
   const { canAccessProject } = usePermissions();
   const projectIdNum = projectId ? Number(projectId) : NaN;
-  const canEditForm = Number.isFinite(projectIdNum) && canAccessProject("projects.application_form.update", projectIdNum);
+  const hasFormPermission = Number.isFinite(projectIdNum) && canAccessProject("projects.application_form.update", projectIdNum);
 
   const selectedProject = useMemo(
     () => projects.find((project) => String(project.id) === projectId) ?? null,
@@ -120,6 +123,9 @@ export default function FormBuilderPage() {
     () => periods.find((period) => String(period.id) === periodId) ?? null,
     [periodId, periods],
   );
+  const isArchiveMode = isPeriodArchiveMode(selectedPeriod ?? undefined);
+  const periodCanConfigure = !selectedPeriod || periodHasWriteCapability(selectedPeriod, "configure_period");
+  const canEditForm = hasFormPermission && periodCanConfigure;
 
   const selectedProgram = useMemo(
     () => filteredPrograms.find((program) => String(program.id) === programId) ?? null,
@@ -209,6 +215,16 @@ export default function FormBuilderPage() {
 
     void loadApplicationForm();
   }, [projectId, initialPeriodId, initialProgramId, periodId, effectiveProgramId, programId]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (projectId) url.searchParams.set("project_id", projectId); else url.searchParams.delete("project_id");
+    if (periodId) url.searchParams.set("period_id", periodId); else url.searchParams.delete("period_id");
+    if (effectiveProgramId) url.searchParams.set("program_id", effectiveProgramId); else url.searchParams.delete("program_id");
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (nextUrl !== currentUrl) window.history.replaceState(null, "", nextUrl);
+  }, [effectiveProgramId, periodId, projectId]);
 
   const addQuestion = (type: Question["type"]) => {
     if (!canEditForm) return;
@@ -344,10 +360,13 @@ export default function FormBuilderPage() {
       </div>
 
       {errorMessage ? <div className="panel-notice panel-notice-error">{errorMessage}</div> : null}
+      <PeriodArchiveModeNotice period={selectedPeriod ?? undefined} />
 
-      {projectId && !canEditForm ? (
-        <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
-          Bu proje icin basvuru formunu guncelleme yetkiniz yok; formu yalnizca goruntuleyebilirsiniz.
+      {projectId && !canEditForm && !isArchiveMode ? (
+        <div className="panel-notice panel-notice-error">
+          {hasFormPermission && !periodCanConfigure
+            ? "Kapanış hazırlığındaki dönemin başvuru formu artık değiştirilemez; form yalnızca görüntülenebilir."
+            : "Bu proje icin basvuru formunu guncelleme yetkiniz yok; formu yalnizca goruntuleyebilirsiniz."}
         </div>
       ) : null}
 

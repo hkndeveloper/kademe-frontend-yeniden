@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Calendar, ExternalLink, Loader2, Lock, Save, Send, UserCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -70,14 +70,14 @@ export default function ProfileSelfServicePage() {
   const [leaveTone, setLeaveTone] = useState<"success" | "error" | "neutral">("neutral");
   const [passwordMessageTone, setPasswordMessageTone] = useState<"success" | "error" | "neutral">("neutral");
 
-  const loadLeaves = async () => {
+  const loadLeaves = useCallback(async () => {
     try {
       const response = await api.get("/my-leave-requests");
       setLeaves(Array.isArray(response.data.leave_requests) ? response.data.leave_requests : []);
     } catch (error) {
       console.error("Izinler yuklenemedi", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -105,11 +105,11 @@ export default function ProfileSelfServicePage() {
   }, []);
 
   useEffect(() => {
-    if (hasPermission("staff.leave.request")) {
-      void loadLeaves();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadLeaves stabil; hasPermission yeterli tetikleyici
-  }, [hasPermission]);
+    if (!hasPermission("staff.leave.request")) return;
+
+    const timer = window.setTimeout(() => void loadLeaves(), 0);
+    return () => window.clearTimeout(timer);
+  }, [hasPermission, loadLeaves]);
 
   const handleProfileSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -347,7 +347,7 @@ export default function ProfileSelfServicePage() {
       >
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
           <form onSubmit={handleLeaveSubmit} className="xl:col-span-1">
-            <ProfileCard title="Izin talep et" description="Tarih araligi ve istege bagli gerekce.">
+            <ProfileCard title="Izin talep et" description="Talebiniz ayni birimdeki koordinatore ve sistem yoneticilerine iletilir.">
               <div className="space-y-4">
                 <div>
                   <ProfileFieldLabel label="Baslangic" />
@@ -396,7 +396,7 @@ export default function ProfileSelfServicePage() {
           </form>
 
           <div className="xl:col-span-2">
-            <ProfileCard title="Izin taleplerim" description="Son talepler listenin basinda.">
+            <ProfileCard title="Izin taleplerim" description="Son talepler listenin basinda; sonucu buradan takip edebilirsiniz.">
               {leaves.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500">
                   Gecmis izin talebiniz bulunmuyor.

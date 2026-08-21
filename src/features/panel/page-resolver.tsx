@@ -17,6 +17,7 @@ import PanelMembersPage from "@/features/panel/pages/panel/members/page";
 import PanelSharedRequestsPage from "@/features/panel/pages/panel/requests/page";
 import PanelUnifiedProjectDetailPage from "@/features/panel/pages/panel/projects/[id]/page";
 import PanelUnifiedProjectContentPage from "@/features/panel/pages/panel/projects/[id]/content/page";
+import PanelProjectApplicationsPage from "@/features/panel/pages/panel/projects/[id]/applications/page";
 import PanelProjectSpecialModulesPage from "@/features/panel/pages/panel/projects/[id]/special-modules/page";
 import PanelAnnouncementsPage from "@/features/panel/pages/panel/announcements/page";
 import PanelAlumniOpportunitiesPage from "@/features/panel/pages/panel/alumni-opportunities/page";
@@ -40,6 +41,7 @@ import PanelTrainersPage from "@/features/panel/pages/panel/trainers/page";
 import PanelKvkkForgetPage from "@/features/panel/pages/panel/kvkk-forget/page";
 import PanelMotivationPage from "@/features/panel/pages/panel/motivation/page";
 import AdminPeriodFormBuilderPage from "@/features/panel/pages/admin/periods/form-builder/page";
+import AdminPeriodWorkspacePage from "@/features/panel/pages/admin/periods/[id]/page";
 import { Diplomasi360PanelPage, EurodeskPanelPage, KademePlusPanelPage, PergelPanelPage, ZirveKademePanelPage } from "@/features/panel/pages/panel/project-family/page";
 
 function NotFoundPanelPage() {
@@ -81,6 +83,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   certificates: AdminCertificatesPage,
   periods: AdminPeriodsPage,
   "periods/form-builder": AdminPeriodFormBuilderPage,
+  "periods/[id]": AdminPeriodWorkspacePage,
   announcements: PanelAnnouncementsPage,
   "alumni-opportunities": PanelAlumniOpportunitiesPage,
   inbox: PanelInboxPage,
@@ -92,6 +95,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   settings: PanelSettingsPage,
   "projects/[id]": PanelUnifiedProjectDetailPage,
   "projects/[id]/content": PanelUnifiedProjectContentPage,
+  "projects/[id]/applications": PanelProjectApplicationsPage,
   "projects/[id]/special-modules": PanelProjectSpecialModulesPage,
   "programs/[id]": PanelProgramDetailPage,
   "programs/[id]/qr": PanelProgramQrPage,

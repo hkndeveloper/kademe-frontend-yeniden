@@ -7,6 +7,11 @@ import Link from "next/link";
 import { ChevronLeft, Clock3, Loader2, QrCode, RefreshCcw, ShieldCheck, Smartphone, UsersRound } from "lucide-react";
 import api from "@/lib/api/axios";
 import type { AxiosError } from "axios";
+import {
+  periodHasWriteCapability,
+  PeriodArchiveModeNotice,
+  type PeriodOption,
+} from "@/components/shared/ProjectPeriodFilters";
 
 const rotationOptions = [15, 30, 45, 60, 90, 120];
 interface ApiErrorPayload {
@@ -43,6 +48,7 @@ export default function PanelProgramQrPage() {
   const title = searchParams.get("title") ?? "Program";
 
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<PeriodOption | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [refreshIn, setRefreshIn] = useState(30);
@@ -80,6 +86,18 @@ export default function PanelProgramQrPage() {
     setError(null);
     setLoading(true);
     try {
+      const detailResponse = await api.get<{ program: { period?: PeriodOption | null } }>(`/panel/programs/${programId}/qr-context`);
+      const programPeriod = detailResponse.data.program.period ?? null;
+      setPeriod(programPeriod);
+      if (!periodHasWriteCapability(programPeriod ?? undefined, "resolve_operations")) {
+        setError("QR yoklama yalnız aktif veya kapanış hazırlığındaki dönemde kullanılabilir.");
+        setToken(null);
+        setScanUrl(null);
+        setExpiresAt(null);
+        setRemainingSeconds(0);
+        return;
+      }
+
       const res = await api.post<{ qr_token: string; refresh_in_seconds?: number; expires_at?: string }>(
         `/panel/programs/${programId}/generate-qr`,
         { rotation_seconds: selectedRotation }
@@ -192,7 +210,7 @@ export default function PanelProgramQrPage() {
         <button
           type="button"
           onClick={() => void load()}
-          disabled={loading}
+          disabled={loading || !periodHasWriteCapability(period ?? undefined, "resolve_operations")}
           className="panel-button panel-button-primary"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
@@ -207,7 +225,7 @@ export default function PanelProgramQrPage() {
             key={seconds}
             type="button"
             onClick={() => setSelectedRotation(seconds)}
-            disabled={loading}
+            disabled={loading || !periodHasWriteCapability(period ?? undefined, "resolve_operations")}
             className={`panel-tab ${
               selectedRotation === seconds
                 ? "panel-tab-active"
@@ -218,6 +236,8 @@ export default function PanelProgramQrPage() {
           </button>
         ))}
       </div>
+
+      <PeriodArchiveModeNotice period={period ?? undefined} />
 
       {loading ? (
         <div className="panel-section-card flex min-h-[40vh] items-center justify-center">

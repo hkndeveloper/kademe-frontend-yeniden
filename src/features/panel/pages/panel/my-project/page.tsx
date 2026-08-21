@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Briefcase, CalendarDays, ClipboardCheck, Database, FilePenLine, FileStack, Loader2, Settings2, UserCog, Users } from "lucide-react";
+import { ArrowRight, Briefcase, CalendarClock, CalendarDays, ClipboardCheck, Database, FilePenLine, FileStack, Loader2, Settings2, UserCog, Users } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -186,6 +186,16 @@ export default function PanelMyProjectPage() {
                   Sonraki basvuru tarihi: {project.next_application_date || "Belirtilmedi"}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
+                  {(hasPermission("applications.intake.view") && canAccessProject("applications.intake.view", project.id)) ||
+                  (hasPermission("applications.intake.manage") && canAccessProject("applications.intake.manage", project.id)) ? (
+                    <Link
+                      href={hrefWithActivePeriod(`/panel/projects/${project.id}/applications`, project)}
+                      className="panel-card-action panel-card-action-primary"
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                      Basvuru Yonetimi
+                    </Link>
+                  ) : null}
                   {hasPermission("projects.content.update") && canAccessProject("projects.content.update", project.id) ? (
                     <Link
                       href={hrefWithActivePeriod(`/panel/projects/${project.id}/content`, project)}

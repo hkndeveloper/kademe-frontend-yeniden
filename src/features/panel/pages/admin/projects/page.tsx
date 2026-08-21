@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Calendar,
+  CalendarClock,
   CheckCircle2,
   ChevronRight,
   ClipboardList,
@@ -18,6 +19,7 @@ import {
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { usePermissions } from "@/hooks/usePermissions";
 import { panelStatusChipClass } from "@/lib/status-style";
 
 interface ActivePeriod {
@@ -45,6 +47,7 @@ interface Project {
 }
 
 export default function AdminProjectsPage() {
+  const { hasPermission, canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -247,6 +250,16 @@ export default function AdminProjectsPage() {
                     Detay
                     <ChevronRight className="h-4 w-4" />
                 </Link>
+                {(hasPermission("applications.intake.view") && canAccessProject("applications.intake.view", project.id)) ||
+                (hasPermission("applications.intake.manage") && canAccessProject("applications.intake.manage", project.id)) ? (
+                  <Link
+                    href={hrefWithActivePeriod(`/panel/projects/${project.id}/applications`, project)}
+                    className="panel-card-action panel-card-action-info"
+                  >
+                    <CalendarClock className="h-4 w-4" />
+                    Basvuru
+                  </Link>
+                ) : null}
                 <PermissionGate permission="projects.application_form.update" requireProjectAccess={{ permission: "projects.application_form.update", projectId: project.id }}>
                   <Link
                     href={hrefWithActivePeriod(`/panel/periods/form-builder?project_id=${project.id}`, project)}

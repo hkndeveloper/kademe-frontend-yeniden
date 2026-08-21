@@ -15,7 +15,7 @@ import {
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, PeriodArchiveModeNotice, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface TicketReply {
@@ -412,6 +412,7 @@ export default function AdminSupportPage() {
           <Filter className="h-4 w-4" />
           Filtrele
         </button>
+        <div className="lg:col-span-full"><PeriodArchiveModeNotice period={periodOptionById(projects, filterPeriodId)} /></div>
       </div>
 
       <div className="space-y-4">
@@ -424,7 +425,9 @@ export default function AdminSupportPage() {
             Destek talebi bulunamadi.
           </div>
         ) : (
-          tickets.map((ticket) => (
+          tickets.map((ticket) => {
+            const canResolveTicket = !ticket.period?.id || periodHasWriteCapability(periodOptionById(projects, ticket.period.id), "resolve_operations");
+            return (
             <div key={ticket.id} className="panel-list-card">
               <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
                 <div className="flex-1 space-y-4">
@@ -521,7 +524,7 @@ export default function AdminSupportPage() {
                             [ticket.id]: event.target.value,
                           }))
                         }
-                        disabled={ticket.status === "closed" || !canActOnTicket("support.assign", ticket)}
+                        disabled={!canResolveTicket || ticket.status === "closed" || !canActOnTicket("support.assign", ticket)}
                         className="panel-control h-10 text-xs"
                       >
                         <option value="">
@@ -541,6 +544,7 @@ export default function AdminSupportPage() {
                         disabled={
                           !assigneeByTicket[ticket.id] ||
                           actionLoading === ticket.id ||
+                          !canResolveTicket ||
                           ticket.status === "closed" ||
                           !canActOnTicket("support.assign", ticket)
                         }
@@ -569,7 +573,7 @@ export default function AdminSupportPage() {
                           [ticket.id]: event.target.value,
                         }))
                       }
-                      disabled={ticket.status === "closed" || !canActOnTicket("support.reply", ticket)}
+                      disabled={!canResolveTicket || ticket.status === "closed" || !canActOnTicket("support.reply", ticket)}
                       className="panel-textarea min-h-24 text-xs"
                       placeholder="Mesajinizi yazin"
                     />
@@ -579,7 +583,7 @@ export default function AdminSupportPage() {
                       <input
                         type="file"
                         className="hidden"
-                        disabled={ticket.status === "closed" || !canActOnTicket("support.reply", ticket)}
+                        disabled={!canResolveTicket || ticket.status === "closed" || !canActOnTicket("support.reply", ticket)}
                         onChange={(event) =>
                           setAttachmentByTicket((current) => ({
                             ...current,
@@ -597,6 +601,7 @@ export default function AdminSupportPage() {
                       disabled={
                         !messageByTicket[ticket.id]?.trim() ||
                         actionLoading === ticket.id ||
+                        !canResolveTicket ||
                         ticket.status === "closed" ||
                         !canActOnTicket("support.reply", ticket)
                       }
@@ -614,7 +619,7 @@ export default function AdminSupportPage() {
                       <button
                         type="button"
                         onClick={() => void handleClose(ticket.id)}
-                        disabled={actionLoading === ticket.id || !canActOnTicket("support.close", ticket)}
+                        disabled={actionLoading === ticket.id || !canResolveTicket || !canActOnTicket("support.close", ticket)}
                         className="panel-card-action panel-card-action-danger px-4"
                         title="Talebi kapat"
                       >
@@ -625,7 +630,8 @@ export default function AdminSupportPage() {
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

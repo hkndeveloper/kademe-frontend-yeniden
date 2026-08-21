@@ -7,7 +7,7 @@ import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { DashboardCharts, type DashboardChartsData } from "@/components/panel/DashboardCharts";
-import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodOptionById, PeriodArchiveModeNotice, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/store/useAuth";
 import { formatIstanbulDayNumber, formatIstanbulTime, formatIstanbulWeekdayShort } from "@/lib/istanbul-time";
@@ -84,6 +84,7 @@ interface DashboardProject {
   slug?: string;
   type?: string;
   periods?: PeriodOption[];
+  current_period?: PeriodOption | null;
   active_period?: PeriodOption | null;
 }
 
@@ -554,6 +555,7 @@ export default function AdminDashboardPage() {
             {stats.dashboard_context?.archive_mode ? "Arsiv modu" : dashboardPeriodId !== "all" ? "Secili donem" : "Operasyon modu"}
           </div>
         </div>
+        <div className="mt-3"><PeriodArchiveModeNotice period={periodOptionById(dashboardProjects, dashboardPeriodId)} /></div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

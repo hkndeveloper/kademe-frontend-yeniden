@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArchiveRestore, Calendar, CheckCircle2, FileStack, Loader2, PencilLine, Plus, RotateCcw, Save } from "lucide-react";
+import { ArchiveRestore, Calendar, Eye, FileStack, Loader2, PencilLine, Plus, Save } from "lucide-react";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -22,7 +22,18 @@ interface PeriodItem {
   end_date: string;
   credit_start_amount: number;
   credit_threshold: number;
-  status: "active" | "passive" | "completed";
+  status: "planned" | "active" | "closing" | "completed" | "cancelled" | "passive";
+  lifecycle?: {
+    is_current: boolean;
+    allowed_transitions: string[];
+    is_archive_mode: boolean;
+    write_capabilities: {
+      configure_period: boolean;
+      create_operations: boolean;
+      resolve_operations: boolean;
+      archive_correction_required: boolean;
+    };
+  };
   project?: {
     id: number;
     name: string;
@@ -36,7 +47,6 @@ interface PeriodFormState {
   end_date: string;
   credit_start_amount: string;
   credit_threshold: string;
-  status: "active" | "passive" | "completed";
 }
 
 interface ClosureSummary {
@@ -86,7 +96,6 @@ const initialForm: PeriodFormState = {
   end_date: "",
   credit_start_amount: "100",
   credit_threshold: "75",
-  status: "active",
 };
 
 export default function AdminPeriodsPage() {
@@ -103,7 +112,6 @@ export default function AdminPeriodsPage() {
   const [summaryPeriodId, setSummaryPeriodId] = useState<number | null>(null);
   const [closureSummary, setClosureSummary] = useState<ClosureSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [periodActionId, setPeriodActionId] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -182,7 +190,6 @@ export default function AdminPeriodsPage() {
       end_date: form.end_date,
       credit_start_amount: Number(form.credit_start_amount),
       credit_threshold: Number(form.credit_threshold),
-      status: form.status,
     };
 
     try {
@@ -193,7 +200,6 @@ export default function AdminPeriodsPage() {
           end_date: payload.end_date,
           credit_start_amount: payload.credit_start_amount,
           credit_threshold: payload.credit_threshold,
-          status: payload.status,
         });
         setMessage("Donem guncellendi.");
       } else {
@@ -221,7 +227,6 @@ export default function AdminPeriodsPage() {
       end_date: period.end_date,
       credit_start_amount: String(period.credit_start_amount),
       credit_threshold: String(period.credit_threshold),
-      status: period.status,
     });
     setMessage(null);
     setErrorMessage(null);
@@ -247,49 +252,6 @@ export default function AdminPeriodsPage() {
       setErrorMessage("Donem kapanis ozeti alinamadi.");
     } finally {
       setSummaryLoading(false);
-    }
-  };
-
-  const completePeriod = async (period: PeriodItem) => {
-    if (!confirm(`${period.name} donemini tamamlandi olarak arsivlemek istiyor musunuz?`)) return;
-
-    setPeriodActionId(period.id);
-    setMessage(null);
-    setErrorMessage(null);
-
-    try {
-      await api.post(`/panel/periods/${period.id}/complete`);
-      setMessage("Donem tamamlandi ve gecmis donem olarak arsivlendi.");
-      setSummaryPeriodId(null);
-      setClosureSummary(null);
-      await loadData();
-    } catch (error) {
-      console.error("Donem tamamlanamadi", error);
-      setErrorMessage("Donem tamamlanamadi.");
-    } finally {
-      setPeriodActionId(null);
-    }
-  };
-
-  const reopenPeriod = async (period: PeriodItem, status: "active" | "passive" = "passive") => {
-    const label = status === "active" ? "aktif" : "pasif";
-    if (!confirm(`${period.name} donemini yeniden ${label} yapmak istiyor musunuz?`)) return;
-
-    setPeriodActionId(period.id);
-    setMessage(null);
-    setErrorMessage(null);
-
-    try {
-      await api.post(`/panel/periods/${period.id}/reopen`, { status });
-      setMessage(status === "active" ? "Donem yeniden aktif edildi." : "Donem yeniden pasife alindi.");
-      setSummaryPeriodId(null);
-      setClosureSummary(null);
-      await loadData();
-    } catch (error) {
-      console.error("Donem yeniden acilamadi", error);
-      setErrorMessage("Donem yeniden acilamadi.");
-    } finally {
-      setPeriodActionId(null);
     }
   };
 
@@ -345,15 +307,11 @@ export default function AdminPeriodsPage() {
               <input type="date" value={form.start_date} onChange={(event) => setForm((current) => ({ ...current, start_date: event.target.value }))} className="panel-control" required />
               <input type="date" value={form.end_date} onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))} className="panel-control" required />
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <input type="number" min="0" value={form.credit_start_amount} onChange={(event) => setForm((current) => ({ ...current, credit_start_amount: event.target.value }))} placeholder="Baslangic kredi" className="panel-control" required />
               <input type="number" min="0" value={form.credit_threshold} onChange={(event) => setForm((current) => ({ ...current, credit_threshold: event.target.value }))} placeholder="Uyari esigi" className="panel-control" required />
-              <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as PeriodFormState["status"] }))} className="panel-control">
-                <option value="active">Aktif</option>
-                <option value="passive">Pasif</option>
-                <option value="completed">Tamamlandi</option>
-              </select>
             </div>
+            {!editingPeriodId ? <p className="text-xs text-muted-foreground">Yeni dönem “Planlandı” durumunda oluşturulur. Aktivasyon, dönem çalışma alanındaki kontrollü geçişten yapılır.</p> : null}
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -430,6 +388,10 @@ export default function AdminPeriodsPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      <Link href={`/panel/periods/${period.id}`} className="panel-card-action panel-card-action-info">
+                        <Eye className="h-3.5 w-3.5" />
+                        Calisma Alani
+                      </Link>
                       <button
                         type="button"
                         onClick={() => void loadClosureSummary(period.id)}
@@ -442,12 +404,13 @@ export default function AdminPeriodsPage() {
                       <button
                         type="button"
                         onClick={() => startEdit(period)}
-                        disabled={!canAccessProject("periods.update", period.project_id)}
+                        disabled={!canAccessProject("periods.update", period.project_id) || !period.lifecycle?.write_capabilities.configure_period}
                         className="panel-card-action"
+                        title={period.lifecycle?.is_archive_mode ? "Arşiv modundaki dönem doğrudan düzenlenemez." : undefined}
                       >
                         Duzenle
                       </button>
-                      {canAccessProject("projects.application_form.update", period.project_id) ? (
+                      {canAccessProject("projects.application_form.update", period.project_id) && !period.lifecycle?.is_archive_mode ? (
                         <Link
                           href={`/panel/periods/form-builder?project_id=${period.project_id}&period_id=${period.id}`}
                           className="panel-card-action panel-card-action-info"
@@ -458,27 +421,6 @@ export default function AdminPeriodsPage() {
                         <span className="panel-card-action cursor-not-allowed opacity-50">
                           Basvuru Formu
                         </span>
-                      )}
-                      {period.status !== "completed" ? (
-                        <button
-                          type="button"
-                          onClick={() => void completePeriod(period)}
-                          disabled={!canAccessProject("periods.update", period.project_id) || periodActionId === period.id}
-                          className="panel-card-action panel-card-action-success"
-                        >
-                          {periodActionId === period.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                          Tamamla
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => void reopenPeriod(period, "passive")}
-                          disabled={!canAccessProject("periods.update", period.project_id) || periodActionId === period.id}
-                          className="panel-card-action panel-card-action-warning"
-                        >
-                          {periodActionId === period.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
-                          Yeniden Ac
-                        </button>
                       )}
                     </div>
                   </div>
@@ -574,7 +516,7 @@ export default function AdminPeriodsPage() {
 
                           {closureSummary.warnings.open_programs || closureSummary.warnings.pending_applications || closureSummary.warnings.pending_financials ? (
                             <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
-                              Kapanis oncesi dikkat: {closureSummary.warnings.open_programs} acik program, {closureSummary.warnings.pending_applications} bekleyen basvuru, {closureSummary.warnings.pending_financials} bekleyen finans kaydi var. Sistem kapatmaya izin verir; bu uyari operasyonel kontroldur.
+                              Kapanis oncesi dikkat: {closureSummary.warnings.open_programs} acik program, {closureSummary.warnings.pending_applications} bekleyen basvuru, {closureSummary.warnings.pending_financials} bekleyen finans kaydi var. Kapanis calisma alanindaki engeller cozulmeden donem tamamlanamaz.
                             </div>
                           ) : (
                             <div className="panel-notice panel-notice-success">

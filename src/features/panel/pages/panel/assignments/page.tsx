@@ -5,7 +5,7 @@ import { Download, FileStack, Loader2, Pencil, Trash2, Upload, X } from "lucide-
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
 import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
@@ -109,6 +109,8 @@ export default function PanelAssignmentsPage() {
   const formProjects = editingAssignment ? updateProjects : createProjects;
   const selectedProject = formProjects.find((project) => String(project.id) === form.project_id);
   const selectedPeriodId = form.period_id || (!editingAssignment && selectedProject?.active_period?.id ? String(selectedProject.active_period.id) : "");
+  const selectedFormPeriod = periodOptionById(projects, selectedPeriodId);
+  const canWriteSelectedAssignmentPeriod = periodHasWriteCapability(selectedFormPeriod, "create_operations");
   const editingHasSubmissions = Boolean((editingAssignment?.submissions_count ?? editingAssignment?.submissions?.length ?? 0) > 0);
   useEffect(() => {
     let isActive = true;
@@ -368,7 +370,11 @@ export default function PanelAssignmentsPage() {
                 Vazgec
               </button>
             ) : null}
-            <button disabled={saving || !selectedProject || !selectedPeriodId} className="panel-button panel-button-primary h-11 px-6">
+            <button
+              disabled={saving || !selectedProject || !selectedPeriodId || !canWriteSelectedAssignmentPeriod}
+              title={!canWriteSelectedAssignmentPeriod && selectedPeriodId ? "Bu dönemde ödev ekleme veya düzenleme işlemi kapalıdır." : undefined}
+              className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
+            >
               {saving ? "Kaydediliyor..." : editingAssignment ? "Odevi Guncelle" : "Odev Olustur"}
             </button>
           </div>
@@ -400,7 +406,11 @@ export default function PanelAssignmentsPage() {
             </div>
           ) : (
             <div className="space-y-3 p-4">
-              {assignments.map((assignment) => (
+              {assignments.map((assignment) => {
+                const assignmentPeriod = periodOptionById(projects, assignment.period_id);
+                const canWriteAssignment = periodHasWriteCapability(assignmentPeriod, "create_operations");
+                const canResolveAssignment = periodHasWriteCapability(assignmentPeriod, "resolve_operations");
+                return (
                 <div key={assignment.id} className="panel-list-card">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
@@ -427,13 +437,13 @@ export default function PanelAssignmentsPage() {
                     </div>
                     <div className="flex flex-wrap gap-2 md:justify-end">
                       <PermissionGate permission="assignments.update" requireProjectAccess={{ permission: "assignments.update", projectId: assignment.project_id }}>
-                        <button type="button" onClick={() => startEdit(assignment)} className="panel-card-action panel-card-action-info">
+                        <button type="button" disabled={!canWriteAssignment} title={!canWriteAssignment ? "Bu dönem normal değişikliklere kapalıdır." : undefined} onClick={() => startEdit(assignment)} className="panel-card-action panel-card-action-info disabled:cursor-not-allowed disabled:opacity-40">
                           <Pencil className="h-4 w-4" />
                           Duzenle
                         </button>
                       </PermissionGate>
                       <PermissionGate permission="assignments.delete" requireProjectAccess={{ permission: "assignments.delete", projectId: assignment.project_id }}>
-                        <button type="button" onClick={() => void handleDelete(assignment)} className="panel-card-action panel-card-action-danger">
+                        <button type="button" disabled={!canWriteAssignment} title={!canWriteAssignment ? "Bu dönem normal değişikliklere kapalıdır." : undefined} onClick={() => void handleDelete(assignment)} className="panel-card-action panel-card-action-danger disabled:cursor-not-allowed disabled:opacity-40">
                           <Trash2 className="h-4 w-4" />
                           Sil
                         </button>
@@ -461,7 +471,7 @@ export default function PanelAssignmentsPage() {
                                 </button>
                               ) : null}
                               {submissionReviewActions.map((action) => (
-                                <button key={action.status} onClick={() => void handleReview(submission, action.status)} className={`panel-card-action ${action.className} py-1`}>
+                                <button key={action.status} disabled={!canResolveAssignment} title={!canResolveAssignment ? "Bu dönemde sonuçlandırma işlemi kapalıdır." : undefined} onClick={() => void handleReview(submission, action.status)} className={`panel-card-action ${action.className} py-1 disabled:cursor-not-allowed disabled:opacity-40`}>
                                   {action.label}
                                 </button>
                               ))}
@@ -472,7 +482,8 @@ export default function PanelAssignmentsPage() {
                     </div>
                   ) : null}
                 </div>
-              ))}
+                );
+              })}
               {assignments.length === 0 ? <div className="panel-empty-card">Odev bulunamadi.</div> : null}
             </div>
           )}

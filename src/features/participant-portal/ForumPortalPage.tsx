@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Loader2, MessageCircle, MessageSquarePlus, MessagesSquare, Search, Send, UsersRound } from "lucide-react";
-import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, PeriodArchiveModeNotice, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import api from "@/lib/api/axios";
 
 type Project = {
@@ -80,6 +80,8 @@ export function ForumPortalPage() {
     [projectFilter, projects]
   );
   const selectedPeriods = useMemo(() => periodsForProject(selectedProject), [selectedProject]);
+  const selectedPeriod = periodOptionById(projects, periodFilter);
+  const canCreateInSelectedPeriod = periodHasWriteCapability(selectedPeriod, "create_operations");
 
   async function fetchPosts(projectId?: string, periodId?: string) {
     const res = await api.get<{ posts?: { data?: ForumPost[] } }>("/forum/posts", {
@@ -226,6 +228,7 @@ export function ForumPortalPage() {
                   </option>
                 ))}
               </select>
+              <PeriodArchiveModeNotice period={selectedPeriod} />
               <select
                 value={periodFilter}
                 onChange={(e) => {
@@ -262,7 +265,8 @@ export function ForumPortalPage() {
               <p className="text-xs leading-relaxed text-muted-foreground">Sadece dahil oldugun proje forumlarinda konu acabilir ve yanit yazabilirsin.</p>
               <button
                 type="submit"
-                disabled={!canSubmit || saving}
+                disabled={!canSubmit || saving || !canCreateInSelectedPeriod}
+                title={!canCreateInSelectedPeriod && periodFilter !== "all" ? "Bu dönemde yeni forum konusu açılamaz." : undefined}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />}
@@ -317,7 +321,10 @@ export function ForumPortalPage() {
               {posts.length === 0 ? "Henuz forum konusu yok." : "Aramana uygun konu bulunamadi."}
             </div>
           ) : (
-            filteredPosts.map((post) => (
+            filteredPosts.map((post) => {
+              const postPeriod = periodOptionById(projects, post.period?.id);
+              const canReplyToPost = periodHasWriteCapability(postPeriod, "resolve_operations");
+              return (
               <article key={post.id} className="glass-panel overflow-hidden rounded-3xl p-0">
                 <div className="border-b border-border bg-background/50 p-5">
                   <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -348,12 +355,14 @@ export function ForumPortalPage() {
                       value={replyDrafts[post.id] ?? ""}
                       onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
                       placeholder="Yanit yaz..."
+                      disabled={!canReplyToPost}
                       className="flex-1 rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
                     />
                     <button
                       type="button"
                       onClick={() => void sendReply(post.id)}
-                      disabled={replyingId === post.id || !(replyDrafts[post.id] ?? "").trim()}
+                      disabled={!canReplyToPost || replyingId === post.id || !(replyDrafts[post.id] ?? "").trim()}
+                      title={!canReplyToPost ? "Bu dönemde yeni yanıt gönderilemez." : undefined}
                       className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {replyingId === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -362,7 +371,8 @@ export function ForumPortalPage() {
                   </div>
                 </div>
               </article>
-            ))
+              );
+            })
           )}
         </main>
       </div>

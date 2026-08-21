@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, CalendarClock, CheckCircle2, ClipboardList, Image as ImageIcon, Loader2, Plus, Save, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, CalendarClock, Image as ImageIcon, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { isAxiosError } from "axios";
 import Image from "next/image";
 import Link from "next/link";
 import api from "@/lib/api/axios";
+import { usePermissions } from "@/hooks/usePermissions";
+import { isPeriodArchiveMode, periodHasWriteCapability, PeriodArchiveModeNotice, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 
 interface EditableProjectContent {
   name: string;
@@ -15,16 +17,6 @@ interface EditableProjectContent {
   description: string;
   cover_image_path: string;
   gallery_paths: ProjectGalleryItem[];
-  application_open: boolean;
-  next_application_date: string;
-  has_interview: boolean;
-  quota: number | "";
-}
-
-interface ProjectPeriod {
-  id: number;
-  name: string;
-  status?: string;
 }
 
 interface ProjectGalleryItem {
@@ -41,7 +33,7 @@ interface ProjectPreview {
   cover_image?: string | null;
   gallery?: string[];
   gallery_items?: Array<ProjectGalleryItem & { url?: string | null; period_name?: string | null }>;
-  periods?: ProjectPeriod[];
+  periods?: PeriodOption[];
 }
 
 interface ProjectContentResponse {
@@ -79,10 +71,6 @@ const emptyForm: EditableProjectContent = {
   description: "",
   cover_image_path: "",
   gallery_paths: [{ path: "", caption: "", year: "", period_id: "" }],
-  application_open: false,
-  next_application_date: "",
-  has_interview: false,
-  quota: "",
 };
 
 function emptyGalleryItem(path = ""): ProjectGalleryItem {
@@ -117,16 +105,13 @@ function normalizeGalleryItems(items: unknown): ProjectGalleryItem[] {
   return normalized.length > 0 ? normalized : [emptyGalleryItem()];
 }
 
-function formatApplicationDate(value: string): string {
-  if (!value) return "Belirtilmedi";
-  return new Intl.DateTimeFormat("tr-TR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
 export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", readOnly = false }: ProjectContentEditorProps) {
+  const { hasPermission, canAccessProject } = usePermissions();
+  const numericProjectId = Number(projectId);
+  const canAccessIntake = Number.isFinite(numericProjectId) && (
+    (hasPermission("applications.intake.view") && canAccessProject("applications.intake.view", numericProjectId)) ||
+    (hasPermission("applications.intake.manage") && canAccessProject("applications.intake.manage", numericProjectId))
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [project, setProject] = useState<ProjectPreview | null>(null);
@@ -134,6 +119,9 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const selectedPeriod = project?.periods?.find((period) => String(period.id) === periodId);
+  const periodReadOnly = Boolean(periodId) && !periodHasWriteCapability(selectedPeriod, "configure_period");
+  const effectiveReadOnly = readOnly || periodReadOnly;
 
   useEffect(() => {
     const loadProject = async () => {
@@ -147,8 +135,6 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
           description: response.data.editable.description ?? "",
           cover_image_path: response.data.editable.cover_image_path ?? "",
           gallery_paths: normalizeGalleryItems(response.data.editable.gallery_paths),
-          next_application_date: response.data.editable.next_application_date ?? "",
-          quota: response.data.editable.quota ?? "",
         });
       } catch (error) {
         console.error("Proje icerigi yuklenemedi", error);
@@ -162,7 +148,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   }, [projectId, panelBasePath]);
 
   const updateGalleryItem = (index: number, field: keyof ProjectGalleryItem, value: string | number | "") => {
-    if (readOnly) return;
+    if (effectiveReadOnly) return;
     setForm((current) => ({
       ...current,
       gallery_paths: current.gallery_paths.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
@@ -170,7 +156,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   };
 
   const addGalleryItem = () => {
-    if (readOnly) return;
+    if (effectiveReadOnly) return;
     setForm((current) => ({
       ...current,
       gallery_paths: [...current.gallery_paths, emptyGalleryItem()],
@@ -178,7 +164,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   };
 
   const removeGalleryItem = (index: number) => {
-    if (readOnly) return;
+    if (effectiveReadOnly) return;
     setForm((current) => ({
       ...current,
       gallery_paths: current.gallery_paths.filter((_, itemIndex) => itemIndex !== index),
@@ -191,7 +177,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
     onSuccess: (url: string) => void,
     fieldKey: string,
   ) => {
-    if (readOnly) return;
+    if (effectiveReadOnly) return;
     setUploadingField(fieldKey);
     setErrorMessage(null);
 
@@ -216,22 +202,12 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   };
 
   const handleSave = async () => {
-    if (readOnly) return;
+    if (effectiveReadOnly) return;
     setMessage(null);
     setErrorMessage(null);
 
     if (!form.name.trim() || !form.slug.trim() || !form.type.trim()) {
       setErrorMessage("Proje adi, slug ve proje tipi zorunludur.");
-      return;
-    }
-
-    if (!form.application_open && !form.next_application_date) {
-      setErrorMessage("Basvurular kapaliysa ziyaretci tarafinda gorunmesi icin sonraki basvuru tarihini girin.");
-      return;
-    }
-
-    if (form.quota !== "" && Number(form.quota) < 0) {
-      setErrorMessage("Kontenjan negatif olamaz.");
       return;
     }
 
@@ -241,8 +217,6 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
       const root = panelContentApiRoot();
       const response = await api.put<ProjectContentResponse & { message: string }>(`${root}/projects/${projectId}/content`, {
         ...form,
-        quota: form.quota === "" ? null : Number(form.quota),
-        next_application_date: form.application_open ? null : form.next_application_date,
         gallery_paths: form.gallery_paths
           .filter((item) => item.path.trim())
           .map((item) => ({
@@ -295,7 +269,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
         <button
           type="button"
           onClick={() => void handleSave()}
-          disabled={readOnly || saving}
+          disabled={effectiveReadOnly || saving}
           className="panel-button panel-button-primary"
         >
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
@@ -308,6 +282,10 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
           Bu proje icin icerik guncelleme yetkiniz yok; alanlar salt okunurdur.
         </div>
       ) : null}
+      {periodReadOnly ? <PeriodArchiveModeNotice period={selectedPeriod} /> : null}
+      {periodReadOnly && !isPeriodArchiveMode(selectedPeriod) ? (
+        <div className="panel-notice border-blue-200 bg-blue-50 text-blue-800">Kapanış hazırlığındaki dönemde proje içeriği değiştirilemez.</div>
+      ) : null}
 
       {message ? <div className="panel-notice panel-notice-success">{message}</div> : null}
       {errorMessage ? <div className="panel-notice panel-notice-error">{errorMessage}</div> : null}
@@ -317,7 +295,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
           <div className="panel-section-card space-y-4">
             <h2 className="text-lg font-bold text-slate-900">Temel Bilgiler</h2>
             <input
-              readOnly={readOnly}
+              readOnly={effectiveReadOnly}
               value={form.name}
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
               placeholder="Proje adi"
@@ -325,14 +303,14 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
             />
             <div className="panel-form-grid">
               <input
-                readOnly={readOnly}
+                readOnly={effectiveReadOnly}
                 value={form.slug}
                 onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
                 placeholder="Slug"
                 className={inputClass}
               />
               <input
-                readOnly={readOnly}
+                readOnly={effectiveReadOnly}
                 value={form.type}
                 onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
                 placeholder="Proje tipi"
@@ -340,7 +318,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
               />
             </div>
             <textarea
-              readOnly={readOnly}
+              readOnly={effectiveReadOnly}
               value={form.short_description}
               onChange={(event) => setForm((current) => ({ ...current, short_description: event.target.value }))}
               rows={3}
@@ -348,7 +326,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
               className={textareaClass}
             />
             <textarea
-              readOnly={readOnly}
+              readOnly={effectiveReadOnly}
               value={form.description}
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
               rows={8}
@@ -361,18 +339,18 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-lg font-bold text-slate-900">Galeri ve Gorseller</h2>
               <div className="flex items-center gap-3">
-                <button onClick={addGalleryItem} type="button" disabled={readOnly} className="panel-button panel-button-secondary disabled:opacity-40">
+                <button onClick={addGalleryItem} type="button" disabled={effectiveReadOnly} className="panel-button panel-button-secondary disabled:opacity-40">
                   <Plus className="h-4 w-4" />
                   Alan Ekle
                 </button>
                 <label
-                  className={`${compactActionClass} ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+                  className={`${compactActionClass} ${effectiveReadOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
                 >
                   {uploadingField === "gallery-new" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   Galeri Yukle
                   <input
                     type="file"
-                    disabled={readOnly}
+                    disabled={effectiveReadOnly}
                     accept="image/png,image/jpeg,image/webp"
                     className="hidden"
                     onChange={(event) => {
@@ -398,20 +376,20 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
               </div>
             </div>
             <input
-              readOnly={readOnly}
+              readOnly={effectiveReadOnly}
               value={form.cover_image_path}
               onChange={(event) => setForm((current) => ({ ...current, cover_image_path: event.target.value }))}
               placeholder="Kapak gorsel URL"
               className={inputClass}
             />
             <label
-              className={`${compactActionClass} w-fit ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+              className={`${compactActionClass} w-fit ${effectiveReadOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
             >
               {uploadingField === "cover_image_path" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Kapak gorseli yukle
               <input
                 type="file"
-                disabled={readOnly}
+                disabled={effectiveReadOnly}
                 accept="image/png,image/jpeg,image/webp"
                 className="hidden"
                 onChange={(event) => {
@@ -432,21 +410,21 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                 <div key={`gallery-${index}`} className="panel-card-muted bg-white">
                   <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_140px_180px_auto_auto]">
                     <input
-                      readOnly={readOnly}
+                      readOnly={effectiveReadOnly}
                       value={item.path}
                       onChange={(event) => updateGalleryItem(index, "path", event.target.value)}
                       placeholder={`Galeri gorsel URL ${index + 1}`}
                       className={inputClass}
                     />
                     <input
-                      readOnly={readOnly}
+                      readOnly={effectiveReadOnly}
                       value={item.year}
                       onChange={(event) => updateGalleryItem(index, "year", event.target.value)}
                       placeholder="Yil"
                       className={inputClass}
                     />
                     <select
-                      disabled={readOnly}
+                      disabled={effectiveReadOnly}
                       value={item.period_id}
                       onChange={(event) => updateGalleryItem(index, "period_id", event.target.value ? Number(event.target.value) : "")}
                       className={inputClass}
@@ -459,12 +437,12 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                       ))}
                     </select>
                     <label
-                      className={`panel-button-icon ${readOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+                      className={`panel-button-icon ${effectiveReadOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
                     >
                       {uploadingField === `gallery-${index}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                       <input
                         type="file"
-                        disabled={readOnly}
+                        disabled={effectiveReadOnly}
                         accept="image/png,image/jpeg,image/webp"
                         className="hidden"
                         onChange={(event) => {
@@ -478,14 +456,14 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                     <button
                       onClick={() => removeGalleryItem(index)}
                       type="button"
-                      disabled={readOnly}
+                      disabled={effectiveReadOnly}
                       className="panel-button-icon panel-table-action-danger disabled:opacity-40"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                   <input
-                    readOnly={readOnly}
+                    readOnly={effectiveReadOnly}
                     value={item.caption}
                     onChange={(event) => updateGalleryItem(index, "caption", event.target.value)}
                     placeholder="Gorsel basligi veya kisa aciklama"
@@ -496,136 +474,24 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
             </div>
           </div>
 
-          <div className="panel-section-card space-y-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">Basvuru Acma ve Akis Ayarlari</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Yeni basvuruyu public proje sayfasinda acmak, kapatmak ve mulakatli/mulakatsiz akisi secmek icin bu bolumu kullanin.</p>
+          <div className="panel-section-card flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                <CalendarClock className="h-5 w-5 text-indigo-600" />
+                Basvuru yonetimi ayri ekranda
               </div>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                Basvuruyu kimin actigi, hangi donem icin acik oldugu, takvim, kontenjan ve mulakat akisi denetim kayitlariyla birlikte Basvuru Yonetimi ekranindan yonetilir.
+              </p>
+            </div>
+            {canAccessIntake ? (
               <Link
-                href={`/panel/periods/form-builder?project_id=${projectId}${periodId ? `&period_id=${periodId}` : ""}`}
-                className="panel-button panel-button-secondary text-indigo-700 hover:border-indigo-200 hover:bg-indigo-50"
+                href={`/panel/projects/${projectId}/applications${periodId ? `?period_id=${periodId}` : ""}`}
+                className="panel-button panel-button-secondary shrink-0 text-indigo-700 hover:border-indigo-200 hover:bg-indigo-50"
               >
-                <ClipboardList className="h-4 w-4" />
-                Basvuru Formunu Duzenle
+                Basvuru Yonetimine Git
               </Link>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div className={`panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal ${form.application_open ? "panel-chip-success" : "panel-chip-warning"}`}>
-                <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">Basvuru</div>
-                <div className="mt-1 font-extrabold">{form.application_open ? "Acik" : "Kapali"}</div>
-              </div>
-              <div className={`panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal ${form.has_interview ? "panel-chip-warning" : "panel-chip-success"}`}>
-                <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">Degerlendirme</div>
-                <div className="mt-1 font-extrabold">{form.has_interview ? "Mulakatli" : "Mulakatsiz"}</div>
-              </div>
-              <div className="panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kontenjan</div>
-                <div className="mt-1 font-extrabold">{form.quota === "" ? "Sinirsiz" : form.quota}</div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="panel-card-muted bg-white">
-                <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-                  {form.application_open ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <XCircle className="h-5 w-5 text-amber-600" />}
-                  Basvuru Durumu
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    disabled={readOnly}
-                    onClick={() => setForm((current) => ({ ...current, application_open: true, next_application_date: "" }))}
-                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${
-                      form.application_open
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                    } disabled:opacity-60`}
-                  >
-                    Acik
-                  </button>
-                  <button
-                    type="button"
-                    disabled={readOnly}
-                    onClick={() => setForm((current) => ({ ...current, application_open: false }))}
-                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${
-                      !form.application_open
-                        ? "border-amber-300 bg-amber-50 text-amber-700"
-                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                    } disabled:opacity-60`}
-                  >
-                    Kapali
-                  </button>
-                </div>
-              </div>
-
-              <div className="panel-card-muted bg-white">
-                <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-                  <CalendarClock className="h-5 w-5 text-indigo-600" />
-                  Degerlendirme Akisi
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    disabled={readOnly}
-                    onClick={() => setForm((current) => ({ ...current, has_interview: false }))}
-                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${
-                      !form.has_interview
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                    } disabled:opacity-60`}
-                  >
-                    Mulakatsiz
-                  </button>
-                  <button
-                    type="button"
-                    disabled={readOnly}
-                    onClick={() => setForm((current) => ({ ...current, has_interview: true }))}
-                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${
-                      form.has_interview
-                        ? "border-indigo-300 bg-indigo-50 text-indigo-700"
-                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                    } disabled:opacity-60`}
-                  >
-                    Mulakatli
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="panel-form-grid">
-              <label className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Basvuru Kontenjani (kredi degil)</span>
-                <input
-                  type="number"
-                  min="0"
-                  readOnly={readOnly}
-                  value={form.quota}
-                  onChange={(event) => setForm((current) => ({ ...current, quota: event.target.value === "" ? "" : Number(event.target.value) }))}
-                  placeholder="Orn: 40 aday"
-                  className={inputClass}
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sonraki Basvuru Tarihi</span>
-                <input
-                  type="date"
-                  readOnly={readOnly || form.application_open}
-                  value={form.next_application_date}
-                  onChange={(event) => setForm((current) => ({ ...current, next_application_date: event.target.value }))}
-                  className={`${inputClass} read-only:bg-slate-50`}
-                />
-              </label>
-            </div>
-
-            <div className="panel-form-note">
-              {form.application_open
-                ? "Basvurular acikken public sayfada basvuru butonu gorunur; adaylar aktif basvuru formunu doldurabilir."
-                : `Basvurular kapaliyken public sayfada sonraki tarih gorunur: ${formatApplicationDate(form.next_application_date)}`}
-              <br />
-              Kredi sinirlari bu ekrandan yonetilmez; koordinatorler katilimci ekranindan aylik manuel kredi guncellemesi yapar.
-            </div>
+            ) : null}
           </div>
         </div>
 
@@ -643,24 +509,6 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
             <div className="text-xs font-bold uppercase tracking-widest text-primary">{form.type || "Proje"}</div>
             <h3 className="mt-2 text-2xl font-black text-slate-900">{form.name || "Proje adi"}</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{form.short_description || "Kisa tanitim burada gorunecek."}</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className={`panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal ${form.application_open ? "panel-chip-success" : "panel-chip-warning"}`}>
-              <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">Basvuru</div>
-              <div className="mt-1 font-extrabold">{form.application_open ? "Acik" : "Kapali"}</div>
-            </div>
-            <div className="panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Akis</div>
-              <div className="mt-1 font-extrabold">{form.has_interview ? "Mulakatli" : "Mulakatsiz"}</div>
-            </div>
-            <div className="panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kontenjan</div>
-              <div className="mt-1 font-extrabold">{form.quota === "" ? "Yok" : form.quota}</div>
-            </div>
-            <div className="panel-chip min-h-16 flex-col items-start justify-center rounded-2xl px-4 py-3 normal-case tracking-normal">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Sonraki Tarih</div>
-              <div className="mt-1 font-extrabold">{formatApplicationDate(form.next_application_date)}</div>
-            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {form.gallery_paths.filter((item) => item.path.trim()).slice(0, 4).map((item, index) => (

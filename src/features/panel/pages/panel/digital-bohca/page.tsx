@@ -6,7 +6,7 @@ import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
 
@@ -109,6 +109,8 @@ export default function PanelDigitalBohcaPage() {
     () => projects.filter((project) => canAccessProject("digital_bohca.create", project.id)),
     [projects, canAccessProject],
   );
+  const selectedUploadPeriod = periodOptionById(projects, form.period_id);
+  const canUploadToSelectedPeriod = !form.period_id || periodHasWriteCapability(selectedUploadPeriod, "create_operations");
 
   useEffect(() => {
     let isActive = true;
@@ -351,7 +353,11 @@ export default function PanelDigitalBohcaPage() {
             className="panel-textarea mt-4"
           />
           <div className="panel-modal-footer mt-4">
-            <button disabled={saving} className="panel-button panel-button-primary h-11 px-6">
+            <button
+              disabled={saving || !canUploadToSelectedPeriod}
+              title={!canUploadToSelectedPeriod ? "Bu döneme yeni materyal yüklenemez." : undefined}
+              className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
+            >
               {saving ? "Yukleniyor..." : "Materyali Yukle"}
             </button>
           </div>
@@ -384,7 +390,10 @@ export default function PanelDigitalBohcaPage() {
             </div>
           ) : (
             <div className="space-y-3 p-4">
-              {materials.map((material) => (
+              {materials.map((material) => {
+                const materialPeriod = periodOptionById(projects, material.period_id);
+                const canDeleteMaterial = !material.period_id || periodHasWriteCapability(materialPeriod, "create_operations");
+                return (
                 <div key={material.id} className="panel-list-card flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="text-base font-bold text-slate-900">{material.title}</div>
@@ -414,7 +423,7 @@ export default function PanelDigitalBohcaPage() {
                       requireProjectAccess={material.project?.id ? { permission: "digital_bohca.delete", projectId: material.project.id } : undefined}
                     >
                       {material.project?.id || hasGlobalScope("digital_bohca.delete") ? (
-                        <button onClick={() => void handleDelete(material)} className="panel-card-action panel-card-action-danger">
+                        <button disabled={!canDeleteMaterial} title={!canDeleteMaterial ? "Bu dönem normal değişikliklere kapalıdır." : undefined} onClick={() => void handleDelete(material)} className="panel-card-action panel-card-action-danger disabled:cursor-not-allowed disabled:opacity-40">
                           <Trash2 className="h-4 w-4" />
                           Sil
                         </button>
@@ -422,7 +431,8 @@ export default function PanelDigitalBohcaPage() {
                     </PermissionGate>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {materials.length === 0 ? <div className="panel-empty-card">Materyal bulunamadi.</div> : null}
             </div>
           )}

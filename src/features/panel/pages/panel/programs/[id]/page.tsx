@@ -28,6 +28,11 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
+import {
+  periodHasWriteCapability,
+  PeriodArchiveModeNotice,
+  type PeriodOption,
+} from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { fixMojibake } from "@/lib/text";
 import { panelStatusChipClass } from "@/lib/status-style";
@@ -72,7 +77,7 @@ interface PanelProgram {
   feedback_form_template_id?: number | null;
   status?: ProgramStatus;
   project?: { id: number; name: string } | null;
-  period?: { id: number; name: string } | null;
+  period?: PeriodOption | null;
   attendance_count?: number | null;
   feedback_count?: number | null;
   is_public?: boolean;
@@ -176,12 +181,14 @@ export default function PanelProgramDetailPage() {
   }, [loadProgram]);
 
   const status = normalizeStatus(program?.status);
-  const canUpdate = Boolean(program && hasPermission("programs.update") && canAccessProject("programs.update", program.project_id));
-  const canComplete = Boolean(program && hasPermission("programs.complete") && canAccessProject("programs.complete", program.project_id));
-  const canQr = Boolean(program && hasPermission("programs.qr.manage") && canAccessProject("programs.qr.manage", program.project_id));
+  const canCreatePeriodOperation = periodHasWriteCapability(program?.period ?? undefined, "create_operations");
+  const canResolvePeriodOperation = periodHasWriteCapability(program?.period ?? undefined, "resolve_operations");
+  const canUpdate = Boolean(program && canCreatePeriodOperation && hasPermission("programs.update") && canAccessProject("programs.update", program.project_id));
+  const canComplete = Boolean(program && canResolvePeriodOperation && hasPermission("programs.complete") && canAccessProject("programs.complete", program.project_id));
+  const canQr = Boolean(program && canResolvePeriodOperation && hasPermission("programs.qr.manage") && canAccessProject("programs.qr.manage", program.project_id));
   const canViewAttendance = Boolean(program && hasPermission("programs.attendance.view") && canAccessProject("programs.attendance.view", program.project_id));
   const canExportAttendance = Boolean(program && hasPermission("programs.attendance.export") && canAccessProject("programs.attendance.export", program.project_id));
-  const canManageMedia = Boolean(program && hasPermission("programs.media.upload") && canAccessProject("programs.media.upload", program.project_id));
+  const canManageMedia = Boolean(program && canCreatePeriodOperation && hasPermission("programs.media.upload") && canAccessProject("programs.media.upload", program.project_id));
   const canViewFeedback = Boolean(program && canAccessProject("programs.view", program.project_id));
   const detailQuery = useMemo(() => {
     if (!program) return "";
@@ -256,7 +263,7 @@ export default function PanelProgramDetailPage() {
       requireProjectAccess={{ permission: "programs.view", projectId: program.project_id }}
       fallback={<div className="panel-notice panel-notice-error">Bu programı görüntüleme yetkiniz veya proje kapsamınız bulunmuyor.</div>}
     >
-      <div className="space-y-6 pb-8">
+      <div className="min-w-0 space-y-6 pb-8">
         <Link href="/panel/programs" className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-accent">
           <ArrowLeft className="h-4 w-4" />Programlara dön
         </Link>
@@ -272,8 +279,8 @@ export default function PanelProgramDetailPage() {
                   {program.is_public === false ? <span className="panel-chip"><EyeOff className="h-3 w-3" />Gizli</span> : <span className="panel-chip panel-chip-success"><Eye className="h-3 w-3" />Yayında</span>}
                   {program.is_featured ? <span className="panel-chip panel-chip-warning"><Sparkles className="h-3 w-3" />Öne çıkan</span> : null}
                 </div>
-                <h1 className="text-2xl font-black text-slate-950 md:text-3xl">{fixMojibake(program.title)}</h1>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+                <h1 className="break-words text-2xl font-black text-slate-950 md:text-3xl">{fixMojibake(program.title)}</h1>
+                <p className="mt-3 max-w-3xl break-words text-sm leading-7 text-slate-600">
                   {fixMojibake(program.description) || "Bu program için açıklama girilmemiş."}
                 </p>
               </div>
@@ -299,6 +306,12 @@ export default function PanelProgramDetailPage() {
 
         {message ? <div className="panel-notice panel-notice-success">{message}</div> : null}
         {error ? <div className="panel-notice panel-notice-error">{error}</div> : null}
+        <PeriodArchiveModeNotice period={program.period ?? undefined} />
+        {!canCreatePeriodOperation && canResolvePeriodOperation ? (
+          <div className="panel-notice panel-notice-info">
+            Bu dönem kapanış hazırlığındadır. Program bilgileri ve medya değiştirilemez; yoklama ve tamamlama işlemleri sürdürülebilir.
+          </div>
+        ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Metric icon={<CalendarDays className="h-5 w-5" />} label="Başlangıç" value={formatDateTime(program.start_at)} />
@@ -308,7 +321,7 @@ export default function PanelProgramDetailPage() {
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(310px,0.65fr)]">
-          <main className="space-y-6">
+          <main className="min-w-0 space-y-6">
             <section className="panel-section-card">
               <div className="mb-5 flex items-center gap-3">
                 <MapPin className="h-5 w-5 text-accent" />
@@ -360,7 +373,7 @@ export default function PanelProgramDetailPage() {
             </section>
           </main>
 
-          <aside className="space-y-6">
+          <aside className="min-w-0 space-y-6">
             {canViewAttendance ? (
               <section className="panel-section-card">
                 <h2 className="font-black text-slate-950">Katılım özeti</h2>
@@ -396,7 +409,7 @@ export default function PanelProgramDetailPage() {
             {guests.length ? (
               <section className="panel-section-card">
                 <h2 className="font-black text-slate-950">Konuk / konuşmacı</h2>
-                <ul className="mt-4 space-y-2 text-sm text-slate-600">{guests.map((guest) => <li key={guest} className="panel-card-muted p-3">{fixMojibake(guest)}</li>)}</ul>
+                <ul className="mt-4 space-y-2 text-sm text-slate-600">{guests.map((guest) => <li key={guest} className="panel-card-muted break-words p-3">{fixMojibake(guest)}</li>)}</ul>
               </section>
             ) : null}
 

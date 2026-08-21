@@ -235,6 +235,15 @@ export function canAccessPanelPath(
       Number(projectSpecialModules[1])
     );
   }
+  const projectApplications = normalized.match(/^\/panel\/projects\/(\d+)\/applications$/);
+  if (projectApplications) {
+    return canAccessProjectWithAnyPermission(
+      user,
+      hasPermission,
+      ["applications.intake.view", "applications.intake.manage"],
+      Number(projectApplications[1])
+    );
+  }
   const programDetail = normalized.match(/^\/panel\/programs\/(\d+)$/);
   if (programDetail) {
     // URL'deki kimlik program kimligidir; proje kapsami bu katmanda guvenilir
@@ -245,6 +254,12 @@ export function canAccessPanelPath(
   const programQr = normalized.match(/^\/panel\/programs\/(\d+)\/qr$/);
   if (programQr) {
     return hasPermission("programs.qr.manage");
+  }
+  const periodDetail = normalized.match(/^\/panel\/periods\/(\d+)$/);
+  if (periodDetail) {
+    // URL period kimligi tasir; kesin project scope kontrolu period detay
+    // API'sinde period.project_id uzerinden yapilir.
+    return hasPermission("periods.view");
   }
   if (normalized === "/panel/periods/form-builder") {
     return hasPermission("projects.application_form.update");

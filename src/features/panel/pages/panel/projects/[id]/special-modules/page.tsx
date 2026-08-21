@@ -16,7 +16,7 @@ import {
   specialModulesIntroCopy,
 } from "@/lib/project-special-module-labels";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import type { PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { isPeriodArchiveMode, PeriodArchiveModeNotice, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 
 type AccessMap = Record<string, boolean>;
 
@@ -270,6 +270,8 @@ export default function PanelProjectSpecialModulesPage() {
       access["projects.rewards.manage"],
     [access]
   );
+  const selectedPeriod = periods.find((period) => String(period.id) === periodId);
+  const selectedPeriodIsArchive = isPeriodArchiveMode(selectedPeriod);
   const rewardAwardStats = useMemo(() => {
     const awards = data?.reward_awards ?? [];
     return {
@@ -517,11 +519,13 @@ export default function PanelProjectSpecialModulesPage() {
               ))}
             </select>
           </label>
+          <div className="mt-3"><PeriodArchiveModeNotice period={selectedPeriod} /></div>
         </div>
 
         {feedback ? <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-900">{feedback}</div> : null}
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <fieldset disabled={selectedPeriodIsArchive} className="contents">
+        <div className={`grid grid-cols-1 gap-6 xl:grid-cols-2 ${selectedPeriodIsArchive ? "[&_button]:cursor-not-allowed [&_button]:opacity-40" : ""}`}>
           {access["projects.internships.view"] || access["projects.internships.manage"] ? (
             <ModuleCard icon={<BriefcaseBusiness className="h-5 w-5" />} title={internshipsSectionTitle(data.project.type)}>
               {access["projects.internships.manage"] ? (
@@ -1104,6 +1108,7 @@ export default function PanelProjectSpecialModulesPage() {
             </ModuleCard>
           ) : null}
         </div>
+        </fieldset>
 
         {!canManageAny ? <div className="text-sm text-muted-foreground">Bu ekranda goruntuleme yetkiniz var; yeni kayit eklemek icin ilgili manage action&apos;i gerekir.</div> : null}
       </div>

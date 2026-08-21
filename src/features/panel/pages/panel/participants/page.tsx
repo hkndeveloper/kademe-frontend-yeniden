@@ -6,7 +6,7 @@ import { CheckCircle2, Coins, Download, FileText, GraduationCap, History, Loader
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
 import { panelStatusChipClass } from "@/lib/status-style";
@@ -279,10 +279,12 @@ export default function PanelParticipantsPage() {
     return filteredParticipants
       .filter(
         (p) =>
-          hasPermission("projects.participants.manage") && canAccessProject("projects.participants.manage", p.project.id),
+          hasPermission("projects.participants.manage") &&
+          canAccessProject("projects.participants.manage", p.project.id) &&
+          periodHasWriteCapability(periodOptionById(projects, p.period?.id), "resolve_operations"),
       )
       .map((p) => p.id);
-  }, [filteredParticipants, hasPermission, canAccessProject]);
+  }, [filteredParticipants, hasPermission, canAccessProject, projects]);
 
   const participantIds = useMemo(() => new Set(participants.map((participant) => participant.id)), [participants]);
   const selectedIdsInDataset = useMemo(
@@ -752,7 +754,10 @@ export default function PanelParticipantsPage() {
         <div className="panel-empty-card py-16">Bu filtreye uygun katilimci bulunamadi.</div>
       ) : (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-          {filteredParticipants.map((participant) => (
+          {filteredParticipants.map((participant) => {
+            const participantPeriod = periodOptionById(projects, participant.period?.id);
+            const canResolveParticipant = periodHasWriteCapability(participantPeriod, "resolve_operations");
+            return (
             <div key={participant.id} className="panel-list-card">
               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
@@ -763,7 +768,7 @@ export default function PanelParticipantsPage() {
                         type="checkbox"
                         className="h-4 w-4 rounded border-border accent-accent"
                         checked={selectedIds.includes(participant.id)}
-                        disabled={bulkLoading}
+                        disabled={bulkLoading || !canResolveParticipant}
                         onChange={() => toggleSelected(participant.id)}
                       />
                     </label>
@@ -805,7 +810,8 @@ export default function PanelParticipantsPage() {
                   {hasPermission("projects.participants.manage") && canAccessProject("projects.participants.manage", participant.project.id) ? (
                     <button
                       type="button"
-                      disabled={creditSubmitting && creditParticipant?.id === participant.id}
+                      disabled={!canResolveParticipant || (creditSubmitting && creditParticipant?.id === participant.id)}
+                      title={!canResolveParticipant ? "Bu dönemde kredi güncelleme işlemi kapalıdır." : undefined}
                       onClick={() => openCreditModal(participant)}
                       className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-amber-800 transition hover:border-amber-400 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -834,7 +840,7 @@ export default function PanelParticipantsPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    disabled={graduationLoadingId === participant.id || bulkLoading}
+                    disabled={!canResolveParticipant || graduationLoadingId === participant.id || bulkLoading}
                     onClick={() => void updateGraduationStatus(participant, "completed")}
                     className="panel-card-action panel-card-action-success"
                   >
@@ -843,7 +849,7 @@ export default function PanelParticipantsPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={graduationLoadingId === participant.id || bulkLoading}
+                    disabled={!canResolveParticipant || graduationLoadingId === participant.id || bulkLoading}
                     onClick={() => void updateGraduationStatus(participant, "graduated")}
                     className="panel-card-action panel-card-action-info"
                   >
@@ -852,7 +858,7 @@ export default function PanelParticipantsPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={graduationLoadingId === participant.id || bulkLoading}
+                    disabled={!canResolveParticipant || graduationLoadingId === participant.id || bulkLoading}
                     onClick={() => void updateGraduationStatus(participant, "not_completed")}
                     className="panel-card-action panel-card-action-danger"
                   >
@@ -870,7 +876,7 @@ export default function PanelParticipantsPage() {
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      disabled={visibilityLoadingId === participant.id}
+                      disabled={!canResolveParticipant || visibilityLoadingId === participant.id}
                       onClick={() =>
                         void updatePublicVisibility(participant, {
                           public_profile_visible: !(participant.user.public_profile_visible ?? false),
@@ -886,7 +892,7 @@ export default function PanelParticipantsPage() {
                     </button>
                     <button
                       type="button"
-                      disabled={visibilityLoadingId === participant.id || !(participant.user.public_profile_visible ?? false)}
+                      disabled={!canResolveParticipant || visibilityLoadingId === participant.id || !(participant.user.public_profile_visible ?? false)}
                       onClick={() =>
                         void updatePublicVisibility(participant, {
                           public_photo_visible: !(participant.user.public_photo_visible ?? false),
@@ -902,7 +908,7 @@ export default function PanelParticipantsPage() {
                     </button>
                     <button
                       type="button"
-                      disabled={visibilityLoadingId === participant.id}
+                      disabled={!canResolveParticipant || visibilityLoadingId === participant.id}
                       onClick={() =>
                         void updatePublicVisibility(participant, {
                           public_alumni_visible: !(participant.user.public_alumni_visible ?? false),
@@ -951,7 +957,8 @@ export default function PanelParticipantsPage() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {creditParticipant ? (
@@ -1052,7 +1059,13 @@ export default function PanelParticipantsPage() {
               </button>
               <button
                 type="submit"
-                disabled={creditSubmitting || !creditAmount.trim() || !creditReason.trim() || creditAmountNumber === 0}
+                disabled={
+                  creditSubmitting ||
+                  !creditAmount.trim() ||
+                  !creditReason.trim() ||
+                  creditAmountNumber === 0 ||
+                  !periodHasWriteCapability(periodOptionById(projects, creditParticipant.period?.id), "resolve_operations")
+                }
                 className="panel-button panel-button-primary"
               >
                 {creditSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

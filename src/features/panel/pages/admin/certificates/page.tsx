@@ -5,7 +5,7 @@ import { Award, Search, Filter, Loader2, Plus, Trash2, CheckCircle, Upload, Down
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
-import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, periodsForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
 
@@ -86,7 +86,7 @@ export default function AdminCertificatesPage() {
         [...(viewProjectsRes.data.projects ?? []), ...(createProjectsRes.data.projects ?? [])].forEach((project) => {
           const existing = merged.get(project.id);
           const periods = existing?.periods?.length ? existing.periods : project.periods;
-          const activePeriod = existing?.active_period ?? project.active_period ?? periods?.find((period) => period.status === "active") ?? null;
+          const activePeriod = existing?.active_period ?? project.active_period ?? null;
 
           merged.set(project.id, {
             id: project.id,
@@ -201,6 +201,8 @@ export default function AdminCertificatesPage() {
     () => projects.filter((p) => canAccessProject("certificates.create", p.id)),
     [projects, canAccessProject]
   );
+  const selectedCreatePeriod = periodOptionById(projects, form.period_id || creatableProjects.find((project) => String(project.id) === form.project_id)?.active_period?.id);
+  const canResolveSelectedPeriod = periodHasWriteCapability(selectedCreatePeriod, "resolve_operations");
 
   return (
     <div className="space-y-8">
@@ -240,7 +242,7 @@ export default function AdminCertificatesPage() {
         </div>
       </div>
 
-      <div className="panel-filter-card flex flex-col gap-4 md:flex-row">
+      <div className="panel-filter-card flex flex-col gap-4 md:flex-row md:items-end">
         <div className="relative flex-1">
           <Search className="panel-control-icon" />
           <input 
@@ -251,36 +253,19 @@ export default function AdminCertificatesPage() {
             placeholder="Doğrulama kodu, isim veya e-posta ara..." 
           />
         </div>
-        <select 
-          value={projectId} 
-          onChange={(e) => {
-            const value = e.target.value;
-            const project = filterableProjects.find((item) => String(item.id) === value);
-            setProjectId(value);
-            setPeriodId(value ? defaultPeriodIdForProject(project) || "all" : "all");
+        <ProjectPeriodFilters
+          projects={filterableProjects}
+          selectedProjectId={projectId || "all"}
+          selectedPeriodId={periodId}
+          onProjectChange={(value) => {
+            const normalizedValue = value === "all" ? "" : value;
+            const project = filterableProjects.find((item) => String(item.id) === normalizedValue);
+            setProjectId(normalizedValue);
+            setPeriodId(normalizedValue ? defaultPeriodIdForProject(project) || "all" : "all");
           }}
-          className="panel-control md:max-w-[220px]"
-        >
-          <option value="">Tüm Projeler</option>
-          {filterableProjects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={periodId}
-          onChange={(e) => setPeriodId(e.target.value)}
-          disabled={!projectId}
-          className="panel-control md:max-w-[220px]"
-        >
-          <option value="all">{projectId ? "Tüm Dönemler" : "Proje seçince dönem"}</option>
-          {periodsForProject(filterableProjects.find((project) => String(project.id) === projectId)).map((period) => (
-            <option key={period.id} value={period.id}>
-              {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
-            </option>
-          ))}
-        </select>
+          onPeriodChange={setPeriodId}
+          className="grid flex-[2] grid-cols-1 gap-3 sm:grid-cols-2"
+        />
         <button 
           onClick={applyFilters}
           className="panel-button panel-button-primary"
@@ -318,7 +303,9 @@ export default function AdminCertificatesPage() {
                   </td>
                 </tr>
               ) : (
-                certificates.map((cert) => (
+                certificates.map((cert) => {
+                  const canWriteCertificate = !cert.period?.id || periodHasWriteCapability(periodOptionById(projects, cert.period.id), "create_operations");
+                  return (
                   <tr key={cert.id}>
                     <td className="px-6 py-4">
                       <div className="font-bold text-slate-900">{cert.user?.name} {cert.user?.surname}</div>
@@ -347,9 +334,10 @@ export default function AdminCertificatesPage() {
                       {canDelete && cert.project?.id != null && canAccessProject("certificates.delete", cert.project.id) ? (
                         <button
                           type="button"
+                          disabled={!canWriteCertificate}
                           onClick={() => handleDelete(cert.id)}
-                          className="panel-table-action panel-table-action-icon panel-table-action-danger"
-                          title="İptal Et / Sil"
+                          className="panel-table-action panel-table-action-icon panel-table-action-danger disabled:cursor-not-allowed disabled:opacity-40"
+                          title={!canWriteCertificate ? "Bu dönem normal değişikliklere kapalıdır." : "İptal Et / Sil"}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -358,7 +346,8 @@ export default function AdminCertificatesPage() {
                       )}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -496,8 +485,9 @@ export default function AdminCertificatesPage() {
               </button>
               <button 
                 type="submit" 
-                disabled={creating}
-                className="panel-button panel-button-primary"
+                disabled={creating || !canResolveSelectedPeriod}
+                title={!canResolveSelectedPeriod && form.project_id ? "Seçili dönemde sertifika oluşturulamaz." : undefined}
+                className="panel-button panel-button-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                 Oluştur
@@ -509,4 +499,3 @@ export default function AdminCertificatesPage() {
     </div>
   );
 }
-

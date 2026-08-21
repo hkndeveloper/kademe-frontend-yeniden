@@ -6,7 +6,7 @@ import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { defaultPeriodIdForProject, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, PeriodArchiveModeNotice, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { useAuth } from "@/store/useAuth";
 import { panelStatusChipClass } from "@/lib/status-style";
 
@@ -115,6 +115,7 @@ export default function PanelSharedRequestsPage() {
   );
   const filterPeriods = useMemo(() => periodsForProject(filterProject), [filterProject]);
   const formPeriods = useMemo(() => periodsForProject(formProject), [formProject]);
+  const canCreateRequest = !form.period_id || periodHasWriteCapability(periodOptionById(projects, form.period_id), "create_operations");
 
   useEffect(() => {
     const loadRequests = async () => {
@@ -352,7 +353,7 @@ export default function PanelSharedRequestsPage() {
                 className="panel-textarea mt-4"
               />
 
-              <button type="submit" disabled={saving} className="panel-button panel-button-primary mt-6 h-11 px-6">
+              <button type="submit" disabled={saving || !canCreateRequest} title={!canCreateRequest ? "Seçili dönemde yeni talep oluşturulamaz." : undefined} className="panel-button panel-button-primary mt-6 h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50">
                 {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                 Talebi Gonder
               </button>
@@ -408,6 +409,7 @@ export default function PanelSharedRequestsPage() {
                   ))}
                 </select>
               </div>
+              <div className="mb-4"><PeriodArchiveModeNotice period={periodOptionById(projects, periodFilter)} /></div>
               {loading ? (
                 <div className="flex min-h-32 items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-accent" />
@@ -418,7 +420,9 @@ export default function PanelSharedRequestsPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {visibleRequests.map((request) => (
+                  {visibleRequests.map((request) => {
+                    const canResolveRequest = !request.period?.id || periodHasWriteCapability(periodOptionById(projects, request.period.id), "resolve_operations");
+                    return (
                     <div key={request.id} className="panel-list-card p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="text-sm font-bold text-slate-900">{typeLabels[request.type] || request.type}</div>
@@ -426,7 +430,8 @@ export default function PanelSharedRequestsPage() {
                           <select
                             value={request.status}
                             onChange={(e) => void handleStatusChange(request.id, e.target.value as RequestItem["status"])}
-                            disabled={updatingId === request.id}
+                            disabled={updatingId === request.id || !canResolveRequest}
+                            title={!canResolveRequest ? "Bu dönemde talep sonuçlandırma işlemi kapalıdır." : undefined}
                             className="rounded-xl border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-600 outline-none"
                           >
                             <option value="pending">Beklemede</option>
@@ -460,13 +465,13 @@ export default function PanelSharedRequestsPage() {
                             Yanit belgesini indir
                           </button>
                         ) : canUploadRequestResponse ? (
-                          <label className="panel-file-drop flex w-full cursor-pointer items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-slate-600">
+                          <label className={`panel-file-drop flex w-full items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 ${canResolveRequest ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
                             <Upload className="h-3 w-3" />
                             {updatingId === request.id ? "Yukleniyor..." : "Belge yukle"}
                             <input
                               type="file"
                               className="hidden"
-                              disabled={updatingId === request.id}
+                              disabled={updatingId === request.id || !canResolveRequest}
                               onChange={(e) => void handleFileUpload(request.id, e.target.files?.[0] || null)}
                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip"
                             />
@@ -476,7 +481,8 @@ export default function PanelSharedRequestsPage() {
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

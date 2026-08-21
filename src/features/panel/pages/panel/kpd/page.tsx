@@ -6,7 +6,7 @@ import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
-import type { PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { periodHasWriteCapability, PeriodArchiveModeNotice, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { downloadBlobResponse } from "@/lib/download";
 import { formatIstanbulDate, formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
 import { panelStatusChipClass } from "@/lib/status-style";
@@ -182,6 +182,12 @@ export default function PanelKpdPage() {
       return String(b.start_date ?? "").localeCompare(String(a.start_date ?? ""));
     });
   }, [appointments, counselees, reports, users]);
+  const periodById = useCallback(
+    (periodId?: string | number | null) => periodOptions.find((period) => String(period.id) === String(periodId ?? "")),
+    [periodOptions],
+  );
+  const canCreateAppointment = periodHasWriteCapability(periodById(appointmentForm.period_id), "create_operations");
+  const canCreateReport = periodHasWriteCapability(periodById(form.period_id), "resolve_operations");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -331,6 +337,7 @@ export default function PanelKpdPage() {
               ))}
             </select>
           </label>
+          <div className="mt-3"><PeriodArchiveModeNotice period={periodById(periodFilter)} /></div>
         </div>
       ) : null}
 
@@ -431,8 +438,9 @@ export default function PanelKpdPage() {
                 {counselees.length} danisan, {counselors.length} danisman ve {rooms.length} oda listeleniyor.
               </p>
               <button
-                disabled={savingAppointment || counselees.length === 0 || counselors.length === 0 || rooms.length === 0}
-                className="panel-button panel-button-primary h-11 px-6"
+                disabled={savingAppointment || counselees.length === 0 || counselors.length === 0 || rooms.length === 0 || !canCreateAppointment}
+                title={!canCreateAppointment && appointmentForm.period_id ? "Bu dönemde yeni randevu oluşturulamaz." : undefined}
+                className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingAppointment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Randevu Olustur
@@ -499,8 +507,9 @@ export default function PanelKpdPage() {
             </div>
             <div className="panel-modal-footer mt-4">
               <button
-                disabled={saving || users.length === 0}
-                className="panel-button panel-button-primary h-11 px-6"
+                disabled={saving || users.length === 0 || !canCreateReport}
+                title={!canCreateReport && form.period_id ? "Bu dönemde rapor yükleme işlemi kapalıdır." : undefined}
+                className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 Raporu Yukle
@@ -523,7 +532,9 @@ export default function PanelKpdPage() {
               </div>
             ) : (
               <div className="space-y-3 p-4">
-                {reports.map((report) => (
+                {reports.map((report) => {
+                  const canWriteReport = !report.period_id || periodHasWriteCapability(periodById(report.period_id), "create_operations");
+                  return (
                   <div key={report.id} className="panel-list-card flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="text-base font-bold text-slate-900">{report.title}</div>
@@ -545,8 +556,10 @@ export default function PanelKpdPage() {
                       {canDeleteReports ? (
                         <button
                           type="button"
+                          disabled={!canWriteReport}
+                          title={!canWriteReport ? "Bu dönem normal değişikliklere kapalıdır." : undefined}
                           onClick={() => void handleDelete(report)}
-                          className="panel-card-action panel-card-action-danger"
+                          className="panel-card-action panel-card-action-danger disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Trash2 className="h-4 w-4" />
                           Sil
@@ -554,7 +567,8 @@ export default function PanelKpdPage() {
                       ) : null}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 {reports.length === 0 ? <div className="panel-empty-card">KPD raporu bulunamadi.</div> : null}
               </div>
             )}
@@ -629,7 +643,9 @@ export default function PanelKpdPage() {
               <h2 className="text-xl font-black text-slate-900">Randevu Ozeti</h2>
             </div>
             <div className="space-y-3 p-4">
-              {appointments.map((appointment) => (
+              {appointments.map((appointment) => {
+                const canResolveAppointment = !appointment.period_id || periodHasWriteCapability(periodById(appointment.period_id), "resolve_operations");
+                return (
                 <div key={appointment.id} className="panel-list-card flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="font-bold text-slate-900">
@@ -647,7 +663,8 @@ export default function PanelKpdPage() {
                     {canManageAppointments ? (
                       <select
                         value={appointment.status}
-                        disabled={updatingAppointmentId === appointment.id}
+                        disabled={updatingAppointmentId === appointment.id || !canResolveAppointment}
+                        title={!canResolveAppointment ? "Bu dönemde randevu sonuçlandırma işlemi kapalıdır." : undefined}
                         onChange={(event) => void handleUpdateAppointmentStatus(appointment.id, event.target.value)}
                         className="panel-control h-9 text-xs font-bold"
                       >
@@ -659,7 +676,8 @@ export default function PanelKpdPage() {
                     ) : null}
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {!loading && appointments.length === 0 ? <div className="panel-empty-card">Randevu bulunamadi.</div> : null}
             </div>
           </div>

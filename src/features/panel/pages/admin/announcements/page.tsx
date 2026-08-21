@@ -5,7 +5,7 @@ import { Bell, CheckCircle2, Download, FileText, Loader2, Mail, MessageSquare, P
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { defaultPeriodIdForProject, periodsForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, periodsForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { formatIstanbulDate, formatIstanbulDateTime, toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
@@ -161,6 +161,8 @@ export default function AdminAnnouncementsPage() {
     [editForm.project_id, projects]
   );
   const editPeriods = useMemo(() => periodsForProject(editProject), [editProject]);
+  const canWriteFormPeriod = !periodId || periodHasWriteCapability(periodOptionById(projects, periodId), "create_operations");
+  const canWriteEditPeriod = !editForm.period_id || periodHasWriteCapability(periodOptionById(projects, editForm.period_id), "create_operations");
   const availableTargetUnits = useMemo(() => {
     const units = Object.keys(targetUnitLabels);
     if (hasGlobalScope("announcements.create")) return units;
@@ -633,7 +635,9 @@ export default function AdminAnnouncementsPage() {
                     </td>
                   </tr>
                 ) : (
-                  announcements.map((announcement) => (
+                  announcements.map((announcement) => {
+                    const canWriteAnnouncement = !announcement.period?.id || periodHasWriteCapability(periodOptionById(projects, announcement.period.id), "create_operations");
+                    return (
                     <tr key={announcement.id}>
                       <td className="px-6 py-4">{formatIstanbulDate(announcement.published_at)}</td>
                       <td className="px-6 py-4">
@@ -687,8 +691,10 @@ export default function AdminAnnouncementsPage() {
                           {canUpdateAnnouncement(announcement) && (
                             <button
                               type="button"
+                              disabled={!canWriteAnnouncement}
+                              title={!canWriteAnnouncement ? "Bu dönem normal değişikliklere kapalıdır." : undefined}
                               onClick={() => openEdit(announcement)}
-                              className="panel-table-action panel-table-action-icon panel-table-action-info"
+                              className="panel-table-action panel-table-action-icon panel-table-action-info disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -696,8 +702,10 @@ export default function AdminAnnouncementsPage() {
                           {canDeleteAnnouncement(announcement) && (
                             <button
                               type="button"
+                              disabled={!canWriteAnnouncement}
+                              title={!canWriteAnnouncement ? "Bu dönem normal değişikliklere kapalıdır." : undefined}
                               onClick={() => handleDelete(announcement.id)}
-                              className="panel-table-action panel-table-action-icon panel-table-action-danger"
+                              className="panel-table-action panel-table-action-icon panel-table-action-danger disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -705,7 +713,8 @@ export default function AdminAnnouncementsPage() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -1068,8 +1077,9 @@ export default function AdminAnnouncementsPage() {
           <div className="panel-modal-footer">
             <button
               type="submit"
-              disabled={submitting || !title.trim() || !content.trim()}
-              className="panel-button panel-button-primary h-11 px-6"
+              disabled={submitting || !title.trim() || !content.trim() || !canWriteFormPeriod}
+              title={!canWriteFormPeriod ? "Seçili dönemde yeni duyuru oluşturulamaz." : undefined}
+              className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -1249,8 +1259,9 @@ export default function AdminAnnouncementsPage() {
               </button>
               <button
                 type="submit"
-                disabled={updating || !editForm.title.trim() || !editForm.content.trim()}
-                className="panel-button panel-button-primary"
+                disabled={updating || !editForm.title.trim() || !editForm.content.trim() || !canWriteEditPeriod}
+                title={!canWriteEditPeriod ? "Seçili dönemde duyuru düzenlenemez." : undefined}
+                className="panel-button panel-button-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 {updating ? "Guncelleniyor..." : "Duyuruyu Guncelle"}

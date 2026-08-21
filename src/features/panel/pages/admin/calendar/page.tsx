@@ -23,6 +23,11 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
+import {
+  periodHasWriteCapability,
+  PeriodArchiveModeNotice,
+  type PeriodOption,
+} from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { formatIstanbulDateTime, formatIstanbulTime, toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 
@@ -32,11 +37,8 @@ interface Project {
   active_period?: { id: number; name: string } | null;
 }
 
-interface Period {
-  id: number;
-  name: string;
+interface Period extends PeriodOption {
   project_id: number;
-  status?: string;
 }
 
 interface CalendarAssignee {
@@ -68,7 +70,7 @@ interface Program {
   application_quota?: number | null;
   project_id?: number | null;
   project?: { id: number; name: string } | null;
-  period?: { id: number; name: string } | null;
+  period?: PeriodOption | null;
   calendar_event?: {
     google_event_id?: string | null;
     assigned_user_ids?: number[];
@@ -212,6 +214,7 @@ export default function AdminCalendarPage() {
   const [form, setForm] = useState(initialForm);
 
   const canCreateProgram = hasPermission("programs.create");
+  const canViewPeriods = hasPermission("periods.view");
   const canCreateMeeting = hasPermission("calendar.meetings.create");
   const canExportCalendar = hasPermission("calendar.export");
   const canConnectGoogle = hasPermission("calendar.google.connect");
@@ -237,6 +240,12 @@ export default function AdminCalendarPage() {
     setLoading(true);
     setErrorMessage("");
     try {
+      const periodRequest = canViewPeriods
+        ? api.get<{ periods?: Period[] }>("/panel/periods").catch((error) => {
+            console.warn("Takvim donem listesi yuklenemedi; takvim ozeti gosterilmeye devam edecek.", error);
+            return null;
+          })
+        : Promise.resolve(null);
       const [overviewResponse, periodResponse] = await Promise.all([
         api.get<CalendarOverviewResponse>("/panel/calendar/overview", {
           params: {
@@ -244,7 +253,7 @@ export default function AdminCalendarPage() {
             period_id: selectedPeriod !== "all" ? selectedPeriod : undefined,
           },
         }),
-        api.get<{ periods?: Period[] }>("/panel/periods"),
+        periodRequest,
       ]);
 
       setProjects(overviewResponse.data.projects ?? []);
@@ -253,7 +262,7 @@ export default function AdminCalendarPage() {
       setUpcomingTasks(overviewResponse.data.upcoming_tasks ?? []);
       setAttentionItems(overviewResponse.data.attention_items ?? []);
       setGoogleStatus(overviewResponse.data.google_calendar ?? null);
-      const periodItems = periodResponse.data.periods ?? [];
+      const periodItems = periodResponse?.data.periods ?? [];
       setPeriods(periodItems);
       if (selectedProject !== "all" && selectedPeriod === "all") {
         const projectPeriods = periodItems.filter((period) => String(period.project_id) === selectedProject);
@@ -266,7 +275,7 @@ export default function AdminCalendarPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedPeriod, selectedProject]);
+  }, [canViewPeriods, selectedPeriod, selectedProject]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadCalendar(), 0);
@@ -316,8 +325,20 @@ export default function AdminCalendarPage() {
     [periods, selectedPeriod],
   );
 
+  const selectedFilterPeriod = periods.find((period) => String(period.id) === selectedPeriod);
+  const selectedFormPeriod = periods.find((period) => String(period.id) === form.period_id);
+  const formPeriodCanCreate = !form.period_id || periodHasWriteCapability(selectedFormPeriod, "create_operations");
+  const itemPeriodCanCreate = useCallback(
+    (item: Program) => !item.period?.id || periodHasWriteCapability(
+      periods.find((period) => period.id === item.period?.id),
+      "create_operations",
+    ),
+    [periods],
+  );
+
   const canManageCalendarItemAssignments = useCallback(
     (item: Program) => {
+      if (!itemPeriodCanCreate(item)) return false;
       if ((item.event_type ?? "program") === "meeting") {
         if (!canManageMeetings) return false;
         return item.project_id == null
@@ -327,7 +348,7 @@ export default function AdminCalendarPage() {
 
       return canManageAssignments && canAccessProject("calendar.assignments.manage", item.project_id);
     },
-    [canAccessProject, canManageAssignments, canManageMeetings, hasGlobalScope],
+    [canAccessProject, canManageAssignments, canManageMeetings, hasGlobalScope, itemPeriodCanCreate],
   );
 
   const openCreateModal = () => {
@@ -381,6 +402,10 @@ export default function AdminCalendarPage() {
     setErrorMessage("");
     setSuccessMessage("");
     try {
+      if (!formPeriodCanCreate) {
+        setErrorMessage("Yeni takvim kaydı yalnız aktif dönemde oluşturulabilir.");
+        return;
+      }
       if (createMode === "meeting") {
         const projectId = form.project_id ? Number(form.project_id) : null;
         if (!canCreateMeetingInSelectedScope(form.project_id)) {
@@ -920,6 +945,8 @@ export default function AdminCalendarPage() {
               </div>
             </div>
 
+            <PeriodArchiveModeNotice period={selectedFilterPeriod} />
+
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -1194,6 +1221,14 @@ export default function AdminCalendarPage() {
                     </select>
                   </div>
                 ) : null}
+                {form.period_id && !formPeriodCanCreate ? (
+                  <div className="md:col-span-2">
+                    <PeriodArchiveModeNotice period={selectedFormPeriod} />
+                    {selectedFormPeriod && selectedFormPeriod.status !== "completed" && selectedFormPeriod.status !== "cancelled" ? (
+                      <div className="panel-notice panel-notice-info mt-2">Yeni takvim kaydı yalnız aktif dönemde oluşturulabilir.</div>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className="md:col-span-2">
                   <label className={labelClass}>Baslik</label>
                   <input required value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className={inputClass} />
@@ -1328,6 +1363,7 @@ export default function AdminCalendarPage() {
                   type="submit"
                   disabled={
                     creating ||
+                    !formPeriodCanCreate ||
                     (createMode === "program"
                       ? (!canUseProgramCreate || !form.project_id || !canAccessProject("programs.create", Number(form.project_id)))
                       : (!canUseMeetingCreate || !canCreateMeetingInSelectedScope(form.project_id)))
@@ -1345,5 +1381,3 @@ export default function AdminCalendarPage() {
     </PermissionGate>
   );
 }
-
-

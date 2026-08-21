@@ -7,6 +7,11 @@ import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
 import { cn } from "@/lib/utils";
+import {
+  periodHasWriteCapability,
+  PeriodArchiveModeNotice,
+  type PeriodOption,
+} from "@/components/shared/ProjectPeriodFilters";
 
 type FamilyKey = "diplomasi360" | "pergel" | "eurodesk" | "kademe_plus" | "zirve_kademe";
 type ApiFamilyKey = "diplomasi360" | "pergel" | "eurodesk" | "kademe-plus" | "zirve-kademe";
@@ -29,11 +34,8 @@ type FamilyProject = {
   applicable_modules?: string[];
 };
 
-type FamilyPeriod = {
-  id: number;
+type FamilyPeriod = PeriodOption & {
   project_id: number;
-  name: string;
-  status?: string | null;
 };
 
 type FamilySummary = {
@@ -418,6 +420,8 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
 
   const rows = latestRows(familyKey, payload?.data);
   const projectCount = payload?.projects.length ?? matchedProjectIds.length;
+  const selectedPeriod = payload?.periods.find((period) => String(period.id) === requestedPeriodId);
+  const selectedPeriodCanCreate = !selectedPeriod || periodHasWriteCapability(selectedPeriod, "create_operations");
 
   function updateFilter(name: "project_id" | "period_id", value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -484,6 +488,13 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
         </label>
       </div>
 
+      <PeriodArchiveModeNotice period={selectedPeriod} />
+      {selectedPeriod && !selectedPeriodCanCreate && selectedPeriod.status !== "completed" && selectedPeriod.status !== "cancelled" ? (
+        <div className="panel-notice panel-notice-info">
+          Bu dönemin mevcut aşamasında yeni proje ailesi kaydı açılamaz. Kayıtlar salt okunur olarak gösteriliyor.
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         {visibleTabs.map((tab, index) => (
           <button
@@ -517,20 +528,20 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
           {familyKey === "diplomasi360" ? (
             <DiplomasiFamilyContent
               payload={payload}
-              canManage={Boolean(payload.access["projects.internships.manage"])}
+              canManage={Boolean(payload.access["projects.internships.manage"]) && selectedPeriodCanCreate}
               onReload={reloadFamilyData}
             />
           ) : familyKey === "pergel" ? (
             <PergelFamilyContent
               payload={payload}
-              canManage={Boolean(payload.access["projects.mentors.manage"])}
+              canManage={Boolean(payload.access["projects.mentors.manage"]) && selectedPeriodCanCreate}
               periodId={requestedPeriodId}
               onReload={reloadFamilyData}
             />
           ) : familyKey === "eurodesk" ? (
             <EurodeskFamilyContent
               payload={payload}
-              canManage={Boolean(payload.access["projects.eurodesk.manage"])}
+              canManage={Boolean(payload.access["projects.eurodesk.manage"]) && selectedPeriodCanCreate}
               periodId={requestedPeriodId}
               onReload={reloadFamilyData}
             />
@@ -538,7 +549,7 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
             <KademeRewardsFamilyContent
               payload={payload}
               title={config.title}
-              canManage={Boolean(payload.access["projects.rewards.manage"])}
+              canManage={Boolean(payload.access["projects.rewards.manage"]) && selectedPeriodCanCreate}
               periodId={requestedPeriodId}
               onReload={reloadFamilyData}
             />

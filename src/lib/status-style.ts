@@ -19,6 +19,7 @@ const positiveStatuses = new Set([
 ]);
 
 const pendingStatuses = new Set([
+  "closing",
   "draft",
   "given",
   "in_progress",

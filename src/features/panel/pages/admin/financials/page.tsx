@@ -29,7 +29,7 @@ import {
 } from "recharts";
 import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
-import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -139,6 +139,8 @@ export default function AdminFinancialsPage() {
   const [formPaymentMethod, setFormPaymentMethod] = useState("");
   const [formAccountingCode, setFormAccountingCode] = useState("");
   const [formFile, setFormFile] = useState<File | null>(null);
+  const selectedFormPeriod = periodOptionById([...projects, ...createProjects], formPeriodId || createProjects.find((project) => String(project.id) === formProjectId)?.active_period?.id);
+  const canCreateInSelectedPeriod = periodHasWriteCapability(selectedFormPeriod, "create_operations");
   const canViewFinancials = hasPermission("financial.view");
   const canCreateFinancials = hasPermission("financial.create");
   const canDownloadInvoice = hasPermission("financial.invoice.download");
@@ -754,7 +756,11 @@ export default function AdminFinancialsPage() {
                   </td>
                 </tr>
               ) : (
-                transactions.map((transaction) => (
+                transactions.map((transaction) => {
+                  const transactionPeriod = periodOptionById(projects, transaction.period?.id);
+                  const canWriteTransaction = periodHasWriteCapability(transactionPeriod, "create_operations");
+                  const canResolveTransaction = periodHasWriteCapability(transactionPeriod, "resolve_operations");
+                  return (
                   <tr key={transaction.id}>
                     <td className="px-6 py-4">
                       {new Date(transaction.submitted_at).toLocaleDateString("tr-TR")}
@@ -830,9 +836,10 @@ export default function AdminFinancialsPage() {
                             canAccessProject("financial.approve", transaction.project.id) && (
                             <button
                               type="button"
+                              disabled={!canResolveTransaction}
                               onClick={() => void handleAction(transaction.id, "approve")}
-                              className="panel-table-action panel-table-action-icon panel-table-action-success"
-                              title="Onayla"
+                              className="panel-table-action panel-table-action-icon panel-table-action-success disabled:cursor-not-allowed disabled:opacity-40"
+                              title={!canResolveTransaction ? "Bu dönemde sonuçlandırma işlemi kapalıdır." : "Onayla"}
                             >
                               <CheckCircle className="h-4 w-4" />
                             </button>
@@ -841,9 +848,10 @@ export default function AdminFinancialsPage() {
                             canAccessProject("financial.reject", transaction.project.id) && (
                             <button
                               type="button"
+                              disabled={!canResolveTransaction}
                               onClick={() => void handleAction(transaction.id, "reject")}
-                              className="panel-table-action panel-table-action-icon panel-table-action-danger"
-                              title="Reddet"
+                              className="panel-table-action panel-table-action-icon panel-table-action-danger disabled:cursor-not-allowed disabled:opacity-40"
+                              title={!canResolveTransaction ? "Bu dönemde sonuçlandırma işlemi kapalıdır." : "Reddet"}
                             >
                               <XCircle className="h-4 w-4" />
                             </button>
@@ -852,8 +860,10 @@ export default function AdminFinancialsPage() {
                             canAccessProject("financial.delete", transaction.project.id) && (
                             <button
                               type="button"
+                              disabled={!canWriteTransaction}
                               onClick={() => void handleAction(transaction.id, "delete")}
-                              className="panel-table-action panel-table-action-danger"
+                              className="panel-table-action panel-table-action-danger disabled:cursor-not-allowed disabled:opacity-40"
+                              title={!canWriteTransaction ? "Bu dönem normal değişikliklere kapalıdır." : undefined}
                             >
                               Sil
                             </button>
@@ -867,8 +877,10 @@ export default function AdminFinancialsPage() {
                         canAccessProject("financial.mark_paid", transaction.project.id) && (
                         <button
                           type="button"
+                          disabled={!canResolveTransaction}
                           onClick={() => void handleAction(transaction.id, "pay")}
-                          className="panel-table-action panel-table-action-success"
+                          className="panel-table-action panel-table-action-success disabled:cursor-not-allowed disabled:opacity-40"
+                          title={!canResolveTransaction ? "Bu dönemde sonuçlandırma işlemi kapalıdır." : undefined}
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           Odendi Yap
@@ -876,7 +888,8 @@ export default function AdminFinancialsPage() {
                       )}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -1091,8 +1104,9 @@ export default function AdminFinancialsPage() {
           <div className="panel-modal-footer">
             <button
               type="submit"
-              disabled={submitting || createProjects.length === 0}
-              className="panel-button panel-button-primary h-11 px-6"
+              disabled={submitting || createProjects.length === 0 || !canCreateInSelectedPeriod}
+              title={!canCreateInSelectedPeriod && formProjectId ? "Seçili dönemde yeni finans kaydı açılamaz." : undefined}
+              className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
               Faturayi Gonder

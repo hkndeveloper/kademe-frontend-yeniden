@@ -33,7 +33,7 @@ import api from "@/lib/api/axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
-import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { AxiosError } from "axios";
 import { fixMojibake } from "@/lib/text";
@@ -435,6 +435,14 @@ export default function PanelProgramsPage() {
   const canViewMedia = hasPermission("programs.view");
   const canManageMedia = hasPermission("programs.media.upload");
   const canManageTemplates = hasPermission("programs.create") || hasPermission("programs.update");
+  const selectedFilterPeriod = periodOptionById(projects, selectedPeriodId);
+  const canCreateInSelectedFilter = selectedPeriodId === "all" || periodHasWriteCapability(selectedFilterPeriod, "create_operations");
+  const selectedFormPeriod = periodOptionById([...projects, ...creatableProjects, ...updatableProjects], form.period_id);
+  const canWriteSelectedProgramPeriod = periodHasWriteCapability(selectedFormPeriod, "create_operations");
+  const attendanceModalPeriod = periodOptionById(projects, attendanceModalProgram?.period?.id);
+  const canResolveAttendancePeriod = periodHasWriteCapability(attendanceModalPeriod, "resolve_operations");
+  const galleryModalPeriod = periodOptionById(projects, galleryModalProgram?.period?.id);
+  const canWriteGalleryPeriod = periodHasWriteCapability(galleryModalPeriod, "create_operations");
 
   const normalizeProjectsPayload = useCallback((payload: ProjectsPayload | undefined): Project[] => {
     if (Array.isArray(payload)) return payload;
@@ -1059,8 +1067,10 @@ export default function PanelProgramsPage() {
             )}
             <PermissionGate permission="programs.create">
               <button
+                disabled={!canCreateInSelectedFilter}
+                title={!canCreateInSelectedFilter ? "Seçili dönemde yeni program oluşturulamaz." : undefined}
                 onClick={showForm ? () => setShowForm(false) : openCreateForm}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition ${
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${
                   showForm
                     ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     : "bg-indigo-600 text-white shadow-indigo-600/20 hover:bg-indigo-700"
@@ -1397,8 +1407,9 @@ export default function PanelProgramsPage() {
             <div className="mt-6 flex flex-wrap gap-3 border-t border-slate-100 pt-5">
               <button
                 type="submit"
-                disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:opacity-60"
+                disabled={submitting || !canWriteSelectedProgramPeriod}
+                title={!canWriteSelectedProgramPeriod && form.period_id ? "Bu dönemde program ekleme veya düzenleme işlemi kapalıdır." : undefined}
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 {editingProgramId ? "Kaydet" : "Programi Olustur"}
@@ -1625,9 +1636,12 @@ export default function PanelProgramsPage() {
             {filteredPrograms.map((program, index) => {
               const programStatus = normalizeStatus(program.status);
               const cfg = statusConfig[programStatus];
-              const canCompleteThisProgram = programStatus !== "completed" && programStatus !== "cancelled";
+              const programPeriod = periodOptionById(projects, program.period?.id);
+              const canWriteProgram = periodHasWriteCapability(programPeriod, "create_operations");
+              const canResolveProgram = periodHasWriteCapability(programPeriod, "resolve_operations");
+              const canCompleteThisProgram = canResolveProgram && programStatus !== "completed" && programStatus !== "cancelled";
               const qrWindowOpen = isProgramAttendanceWindowOpen(program);
-              const canStartQrForProgram = (programStatus === "scheduled" || programStatus === "active") && qrWindowOpen;
+              const canStartQrForProgram = canResolveProgram && (programStatus === "scheduled" || programStatus === "active") && qrWindowOpen;
               const canShowQrStatus = canManageQr && (programStatus === "scheduled" || programStatus === "active") && canAccessProject("programs.qr.manage", program.project_id);
 
               return (
@@ -1734,9 +1748,10 @@ export default function PanelProgramsPage() {
                       {canUpdatePrograms && canAccessProject("programs.update", program.project_id) && (
                         <button
                           type="button"
-                          disabled={visibilityTogglingId === program.id}
+                          disabled={visibilityTogglingId === program.id || !canWriteProgram}
+                          title={!canWriteProgram ? "Bu dönem normal değişikliklere kapalıdır." : undefined}
                           onClick={() => void handleToggleVisibility(program, "is_public")}
-                          className={`panel-card-action w-full px-2.5 ${
+                          className={`panel-card-action w-full px-2.5 disabled:cursor-not-allowed disabled:opacity-40 ${
                             program.is_public !== false
                               ? ""
                               : "panel-card-action-success"
@@ -1754,8 +1769,10 @@ export default function PanelProgramsPage() {
                       )}
                       {canUpdatePrograms && canAccessProject("programs.update", program.project_id) && (
                         <button
+                          disabled={!canWriteProgram}
+                          title={!canWriteProgram ? "Bu dönem normal değişikliklere kapalıdır." : undefined}
                           onClick={() => openEditForm(program)}
-                          className="panel-card-action w-full px-2.5"
+                          className="panel-card-action w-full px-2.5 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                           Duzenle
@@ -1924,7 +1941,8 @@ export default function PanelProgramsPage() {
                                 <button
                                   type="button"
                                   onClick={() => void updateManualAttendance(record, !record.is_valid)}
-                                  disabled={attendanceActionLoading === record.participant_id}
+                                  disabled={attendanceActionLoading === record.participant_id || !canResolveAttendancePeriod}
+                                  title={!canResolveAttendancePeriod ? "Bu dönemde yoklama sonuçlandırma işlemi kapalıdır." : undefined}
                                   className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
                                     record.is_valid
                                       ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
@@ -2279,7 +2297,8 @@ export default function PanelProgramsPage() {
                   {canUpdatePrograms && canAccessProject("programs.update", galleryModalProgram.project_id) ? (
                     <button
                       type="button"
-                      disabled={visibilityTogglingId === galleryModalProgram.id}
+                      disabled={visibilityTogglingId === galleryModalProgram.id || !canWriteGalleryPeriod}
+                      title={!canWriteGalleryPeriod ? "Bu dönem normal değişikliklere kapalıdır." : undefined}
                       onClick={() => void handleToggleVisibility(galleryModalProgram, "is_featured")}
                       className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition ${
                         galleryModalProgram.is_featured
@@ -2340,7 +2359,7 @@ export default function PanelProgramsPage() {
                           {canManageMedia && canAccessProject("programs.media.upload", galleryModalProgram.project_id) ? (
                             <button
                               type="button"
-                              disabled={photoDeletingId === photo.id}
+                              disabled={photoDeletingId === photo.id || !canWriteGalleryPeriod}
                               onClick={() => void handleDeletePhoto(photo.id)}
                               className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
                               title="Fotoğrafı sil"
@@ -2388,7 +2407,8 @@ export default function PanelProgramsPage() {
                       />
                       <button
                         type="button"
-                        disabled={photoUploading}
+                        disabled={photoUploading || !canWriteGalleryPeriod}
+                        title={!canWriteGalleryPeriod ? "Bu döneme yeni fotoğraf yüklenemez." : undefined}
                         onClick={() => photoInputRef.current?.click()}
                         className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
                       >

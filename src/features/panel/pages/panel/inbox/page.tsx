@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, Loader2, Pin, Star } from "lucide-react";
+import { Bell, Loader2, Megaphone, Pin, Star } from "lucide-react";
 import api from "@/lib/api/axios";
 import { LinkifiedText } from "@/components/shared/LinkifiedText";
+import { useAuth } from "@/store/useAuth";
 
 type InboxMessage = {
   source_type: string;
@@ -27,6 +28,7 @@ type InboxMessage = {
 };
 
 export default function PanelInboxPage() {
+  const { hasPermission } = useAuth();
   const [items, setItems] = useState<InboxMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -101,9 +103,21 @@ export default function PanelInboxPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Bell className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold text-slate-900">Mesaj / Duyuru Kutusu</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <Bell className="mt-1 h-6 w-6 shrink-0 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Gelen Kutusu</h1>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+              Size gorunen duyurular, kariyer firsatlari ve forum bildirimleri burada toplanir. Bu ekran kisiye ozel mesaj yazma alani degildir.
+            </p>
+          </div>
+        </div>
+        {hasPermission("announcements.create") ? (
+          <Link href="/panel/announcements" className="panel-card-action panel-card-action-primary shrink-0">
+            <Megaphone className="h-4 w-4" /> Yeni duyuru gonder
+          </Link>
+        ) : null}
       </div>
       <div className="panel-filter-card">
         <div className="flex flex-wrap items-center gap-3">
@@ -121,7 +135,7 @@ export default function PanelInboxPage() {
         </div>
       </div>
       {items.length === 0 ? (
-        <div className="panel-empty-card">Kutuda duyuru bulunmuyor.</div>
+        <div className="panel-empty-card">Size gosterilecek duyuru, kariyer firsati veya forum bildirimi bulunmuyor.</div>
       ) : (
         items.map((item) => (
           <div key={`${item.source_type}:${item.source_id}`} className="panel-list-card">

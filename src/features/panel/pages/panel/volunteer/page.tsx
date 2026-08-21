@@ -5,7 +5,7 @@ import { ClipboardList, Loader2, Pencil, Plus, Trash2, UserCheck, X } from "luci
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ExportButtons } from "@/components/shared/ExportButtons";
-import { defaultPeriodIdForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 import { panelStatusActionClass, panelStatusChipClass } from "@/lib/status-style";
@@ -119,6 +119,10 @@ export default function PanelVolunteerPage() {
     () => projects.filter((project) => canAccessProject("volunteer.manage", project.id)),
     [projects, canAccessProject],
   );
+  const selectedFormPeriod = periodOptionById(projects, form.period_id);
+  const canWriteSelectedOpportunityPeriod = !form.period_id || periodHasWriteCapability(selectedFormPeriod, "create_operations");
+  const selectedFilterPeriod = periodOptionById(projects, periodFilter);
+  const canCreateInFilterPeriod = periodFilter === "all" || periodHasWriteCapability(selectedFilterPeriod, "create_operations");
 
   useEffect(() => {
     let active = true;
@@ -279,7 +283,7 @@ export default function PanelVolunteerPage() {
               buttonLabel="Gonullu Kayitlarini Disa Aktar"
             />
             <PermissionGate permission="volunteer.manage">
-              <button type="button" onClick={openCreateForm} className="panel-button panel-button-primary h-11">
+              <button type="button" disabled={!canCreateInFilterPeriod} title={!canCreateInFilterPeriod ? "Seçili dönemde yeni ilan açılamaz." : undefined} onClick={openCreateForm} className="panel-button panel-button-primary h-11 disabled:cursor-not-allowed disabled:opacity-50">
                 <Plus className="h-4 w-4" />
                 Yeni Ilan
               </button>
@@ -377,7 +381,7 @@ export default function PanelVolunteerPage() {
               />
               <div className="panel-modal-footer mt-4">
                 <button type="button" onClick={closeForm} className="panel-button panel-button-secondary h-11 px-5">Iptal</button>
-                <button disabled={saving} className="panel-button panel-button-primary h-11 px-6">
+                <button disabled={saving || !canWriteSelectedOpportunityPeriod} title={!canWriteSelectedOpportunityPeriod ? "Bu dönemde ilan ekleme veya düzenleme işlemi kapalıdır." : undefined} className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50">
                   {saving ? "Kaydediliyor..." : editingId ? "Ilani Guncelle" : "Ilani Olustur"}
                 </button>
               </div>
@@ -411,7 +415,11 @@ export default function PanelVolunteerPage() {
             </div>
           ) : (
             <div className="space-y-3 p-4">
-              {opportunities.map((opportunity) => (
+              {opportunities.map((opportunity) => {
+                const opportunityPeriod = periodOptionById(projects, opportunity.period_id);
+                const canWriteOpportunity = !opportunity.period_id || periodHasWriteCapability(opportunityPeriod, "create_operations");
+                const canResolveOpportunity = !opportunity.period_id || periodHasWriteCapability(opportunityPeriod, "resolve_operations");
+                return (
                 <div key={opportunity.id} className="panel-list-card">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
@@ -426,11 +434,11 @@ export default function PanelVolunteerPage() {
                     </div>
                     <PermissionGate permission="volunteer.manage" requireProjectAccess={{ permission: "volunteer.manage", projectId: opportunity.project_id }}>
                       <div className="flex flex-wrap gap-2">
-                        <button type="button" onClick={() => startEdit(opportunity)} className="panel-card-action">
+                        <button type="button" disabled={!canWriteOpportunity} title={!canWriteOpportunity ? "Bu dönem normal değişikliklere kapalıdır." : undefined} onClick={() => startEdit(opportunity)} className="panel-card-action disabled:cursor-not-allowed disabled:opacity-40">
                           <Pencil className="h-4 w-4" />
                           Duzenle
                         </button>
-                        <button type="button" onClick={() => void deleteOpportunity(opportunity)} className="panel-card-action panel-card-action-danger">
+                        <button type="button" disabled={!canWriteOpportunity} title={!canWriteOpportunity ? "Bu dönem normal değişikliklere kapalıdır." : undefined} onClick={() => void deleteOpportunity(opportunity)} className="panel-card-action panel-card-action-danger disabled:cursor-not-allowed disabled:opacity-40">
                           <Trash2 className="h-4 w-4" />
                           Sil
                         </button>
@@ -455,7 +463,7 @@ export default function PanelVolunteerPage() {
                           <PermissionGate permission="volunteer.manage" requireProjectAccess={{ permission: "volunteer.manage", projectId: opportunity.project_id }}>
                             <div className="flex flex-wrap gap-2">
                               {(["accepted", "waitlisted", "rejected"] as const).map((status) => (
-                                <button key={status} onClick={() => void updateApplication(application, status)} className={`panel-card-action py-1 ${panelStatusActionClass(status)}`}>
+                                <button key={status} disabled={!canResolveOpportunity} title={!canResolveOpportunity ? "Bu dönemde başvuru sonuçlandırma işlemi kapalıdır." : undefined} onClick={() => void updateApplication(application, status)} className={`panel-card-action py-1 ${panelStatusActionClass(status)} disabled:cursor-not-allowed disabled:opacity-40`}>
                                   <UserCheck className="h-3 w-3" />
                                   {applicationStatusLabel[status]}
                                 </button>
@@ -467,7 +475,8 @@ export default function PanelVolunteerPage() {
                     </div>
                   ) : null}
                 </div>
-              ))}
+                );
+              })}
               {opportunities.length === 0 ? <div className="panel-empty-card">Gonullu ilani bulunamadi.</div> : null}
             </div>
           )}
