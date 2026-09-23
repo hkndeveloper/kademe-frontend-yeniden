@@ -9,6 +9,7 @@ import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
+import { optionalPanelRequest } from "@/lib/panel-load-state";
 
 type Project = {
   id: number;
@@ -79,7 +80,9 @@ function uploadErrorMessage(error: unknown): string {
 }
 
 export default function PanelDigitalBohcaPage() {
-  const { canAccessProject, hasGlobalScope } = usePermissions();
+  const { canAccessProject, hasGlobalScope, hasScopedPermission } = usePermissions();
+  const canViewMaterials = hasScopedPermission("digital_bohca.view");
+  const canCreateMaterials = hasScopedPermission("digital_bohca.create");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -116,14 +119,28 @@ export default function PanelDigitalBohcaPage() {
     let isActive = true;
     const initialProjectId = new URLSearchParams(window.location.search).get("project_id");
     Promise.all([
-      api.get<{ materials: Paginated<Material> }>("/panel/digital-bohca", {
-        params: {
-          project_id: initialProjectId ?? undefined,
-          period_id: new URLSearchParams(window.location.search).get("period_id") ?? undefined,
-        },
-      }),
-      api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "digital_bohca.view" } }),
-      api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "digital_bohca.create" } }),
+      canViewMaterials
+        ? api.get<{ materials: Paginated<Material> }>("/panel/digital-bohca", {
+            params: {
+              project_id: initialProjectId ?? undefined,
+              period_id: new URLSearchParams(window.location.search).get("period_id") ?? undefined,
+            },
+          })
+        : Promise.resolve({ data: { materials: { data: [] as Material[] } } }),
+      canViewMaterials
+        ? optionalPanelRequest(
+            api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "digital_bohca.view" } }),
+            { data: { projects: [] as Project[] } },
+            "Dijital Bohça proje filtresi",
+          )
+        : Promise.resolve({ data: { projects: [] as Project[] } }),
+      canCreateMaterials
+        ? optionalPanelRequest(
+            api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "digital_bohca.create" } }),
+            { data: { projects: [] as Project[] } },
+            "Dijital Bohça yükleme proje listesi",
+          )
+        : Promise.resolve({ data: { projects: [] as Project[] } }),
     ])
       .then(([materialsResponse, viewProjectsResponse, createProjectsResponse]) => {
         if (!isActive) return;
@@ -149,7 +166,7 @@ export default function PanelDigitalBohcaPage() {
     return () => {
       isActive = false;
     };
-  }, [hasGlobalScope]);
+  }, [canCreateMaterials, canViewMaterials, hasGlobalScope]);
 
   async function refreshMaterials(nextProject = projectFilter, nextPeriod = periodFilter) {
     const response = await api.get<{ materials: Paginated<Material> }>("/panel/digital-bohca", {

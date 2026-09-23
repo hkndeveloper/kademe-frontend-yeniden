@@ -9,6 +9,7 @@ import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, 
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
 import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
+import { optionalPanelRequest } from "@/lib/panel-load-state";
 
 type Project = {
   id: number;
@@ -74,7 +75,9 @@ const submissionReviewActions: Array<{ status: Submission["status"]; label: stri
 ];
 
 export default function PanelAssignmentsPage() {
-  const { canAccessProject } = usePermissions();
+  const { canAccessProject, hasScopedPermission } = usePermissions();
+  const canViewAssignments = hasScopedPermission("assignments.view");
+  const assignmentProjectPermission = canViewAssignments ? "assignments.view" : "assignments.create";
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,13 +119,19 @@ export default function PanelAssignmentsPage() {
     let isActive = true;
     const initialProjectId = new URLSearchParams(window.location.search).get("project_id");
     Promise.all([
-      api.get<{ assignments: Paginated<Assignment> }>("/panel/assignments", {
-        params: {
-          project_id: initialProjectId ?? undefined,
-          period_id: new URLSearchParams(window.location.search).get("period_id") ?? undefined,
-        },
-      }),
-      api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "assignments.view" } }),
+      canViewAssignments
+        ? api.get<{ assignments: Paginated<Assignment> }>("/panel/assignments", {
+            params: {
+              project_id: initialProjectId ?? undefined,
+              period_id: new URLSearchParams(window.location.search).get("period_id") ?? undefined,
+            },
+          })
+        : Promise.resolve({ data: { assignments: { data: [] as Assignment[] } } }),
+      optionalPanelRequest(
+        api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: assignmentProjectPermission } }),
+        { data: { projects: [] as Project[] } },
+        "Ödev proje seçimi",
+      ),
     ])
       .then(([assignmentsResponse, projectsResponse]) => {
         if (!isActive) return;
@@ -142,7 +151,7 @@ export default function PanelAssignmentsPage() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [assignmentProjectPermission, canViewAssignments]);
 
   async function refreshAssignments(nextProject = projectFilter, nextPeriod = periodFilter) {
     const response = await api.get<{ assignments: Paginated<Assignment> }>("/panel/assignments", {

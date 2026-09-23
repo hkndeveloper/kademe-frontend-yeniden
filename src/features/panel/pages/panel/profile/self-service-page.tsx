@@ -35,6 +35,8 @@ interface LeaveRequest {
   reason: string | null;
   status: "pending" | "approved" | "rejected";
   approver?: { name: string; surname: string };
+  unit?: { id: number; name: string; code: string; kind: "project" | "service" } | null;
+  reviewer_scope?: "unit_coordinator" | "super_admin" | "legacy_unit";
 }
 
 const emptyProfile: ProfileForm = {
@@ -53,7 +55,7 @@ const emptyPassword: PasswordForm = {
 };
 
 export default function ProfileSelfServicePage() {
-  const { user, fetchProfile, hasPermission } = useAuth();
+  const { user, activeUnitId, fetchProfile, hasPermission } = useAuth();
   const [form, setForm] = useState<ProfileForm>(emptyProfile);
   const [passwordForm, setPasswordForm] = useState<PasswordForm>(emptyPassword);
   const [loading, setLoading] = useState(true);
@@ -64,11 +66,17 @@ export default function ProfileSelfServicePage() {
   const [messageTone, setMessageTone] = useState<"success" | "error" | "neutral">("neutral");
 
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
-  const [leaveForm, setLeaveForm] = useState({ start_date: "", end_date: "", reason: "" });
+  const [leaveForm, setLeaveForm] = useState(() => ({
+    start_date: "",
+    end_date: "",
+    reason: "",
+    unit_id: activeUnitId === null ? "" : String(activeUnitId),
+  }));
   const [savingLeave, setSavingLeave] = useState(false);
   const [leaveMessage, setLeaveMessage] = useState("");
   const [leaveTone, setLeaveTone] = useState<"success" | "error" | "neutral">("neutral");
   const [passwordMessageTone, setPasswordMessageTone] = useState<"success" | "error" | "neutral">("neutral");
+  const unitMemberships = user?.organization_context?.unit_memberships ?? [];
 
   const loadLeaves = useCallback(async () => {
     try {
@@ -158,9 +166,12 @@ export default function ProfileSelfServicePage() {
     setLeaveTone("neutral");
 
     try {
-      const response = await api.post("/leave-requests", leaveForm);
+      const response = await api.post("/leave-requests", {
+        ...leaveForm,
+        unit_id: leaveForm.unit_id ? Number(leaveForm.unit_id) : null,
+      });
       setLeaves((prev) => [response.data.leave_request, ...prev]);
-      setLeaveForm({ start_date: "", end_date: "", reason: "" });
+      setLeaveForm({ start_date: "", end_date: "", reason: "", unit_id: leaveForm.unit_id });
       setLeaveMessage("Izin talebi olusturuldu.");
       setLeaveTone("success");
     } catch (error) {
@@ -347,8 +358,26 @@ export default function ProfileSelfServicePage() {
       >
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
           <form onSubmit={handleLeaveSubmit} className="xl:col-span-1">
-            <ProfileCard title="Izin talep et" description="Talebiniz ayni birimdeki koordinatore ve sistem yoneticilerine iletilir.">
+            <ProfileCard title="Izin talep et" description="Personel talebi seçilen birimin koordinatörüne; koordinatör talebi sistem yöneticisine iletilir.">
               <div className="space-y-4">
+                {unitMemberships.length > 0 ? (
+                  <div>
+                    <ProfileFieldLabel label="Koordinatörlük" hint="Talep, bu üyeliğin oluşturma anındaki snapshot'ıyla yönlendirilir." />
+                    <select
+                      value={leaveForm.unit_id}
+                      onChange={(event) => setLeaveForm((current) => ({ ...current, unit_id: event.target.value }))}
+                      required
+                      className={profileInputClass}
+                    >
+                      <option value="">Koordinatörlük seç</option>
+                      {unitMemberships.map((membership) => (
+                        <option key={membership.membership_id} value={membership.unit_id}>
+                          {membership.unit_name} ({membership.position === "coordinator" ? "Koordinatör" : "Personel"})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
                 <div>
                   <ProfileFieldLabel label="Baslangic" />
                   <input
@@ -416,6 +445,7 @@ export default function ProfileSelfServicePage() {
                         <div className="mt-1 max-w-xl truncate text-xs text-slate-500" title={leave.reason ?? ""}>
                           {leave.reason || "Gerekce belirtilmemis"}
                         </div>
+                        {leave.unit?.name ? <div className="mt-1 text-[10px] font-semibold text-indigo-700">{leave.unit.name}</div> : null}
                       </div>
                       <div className="flex flex-col items-start gap-1 md:items-end">
                         <span

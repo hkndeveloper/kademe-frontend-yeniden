@@ -24,10 +24,30 @@ interface TargetUser {
   role: string;
 }
 
+interface CoordinationUnitOption {
+  id: number;
+  code: string;
+  name: string;
+  kind: "project" | "service";
+  project_id?: number | null;
+  project_name?: string | null;
+  members: Array<{
+    user_id: number;
+    membership_id: number;
+    name: string;
+    surname: string;
+    role: string;
+    position: "coordinator" | "staff";
+  }>;
+}
+
 interface RequestItem {
   id: number;
   type: string;
   target_unit?: string | null;
+  target_unit_id?: number | null;
+  can_update_status?: boolean;
+  can_upload_response?: boolean;
   description: string;
   response_file_path?: string | null;
   response_file_url?: string | null;
@@ -40,6 +60,12 @@ interface RequestItem {
     surname: string;
     role: string;
   } | null;
+  target_coordination_unit?: {
+    id: number;
+    code: string;
+    name: string;
+    kind: "project" | "service";
+  } | null;
   project?: Project | null;
 }
 
@@ -49,6 +75,7 @@ interface RequestsResponse {
   target_users: TargetUser[];
   request_types: string[];
   target_units: string[];
+  coordination_units?: CoordinationUnitOption[];
 }
 
 const typeLabels: Record<string, string> = {
@@ -78,13 +105,12 @@ const requestStatusLabels: Record<RequestItem["status"], string> = {
 };
 
 export default function PanelSharedRequestsPage() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user, activeUnitId } = useAuth();
 
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [targetUsers, setTargetUsers] = useState<TargetUser[]>([]);
   const [requestTypes, setRequestTypes] = useState<string[]>([]);
-  const [targetUnits, setTargetUnits] = useState<string[]>([]);
+  const [coordinationUnits, setCoordinationUnits] = useState<CoordinationUnitOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
@@ -95,7 +121,7 @@ export default function PanelSharedRequestsPage() {
   const [periodFilter, setPeriodFilter] = useState<string>("all");
   const [form, setForm] = useState({
     type: "",
-    target_unit: "",
+    target_unit_id: "",
     target_user_id: "",
     project_id: "",
     period_id: "",
@@ -105,6 +131,14 @@ export default function PanelSharedRequestsPage() {
   const canUpdateRequestStatus = hasPermission("requests.update_status");
   const canUploadRequestResponse = hasPermission("requests.upload_response");
   const isResponder = canUpdateRequestStatus || canUploadRequestResponse;
+  const activeMembership = useMemo(
+    () => user?.organization_context?.unit_memberships.find((membership) => membership.unit_id === activeUnitId)
+      ?? user?.organization_context?.unit_memberships.find((membership) => membership.is_primary)
+      ?? user?.organization_context?.unit_memberships[0]
+      ?? null,
+    [activeUnitId, user?.organization_context?.unit_memberships]
+  );
+  const isProjectUnitUser = activeMembership?.unit_kind === "project";
   const filterProject = useMemo(
     () => projects.find((project) => String(project.id) === projectFilter),
     [projectFilter, projects]
@@ -116,6 +150,10 @@ export default function PanelSharedRequestsPage() {
   const filterPeriods = useMemo(() => periodsForProject(filterProject), [filterProject]);
   const formPeriods = useMemo(() => periodsForProject(formProject), [formProject]);
   const canCreateRequest = !form.period_id || periodHasWriteCapability(periodOptionById(projects, form.period_id), "create_operations");
+  const selectedTargetUnit = useMemo(
+    () => coordinationUnits.find((unit) => String(unit.id) === form.target_unit_id),
+    [coordinationUnits, form.target_unit_id]
+  );
 
   useEffect(() => {
     const loadRequests = async () => {
@@ -129,9 +167,8 @@ export default function PanelSharedRequestsPage() {
         });
         setRequests(response.data.requests ?? []);
         setProjects(response.data.projects ?? []);
-        setTargetUsers(response.data.target_users ?? []);
         setRequestTypes(response.data.request_types ?? []);
-        setTargetUnits(response.data.target_units ?? []);
+        setCoordinationUnits(response.data.coordination_units ?? []);
       } catch (error) {
         console.error("Talep verileri yuklenemedi", error);
         setErrorMessage("Talep verileri yuklenemedi.");
@@ -160,7 +197,7 @@ export default function PanelSharedRequestsPage() {
     try {
       const response = await api.post<{ message: string; request_item: RequestItem }>("/panel/requests", {
         type: form.type,
-        target_unit: form.target_unit || null,
+        target_unit_id: form.target_unit_id ? Number(form.target_unit_id) : null,
         target_user_id: form.target_user_id ? Number(form.target_user_id) : null,
         project_id: form.project_id ? Number(form.project_id) : null,
         period_id: form.period_id ? Number(form.period_id) : null,
@@ -169,7 +206,7 @@ export default function PanelSharedRequestsPage() {
 
       setRequests((current) => [response.data.request_item, ...current]);
       setFeedback(response.data.message);
-      setForm({ type: "", target_unit: "", target_user_id: "", project_id: "", period_id: "", description: "" });
+      setForm({ type: "", target_unit_id: "", target_user_id: "", project_id: "", period_id: "", description: "" });
     } catch (error) {
       console.error("Talep olusturulamadi", error);
       setErrorMessage("Talep olusturulamadi.");
@@ -286,6 +323,13 @@ export default function PanelSharedRequestsPage() {
         </PermissionGate>
       </div>
 
+      {isProjectUnitUser ? (
+        <div className="panel-notice panel-notice-info text-left">
+          Projenin satin alma, odeme veya butce ihtiyacini Mali Islemler ekranindan degil, yeni talep olusturup hedef olarak
+          <strong> Satin Alma ve Organizasyon Koordinatorlugunu</strong> secerek iletin. Talebin durumunu hedef birimdeki secili kisi gunceller.
+        </div>
+      ) : null}
+
       {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
       {errorMessage ? <div className="panel-notice panel-notice-error">{errorMessage}</div> : null}
 
@@ -333,13 +377,32 @@ export default function PanelSharedRequestsPage() {
                     </option>
                   ))}
                 </select>
-                <select value={form.target_unit} onChange={(event) => setForm((current) => ({ ...current, target_unit: event.target.value }))} className="panel-control">
-                  <option value="">Hedef birim sec</option>
-                  {targetUnits.map((targetUnit) => <option key={targetUnit} value={targetUnit}>{targetUnitLabels[targetUnit] || targetUnit}</option>)}
+                <select
+                  value={form.target_unit_id}
+                  onChange={(event) => setForm((current) => ({ ...current, target_unit_id: event.target.value, target_user_id: "" }))}
+                  required
+                  className="panel-control"
+                >
+                  <option value="">Hedef koordinatörlük sec</option>
+                  {coordinationUnits.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name}{unit.project_name ? ` / ${unit.project_name}` : ""}
+                    </option>
+                  ))}
                 </select>
-                <select value={form.target_user_id} onChange={(event) => setForm((current) => ({ ...current, target_user_id: event.target.value }))} className="panel-control">
-                  <option value="">Hedef kisi sec</option>
-                  {targetUsers.map((targetUser) => <option key={targetUser.id} value={targetUser.id}>{targetUser.name} {targetUser.surname} ({targetUser.role})</option>)}
+                <select
+                  value={form.target_user_id}
+                  onChange={(event) => setForm((current) => ({ ...current, target_user_id: event.target.value }))}
+                  disabled={!selectedTargetUnit}
+                  required
+                  className="panel-control"
+                >
+                  <option value="">{selectedTargetUnit ? "Hedef kisi sec" : "Once koordinatörlük sec"}</option>
+                  {(selectedTargetUnit?.members ?? []).map((targetUser) => (
+                    <option key={targetUser.membership_id} value={targetUser.user_id}>
+                      {targetUser.name} {targetUser.surname} ({targetUser.position === "coordinator" ? "Koordinatör" : "Personel"})
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -426,7 +489,7 @@ export default function PanelSharedRequestsPage() {
                     <div key={request.id} className="panel-list-card p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="text-sm font-bold text-slate-900">{typeLabels[request.type] || request.type}</div>
-                        {canUpdateRequestStatus ? (
+                        {canUpdateRequestStatus && request.can_update_status ? (
                           <select
                             value={request.status}
                             onChange={(e) => void handleStatusChange(request.id, e.target.value as RequestItem["status"])}
@@ -446,7 +509,11 @@ export default function PanelSharedRequestsPage() {
                       <div className="mt-2 text-xs text-muted-foreground">
                         {request.project?.name || "Genel"}
                         {request.period?.name ? ` / ${request.period.name}` : ""}
-                        {request.target_unit ? ` -> ${targetUnitLabels[request.target_unit] || request.target_unit}` : ""}
+                        {request.target_coordination_unit?.name
+                          ? ` -> ${request.target_coordination_unit.name}`
+                          : request.target_unit
+                            ? ` -> ${targetUnitLabels[request.target_unit] || request.target_unit}`
+                            : ""}
                         {request.target_user ? ` -> ${request.target_user.name} ${request.target_user.surname}` : ""}
                         {isResponder && !request.target_user ? " -> Birim havuzu" : ""}
                       </div>
@@ -464,7 +531,7 @@ export default function PanelSharedRequestsPage() {
                             <Download className="h-3 w-3" />
                             Yanit belgesini indir
                           </button>
-                        ) : canUploadRequestResponse ? (
+                        ) : canUploadRequestResponse && request.can_upload_response ? (
                           <label className={`panel-file-drop flex w-full items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 ${canResolveRequest ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
                             <Upload className="h-3 w-3" />
                             {updatingId === request.id ? "Yukleniyor..." : "Belge yukle"}

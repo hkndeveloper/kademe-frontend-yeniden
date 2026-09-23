@@ -29,8 +29,8 @@ export function PublicCounter({
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) {
-      setDisplayValue(value);
-      return;
+      const frameId = window.requestAnimationFrame(() => setDisplayValue(value));
+      return () => window.cancelAnimationFrame(frameId);
     }
 
     let frameId = 0;

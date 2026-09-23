@@ -14,6 +14,7 @@ import {
   LifeBuoy,
   Mail,
   MessagesSquare,
+  Network,
   ScrollText,
   Settings,
   ShieldAlert,
@@ -26,6 +27,7 @@ import {
 
 import { shouldShowMyProjectNav, shouldShowProjectsListNav, type PanelNavUser } from "@/lib/panel-scope";
 import type { PanelModule } from "@/store/useAuth";
+import { entryPermissionsForModule } from "@/lib/panel-module-contract";
 
 /**
  * Single source for the authority panel menu. Visibility is resolved from
@@ -107,7 +109,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     label: "Programlar",
     href: "/panel/programs",
     icon: CalendarDays,
-    permission: "programs.view",
+    anyPermissions: ["programs.view", "programs.community_event.view", "programs.logistics.view"],
     sectionId: "operations",
     order: 20,
   },
@@ -116,7 +118,12 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     label: "Projeler",
     href: "/panel/projects",
     icon: Layers,
-    permission: "projects.view",
+    anyPermissions: [
+      "projects.view",
+      "projects.public_content.view",
+      "projects.public_content.update",
+      "projects.gallery.update",
+    ],
     sectionId: "operations",
     order: 30,
   },
@@ -275,7 +282,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     label: "Mesaj Kutusu",
     href: "/panel/inbox",
     icon: Bell,
-    permission: "announcements.view",
+    permission: "inbox.view",
     sectionId: "content",
     order: 25,
   },
@@ -293,7 +300,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     label: "Kariyer firsatlari",
     href: "/panel/alumni-opportunities",
     icon: Handshake,
-    permission: "announcements.view",
+    permission: "alumni_opportunities.view",
     sectionId: "content",
     order: 35,
   },
@@ -302,7 +309,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
     label: "Forum",
     href: "/panel/forum",
     icon: MessagesSquare,
-    permission: "announcements.view",
+    permission: "forum.view",
     sectionId: "content",
     order: 36,
   },
@@ -395,7 +402,10 @@ function itemIsVisible(
   }
 
   if (!allowed) return false;
-  if (item.id === "projects") return shouldShowProjectsListNav(user, hasPermission);
+  if (item.id === "projects") {
+    if (!hasPermission("projects.view")) return true;
+    return shouldShowProjectsListNav(user, hasPermission);
+  }
   if (item.id === "my-project" || item.id === "my_project") return shouldShowMyProjectNav(user, hasPermission);
   if (item.id === "staff") return user?.permission_scopes?.["staff.view"]?.scope_type === "all";
   if (item.id === "members") return user?.permission_scopes?.["staff.view"]?.scope_type !== "all";
@@ -466,6 +476,7 @@ const iconByManifestName: Record<string, LucideIcon> = {
   "folder-open": Layers,
   "id-card": UserCircle,
   mail: Mail,
+  network: Network,
   "messages-square": MessagesSquare,
   "shield-alert": ShieldAlert,
   sparkles: Sparkles,
@@ -485,15 +496,15 @@ function panelModuleToMenuItem(module: PanelModule): PanelMenuItem | null {
     return null;
   }
 
-  const viewPermissions = module.view_permissions ?? [];
+  const entryPermissions = entryPermissionsForModule(module);
 
   return {
     id: module.id,
     label: module.label,
     href: module.href,
     icon: iconByManifestName[module.icon ?? ""] ?? Activity,
-    permission: viewPermissions.length === 1 ? viewPermissions[0] : undefined,
-    anyPermissions: viewPermissions.length > 1 ? viewPermissions : undefined,
+    permission: entryPermissions.length === 1 ? entryPermissions[0] : undefined,
+    anyPermissions: entryPermissions.length > 1 ? entryPermissions : undefined,
     sectionId: module.section,
     order: module.order,
   };
@@ -510,7 +521,9 @@ export function getVisiblePanelMenuGrouped(
         .map(panelModuleToMenuItem)
         .filter((item): item is PanelMenuItem => item !== null)
     : unifiedPanelMenu;
-  const visible = sourceItems.filter((item) => itemIsVisible(item, hasPermission, hasAnyPermission, user));
+  const visible = panelModules
+    ? sourceItems
+    : sourceItems.filter((item) => itemIsVisible(item, hasPermission, hasAnyPermission, user));
 
   const bySection = new Map<string, PanelMenuItem[]>();
   for (const item of visible) {

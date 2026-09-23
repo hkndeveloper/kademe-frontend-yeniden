@@ -103,6 +103,7 @@ export default function StudentDashboardPage() {
   const [motivationSpeaker, setMotivationSpeaker] = useState<string>("KADEME");
   const [motivationImage, setMotivationImage] = useState<string | null>(null);
   const [motivationPeriod, setMotivationPeriod] = useState<string>("monthly");
+  const [renderedAt] = useState(() => Date.now());
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -147,10 +148,9 @@ export default function StudentDashboardPage() {
     );
   }
 
-  const now = Date.now();
   const upcomingPrograms = programs
     .filter((program) => program.status !== "completed")
-    .filter((program) => !program.start_at || new Date(program.start_at).getTime() >= now - 1000 * 60 * 60 * 2)
+    .filter((program) => !program.start_at || new Date(program.start_at).getTime() >= renderedAt - 1000 * 60 * 60 * 2)
     .slice(0, 3);
   const completedPrograms = programs.filter((program) => program.status === "completed");
   const attendedPrograms = programs.filter((program) => program.attendance_status === "present");

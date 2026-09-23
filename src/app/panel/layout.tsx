@@ -8,13 +8,15 @@ import { homePathForUser } from "@/lib/role-home";
 import { canAccessPanelPath } from "@/lib/panel-permissions";
 import { shouldShowMyProjectNav } from "@/lib/panel-scope";
 import { MobilePanelNav, UnifiedPanelSidebar } from "@/components/shared/UnifiedPanelSidebar";
+import { OrganizationContextBar } from "@/components/shared/OrganizationContextBar";
+import { panelModulesForActiveUnit } from "@/lib/organization-context";
 
 export default function UnifiedPanelLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, fetchProfile, _hasHydrated } = useAuth();
+  const { isAuthenticated, fetchProfile, _hasHydrated, isContextSwitching } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,13 @@ export default function UnifiedPanelLayout({
           return;
         }
 
-        const allowed = canAccessPanelPath(pathname, state.hasPermission, state.hasAnyPermission, user, state.panelModules);
+        if (!state.panelModulesLoaded) {
+          setLoadError(state.panelModulesError ?? "Panel erişim sözleşmesi yüklenemedi. Lütfen tekrar deneyin.");
+          return;
+        }
+
+        const contextModules = panelModulesForActiveUnit(state.panelModules, user, state.activeUnitId);
+        const allowed = canAccessPanelPath(pathname, state.hasPermission, state.hasAnyPermission, user, contextModules);
 
         if (!allowed) {
           if (
@@ -118,7 +126,17 @@ export default function UnifiedPanelLayout({
       <UnifiedPanelSidebar />
       <MobilePanelNav />
       <div className="min-h-screen bg-slate-100/95 transition-[margin-left] duration-300 lg:ml-20 lg:border-l lg:border-slate-200/60 lg:peer-hover:ml-72 lg:peer-focus-within:ml-72">
-        <main className="min-h-screen px-4 pb-24 pt-4 sm:px-6 lg:p-10">{children}</main>
+        <main className="min-h-screen px-4 pb-24 pt-4 sm:px-6 lg:p-10">
+          <OrganizationContextBar />
+          {isContextSwitching ? (
+            <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-slate-200 bg-white">
+              <div className="text-center">
+                <Loader2 className="mx-auto h-9 w-9 animate-spin text-[#FF6B00]" />
+                <p className="mt-3 text-sm font-semibold text-slate-500">Birim yetkileri yenileniyor...</p>
+              </div>
+            </div>
+          ) : children}
+        </main>
       </div>
     </div>
   );

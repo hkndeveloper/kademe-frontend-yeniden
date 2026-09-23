@@ -93,12 +93,12 @@ export default function PanelAlumniOpportunitiesPage() {
   const [form, setForm] = useState<OpportunityForm>(emptyForm);
 
   const manageableForCreate = useMemo(
-    () => projects.filter((project) => canAccessProject("announcements.create", project.id)),
+    () => projects.filter((project) => canAccessProject("alumni_opportunities.manage", project.id)),
     [projects, canAccessProject],
   );
 
   const manageableForUpdate = useMemo(
-    () => projects.filter((project) => canAccessProject("announcements.update", project.id)),
+    () => projects.filter((project) => canAccessProject("alumni_opportunities.manage", project.id)),
     [projects, canAccessProject],
   );
 
@@ -108,12 +108,12 @@ export default function PanelAlumniOpportunitiesPage() {
     let active = true;
     Promise.all([
       api.get<{ opportunities: Paginated<Opportunity> }>("/panel/alumni-opportunities"),
-      api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "announcements.view" } }),
-      hasPermission("announcements.create")
-        ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "announcements.create" } })
+      api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "alumni_opportunities.view" } }),
+      hasPermission("alumni_opportunities.manage")
+        ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "alumni_opportunities.manage" } })
         : Promise.resolve({ data: { projects: [] as Project[] } }),
-      hasPermission("announcements.update")
-        ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "announcements.update" } })
+      hasPermission("alumni_opportunities.manage")
+        ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "alumni_opportunities.manage" } })
         : Promise.resolve({ data: { projects: [] as Project[] } }),
     ])
       .then(([opportunityResponse, viewResponse, createResponse, updateResponse]) => {
@@ -177,9 +177,9 @@ export default function PanelAlumniOpportunitiesPage() {
   }
 
   function canEditRow(row: Opportunity) {
-    if (!hasPermission("announcements.update")) return false;
-    if (row.project_id != null) return canAccessProject("announcements.update", row.project_id);
-    return hasGlobalScope("announcements.update") || row.creator?.id === user?.id;
+    if (!hasPermission("alumni_opportunities.manage")) return false;
+    if (row.project_id != null) return canAccessProject("alumni_opportunities.manage", row.project_id);
+    return hasGlobalScope("alumni_opportunities.manage") || row.creator?.id === user?.id;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -208,11 +208,11 @@ export default function PanelAlumniOpportunitiesPage() {
 
   async function removeRow(row: Opportunity) {
     const projectId = row.project_id;
-    if (projectId != null && !canAccessProject("announcements.delete", projectId)) {
+    if (projectId != null && !canAccessProject("alumni_opportunities.manage", projectId)) {
       setFeedback("Bu kaydi silmek icin yetkiniz yok.");
       return;
     }
-    if (projectId == null && !hasPermission("announcements.delete")) {
+    if (projectId == null && !hasPermission("alumni_opportunities.manage")) {
       setFeedback("Bu kaydi silmek icin yetkiniz yok.");
       return;
     }
@@ -235,7 +235,7 @@ export default function PanelAlumniOpportunitiesPage() {
 
   return (
     <PermissionGate
-      permission="announcements.view"
+      permission="alumni_opportunities.view"
       fallback={<div className="panel-empty-card text-amber-700">Firsat kayitlarini goruntuleme yetkiniz bulunmuyor.</div>}
     >
       <div className="space-y-8">
@@ -251,7 +251,7 @@ export default function PanelAlumniOpportunitiesPage() {
               </p>
             </div>
           </div>
-          <PermissionGate permission="announcements.create">
+          <PermissionGate permission="alumni_opportunities.manage">
             <button type="button" onClick={openCreateForm} className="panel-button panel-button-primary h-11">
               <Plus className="h-4 w-4" />
               Yeni kayit
@@ -262,7 +262,7 @@ export default function PanelAlumniOpportunitiesPage() {
         {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
 
         {showForm ? (
-          <PermissionGate permission={editingId ? "announcements.update" : "announcements.create"}>
+          <PermissionGate permission="alumni_opportunities.manage">
             <form onSubmit={handleSubmit} className="panel-section-card">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold text-slate-900">{editingId ? "Firsati Duzenle" : "Yeni Firsat"}</h2>
@@ -408,7 +408,7 @@ export default function PanelAlumniOpportunitiesPage() {
                       Duzenle
                     </button>
                   ) : null}
-                  <PermissionGate permission="announcements.delete">
+                  <PermissionGate permission="alumni_opportunities.manage">
                     <button type="button" onClick={() => void removeRow(row)} className="panel-card-action panel-card-action-danger">
                       <Trash2 className="h-4 w-4" />
                       Sil

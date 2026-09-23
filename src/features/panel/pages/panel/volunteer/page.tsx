@@ -9,6 +9,7 @@ import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, 
 import { usePermissions } from "@/hooks/usePermissions";
 import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 import { panelStatusActionClass, panelStatusChipClass } from "@/lib/status-style";
+import { optionalPanelRequest } from "@/lib/panel-load-state";
 
 type Project = {
   id: number;
@@ -134,9 +135,17 @@ export default function PanelVolunteerPage() {
       api.get<{ opportunities: Paginated<Opportunity> }>("/panel/volunteer/opportunities", {
         params: { project_id: initialProjectId ?? undefined, period_id: initialPeriodId ?? undefined },
       }),
-      api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "volunteer.view" } }),
+      optionalPanelRequest(
+        api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "volunteer.view" } }),
+        { data: { projects: [] as Project[] } },
+        "Gönüllülük proje filtresi",
+      ),
       hasPermission("volunteer.manage")
-        ? api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "volunteer.manage" } })
+        ? optionalPanelRequest(
+            api.get<{ projects: Project[] }>("/panel/projects/manageable", { params: { permission: "volunteer.manage" } }),
+            { data: { projects: [] as Project[] } },
+            "Gönüllülük yönetim proje listesi",
+          )
         : Promise.resolve({ data: { projects: [] as Project[] } }),
     ])
       .then(([opportunityResponse, viewProjectResponse, manageProjectResponse]) => {

@@ -21,6 +21,11 @@ import {
 import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api/axios";
+import {
+  businessPermissionSourceLabel,
+  unitBusinessPermissionIsReadOnly,
+  type AuthorizationManagementMetadata,
+} from "@/lib/authorization-management";
 import { homePathForUser } from "@/lib/role-home";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -54,6 +59,7 @@ interface PermissionMatrixResponse {
   role_scope_storage_ready?: boolean;
   supported_scope_options?: ScopeOptionsMap;
   default_role_scopes?: DefaultRoleScopes;
+  authorization_management?: AuthorizationManagementMetadata;
 }
 
 type MatrixState = Record<string, Set<string>>;
@@ -216,21 +222,35 @@ interface ManagedUser {
 
 interface UserOverrideItem {
   id?: number;
+  override_source?: "global" | "membership";
+  membership_id?: number | null;
   permission_name: string;
   effect: "allow" | "deny";
   scope_type?: string | null;
   scope_payload?: Record<string, unknown>;
 }
 
+interface UserOverrideMembership {
+  membership_id: number;
+  unit_id: number;
+  unit_code: string;
+  unit_name: string;
+  position: "coordinator" | "staff";
+  is_primary: boolean;
+}
+
 interface UserOverrideResponse {
   user: ManagedUser;
+  memberships?: UserOverrideMembership[];
   overrides: UserOverrideItem[];
+  legacy_global_business_overrides?: UserOverrideItem[];
   resolved: {
     role_permissions: string[];
     effective_permissions: string[];
     scopes: Record<string, { scope_type: string; scope_payload: Record<string, unknown> }>;
   };
   granular_permission_groups: Record<string, string[]>;
+  authorization_management?: AuthorizationManagementMetadata;
 }
 
 interface PermissionAuditLog {
@@ -272,6 +292,8 @@ export default function PermissionsPage() {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
   const [userOverrides, setUserOverrides] = useState<UserOverrideItem[]>([]);
+  const [selectedUserMemberships, setSelectedUserMemberships] = useState<UserOverrideMembership[]>([]);
+  const [legacyGlobalBusinessOverrides, setLegacyGlobalBusinessOverrides] = useState<UserOverrideItem[]>([]);
   const [resolvedPermissions, setResolvedPermissions] = useState<string[]>([]);
   const [userScopePreview, setUserScopePreview] = useState<Record<string, { scope_type: string; scope_payload: Record<string, unknown> }>>({});
   const [loadingUserOverrides, setLoadingUserOverrides] = useState(false);
@@ -297,6 +319,8 @@ export default function PermissionsPage() {
   const [defaultRoleScopes, setDefaultRoleScopes] = useState<DefaultRoleScopes>({});
   const [permissionDomains, setPermissionDomains] = useState<PermissionMatrixResponse["permission_domains"]>({});
   const [rolePermissionCompatibility, setRolePermissionCompatibility] = useState<Record<string, Record<string, boolean>>>({});
+  const [authorizationManagement, setAuthorizationManagement] = useState<AuthorizationManagementMetadata | null>(null);
+  const [selectedUserAuthorizationManagement, setSelectedUserAuthorizationManagement] = useState<AuthorizationManagementMetadata | null>(null);
   const [activeSection, setActiveSection] = useState<"matrix" | "roles" | "users" | "audit">("matrix");
   const [domainFilter, setDomainFilter] = useState<PermissionDomainFilter>("all");
 
@@ -346,6 +370,7 @@ export default function PermissionsPage() {
       setRoleScopeStorageReady(response.data.role_scope_storage_ready ?? true);
       setSupportedScopeOptions(response.data.supported_scope_options ?? {});
       setDefaultRoleScopes(response.data.default_role_scopes ?? {});
+      setAuthorizationManagement(response.data.authorization_management ?? null);
       setManagedUsers(userResponse.data.users ?? []);
       setRoleCatalog(roleResponse.data.roles ?? []);
       setGranularMatrix(
@@ -466,17 +491,23 @@ export default function PermissionsPage() {
     if (!canViewUserOverrides) {
       setSelectedUser(null);
       setUserOverrides([]);
+      setSelectedUserMemberships([]);
+      setLegacyGlobalBusinessOverrides([]);
       setResolvedPermissions([]);
       setUserScopePreview({});
       setRoleAssignments([]);
+      setSelectedUserAuthorizationManagement(null);
       return;
     }
 
     if (!userId) {
       setSelectedUser(null);
       setUserOverrides([]);
+      setSelectedUserMemberships([]);
+      setLegacyGlobalBusinessOverrides([]);
       setResolvedPermissions([]);
       setUserScopePreview({});
+      setSelectedUserAuthorizationManagement(null);
       return;
     }
 
@@ -487,17 +518,23 @@ export default function PermissionsPage() {
       const response = await api.get<UserOverrideResponse>(`/panel/permissions-matrix/users/${userId}`);
       setSelectedUser(response.data.user);
       setUserOverrides(response.data.overrides ?? []);
+      setSelectedUserMemberships(response.data.memberships ?? []);
+      setLegacyGlobalBusinessOverrides(response.data.legacy_global_business_overrides ?? []);
       setResolvedPermissions(response.data.resolved?.effective_permissions ?? []);
       setUserScopePreview(response.data.resolved?.scopes ?? {});
       setRoleAssignments(response.data.user.roles ?? []);
+      setSelectedUserAuthorizationManagement(response.data.authorization_management ?? null);
     } catch (error) {
       console.error("Kullanici override bilgileri yuklenemedi", error);
       setErrorMessage("Kullaniciya ozel yetki bilgileri yuklenemedi.");
       setSelectedUser(null);
       setUserOverrides([]);
+      setSelectedUserMemberships([]);
+      setLegacyGlobalBusinessOverrides([]);
       setResolvedPermissions([]);
       setUserScopePreview({});
       setRoleAssignments([]);
+      setSelectedUserAuthorizationManagement(null);
     } finally {
       setLoadingUserOverrides(false);
     }
@@ -517,6 +554,10 @@ export default function PermissionsPage() {
     }
 
     if (roleName === "super_admin") {
+      return;
+    }
+
+    if (unitBusinessPermissionIsReadOnly(authorizationManagement, roleName, permissionName)) {
       return;
     }
 
@@ -555,6 +596,10 @@ export default function PermissionsPage() {
       return;
     }
 
+    if (unitBusinessPermissionIsReadOnly(authorizationManagement, roleName, permissionName)) {
+      return;
+    }
+
     setRolePermissionScopes((current) => ({
       ...current,
       [roleName]: {
@@ -569,6 +614,10 @@ export default function PermissionsPage() {
 
   const updateRoleScopePayload = (roleName: string, permissionName: string, scopePayload: Record<string, unknown>) => {
     if (!canUpdateMatrix) {
+      return;
+    }
+
+    if (unitBusinessPermissionIsReadOnly(authorizationManagement, roleName, permissionName)) {
       return;
     }
 
@@ -633,11 +682,13 @@ export default function PermissionsPage() {
     const scopeType = selectedUser
       ? defaultScopeForRole(selectedUser.role, firstPermission, defaultRoleScopes, supportedScopeOptions)
       : "all";
+    const isBusinessPermission = selectedUserAuthorizationManagement?.unit_business_permissions.includes(firstPermission) ?? false;
 
     setUserOverrides((current) => [
       ...current,
       {
         permission_name: firstPermission,
+        membership_id: isBusinessPermission ? selectedUserMemberships[0]?.membership_id ?? null : null,
         effect: "allow",
         scope_type: scopeType,
         scope_payload: {},
@@ -692,6 +743,9 @@ export default function PermissionsPage() {
             effect,
             scope_type: scopeType,
             scope_payload: scopePayload,
+            membership_id: selectedUserAuthorizationManagement?.unit_business_permissions.includes(permissionName)
+              ? override.membership_id ?? null
+              : null,
           };
         })
         .filter((override) => override.permission_name.length > 0)
@@ -915,6 +969,31 @@ export default function PermissionsPage() {
           {successMessage || errorMessage}
         </div>
       )}
+
+      {authorizationManagement ? (
+        <div className="flex flex-col gap-4 rounded-3xl border border-indigo-200 bg-indigo-50 p-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600" />
+            <div>
+              <div className="text-sm font-black text-indigo-950">
+                Coordinator/personel birim isi kaynagi: {businessPermissionSourceLabel(authorizationManagement)}
+              </div>
+              <p className="mt-1 max-w-4xl text-xs leading-relaxed text-indigo-800">
+                {authorizationManagement.role_matrix_business_read_only
+                  ? "Proje, program, mali islem, medya, talep, destek ve benzeri birim isleri coordinator/staff genel rol satirindan degil, kullanicinin koordinasyon birimi ve pozisyon kurallarindan hesaplanir. Kilitli hucreler eski kaydi gosterir; bu ekrandan degistirilemez."
+                  : "Bu gecis modunda global rol matrisi halen yetki kararina katilir. Birim kurallarinin tek kaynak olmasi enforce modunda devreye girer."}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push(authorizationManagement.coordination_units_path)}
+            className="shrink-0 rounded-xl border border-indigo-300 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-indigo-700 transition hover:bg-indigo-100"
+          >
+            Koordinasyon Birimlerini Ac
+          </button>
+        </div>
+      ) : null}
 
       {!roleScopeStorageReady ? (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
@@ -1150,6 +1229,7 @@ export default function PermissionsPage() {
                           </td>
                           {visibleRoles.map((role) => {
                             const compatible = rolePermissionCompatibility[role.name]?.[permission.name] ?? true;
+                            const managedByUnit = unitBusinessPermissionIsReadOnly(authorizationManagement, role.name, permission.name);
                             const checked = compatible && (role.name === "super_admin" || (granularMatrix[role.name]?.has(permission.name) ?? false));
                             const scope = rolePermissionScopes[role.name]?.[permission.name];
                             const hasStoredScope = Boolean(scope);
@@ -1163,23 +1243,23 @@ export default function PermissionsPage() {
 
                             return (
                               <td key={`${permission.name}-${role.name}`} className="min-w-56 p-3 align-top">
-                                <div className={`rounded-xl border p-3 ${checked ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-white"} ${changed ? "ring-2 ring-amber-300" : ""} ${compatible ? "" : "bg-slate-100 opacity-70"}`}>
+                                <div className={`rounded-xl border p-3 ${checked ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-white"} ${changed ? "ring-2 ring-amber-300" : ""} ${compatible ? "" : "bg-slate-100 opacity-70"} ${managedByUnit ? "border-violet-200 bg-violet-50" : ""}`}>
                                   <label className="flex items-center justify-between gap-2">
                                     <span className={`text-xs font-black uppercase tracking-widest ${checked ? "text-indigo-700" : "text-slate-500"}`}>
-                                      {!compatible ? "Alan disi" : checked ? "Acik" : "Kapali"}
+                                      {!compatible ? "Alan disi" : managedByUnit ? "Birimden yonetilir" : checked ? "Acik" : "Kapali"}
                                     </span>
                                     <input
                                       type="checkbox"
                                       checked={checked}
                                       onChange={() => toggleGranularPermission(role.name, permission.name)}
-                                      disabled={!compatible || role.name === "super_admin" || saving || !canUpdateMatrix}
+                                      disabled={!compatible || managedByUnit || role.name === "super_admin" || saving || !canUpdateMatrix}
                                       className="h-4 w-4 rounded border-slate-300 bg-white text-indigo-600 focus:ring-0 focus:ring-offset-0"
                                     />
                                   </label>
                                   <select
                                     value={displayedScopeType}
                                     onChange={(event) => updateRoleScopeType(role.name, permission.name, event.target.value as ScopeType)}
-                                    disabled={!compatible || !checked || saving || !canUpdateMatrix}
+                                    disabled={!compatible || managedByUnit || !checked || saving || !canUpdateMatrix}
                                     className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100 disabled:text-slate-400"
                                   >
                                     {scopeOptions.map((option) => (
@@ -1188,7 +1268,11 @@ export default function PermissionsPage() {
                                       </option>
                                     ))}
                                   </select>
-                                  {!compatible ? (
+                                  {managedByUnit ? (
+                                    <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-violet-700">
+                                      Kaynak: Koordinasyon Birimleri
+                                    </div>
+                                  ) : !compatible ? (
                                     <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                       Bu izin bu rol alanina atanamaz
                                     </div>
@@ -1207,7 +1291,7 @@ export default function PermissionsPage() {
                                           .filter((item) => Number.isFinite(item) && item > 0);
                                         updateRoleScopePayload(role.name, permission.name, { project_ids: projectIds });
                                       }}
-                                      disabled={!compatible || !checked || saving || !canUpdateMatrix}
+                                      disabled={!compatible || managedByUnit || !checked || saving || !canUpdateMatrix}
                                       placeholder="Proje ID: 1,2,3"
                                       className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100"
                                     />
@@ -1216,7 +1300,7 @@ export default function PermissionsPage() {
                                     <input
                                       value={unitPayload}
                                       onChange={(event) => updateRoleScopePayload(role.name, permission.name, { unit: event.target.value })}
-                                      disabled={!compatible || !checked || saving || !canUpdateMatrix}
+                                      disabled={!compatible || managedByUnit || !checked || saving || !canUpdateMatrix}
                                       placeholder="Birim"
                                       className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none disabled:bg-slate-100"
                                     />
@@ -1271,6 +1355,22 @@ export default function PermissionsPage() {
             </button>
           </div>
         </div>
+
+        {selectedUser && selectedUserAuthorizationManagement?.selected_user_business_source === "coordination_units" ? (
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+            <div className="text-sm font-black text-indigo-950">
+              Bu kullanicinin birim isi yetkileri Koordinasyon Birimleri&apos;nden gelir.
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-indigo-800">
+              Birim isi allow/deny override kaydi mutlaka tek bir aktif uyelige baglanir. Kullanici baska birime gectiginde bu kayit tasinmaz; global sistem izinleri ise birim secilmeden yonetilmeye devam eder.
+            </p>
+            {legacyGlobalBusinessOverrides.length > 0 ? (
+              <p className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+                {legacyGlobalBusinessOverrides.length} eski global birim-isi override kaydi bulundu. Allow kayitlari enforce modunda etkisizdir; hedef uyelige yeniden tanimlanmalidir. Kayitlar gecis denetimi icin silinmedi.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[320px_1fr]">
           <div className="space-y-3">
@@ -1381,12 +1481,24 @@ export default function PermissionsPage() {
                   const overrideScopeValue = override.scope_type && overrideScopeOptions.includes(override.scope_type as ScopeType)
                     ? override.scope_type
                     : "";
+                  const isBusinessPermission = selectedUserAuthorizationManagement?.unit_business_permissions.includes(override.permission_name) ?? false;
 
                   return (
-                  <div key={`${override.permission_name}-${index}`} className="grid grid-cols-1 gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto]">
+                  <div key={`${override.permission_name}-${index}`} className="grid grid-cols-1 gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 xl:grid-cols-[1.3fr_0.7fr_1fr_0.8fr_1fr_auto]">
                     <select
                       value={override.permission_name}
-                      onChange={(event) => updateOverride(index, { permission_name: event.target.value, scope_type: selectedUser ? defaultScopeForRole(selectedUser.role, event.target.value, defaultRoleScopes, supportedScopeOptions) : null, scope_payload: {} })}
+                      onChange={(event) => {
+                        const permissionName = event.target.value;
+                        const nextIsBusinessPermission = selectedUserAuthorizationManagement?.unit_business_permissions.includes(permissionName) ?? false;
+                        updateOverride(index, {
+                          permission_name: permissionName,
+                          membership_id: nextIsBusinessPermission
+                            ? override.membership_id ?? selectedUserMemberships[0]?.membership_id ?? null
+                            : null,
+                          scope_type: selectedUser ? defaultScopeForRole(selectedUser.role, permissionName, defaultRoleScopes, supportedScopeOptions) : null,
+                          scope_payload: {},
+                        });
+                      }}
                       disabled={!canUpdateUserOverrides}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
                     >
@@ -1405,6 +1517,26 @@ export default function PermissionsPage() {
                         </optgroup>
                       ))}
                     </select>
+
+                    {isBusinessPermission ? (
+                      <select
+                        value={override.membership_id ?? ""}
+                        onChange={(event) => updateOverride(index, { membership_id: event.target.value ? Number(event.target.value) : null })}
+                        disabled={!canUpdateUserOverrides || selectedUserMemberships.length === 0}
+                        className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-900 outline-none focus:border-indigo-400 disabled:opacity-60"
+                      >
+                        <option value="">Birim uyeligi secin</option>
+                        {selectedUserMemberships.map((membership) => (
+                          <option key={membership.membership_id} value={membership.membership_id}>
+                            {membership.unit_name} — {membership.position === "coordinator" ? "Koordinator" : "Personel"}{membership.is_primary ? " (Ana)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-500">
+                        Global sistem override
+                      </div>
+                    )}
 
                     <select
                       value={override.effect}
@@ -1547,9 +1679,10 @@ export default function PermissionsPage() {
         <div>
           <h4 className="mb-1 text-sm font-bold text-slate-900">Dikkat: Yetki Degisiklikleri</h4>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Kayit islem bazli (granular) izin adlarini rolere yazar; legacy paket isimleri yerine noktali izinler
-            kullanilir. Super admin her zaman tum izinlere sahiptir; diger kullanicilar yeni oturumda guncel listeyi
-            alir.
+            Kayit islem bazli (granular) izin adlarini rollere yazar; legacy paket isimleri yerine noktali izinler
+            kullanilir. Enforce modunda coordinator/staff birim isi hucreleri korunur ve bu kayit sirasinda
+            degistirilmez. Super admin her zaman tum izinlere sahiptir; diger kullanicilar yeni oturumda guncel
+            listeyi alir.
           </p>
         </div>
       </div>

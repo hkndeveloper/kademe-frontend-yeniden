@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:authorization-characterization": "node --experimental-strip-types --test --test-isolation=none tests/authorization-characterization.test.mjs",
+    "test:authorization-management": "node --experimental-strip-types --test --test-isolation=none tests/authorization-management.test.mjs",
+    "test:program-work-modes": "node --experimental-strip-types --test --test-isolation=none tests/program-work-mode.test.mjs",
+    "test:panel-manifest-contract": "node --experimental-strip-types --test --test-isolation=none tests/panel-manifest-contract.test.mjs",
+    "test:coordination-context-contract": "node --experimental-strip-types --test --test-isolation=none tests/coordination-context-contract.test.mjs",
+    "test:yf9-acceptance": "node --experimental-strip-types --test --test-isolation=none tests/yf9-local-acceptance.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

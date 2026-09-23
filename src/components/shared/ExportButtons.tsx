@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, FileBox, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import api from "@/lib/api/axios";
@@ -20,6 +20,9 @@ const MENU_WIDTH = 224;
 const MENU_ESTIMATED_HEIGHT = 236;
 const MENU_GAP = 8;
 const VIEWPORT_PADDING = 12;
+const subscribeToHydration = () => () => undefined;
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
 
 export function ExportButtons({
   endpoint,
@@ -28,7 +31,11 @@ export function ExportButtons({
   buttonLabel = "Dışa Aktar",
 }: ExportButtonsProps) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [loadingFormat, setLoadingFormat] = useState<ExportFormat | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ left: number; top: number; placement: MenuPlacement }>({
@@ -67,10 +74,6 @@ export function ExportButtons({
       : Math.min(rect.bottom + MENU_GAP, viewportHeight - VIEWPORT_PADDING);
 
     setMenuPosition({ left, top, placement: opensUpward ? "top" : "bottom" });
-  }, []);
-
-  useEffect(() => {
-    setMounted(true);
   }, []);
 
   useEffect(() => {

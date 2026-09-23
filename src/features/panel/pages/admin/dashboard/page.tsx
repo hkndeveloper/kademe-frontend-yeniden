@@ -4,12 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Users, Calendar, CreditCard, BarChart3, MessageSquare, TrendingUp, ClipboardList, Loader2, CheckCircle2, Send, AlertTriangle, Bell, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api/axios";
-import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { DashboardCharts, type DashboardChartsData } from "@/components/panel/DashboardCharts";
 import { defaultPeriodIdForProject, periodOptionById, PeriodArchiveModeNotice, periodsForProject, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/store/useAuth";
+import { activeOrganizationMembership } from "@/lib/organization-context";
 import { formatIstanbulDayNumber, formatIstanbulTime, formatIstanbulWeekdayShort } from "@/lib/istanbul-time";
 
 interface DashboardStats {
@@ -127,6 +127,20 @@ const quickAnnouncementUnitAliases: Record<string, string[]> = {
   official_affairs: ["official_affairs", "official affairs", "resmi", "evrak", "idari"],
 };
 
+const dashboardContextPermissions = [
+  "dashboard.admin.view",
+  "dashboard.coordinator.view",
+  "dashboard.staff.view",
+  "projects.view",
+  "programs.view",
+  "applications.view",
+  "financial.view",
+  "support.view",
+  "certificates.view",
+  "assignments.view",
+  "projects.participants.view",
+];
+
 const normalizeQuickUnit = (value?: string | null) =>
   (value ?? "")
     .toLocaleLowerCase("tr-TR")
@@ -186,9 +200,14 @@ function MiniMetric({ label, value }: { label: string; value: number | string })
 }
 
 export default function AdminDashboardPage() {
-  const { hasPermission, canAccessProject, hasGlobalScope } = usePermissions();
-  const { user } = useAuth();
-  const role = user?.role;
+  const { hasScopedPermission, canAccessProject, hasGlobalScope, projectIdsForPermission } = usePermissions();
+  const { user, activeUnitId, activeProjectId, setActiveProjectId } = useAuth();
+  const activeMembership = activeOrganizationMembership(user, activeUnitId);
+  const role = user?.role === "super_admin"
+    ? "super_admin"
+    : user?.organization_context?.authoritative && activeMembership
+      ? activeMembership.position
+      : user?.role;
   const isSuperAdmin = role === "super_admin";
   const isCoordinator = role === "coordinator";
   const isStaff = role === "staff";
@@ -199,7 +218,7 @@ export default function AdminDashboardPage() {
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [quickAnnProjects, setQuickAnnProjects] = useState<AnnouncementProject[]>([]);
   const [dashboardProjects, setDashboardProjects] = useState<DashboardProject[]>([]);
-  const [dashboardProjectId, setDashboardProjectId] = useState("");
+  const [dashboardProjectId, setDashboardProjectId] = useState(() => activeProjectId ? String(activeProjectId) : "");
   const [dashboardPeriodId, setDashboardPeriodId] = useState("all");
 
   const [quickAnnTitle, setQuickAnnTitle] = useState("Hizli Duyuru");
@@ -218,6 +237,23 @@ export default function AdminDashboardPage() {
     [dashboardProjectId, dashboardProjects]
   );
   const dashboardPeriods = useMemo(() => periodsForProject(dashboardProject), [dashboardProject]);
+  const activeDashboardProjectIds = useMemo(
+    () => dashboardContextPermissions
+      .flatMap((permission) => projectIdsForPermission(permission))
+      .filter((projectId, index, all) => all.indexOf(projectId) === index),
+    [projectIdsForPermission]
+  );
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!user?.organization_context?.authoritative) return;
+      const nextProjectId = activeProjectId !== null && activeDashboardProjectIds.includes(activeProjectId)
+        ? String(activeProjectId)
+        : "";
+      setDashboardProjectId((current) => current === nextProjectId ? current : nextProjectId);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [activeDashboardProjectIds, activeProjectId, user?.organization_context?.authoritative]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -255,7 +291,12 @@ export default function AdminDashboardPage() {
           },
         });
         setStats(response.data);
-        setDashboardProjects(response.data.dashboard_context?.projects ?? []);
+        const projects = response.data.dashboard_context?.projects ?? [];
+        setDashboardProjects(
+          user?.organization_context?.authoritative
+            ? projects.filter((project) => activeDashboardProjectIds.includes(project.id))
+            : projects
+        );
       } catch (error) {
         console.error("Admin dashboard verileri cekilemedi", error);
       } finally {
@@ -291,7 +332,7 @@ export default function AdminDashboardPage() {
     void loadDashboard();
     void loadNotifications();
     void loadQuickAnnouncementProjects();
-  }, [dashboardPeriodId, dashboardProjectId]);
+  }, [activeDashboardProjectIds, dashboardPeriodId, dashboardProjectId, user?.organization_context?.authoritative]);
 
   const markNotificationRead = async (id: number) => {
     const selected = notifications.find((notification) => notification.id === id);
@@ -348,7 +389,7 @@ export default function AdminDashboardPage() {
       setQuickAnnError("Duyuru metni zorunludur.");
       return;
     }
-    if (!hasPermission("announcements.create")) {
+    if (!hasScopedPermission("announcements.create")) {
       setQuickAnnError("Duyuru olusturma yetkiniz yok.");
       return;
     }
@@ -378,7 +419,7 @@ export default function AdminDashboardPage() {
       quickAnnTargetRoles.forEach((targetRole, index) => formData.append(`target_roles[${index}]`, targetRole));
       scopedTargetUnits.forEach((unit, index) => formData.append(`target_units[${index}]`, unit));
       formData.append("send_sms", "0");
-      formData.append("send_email", quickAnnSendEmail && hasPermission("announcements.send_email") ? "1" : "0");
+      formData.append("send_email", quickAnnSendEmail && hasScopedPermission("announcements.send_email") ? "1" : "0");
 
       const response = await api.post<{
         message?: string;
@@ -414,19 +455,21 @@ export default function AdminDashboardPage() {
   const canCreateGlobalAnnouncement = hasGlobalScope("announcements.create");
   const announcementProjects = quickAnnProjects.filter((project) => canAccessProject("announcements.create", project.id));
   const quickAvailableTargetUnits = availableQuickTargetUnits();
-  const canQuickSendEmail = hasPermission("announcements.send_email");
+  const canQuickSendEmail = hasScopedPermission("announcements.send_email");
   const quickAnnouncementTargetAvailable = canCreateGlobalAnnouncement || announcementProjects.length > 0 || quickAvailableTargetUnits.length > 0;
   const quickPrivilegedTargetNeedsScope =
     !canCreateGlobalAnnouncement &&
     quickAnnProject === "all" &&
     quickAnnTargetUnits.length === 0 &&
     quickAnnTargetRoles.some((targetRole) => ["super_admin", "coordinator", "staff"].includes(targetRole));
-  const canViewApplications = hasPermission("applications.view");
-  const canViewCommunication = hasPermission("announcements.view");
-  const canViewFinancial = hasPermission("financial.view");
-  const canViewParticipants = hasPermission("projects.participants.view") || hasPermission("projects.view");
-  const canViewPrograms = hasPermission("programs.view");
-  const canViewSupport = hasPermission("support.view");
+  const canViewApplications = hasScopedPermission("applications.view");
+  const canViewCommunication = hasScopedPermission("inbox.view");
+  const canViewFinancial = hasScopedPermission("financial.view");
+  const canViewParticipants = hasScopedPermission("projects.participants.view") || hasScopedPermission("projects.view");
+  const canViewPrograms = ["programs.view", "programs.community_event.view", "programs.logistics.view"].some(hasScopedPermission);
+  const canViewSupport = hasScopedPermission("support.view");
+  const canViewAssignments = hasScopedPermission("assignments.view");
+  const canViewCertificates = hasScopedPermission("certificates.view");
   const scopeLabel =
     stats.stats_scope === "global"
       ? "Tum sistem"
@@ -488,7 +531,7 @@ export default function AdminDashboardPage() {
               {user?.surname ? <span className="font-bold">{user.surname}</span> : null}
             </h1>
             <span className="inline-flex items-center rounded-md border border-sky-200/80 bg-sky-50 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-sky-800">
-              {roleBadgeLabel(user?.role)}
+              {roleBadgeLabel(role)}
             </span>
           </div>
           <p className="text-sm text-slate-500">
@@ -522,6 +565,7 @@ export default function AdminDashboardPage() {
                 const value = event.target.value;
                 const project = dashboardProjects.find((item) => String(item.id) === value);
                 setDashboardProjectId(value);
+                setActiveProjectId(value ? Number(value) : null);
                 setDashboardPeriodId(value ? defaultPeriodIdForProject(project) || "all" : "all");
               }}
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#FF6B00] focus:ring-2 focus:ring-orange-100"
@@ -580,16 +624,16 @@ export default function AdminDashboardPage() {
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
-            <MiniMetric label="Katilimci" value={stats.period_analytics.participants_total} />
-            <MiniMetric label="Program" value={stats.period_analytics.programs_total} />
-            <MiniMetric label="Yoklama" value={stats.period_analytics.attendance_present} />
-            <MiniMetric label="Başvuru" value={stats.period_analytics.applications_total} />
-            <MiniMetric label="Ödev" value={`${stats.period_analytics.assignment_submissions_total}/${stats.period_analytics.assignments_total}`} />
-            <MiniMetric label="Sertifika" value={stats.period_analytics.certificates_total} />
-            <MiniMetric label="Feedback" value={stats.period_analytics.feedback_count} />
-            <MiniMetric label="Ortalama" value={stats.period_analytics.feedback_numeric_average ?? "-"} />
-            <MiniMetric label="Kredi Hareketi" value={stats.period_analytics.credit_log_total} />
-            <MiniMetric label="Mali Toplam" value={`${Number(stats.period_analytics.financial_total).toLocaleString("tr-TR", { maximumFractionDigits: 0 })} ₺`} />
+            {canViewParticipants ? <MiniMetric label="Katilimci" value={stats.period_analytics.participants_total} /> : null}
+            {canViewPrograms ? <MiniMetric label="Program" value={stats.period_analytics.programs_total} /> : null}
+            {canViewPrograms ? <MiniMetric label="Yoklama" value={stats.period_analytics.attendance_present} /> : null}
+            {canViewApplications ? <MiniMetric label="Başvuru" value={stats.period_analytics.applications_total} /> : null}
+            {canViewAssignments ? <MiniMetric label="Ödev" value={`${stats.period_analytics.assignment_submissions_total}/${stats.period_analytics.assignments_total}`} /> : null}
+            {canViewCertificates ? <MiniMetric label="Sertifika" value={stats.period_analytics.certificates_total} /> : null}
+            {canViewPrograms ? <MiniMetric label="Feedback" value={stats.period_analytics.feedback_count} /> : null}
+            {canViewPrograms ? <MiniMetric label="Ortalama" value={stats.period_analytics.feedback_numeric_average ?? "-"} /> : null}
+            {canViewParticipants ? <MiniMetric label="Kredi Hareketi" value={stats.period_analytics.credit_log_total} /> : null}
+            {canViewFinancial ? <MiniMetric label="Mali Toplam" value={`${Number(stats.period_analytics.financial_total).toLocaleString("tr-TR", { maximumFractionDigits: 0 })} ₺`} /> : null}
           </div>
         </div>
       ) : null}
@@ -1011,7 +1055,7 @@ export default function AdminDashboardPage() {
                         </button>
                       );
                     })}
-                    {hasPermission("announcements.view") ? (
+                    {hasScopedPermission("inbox.view") ? (
                       <Link href="/panel/inbox" className="block text-center text-[10px] font-bold uppercase tracking-wide text-[#FF6B00] hover:underline">
                         Mesaj kutusuna git
                       </Link>
@@ -1020,7 +1064,7 @@ export default function AdminDashboardPage() {
                 )}
               </div>
 
-              <PermissionGate permission="announcements.create">
+              {hasScopedPermission("announcements.create") ? (
                 <div className="panel-surface border-2 border-dashed border-slate-200/90 bg-slate-50/50 p-5">
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="text-[10px] font-bold uppercase text-slate-500">Hizli Duyuru</h4>
@@ -1136,7 +1180,7 @@ export default function AdminDashboardPage() {
                   {quickAnnError ? <p className="mt-2 text-[10px] font-semibold text-red-600">{quickAnnError}</p> : null}
                   {quickAnnResult ? <p className="mt-2 text-[10px] font-semibold text-emerald-700">{quickAnnResult}</p> : null}
                 </div>
-              </PermissionGate>
+              ) : null}
             </div>
           </div>
         </div>

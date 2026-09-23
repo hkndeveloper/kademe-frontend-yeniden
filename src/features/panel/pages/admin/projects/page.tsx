@@ -30,10 +30,10 @@ interface ActivePeriod {
 interface Project {
   id: number;
   name: string;
-  type: string;
-  slug: string;
+  type?: string;
+  slug?: string;
   status: string;
-  is_application_open: boolean;
+  is_application_open?: boolean;
   quota?: number | null;
   active_period?: ActivePeriod | null;
   active_students?: Array<unknown>;
@@ -47,7 +47,20 @@ interface Project {
 }
 
 export default function AdminProjectsPage() {
-  const { hasPermission, canAccessProject } = usePermissions();
+  const { hasPermission, hasScopedPermission, canAccessProject } = usePermissions();
+  const hasStructuralProjectView = hasScopedPermission("projects.view");
+  const isMediaContentMode = !hasStructuralProjectView && [
+    "projects.public_content.view",
+    "projects.public_content.update",
+    "projects.gallery.update",
+  ].some(hasScopedPermission);
+  const listingPermission = hasStructuralProjectView
+    ? "projects.view"
+    : hasScopedPermission("projects.public_content.view")
+      ? "projects.public_content.view"
+      : hasScopedPermission("projects.public_content.update")
+        ? "projects.public_content.update"
+        : "projects.gallery.update";
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -65,7 +78,9 @@ export default function AdminProjectsPage() {
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        const response = await api.get<{ projects: Project[] }>("/panel/projects/manageable");
+        const response = await api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+          params: { permission: listingPermission },
+        });
         setProjects(response.data.projects ?? []);
       } catch (error) {
         console.error("Admin projeleri yuklenemedi", error);
@@ -75,11 +90,11 @@ export default function AdminProjectsPage() {
     };
 
     void loadProjects();
-  }, []);
+  }, [listingPermission]);
 
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
-      const matchesSearch = `${project.name} ${project.type} ${project.slug}`.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = `${project.name} ${project.type ?? ""} ${project.slug ?? ""}`.toLowerCase().includes(search.toLowerCase());
       const normalizedStatus = project.status === "active" ? "active" : "passive";
       const matchesStatus = statusFilter === "all" || normalizedStatus === statusFilter;
       return matchesSearch && matchesStatus;
@@ -103,9 +118,18 @@ export default function AdminProjectsPage() {
               <Layers className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Proje Yonetimi</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                  {isMediaContentMode ? "Proje İçerikleri" : "Proje Yönetimi"}
+                </h1>
+                <span className="panel-chip panel-chip-info">
+                  {isMediaContentMode ? "Medya görünümü" : "Proje çekirdeği"}
+                </span>
+              </div>
               <p className="mt-1 max-w-3xl text-sm text-slate-600">
-                Yetkin dahilindeki projeleri, aktif donemlerini, basvuru durumunu ve operasyon kisayollarini tek yerden takip et.
+                {isMediaContentMode
+                  ? "Sorumluluk kapsamındaki projelerin kamusal metin, kapak ve galeri alanlarını yönetin. Yapısal proje bilgileri bu görünümde değiştirilmez."
+                  : "Yetkiniz dahilindeki projeleri, aktif dönemlerini, başvuru durumunu ve operasyon kısayollarını tek yerden takip edin."}
               </p>
             </div>
           </div>
@@ -113,13 +137,15 @@ export default function AdminProjectsPage() {
             <ExportButtons endpoint="/panel/projects/export" filename="projeler" buttonLabel="Projeleri Disa Aktar" />
           </PermissionGate>
         </div>
-        <div className="grid border-t border-slate-200 bg-slate-50/70 sm:grid-cols-2 xl:grid-cols-5">
+        <div className={`grid border-t border-slate-200 bg-slate-50/70 sm:grid-cols-2 ${hasStructuralProjectView ? "xl:grid-cols-5" : "xl:grid-cols-2"}`}>
           {[
-            { label: "Yonetilebilir proje", value: projects.length, icon: Layers },
+            { label: "Yetkili proje", value: projects.length, icon: Layers },
             { label: "Aktif proje", value: activeProjects, icon: CheckCircle2 },
-            { label: "Basvurusu acik", value: openApplications, icon: ClipboardList },
-            { label: "Aktif ogrenci", value: totalActiveStudents, icon: Users },
-            { label: "Mezun", value: totalAlumni, icon: Users },
+            ...(hasStructuralProjectView ? [
+              { label: "Basvurusu acik", value: openApplications, icon: ClipboardList },
+              { label: "Aktif ogrenci", value: totalActiveStudents, icon: Users },
+              { label: "Mezun", value: totalAlumni, icon: Users },
+            ] : []),
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -142,7 +168,7 @@ export default function AdminProjectsPage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Proje adi, turu veya slug ile ara"
+              placeholder={hasStructuralProjectView ? "Proje adi, turu veya slug ile ara" : "Proje adi ile ara"}
               className="panel-control h-12 pl-11"
             />
           </label>
@@ -187,7 +213,7 @@ export default function AdminProjectsPage() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="truncate text-lg font-black text-slate-900">{project.name}</h3>
-                    <p className="mt-1 truncate text-xs font-bold uppercase tracking-wide text-slate-500">{project.type}</p>
+                    {project.type ? <p className="mt-1 truncate text-xs font-bold uppercase tracking-wide text-slate-500">{project.type}</p> : null}
                   </div>
                 </div>
                 <span
@@ -206,7 +232,7 @@ export default function AdminProjectsPage() {
                   <span className="text-sm font-bold text-slate-900">{project.active_period?.name || "Aktif donem yok"}</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                {hasStructuralProjectView ? <div className="grid grid-cols-2 gap-3">
                   <div className="panel-card-muted bg-white p-4">
                     <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                       <Users className="h-3 w-3" />
@@ -221,8 +247,8 @@ export default function AdminProjectsPage() {
                     </div>
                     <span className="text-xl font-black text-slate-900">{alumniCount(project)}</span>
                   </div>
-                </div>
-                <div className="panel-card-muted flex items-center justify-between bg-white px-4 py-3">
+                </div> : null}
+                {hasStructuralProjectView ? <div className="panel-card-muted flex items-center justify-between bg-white px-4 py-3">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
                     {project.is_application_open ? (
                       <>
@@ -239,17 +265,21 @@ export default function AdminProjectsPage() {
                   {typeof project.quota === "number" ? (
                     <span className="text-xs font-bold text-slate-500">Kontenjan {project.quota}</span>
                   ) : null}
-                </div>
+                </div> : (
+                  <div className="panel-card-muted bg-white px-4 py-3 text-sm text-slate-600">
+                    Kamusal proje metni, kapak ve galeri alanlari bu ekrandan yonetilir.
+                  </div>
+                )}
               </div>
 
               <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
-                <Link
+                {hasStructuralProjectView ? <Link
                   href={hrefWithActivePeriod(`/panel/projects/${project.id}`, project)}
                   className="panel-card-action panel-card-action-primary flex-1"
                 >
                     Detay
                     <ChevronRight className="h-4 w-4" />
-                </Link>
+                </Link> : null}
                 {(hasPermission("applications.intake.view") && canAccessProject("applications.intake.view", project.id)) ||
                 (hasPermission("applications.intake.manage") && canAccessProject("applications.intake.manage", project.id)) ? (
                   <Link
@@ -269,7 +299,12 @@ export default function AdminProjectsPage() {
                     Form
                   </Link>
                 </PermissionGate>
-                <PermissionGate permission="projects.content.update" requireProjectAccess={{ permission: "projects.content.update", projectId: project.id }}>
+                {[
+                  "projects.content.update",
+                  "projects.public_content.view",
+                  "projects.public_content.update",
+                  "projects.gallery.update",
+                ].some((permission) => hasPermission(permission) && canAccessProject(permission, project.id)) ? (
                   <Link
                     href={hrefWithActivePeriod(`/panel/projects/${project.id}/content`, project)}
                     className="panel-card-action panel-card-action-info"
@@ -277,7 +312,7 @@ export default function AdminProjectsPage() {
                     <PencilLine className="h-4 w-4" />
                     Icerik
                   </Link>
-                </PermissionGate>
+                ) : null}
               </div>
             </article>
           ))}

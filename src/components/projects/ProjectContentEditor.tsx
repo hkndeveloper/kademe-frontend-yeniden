@@ -10,9 +10,12 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { isPeriodArchiveMode, periodHasWriteCapability, PeriodArchiveModeNotice, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 
 interface EditableProjectContent {
-  name: string;
-  slug: string;
-  type: string;
+  name?: string;
+  slug?: string;
+  type?: string;
+  special_modules?: string[] | null;
+  applicable_special_modules?: string[];
+  special_modules_inherited?: boolean;
   short_description: string;
   description: string;
   cover_image_path: string;
@@ -29,7 +32,7 @@ interface ProjectGalleryItem {
 interface ProjectPreview {
   id: number;
   name: string;
-  slug: string;
+  slug?: string;
   cover_image?: string | null;
   gallery?: string[];
   gallery_items?: Array<ProjectGalleryItem & { url?: string | null; period_name?: string | null }>;
@@ -39,6 +42,15 @@ interface ProjectPreview {
 interface ProjectContentResponse {
   project: ProjectPreview;
   editable: EditableProjectContent;
+  capabilities: {
+    view_structure: boolean;
+    update_structure: boolean;
+    view_public_content: boolean;
+    update_public_content: boolean;
+    update_gallery: boolean;
+    view_application: boolean;
+  };
+  special_module_options?: Array<{ key: string; label: string }>;
 }
 
 type PanelContentBasePath = "/panel";
@@ -71,6 +83,9 @@ const emptyForm: EditableProjectContent = {
   description: "",
   cover_image_path: "",
   gallery_paths: [{ path: "", caption: "", year: "", period_id: "" }],
+  special_modules: null,
+  applicable_special_modules: [],
+  special_modules_inherited: true,
 };
 
 function emptyGalleryItem(path = ""): ProjectGalleryItem {
@@ -116,12 +131,17 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   const [saving, setSaving] = useState(false);
   const [project, setProject] = useState<ProjectPreview | null>(null);
   const [form, setForm] = useState<EditableProjectContent>(emptyForm);
+  const [capabilities, setCapabilities] = useState<ProjectContentResponse["capabilities"] | null>(null);
+  const [specialModuleOptions, setSpecialModuleOptions] = useState<Array<{ key: string; label: string }>>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const selectedPeriod = project?.periods?.find((period) => String(period.id) === periodId);
   const periodReadOnly = Boolean(periodId) && !periodHasWriteCapability(selectedPeriod, "configure_period");
-  const effectiveReadOnly = readOnly || periodReadOnly;
+  const canUpdateStructure = !readOnly && !periodReadOnly && Boolean(capabilities?.update_structure);
+  const canUpdatePublicContent = !readOnly && !periodReadOnly && Boolean(capabilities?.update_public_content || capabilities?.update_structure);
+  const canUpdateGallery = !readOnly && !periodReadOnly && Boolean(capabilities?.update_gallery || capabilities?.update_structure);
+  const canSaveAnything = canUpdateStructure || canUpdatePublicContent || canUpdateGallery;
 
   useEffect(() => {
     const loadProject = async () => {
@@ -129,8 +149,15 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
         const root = panelContentApiRoot();
         const response = await api.get<ProjectContentResponse>(`${root}/projects/${projectId}/content`);
         setProject(response.data.project);
+        setCapabilities(response.data.capabilities);
+        setSpecialModuleOptions(response.data.special_module_options ?? []);
         setForm({
-          ...response.data.editable,
+          name: response.data.editable.name ?? response.data.project.name ?? "",
+          slug: response.data.editable.slug ?? "",
+          type: response.data.editable.type ?? "",
+          special_modules: response.data.editable.special_modules ?? null,
+          applicable_special_modules: response.data.editable.applicable_special_modules ?? [],
+          special_modules_inherited: response.data.editable.special_modules_inherited ?? true,
           short_description: response.data.editable.short_description ?? "",
           description: response.data.editable.description ?? "",
           cover_image_path: response.data.editable.cover_image_path ?? "",
@@ -148,7 +175,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   }, [projectId, panelBasePath]);
 
   const updateGalleryItem = (index: number, field: keyof ProjectGalleryItem, value: string | number | "") => {
-    if (effectiveReadOnly) return;
+    if (!canUpdateGallery) return;
     setForm((current) => ({
       ...current,
       gallery_paths: current.gallery_paths.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
@@ -156,7 +183,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   };
 
   const addGalleryItem = () => {
-    if (effectiveReadOnly) return;
+    if (!canUpdateGallery) return;
     setForm((current) => ({
       ...current,
       gallery_paths: [...current.gallery_paths, emptyGalleryItem()],
@@ -164,7 +191,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   };
 
   const removeGalleryItem = (index: number) => {
-    if (effectiveReadOnly) return;
+    if (!canUpdateGallery) return;
     setForm((current) => ({
       ...current,
       gallery_paths: current.gallery_paths.filter((_, itemIndex) => itemIndex !== index),
@@ -176,8 +203,9 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
     folder: string,
     onSuccess: (url: string) => void,
     fieldKey: string,
+    allowed: boolean,
   ) => {
-    if (effectiveReadOnly) return;
+    if (!allowed) return;
     setUploadingField(fieldKey);
     setErrorMessage(null);
 
@@ -202,11 +230,11 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
   };
 
   const handleSave = async () => {
-    if (effectiveReadOnly) return;
+    if (!canSaveAnything) return;
     setMessage(null);
     setErrorMessage(null);
 
-    if (!form.name.trim() || !form.slug.trim() || !form.type.trim()) {
+    if (canUpdateStructure && (!form.name?.trim() || !form.slug?.trim() || !form.type?.trim())) {
       setErrorMessage("Proje adi, slug ve proje tipi zorunludur.");
       return;
     }
@@ -215,24 +243,44 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
 
     try {
       const root = panelContentApiRoot();
-      const response = await api.put<ProjectContentResponse & { message: string }>(`${root}/projects/${projectId}/content`, {
-        ...form,
-        gallery_paths: form.gallery_paths
+      const galleryPaths = form.gallery_paths
           .filter((item) => item.path.trim())
           .map((item) => ({
             path: item.path.trim(),
             caption: item.caption.trim() || null,
             year: item.year.trim() || null,
             period_id: item.period_id || null,
-          })),
-      });
+          }));
 
-      setProject(response.data.project);
-      setForm((current) => ({
-        ...current,
-        gallery_paths: normalizeGalleryItems(response.data.editable.gallery_paths),
-      }));
-      setMessage(response.data.message);
+      if (canUpdateStructure) {
+        const response = await api.put<ProjectContentResponse & { message: string }>(`${root}/projects/${projectId}/content`, {
+          ...form,
+          gallery_paths: galleryPaths,
+        });
+        setProject(response.data.project);
+        setForm((current) => ({
+          ...current,
+          special_modules: response.data.editable.special_modules ?? null,
+          applicable_special_modules: response.data.editable.applicable_special_modules ?? [],
+          special_modules_inherited: response.data.editable.special_modules_inherited ?? true,
+          gallery_paths: normalizeGalleryItems(response.data.editable.gallery_paths),
+        }));
+        setMessage(response.data.message);
+      } else {
+        const operations: Array<Promise<unknown>> = [];
+        if (canUpdatePublicContent) {
+          operations.push(api.patch(`${root}/projects/${projectId}/public-content`, {
+            short_description: form.short_description,
+            description: form.description,
+            cover_image_path: form.cover_image_path,
+          }));
+        }
+        if (canUpdateGallery) {
+          operations.push(api.put(`${root}/projects/${projectId}/gallery`, { gallery_paths: galleryPaths }));
+        }
+        await Promise.all(operations);
+        setMessage("Projenin kamusal icerigi kaydedildi.");
+      }
     } catch (error) {
       console.error("Proje icerigi kaydedilemedi", error);
       const responseMessage = isAxiosError(error)
@@ -269,7 +317,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
         <button
           type="button"
           onClick={() => void handleSave()}
-          disabled={effectiveReadOnly || saving}
+          disabled={!canSaveAnything || saving}
           className="panel-button panel-button-primary"
         >
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
@@ -277,9 +325,9 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
         </button>
       </div>
 
-      {readOnly ? (
+      {!canSaveAnything ? (
         <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
-          Bu proje icin icerik guncelleme yetkiniz yok; alanlar salt okunurdur.
+          Bu proje icin degistirebileceginiz bir icerik alani yok; alanlar salt okunurdur.
         </div>
       ) : null}
       {periodReadOnly ? <PeriodArchiveModeNotice period={selectedPeriod} /> : null}
@@ -294,31 +342,93 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
         <div className="space-y-8">
           <div className="panel-section-card space-y-4">
             <h2 className="text-lg font-bold text-slate-900">Temel Bilgiler</h2>
-            <input
-              readOnly={effectiveReadOnly}
-              value={form.name}
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-              placeholder="Proje adi"
-              className={inputClass}
-            />
-            <div className="panel-form-grid">
-              <input
-                readOnly={effectiveReadOnly}
-                value={form.slug}
-                onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
-                placeholder="Slug"
-                className={inputClass}
-              />
-              <input
-                readOnly={effectiveReadOnly}
-                value={form.type}
-                onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
-                placeholder="Proje tipi"
-                className={inputClass}
-              />
-            </div>
+            {capabilities?.view_structure ? (
+              <>
+                <input
+                  readOnly={!canUpdateStructure}
+                  value={form.name ?? ""}
+                  onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="Proje adi"
+                  className={inputClass}
+                />
+                <div className="panel-form-grid">
+                  <input
+                    readOnly={!canUpdateStructure}
+                    value={form.slug ?? ""}
+                    onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
+                    placeholder="Slug"
+                    className={inputClass}
+                  />
+                  <input
+                    readOnly={!canUpdateStructure}
+                    value={form.type ?? ""}
+                    onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
+                    placeholder="Proje tipi"
+                    className={inputClass}
+                  />
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Projeye özel modüller</h3>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                        Bu seçim proje koordinatörü ve personelinin family izin şablonunu belirler. Varsayılan mod kullanıldığında seçim proje tipinden türetilir.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!canUpdateStructure || form.special_modules === null}
+                      onClick={() => setForm((current) => ({
+                        ...current,
+                        special_modules: null,
+                        special_modules_inherited: true,
+                      }))}
+                      className="panel-button panel-button-secondary shrink-0 disabled:opacity-40"
+                    >
+                      Tür varsayılanını kullan
+                    </button>
+                  </div>
+                  <div className="mt-3 text-xs font-semibold text-indigo-700">
+                    {form.special_modules === null ? "Proje tipi varsayılanı aktif" : "Özel metadata seçimi aktif"}
+                  </div>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    {specialModuleOptions.map((option) => {
+                      const selectedModules = form.special_modules ?? form.applicable_special_modules ?? [];
+                      const checked = selectedModules.includes(option.key);
+
+                      return (
+                        <label key={option.key} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            disabled={!canUpdateStructure}
+                            checked={checked}
+                            onChange={(event) => {
+                              const base = form.special_modules ?? form.applicable_special_modules ?? [];
+                              const next = event.target.checked
+                                ? [...new Set([...base, option.key])]
+                                : base.filter((key) => key !== option.key);
+                              setForm((current) => ({
+                                ...current,
+                                special_modules: next,
+                                special_modules_inherited: false,
+                              }));
+                            }}
+                            className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                          />
+                          {option.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="panel-card-muted text-sm text-slate-600">
+                Proje kimligi ve turu proje koordinatorlugu tarafindan yonetilir. Bu ekranda yalnizca kamusal tanitim alanlari duzenlenebilir.
+              </div>
+            )}
             <textarea
-              readOnly={effectiveReadOnly}
+              readOnly={!canUpdatePublicContent}
               value={form.short_description}
               onChange={(event) => setForm((current) => ({ ...current, short_description: event.target.value }))}
               rows={3}
@@ -326,7 +436,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
               className={textareaClass}
             />
             <textarea
-              readOnly={effectiveReadOnly}
+              readOnly={!canUpdatePublicContent}
               value={form.description}
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
               rows={8}
@@ -339,18 +449,18 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-lg font-bold text-slate-900">Galeri ve Gorseller</h2>
               <div className="flex items-center gap-3">
-                <button onClick={addGalleryItem} type="button" disabled={effectiveReadOnly} className="panel-button panel-button-secondary disabled:opacity-40">
+                <button onClick={addGalleryItem} type="button" disabled={!canUpdateGallery} className="panel-button panel-button-secondary disabled:opacity-40">
                   <Plus className="h-4 w-4" />
                   Alan Ekle
                 </button>
                 <label
-                  className={`${compactActionClass} ${effectiveReadOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+                  className={`${compactActionClass} ${!canUpdateGallery ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
                 >
                   {uploadingField === "gallery-new" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   Galeri Yukle
                   <input
                     type="file"
-                    disabled={effectiveReadOnly}
+                    disabled={!canUpdateGallery}
                     accept="image/png,image/jpeg,image/webp"
                     className="hidden"
                     onChange={(event) => {
@@ -368,6 +478,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                             ],
                           })),
                         "gallery-new",
+                        canUpdateGallery,
                       );
                       event.target.value = "";
                     }}
@@ -376,20 +487,20 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
               </div>
             </div>
             <input
-              readOnly={effectiveReadOnly}
+              readOnly={!canUpdatePublicContent}
               value={form.cover_image_path}
               onChange={(event) => setForm((current) => ({ ...current, cover_image_path: event.target.value }))}
               placeholder="Kapak gorsel URL"
               className={inputClass}
             />
             <label
-              className={`${compactActionClass} w-fit ${effectiveReadOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+              className={`${compactActionClass} w-fit ${!canUpdatePublicContent ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
             >
               {uploadingField === "cover_image_path" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Kapak gorseli yukle
               <input
                 type="file"
-                disabled={effectiveReadOnly}
+                disabled={!canUpdatePublicContent}
                 accept="image/png,image/jpeg,image/webp"
                 className="hidden"
                 onChange={(event) => {
@@ -400,6 +511,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                     "projects",
                     (url) => setForm((current) => ({ ...current, cover_image_path: url })),
                     "cover_image_path",
+                    canUpdatePublicContent,
                   );
                   event.target.value = "";
                 }}
@@ -410,21 +522,21 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                 <div key={`gallery-${index}`} className="panel-card-muted bg-white">
                   <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_140px_180px_auto_auto]">
                     <input
-                      readOnly={effectiveReadOnly}
+                      readOnly={!canUpdateGallery}
                       value={item.path}
                       onChange={(event) => updateGalleryItem(index, "path", event.target.value)}
                       placeholder={`Galeri gorsel URL ${index + 1}`}
                       className={inputClass}
                     />
                     <input
-                      readOnly={effectiveReadOnly}
+                      readOnly={!canUpdateGallery}
                       value={item.year}
                       onChange={(event) => updateGalleryItem(index, "year", event.target.value)}
                       placeholder="Yil"
                       className={inputClass}
                     />
                     <select
-                      disabled={effectiveReadOnly}
+                      disabled={!canUpdateGallery}
                       value={item.period_id}
                       onChange={(event) => updateGalleryItem(index, "period_id", event.target.value ? Number(event.target.value) : "")}
                       className={inputClass}
@@ -437,18 +549,18 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                       ))}
                     </select>
                     <label
-                      className={`panel-button-icon ${effectiveReadOnly ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
+                      className={`panel-button-icon ${!canUpdateGallery ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
                     >
                       {uploadingField === `gallery-${index}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                       <input
                         type="file"
-                        disabled={effectiveReadOnly}
+                        disabled={!canUpdateGallery}
                         accept="image/png,image/jpeg,image/webp"
                         className="hidden"
                         onChange={(event) => {
                           const file = event.target.files?.[0];
                           if (!file) return;
-                          void uploadImage(file, "projects", (url) => updateGalleryItem(index, "path", url), `gallery-${index}`);
+                          void uploadImage(file, "projects", (url) => updateGalleryItem(index, "path", url), `gallery-${index}`, canUpdateGallery);
                           event.target.value = "";
                         }}
                       />
@@ -456,14 +568,14 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                     <button
                       onClick={() => removeGalleryItem(index)}
                       type="button"
-                      disabled={effectiveReadOnly}
+                      disabled={!canUpdateGallery}
                       className="panel-button-icon panel-table-action-danger disabled:opacity-40"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                   <input
-                    readOnly={effectiveReadOnly}
+                    readOnly={!canUpdateGallery}
                     value={item.caption}
                     onChange={(event) => updateGalleryItem(index, "caption", event.target.value)}
                     placeholder="Gorsel basligi veya kisa aciklama"

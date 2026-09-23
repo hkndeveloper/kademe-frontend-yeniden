@@ -37,6 +37,11 @@ import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, 
 import { usePermissions } from "@/hooks/usePermissions";
 import type { AxiosError } from "axios";
 import { fixMojibake } from "@/lib/text";
+import {
+  programEntryPermissionForMode,
+  resolveProgramWorkMode,
+  type ProgramWorkMode,
+} from "@/lib/program-work-mode";
 
 interface ActivePeriod {
   id: number;
@@ -66,6 +71,8 @@ interface ProgramPhoto {
 
 interface Program {
   id: number;
+  program_kind?: "core_program" | "community_event";
+  managing_unit?: { id: number; name: string } | null;
   title: string;
   description?: string | null;
   location?: string | null;
@@ -79,6 +86,7 @@ interface Program {
   end_at?: string | null;
   status?: ProgramFormState["status"];
   radius_meters?: number | null;
+  guest_info?: unknown;
   credit_deduction?: number | null;
   application_quota?: number | null;
   target_audience?: Array<"student" | "alumni"> | null;
@@ -90,6 +98,29 @@ interface Program {
   feedback_count?: number;
   is_public?: boolean;
   is_featured?: boolean;
+  capabilities?: {
+    update_core?: boolean;
+    update_community_event?: boolean;
+    update_logistics?: boolean;
+    view_attendance?: boolean;
+    manage_attendance?: boolean;
+    export_attendance?: boolean;
+    manage_media?: boolean;
+    view_media?: boolean;
+    complete?: boolean;
+    manage_qr?: boolean;
+  };
+}
+
+interface LogisticsFormState {
+  location: string;
+  location_place_name: string;
+  location_place_address: string;
+  location_place_id: string;
+  location_place_provider: string;
+  latitude: string;
+  longitude: string;
+  radius_meters: string;
 }
 
 interface AttendanceRecord {
@@ -102,7 +133,7 @@ interface AttendanceRecord {
   method?: string | null;
   is_valid: boolean;
   attendance_status?: "present" | "absent";
-  feedback_submitted: boolean;
+  feedback_submitted?: boolean;
   credit_deducted?: boolean;
   credit_restored?: boolean;
   recorded_at?: string | null;
@@ -112,7 +143,7 @@ interface AttendanceSummary {
   attendance_count: number;
   participant_count?: number;
   absent_count?: number;
-  feedback_count: number;
+  feedback_count?: number;
   deduction_count?: number;
   restore_count?: number;
 }
@@ -376,7 +407,7 @@ const audienceLabels: Record<"student" | "alumni", string> = {
 const formatCoordinate = (value: number) => value.toFixed(8);
 
 export default function PanelProgramsPage() {
-  const { hasPermission, canAccessProject } = usePermissions();
+  const { hasScopedPermission, canAccessProject } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [creatableProjects, setCreatableProjects] = useState<Project[]>([]);
   const [updatableProjects, setUpdatableProjects] = useState<Project[]>([]);
@@ -424,17 +455,61 @@ export default function PanelProgramsPage() {
   const [photoDeletingId, setPhotoDeletingId] = useState<number | null>(null);
   const [photoCaption, setPhotoCaption] = useState("");
   const [visibilityTogglingId, setVisibilityTogglingId] = useState<number | null>(null);
+  const [logisticsProgram, setLogisticsProgram] = useState<Program | null>(null);
+  const [logisticsSaving, setLogisticsSaving] = useState(false);
+  const [logisticsForm, setLogisticsForm] = useState<LogisticsFormState>({
+    location: "",
+    location_place_name: "",
+    location_place_address: "",
+    location_place_id: "",
+    location_place_provider: "",
+    latitude: "",
+    longitude: "",
+    radius_meters: "100",
+  });
   const photoInputRef = useRef<HTMLInputElement>(null);
   const handledDeepLinkRef = useRef<string | null>(null);
 
-  const canViewAttendanceStats = hasPermission("programs.attendance.view");
-  const canManageAttendance = hasPermission("programs.attendance.manage");
-  const canUpdatePrograms = hasPermission("programs.update");
-  const canCompletePrograms = hasPermission("programs.complete");
-  const canManageQr = hasPermission("programs.qr.manage");
-  const canViewMedia = hasPermission("programs.view");
-  const canManageMedia = hasPermission("programs.media.upload");
-  const canManageTemplates = hasPermission("programs.create") || hasPermission("programs.update");
+  const hasCoreProgramView = hasScopedPermission("programs.view");
+  const programWorkMode = resolveProgramWorkMode(hasScopedPermission);
+  const programViewPermission = programEntryPermissionForMode(programWorkMode);
+  const canCreateCorePrograms = hasScopedPermission("programs.create");
+  const canCreateCommunityEvents = hasScopedPermission("programs.community_event.create");
+  const canCreatePrograms = canCreateCorePrograms || canCreateCommunityEvents;
+  const canUpdateCorePrograms = hasScopedPermission("programs.update");
+  const canUpdateCommunityEvents = hasScopedPermission("programs.community_event.update");
+  const canUpdateAnyProgram = canUpdateCorePrograms || canUpdateCommunityEvents;
+  const programCreatePermission = canCreateCorePrograms ? "programs.create" : "programs.community_event.create";
+  const programUpdatePermission = canUpdateCorePrograms ? "programs.update" : "programs.community_event.update";
+  const canViewAttendanceStats = hasScopedPermission("programs.attendance.view");
+  const canManageAttendance = hasScopedPermission("programs.attendance.manage") || hasScopedPermission("programs.community_event.attendance.manage");
+  const canUpdatePrograms = canUpdateCorePrograms;
+  const canCompletePrograms = hasScopedPermission("programs.complete");
+  const canManageMedia = hasScopedPermission("programs.media.upload");
+  const canManageTemplates = canCreateCorePrograms || canUpdateCorePrograms;
+  const programModeMeta: Record<ProgramWorkMode, { title: string; badge: string; description: string }> = {
+    core: {
+      title: "Program Yönetimi",
+      badge: "Proje çekirdeği",
+      description: "Proje programlarını planlayın, yoklamayı yönetin ve dönem operasyonlarını yürütün.",
+    },
+    media: {
+      title: "Program Medyası",
+      badge: "Medya görünümü",
+      description: "Sorumluluk kapsamındaki programların fotoğraf ve galeri çalışmalarını yönetin.",
+    },
+    logistics: {
+      title: "Program Lojistiği",
+      badge: "Satın alma ve organizasyon",
+      description: "Programların konum, adres, harita ve saha lojistiği bilgilerini yönetin; program çekirdek alanları değişmez.",
+    },
+    community_event: {
+      title: "Topluluk Etkinlikleri",
+      badge: "Topluluk ve kültür",
+      description: "Birim tarafından yönetilen ortak etkinlikleri planlayın ve etkinlik yoklamasını yürütün.",
+    },
+  };
+  const activeModeMeta = programModeMeta[programWorkMode];
   const selectedFilterPeriod = periodOptionById(projects, selectedPeriodId);
   const canCreateInSelectedFilter = selectedPeriodId === "all" || periodHasWriteCapability(selectedFilterPeriod, "create_operations");
   const selectedFormPeriod = periodOptionById([...projects, ...creatableProjects, ...updatableProjects], form.period_id);
@@ -443,6 +518,11 @@ export default function PanelProgramsPage() {
   const canResolveAttendancePeriod = periodHasWriteCapability(attendanceModalPeriod, "resolve_operations");
   const galleryModalPeriod = periodOptionById(projects, galleryModalProgram?.period?.id);
   const canWriteGalleryPeriod = periodHasWriteCapability(galleryModalPeriod, "create_operations");
+  const editingProgram = programs.find((program) => program.id === editingProgramId);
+  const isCommunityForm = editingProgram?.program_kind === "community_event" || (!canCreateCorePrograms && canCreateCommunityEvents);
+  const hasExtendedAttendanceData = attendanceRecords.some((record) =>
+    record.email !== undefined || record.credit_applicable !== undefined || record.feedback_submitted !== undefined,
+  );
 
   const normalizeProjectsPayload = useCallback((payload: ProjectsPayload | undefined): Project[] => {
     if (Array.isArray(payload)) return payload;
@@ -451,7 +531,7 @@ export default function PanelProgramsPage() {
   }, []);
 
   const loadProjectsByPermission = useCallback(
-    async (permission: "programs.view" | "programs.create" | "programs.update") => {
+    async (permission: string) => {
       try {
         const response = await api.get<{ projects: ProjectsPayload }>("/panel/projects/manageable", {
           params: { permission },
@@ -474,15 +554,19 @@ export default function PanelProgramsPage() {
     setRefreshing(true);
     setErrorMessage(null);
     try {
-      const viewableProjects = await loadProjectsByPermission("programs.view");
-      const creatableProjectsRaw = await loadProjectsByPermission("programs.create");
-      const updatableProjectsRaw = await loadProjectsByPermission("programs.update");
+      const viewableProjects = await loadProjectsByPermission(programViewPermission);
+      const creatableProjectsRaw = canCreatePrograms
+        ? await loadProjectsByPermission(programCreatePermission)
+        : [];
+      const updatableProjectsRaw = canUpdateAnyProgram
+        ? await loadProjectsByPermission(programUpdatePermission)
+        : [];
 
-      const manageableProjects = viewableProjects.filter((p) => canAccessProject("programs.view", p.id));
+      const manageableProjects = viewableProjects.filter((p) => canAccessProject(programViewPermission, p.id));
       const allowedCreateProjects = creatableProjectsRaw.filter(
-        (p) => p.active_period?.id && canAccessProject("programs.create", p.id),
+        (p) => p.active_period?.id && canAccessProject(programCreatePermission, p.id),
       );
-      const allowedUpdateProjects = updatableProjectsRaw.filter((p) => canAccessProject("programs.update", p.id));
+      const allowedUpdateProjects = updatableProjectsRaw.filter((p) => canAccessProject(programUpdatePermission, p.id));
 
       setProjects(manageableProjects);
       setCreatableProjects(allowedCreateProjects);
@@ -524,7 +608,7 @@ export default function PanelProgramsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [canAccessProject, loadProjectsByPermission, selectedPeriodId, selectedProjectId]);
+  }, [canAccessProject, canCreatePrograms, canUpdateAnyProgram, loadProjectsByPermission, programCreatePermission, programUpdatePermission, programViewPermission, selectedPeriodId, selectedProjectId]);
 
   const loadFeedbackTemplatesForProject = useCallback(async (projectId: string) => {
     if (!projectId) {
@@ -743,6 +827,51 @@ export default function PanelProgramsPage() {
     setErrorMessage(null);
   };
 
+  const openLogisticsForm = (program: Program) => {
+    setLogisticsProgram(program);
+    setLogisticsForm({
+      location: fixMojibake(program.location),
+      location_place_name: fixMojibake(program.location_place_name),
+      location_place_address: fixMojibake(program.location_place_address),
+      location_place_id: program.location_place_id ?? "",
+      location_place_provider: program.location_place_provider ?? "",
+      latitude: program.latitude != null ? String(program.latitude) : "",
+      longitude: program.longitude != null ? String(program.longitude) : "",
+      radius_meters: String(program.radius_meters ?? 100),
+    });
+    setMessage(null);
+    setErrorMessage(null);
+  };
+
+  const handleSaveLogistics = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!logisticsProgram?.capabilities?.update_logistics) return;
+
+    setLogisticsSaving(true);
+    setMessage(null);
+    setErrorMessage(null);
+    try {
+      await api.patch(`/panel/programs/${logisticsProgram.id}/logistics`, {
+        location: logisticsForm.location || null,
+        location_place_name: logisticsForm.location_place_name || null,
+        location_place_address: logisticsForm.location_place_address || null,
+        location_place_id: logisticsForm.location_place_id || null,
+        location_place_provider: logisticsForm.location_place_provider || null,
+        latitude: logisticsForm.latitude ? Number(logisticsForm.latitude) : null,
+        longitude: logisticsForm.longitude ? Number(logisticsForm.longitude) : null,
+        radius_meters: logisticsForm.radius_meters ? Number(logisticsForm.radius_meters) : 100,
+      });
+      setMessage("Programın konum ve lojistik bilgileri güncellendi.");
+      setLogisticsProgram(null);
+      await loadPrograms();
+    } catch (error) {
+      console.error("Program lojistik bilgileri kaydedilemedi", error);
+      setErrorMessage(apiErrorMessage(error, "Lojistik bilgiler kaydedilemedi."));
+    } finally {
+      setLogisticsSaving(false);
+    }
+  };
+
   const handleSaveProgram = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const projectPool = editingProgramId ? updatableProjects : creatableProjects;
@@ -759,7 +888,7 @@ export default function PanelProgramsPage() {
     setSubmitting(true);
     setMessage(null);
     setErrorMessage(null);
-    const payload = {
+    const sharedPayload = {
       project_id: selectedProject.id,
       period_id: Number(selectedPeriodIdForSave),
       title: form.title,
@@ -772,23 +901,29 @@ export default function PanelProgramsPage() {
       latitude: form.latitude ? Number(form.latitude) : null,
       longitude: form.longitude ? Number(form.longitude) : null,
       radius_meters: Number(form.radius_meters),
-      credit_deduction: Number(form.credit_deduction),
-      application_quota: form.application_quota ? Number(form.application_quota) : null,
       target_audience: form.target_audience,
-      feedback_form_template_id: form.feedback_form_template_id ? Number(form.feedback_form_template_id) : null,
       start_at: toIstanbulOffsetDateTime(form.start_at),
       end_at: toIstanbulOffsetDateTime(form.end_at),
       status: form.status,
+    };
+    const payload = isCommunityForm ? sharedPayload : {
+      ...sharedPayload,
+      credit_deduction: Number(form.credit_deduction),
+      application_quota: form.application_quota ? Number(form.application_quota) : null,
+      feedback_form_template_id: form.feedback_form_template_id ? Number(form.feedback_form_template_id) : null,
       is_public: form.is_public,
       is_featured: form.is_featured,
     };
     try {
       if (editingProgramId) {
-        await api.put(`/panel/programs/${editingProgramId}`, payload);
-        setMessage("Program guncellendi.");
+        await api.put(
+          isCommunityForm ? `/panel/programs/${editingProgramId}/community-event` : `/panel/programs/${editingProgramId}`,
+          payload,
+        );
+        setMessage(isCommunityForm ? "Ortak etkinlik guncellendi." : "Program guncellendi.");
       } else {
-        await api.post("/panel/programs", payload);
-        setMessage("Yeni program basariyla olusturuldu.");
+        await api.post(isCommunityForm ? "/panel/programs/community-events" : "/panel/programs", payload);
+        setMessage(isCommunityForm ? "Ortak etkinlik olusturuldu." : "Yeni program basariyla olusturuldu.");
       }
       setShowForm(false);
       setEditingProgramId(null);
@@ -965,6 +1100,7 @@ export default function PanelProgramsPage() {
       ["attendance_id", "attendance"],
       ["gallery_id", "gallery"],
       ["feedback_id", "feedback"],
+      ["logistics_id", "logistics"],
     ] as const;
     const requested = actionEntries.find(([param]) => query.has(param));
     if (!requested) return;
@@ -976,10 +1112,11 @@ export default function PanelProgramsPage() {
     if (!program || handledDeepLinkRef.current === deepLinkKey) return;
 
     const actionAllowed =
-      (action === "edit" && canUpdatePrograms && canAccessProject("programs.update", program.project_id)) ||
-      (action === "attendance" && canViewAttendanceStats && canAccessProject("programs.attendance.view", program.project_id)) ||
-      (action === "gallery" && canViewMedia && canAccessProject("programs.view", program.project_id)) ||
-      (action === "feedback" && normalizeStatus(program.status) === "completed" && canAccessProject("programs.view", program.project_id));
+      (action === "edit" && Boolean(program.capabilities?.update_core || program.capabilities?.update_community_event)) ||
+      (action === "attendance" && Boolean(program.capabilities?.view_attendance)) ||
+      (action === "gallery" && Boolean(program.capabilities?.view_media)) ||
+      (action === "feedback" && normalizeStatus(program.status) === "completed" && hasCoreProgramView && canAccessProject("programs.view", program.project_id)) ||
+      (action === "logistics" && Boolean(program.capabilities?.update_logistics));
 
     handledDeepLinkRef.current = deepLinkKey;
     query.delete(param);
@@ -994,14 +1131,16 @@ export default function PanelProgramsPage() {
       if (action === "attendance") void openAttendanceModal(program);
       if (action === "gallery") void openGalleryModal(program);
       if (action === "feedback") void openFeedbackModal(program);
+      if (action === "logistics") openLogisticsForm(program);
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [canAccessProject, canUpdatePrograms, canViewAttendanceStats, canViewMedia, loading, programs]);
+  }, [canAccessProject, hasCoreProgramView, loading, programs]);
 
   return (
     <PermissionGate
-      permission="programs.view"
+      permissions={["programs.view", "programs.community_event.view", "programs.logistics.view"]}
+      require="any"
       fallback={
         <div className="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-10 text-center text-sm text-amber-800">
           Programlari goruntuleme yetkiniz bulunmuyor.
@@ -1016,14 +1155,17 @@ export default function PanelProgramsPage() {
               <Calendar className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Program Yönetimi</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">{activeModeMeta.title}</h1>
+                <span className="panel-chip panel-chip-info">{activeModeMeta.badge}</span>
+              </div>
               <p className="mt-1 max-w-xl text-sm text-slate-600">
-                Projelerinize bağlı programları planlayın, fotoğraf ekleyin, QR yoklamasını başlatın ve görünürlüğü yönetin.
+                {activeModeMeta.description}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <PermissionGate permission="programs.export">
+            {hasScopedPermission("programs.export") ? (
               <ExportButtons
                 endpoint="/panel/programs/export"
                 filename="panel_programlar"
@@ -1033,7 +1175,7 @@ export default function PanelProgramsPage() {
                 }}
                 buttonLabel="Dışa Aktar"
               />
-            </PermissionGate>
+            ) : null}
             <button
               onClick={() => void loadPrograms()}
               disabled={refreshing}
@@ -1065,7 +1207,7 @@ export default function PanelProgramsPage() {
                 Toplu Değerlendirme
               </button>
             )}
-            <PermissionGate permission="programs.create">
+            {canCreatePrograms ? (
               <button
                 disabled={!canCreateInSelectedFilter}
                 title={!canCreateInSelectedFilter ? "Seçili dönemde yeni program oluşturulamaz." : undefined}
@@ -1077,11 +1219,111 @@ export default function PanelProgramsPage() {
                 }`}
               >
                 {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                {showForm ? "Formu Kapat" : "Yeni Program"}
+                {showForm ? "Formu Kapat" : canCreateCorePrograms ? "Yeni Program" : "Yeni Ortak Etkinlik"}
               </button>
-            </PermissionGate>
+            ) : null}
           </div>
         </header>
+
+        {logisticsProgram ? (
+          <motion.form
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            onSubmit={(event) => void handleSaveLogistics(event)}
+            className="rounded-3xl border border-orange-200 bg-orange-50/40 p-6 shadow-sm md:p-7"
+          >
+            <div className="mb-5 flex flex-col gap-3 border-b border-orange-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-base font-black text-slate-900">Lojistik Bilgilerini Güncelle</h2>
+                <p className="mt-1 text-sm font-semibold text-orange-800">{fixMojibake(logisticsProgram.title)}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Bu form yalnız konum ve saha lojistiği alanlarını değiştirir; başlık, tarih, durum, kontenjan ve yoklama ayarları korunur.
+                </p>
+              </div>
+              <button type="button" onClick={() => setLogisticsProgram(null)} className="panel-card-action self-start">
+                <X className="h-4 w-4" />Kapat
+              </button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <label>
+                <span className={labelClass}>Konum / salon</span>
+                <input
+                  value={logisticsForm.location}
+                  onChange={(event) => setLogisticsForm((current) => ({ ...current, location: event.target.value }))}
+                  className={inputClass}
+                  placeholder="Salon, bina veya buluşma noktası"
+                />
+              </label>
+              <label>
+                <span className={labelClass}>Yoklama yarıçapı (metre)</span>
+                <input
+                  type="number"
+                  min={10}
+                  max={5000}
+                  value={logisticsForm.radius_meters}
+                  onChange={(event) => setLogisticsForm((current) => ({ ...current, radius_meters: event.target.value }))}
+                  className={inputClass}
+                  required
+                />
+              </label>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-orange-100 bg-white p-4">
+              <div className="mb-3 flex items-end justify-between gap-3">
+                <div>
+                  <span className={labelClass}>Harita ve adres</span>
+                  <p className="text-xs text-slate-500">İşaretçiyi seçtiğinizde adres ve koordinatlar birlikte güncellenir.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLogisticsForm((current) => ({
+                    ...current,
+                    location_place_name: "",
+                    location_place_address: "",
+                    location_place_id: "",
+                    location_place_provider: "",
+                    latitude: "",
+                    longitude: "",
+                  }))}
+                  className="panel-card-action"
+                >
+                  Konumu temizle
+                </button>
+              </div>
+              <ProgramLocationMap
+                mode="picker"
+                latitude={logisticsForm.latitude}
+                longitude={logisticsForm.longitude}
+                radiusMeters={logisticsForm.radius_meters}
+                placeName={logisticsForm.location_place_name}
+                placeAddress={logisticsForm.location_place_address}
+                placeId={logisticsForm.location_place_id}
+                placeProvider={logisticsForm.location_place_provider}
+                onChange={(selection) => setLogisticsForm((current) => ({
+                  ...current,
+                  location: selection.placeName || selection.placeAddress || current.location,
+                  location_place_name: selection.placeName ?? "",
+                  location_place_address: selection.placeAddress ?? "",
+                  location_place_id: selection.placeId ?? "",
+                  location_place_provider: selection.placeProvider ?? "",
+                  latitude: formatCoordinate(selection.latitude),
+                  longitude: formatCoordinate(selection.longitude),
+                }))}
+              />
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3 border-t border-orange-100 pt-5">
+              <button type="submit" disabled={logisticsSaving} className="panel-button panel-button-primary">
+                {logisticsSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Lojistiği Kaydet
+              </button>
+              <button type="button" onClick={() => setLogisticsProgram(null)} className="panel-button">
+                Vazgeç
+              </button>
+            </div>
+          </motion.form>
+        ) : null}
 
         {/* Panel bolumu */}
         {showForm && (
@@ -1097,9 +1339,13 @@ export default function PanelProgramsPage() {
               </div>
               <div>
                 <h2 className="text-base font-bold text-slate-900">
-                  {editingProgramId ? "Programi Guncelle" : "Yeni Program Olustur"}
+                  {editingProgramId
+                    ? isCommunityForm ? "Ortak Etkinligi Guncelle" : "Programi Guncelle"
+                    : isCommunityForm ? "Yeni Ortak Etkinlik Olustur" : "Yeni Program Olustur"}
                 </h2>
-                <p className="text-xs text-slate-500">Programi aktif veya gecmis donem baglaminda kaydedebilirsiniz.</p>
+                <p className="text-xs text-slate-500">
+                  {isCommunityForm ? "Topluluk etkinliginde yalniz planlama, konum ve hedef kitle alanlari kaydedilir." : "Programi aktif veya gecmis donem baglaminda kaydedebilirsiniz."}
+                </p>
               </div>
             </div>
 
@@ -1177,7 +1423,7 @@ export default function PanelProgramsPage() {
                 >
                   <option value="scheduled">Planlandi</option>
                   <option value="active">Aktif</option>
-                  <option value="completed">Tamamlandi</option>
+                  {!isCommunityForm ? <option value="completed">Tamamlandi</option> : null}
                   <option value="cancelled">Iptal</option>
                 </select>
               </div>
@@ -1201,28 +1447,32 @@ export default function PanelProgramsPage() {
                   required
                 />
               </div>
-              <div>
-                <label className={labelClass}>Kredi dusumu</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={form.credit_deduction}
-                  onChange={(e) => setForm((prev) => ({ ...prev, credit_deduction: e.target.value }))}
-                  className={inputClass}
-                  required
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Basvuru kontenjani (opsiyonel)</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={form.application_quota}
-                  onChange={(e) => setForm((prev) => ({ ...prev, application_quota: e.target.value }))}
-                  placeholder="Bos birakilabilir"
-                  className={inputClass}
-                />
-              </div>
+              {!isCommunityForm ? (
+                <>
+                  <div>
+                    <label className={labelClass}>Kredi dusumu</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={form.credit_deduction}
+                      onChange={(e) => setForm((prev) => ({ ...prev, credit_deduction: e.target.value }))}
+                      className={inputClass}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Basvuru kontenjani (opsiyonel)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={form.application_quota}
+                      onChange={(e) => setForm((prev) => ({ ...prev, application_quota: e.target.value }))}
+                      placeholder="Bos birakilabilir"
+                      className={inputClass}
+                    />
+                  </div>
+                </>
+              ) : null}
               <div className="md:col-span-2">
                 <label className={labelClass}>Hedef kitle</label>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -1267,7 +1517,7 @@ export default function PanelProgramsPage() {
               </div>
             </div>
 
-            <div className="mt-4">
+            {!isCommunityForm ? <div className="mt-4">
               <label className={labelClass}>Değerlendirme formu</label>
               <select
                 value={form.feedback_form_template_id}
@@ -1287,7 +1537,7 @@ export default function PanelProgramsPage() {
               <p className="mt-1 text-xs text-slate-500">
                 Bos birakilirsa mevcut varsayilan degerlendirme sorulari kullanilir.
               </p>
-            </div>
+            </div> : null}
 
             <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
               <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -1374,7 +1624,7 @@ export default function PanelProgramsPage() {
               />
             </div>
 
-            <div className="mt-5 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
+            {!isCommunityForm ? <div className="mt-5 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
               <p className={labelClass}>Gorunurluk</p>
               <div className="flex flex-wrap gap-3 pt-1">
                 <button
@@ -1402,7 +1652,7 @@ export default function PanelProgramsPage() {
                   {form.is_featured ? "Anasayfa one cikari adayi" : "Anasayfa one cikarma yok"}
                 </button>
               </div>
-            </div>
+            </div> : null}
 
             <div className="mt-6 flex flex-wrap gap-3 border-t border-slate-100 pt-5">
               <button
@@ -1639,10 +1889,11 @@ export default function PanelProgramsPage() {
               const programPeriod = periodOptionById(projects, program.period?.id);
               const canWriteProgram = periodHasWriteCapability(programPeriod, "create_operations");
               const canResolveProgram = periodHasWriteCapability(programPeriod, "resolve_operations");
-              const canCompleteThisProgram = canResolveProgram && programStatus !== "completed" && programStatus !== "cancelled";
+              const canCompleteThisProgram = canResolveProgram && Boolean(program.capabilities?.complete) && programStatus !== "completed" && programStatus !== "cancelled";
               const qrWindowOpen = isProgramAttendanceWindowOpen(program);
               const canStartQrForProgram = canResolveProgram && (programStatus === "scheduled" || programStatus === "active") && qrWindowOpen;
-              const canShowQrStatus = canManageQr && (programStatus === "scheduled" || programStatus === "active") && canAccessProject("programs.qr.manage", program.project_id);
+              const canShowQrStatus = Boolean(program.capabilities?.manage_qr) && (programStatus === "scheduled" || programStatus === "active");
+              const canEditProgram = Boolean(program.capabilities?.update_core || program.capabilities?.update_community_event);
 
               return (
                 <motion.article
@@ -1674,11 +1925,12 @@ export default function PanelProgramsPage() {
                       <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />{statusLabels[programStatus]}
                       </span>
-                      {program.is_public === false ? (
+                      {program.program_kind === "community_event" ? <span className="panel-chip panel-chip-info px-2.5">Ortak etkinlik</span> : null}
+                      {program.is_public === false && program.program_kind !== "community_event" ? (
                         <span className="panel-chip px-2.5"><EyeOff className="h-3 w-3" />Gizli</span>
-                      ) : (
+                      ) : program.is_public === true ? (
                         <span className="panel-chip panel-chip-success px-2.5"><Eye className="h-3 w-3" />Yayında</span>
-                      )}
+                      ) : null}
                       {program.is_featured ? <span className="panel-chip panel-chip-warning px-2.5"><Sparkles className="h-3 w-3" />Öne çıkan</span> : null}
                     </div>
 
@@ -1707,18 +1959,18 @@ export default function PanelProgramsPage() {
                     </div>
 
                     <div className="mt-auto grid grid-cols-3 gap-2 pt-5 text-center">
-                      <div className="rounded-xl bg-slate-50 px-2 py-2"><p className="text-sm font-black text-slate-800">{program.application_quota ?? "∞"}</p><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Kontenjan</p></div>
-                      {canViewAttendanceStats && canAccessProject("programs.attendance.view", program.project_id) ? (
+                      <div className="rounded-xl bg-slate-50 px-2 py-2"><p className="text-sm font-black text-slate-800">{programWorkMode === "media" ? "Galeri" : programWorkMode === "logistics" ? `${program.radius_meters ?? 100} m` : program.program_kind === "community_event" ? "Etkinlik" : program.application_quota ?? "∞"}</p><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{programWorkMode === "media" ? "İçerik" : programWorkMode === "logistics" ? "Yarıçap" : program.program_kind === "community_event" ? "Tür" : "Kontenjan"}</p></div>
+                      {program.capabilities?.view_attendance ? (
                         <>
                           <div className="rounded-xl bg-emerald-50 px-2 py-2"><p className="text-sm font-black text-emerald-700">{program.attendance_count ?? 0}</p><p className="text-[9px] font-bold uppercase tracking-wider text-emerald-600/70">Yoklama</p></div>
                           <div className="rounded-xl bg-indigo-50 px-2 py-2"><p className="text-sm font-black text-indigo-700">{program.feedback_count ?? 0}</p><p className="text-[9px] font-bold uppercase tracking-wider text-indigo-600/70">Görüş</p></div>
                         </>
-                      ) : <div className="col-span-2 flex items-center justify-center rounded-xl bg-orange-50 px-2 py-2 text-[10px] font-bold text-orange-700">Detayı görüntüle</div>}
+                      ) : <div className="col-span-2 flex items-center justify-center rounded-xl bg-orange-50 px-2 py-2 text-[10px] font-bold text-orange-700">{programWorkMode === "media" ? "Galeri çalışması" : programWorkMode === "logistics" ? "Lojistik çalışma" : "Detayı görüntüle"}</div>}
                     </div>
                   </Link>
 
                   <div className="grid grid-cols-2 gap-2 border-t border-slate-100 bg-slate-50/70 p-3">
-                      {canViewAttendanceStats && canAccessProject("programs.attendance.view", program.project_id) && (
+                      {program.capabilities?.view_attendance && (
                         <button
                           onClick={() => void openAttendanceModal(program)}
                           className="panel-card-action w-full px-2.5"
@@ -1727,7 +1979,7 @@ export default function PanelProgramsPage() {
                           Yoklama
                         </button>
                       )}
-                      {programStatus === "completed" && canAccessProject("programs.view", program.project_id) && (
+                      {programStatus === "completed" && hasCoreProgramView && canAccessProject("programs.view", program.project_id) && (
                         <button
                           onClick={() => void openFeedbackModal(program)}
                           className="panel-card-action panel-card-action-info w-full px-2.5"
@@ -1736,7 +1988,7 @@ export default function PanelProgramsPage() {
                           Degerlendirme
                         </button>
                       )}
-                      {canViewMedia && canAccessProject("programs.view", program.project_id) && (
+                      {program.capabilities?.view_media && (
                         <button
                           onClick={() => void openGalleryModal(program)}
                           className="panel-card-action w-full px-2.5"
@@ -1745,7 +1997,19 @@ export default function PanelProgramsPage() {
                           Galeri
                         </button>
                       )}
-                      {canUpdatePrograms && canAccessProject("programs.update", program.project_id) && (
+                      {program.capabilities?.update_logistics && (
+                        <button
+                          type="button"
+                          disabled={!canWriteProgram}
+                          title={!canWriteProgram ? "Bu dönem lojistik değişikliklere kapalıdır." : undefined}
+                          onClick={() => openLogisticsForm(program)}
+                          className="panel-card-action panel-card-action-info w-full px-2.5 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <MapPin className="h-3.5 w-3.5" />
+                          Lojistik
+                        </button>
+                      )}
+                      {program.capabilities?.update_core && (
                         <button
                           type="button"
                           disabled={visibilityTogglingId === program.id || !canWriteProgram}
@@ -1767,7 +2031,7 @@ export default function PanelProgramsPage() {
                           {program.is_public !== false ? "Gizle" : "Yayinla"}
                         </button>
                       )}
-                      {canUpdatePrograms && canAccessProject("programs.update", program.project_id) && (
+                      {canEditProgram && (
                         <button
                           disabled={!canWriteProgram}
                           title={!canWriteProgram ? "Bu dönem normal değişikliklere kapalıdır." : undefined}
@@ -1778,7 +2042,7 @@ export default function PanelProgramsPage() {
                           Duzenle
                         </button>
                       )}
-                      {canCompletePrograms && canCompleteThisProgram && canAccessProject("programs.complete", program.project_id) && (
+                      {canCompletePrograms && canCompleteThisProgram && (
                         <button
                           onClick={() => void handleComplete(program.id)}
                           className="panel-card-action panel-card-action-success w-full px-2.5"
@@ -1836,19 +2100,13 @@ export default function PanelProgramsPage() {
                     {attendanceLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                     Yenile
                   </button>
-                  <PermissionGate
-                    permission="programs.attendance.export"
-                    requireProjectAccess={{
-                      permission: "programs.attendance.export",
-                      projectId: attendanceModalProgram.project_id,
-                    }}
-                  >
+                  {attendanceModalProgram.capabilities?.export_attendance ? (
                     <ExportButtons
                       endpoint={`/panel/programs/${attendanceModalProgram.id}/attendances/export`}
                       filename={`program_${attendanceModalProgram.id}_yoklama`}
                       buttonLabel="Dışa Aktar"
                     />
-                  </PermissionGate>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => setAttendanceModalProgram(null)}
@@ -1865,9 +2123,9 @@ export default function PanelProgramsPage() {
                     { label: "Katilimci", val: attendanceSummary.participant_count ?? 0 },
                     { label: "Gelen", val: attendanceSummary.attendance_count },
                     { label: "Gelmeyen", val: attendanceSummary.absent_count ?? 0 },
-                    { label: "Geri bildirim", val: attendanceSummary.feedback_count },
-                    { label: "Kredi kesildi", val: attendanceSummary.deduction_count ?? 0 },
-                    { label: "Kredi iade", val: attendanceSummary.restore_count ?? 0 },
+                    ...(attendanceSummary.feedback_count === undefined ? [] : [{ label: "Geri bildirim", val: attendanceSummary.feedback_count }]),
+                    ...(attendanceSummary.deduction_count === undefined ? [] : [{ label: "Kredi kesildi", val: attendanceSummary.deduction_count }]),
+                    ...(attendanceSummary.restore_count === undefined ? [] : [{ label: "Kredi iade", val: attendanceSummary.restore_count }]),
                   ].map((item) => (
                     <div key={item.label} className="rounded-xl bg-white p-3 text-center shadow-sm">
                       <p className="text-xl font-black text-slate-900">{item.val}</p>
@@ -1884,10 +2142,10 @@ export default function PanelProgramsPage() {
                       <th className="px-5 py-3">Katilimci</th>
                       <th className="px-5 py-3">Durum</th>
                       <th className="px-5 py-3">Yontem</th>
-                      <th className="px-5 py-3">Kredi</th>
-                      <th className="px-5 py-3">Geri bildirim</th>
+                      {hasExtendedAttendanceData ? <th className="px-5 py-3">Kredi</th> : null}
+                      {hasExtendedAttendanceData ? <th className="px-5 py-3">Geri bildirim</th> : null}
                       <th className="px-5 py-3">Kayit zamani</th>
-                      {canManageAttendance && canAccessProject("programs.attendance.manage", attendanceModalProgram.project_id) && (
+                      {canManageAttendance && attendanceModalProgram.capabilities?.manage_attendance && (
                         <th className="px-5 py-3 text-right">Islem</th>
                       )}
                     </tr>
@@ -1911,7 +2169,7 @@ export default function PanelProgramsPage() {
                           <td className="px-5 py-3">
                             <p className="font-semibold text-slate-900">{record.student}</p>
                             <p className="text-xs text-slate-400">
-                              {record.email ?? "-"} - {record.role === "alumni" ? "Mezun" : "Öğrenci"}
+                              {record.email ? `${record.email} - ` : ""}{record.role === "alumni" ? "Mezun" : "Öğrenci"}
                             </p>
                           </td>
                           <td className="px-5 py-3">
@@ -1920,7 +2178,7 @@ export default function PanelProgramsPage() {
                             </span>
                           </td>
                           <td className="px-5 py-3 text-xs text-slate-600">{record.method ?? "-"}</td>
-                          <td className="px-5 py-3 text-xs text-slate-600">
+                          {hasExtendedAttendanceData ? <td className="px-5 py-3 text-xs text-slate-600">
                             {record.credit_applicable === false
                               ? "Kredi yok"
                               : record.credit_restored
@@ -1928,14 +2186,14 @@ export default function PanelProgramsPage() {
                                 : record.credit_deducted
                                   ? "Kesildi"
                                   : "-"}
-                          </td>
-                          <td className="px-5 py-3 text-xs text-slate-600">
+                          </td> : null}
+                          {hasExtendedAttendanceData ? <td className="px-5 py-3 text-xs text-slate-600">
                             {record.feedback_submitted ? "Gonderdi" : record.is_valid ? "Bekliyor" : "Hak yok"}
-                          </td>
+                          </td> : null}
                           <td className="px-5 py-3 text-xs text-slate-500">
                             {record.recorded_at ? formatIstanbulDateTimeDisplay(record.recorded_at) : "-"}
                           </td>
-                          {canManageAttendance && canAccessProject("programs.attendance.manage", attendanceModalProgram.project_id) && (
+                          {canManageAttendance && attendanceModalProgram.capabilities?.manage_attendance && (
                             <td className="px-5 py-3 text-right">
                               {record.participant_id ? (
                                 <button

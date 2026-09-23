@@ -17,6 +17,7 @@ export default function AlumniAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [renderedAt] = useState(() => Date.now());
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -84,7 +85,7 @@ export default function AlumniAnnouncementsPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <SummaryCard label="Toplam Duyuru" value={announcements.length} />
         <SummaryCard label="Listelenen" value={filteredAnnouncements.length} />
-        <SummaryCard label="Son 30 Gun" value={announcements.filter((announcement) => Date.now() - new Date(announcement.created_at).getTime() <= 1000 * 60 * 60 * 24 * 30).length} />
+        <SummaryCard label="Son 30 Gun" value={announcements.filter((announcement) => renderedAt - new Date(announcement.created_at).getTime() <= 1000 * 60 * 60 * 24 * 30).length} />
       </div>
 
       <div className="space-y-5">

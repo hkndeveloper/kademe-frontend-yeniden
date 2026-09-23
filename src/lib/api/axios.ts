@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuth } from '@/store/useAuth';
+import { coordinationUnitHeaders } from '@/lib/coordination-context-contract';
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -40,8 +41,12 @@ export const getCsrfCookie = () => {
 api.interceptors.request.use(
     (config) => {
         const token = useAuth.getState().token;
+        const activeUnitId = useAuth.getState().activeUnitId;
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
+            Object.entries(coordinationUnitHeaders(activeUnitId)).forEach(([name, value]) => {
+                config.headers[name] = value;
+            });
         }
         return config;
     },

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { getVisiblePanelMenuGrouped } from "@/lib/panel-menu";
 import { PanelBrandBlock } from "@/components/shared/PanelBrandBlock";
 import { NotificationBell } from "@/components/shared/NotificationBell";
+import { activeOrganizationMembership, panelNavigationModules } from "@/lib/organization-context";
 
 const navItemBase =
   "group relative flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-medium outline-none transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:ring-2 focus-visible:ring-[#FF6B00]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 active:scale-[0.98]";
@@ -19,13 +20,15 @@ const navIdle =
 
 export function UnifiedPanelSidebar() {
   const pathname = usePathname();
-  const { logout, user, hasPermission, hasAnyPermission, panelModules, panelModulesLoaded } = useAuth();
+  const { logout, user, hasPermission, hasAnyPermission, panelModules, panelModulesLoaded, panelModulesError, activeUnitId } = useAuth();
+  const navigationModules = panelNavigationModules(panelModules, user, activeUnitId, panelModulesLoaded, Boolean(panelModulesError));
+  const activeMembership = activeOrganizationMembership(user, activeUnitId);
 
   const grouped = getVisiblePanelMenuGrouped(
     hasPermission,
     hasAnyPermission,
     user,
-    panelModulesLoaded ? panelModules : undefined
+    navigationModules
   );
 
   return (
@@ -80,7 +83,11 @@ export function UnifiedPanelSidebar() {
             <p className="truncate text-sm font-semibold text-white">
               {user?.name} {user?.surname}
             </p>
-            <p className="truncate text-[10px] uppercase text-slate-500">{user?.roles?.[0]?.name ?? user?.role}</p>
+            <p className="truncate text-[10px] uppercase text-slate-500">
+              {activeMembership
+                ? activeMembership.position === "coordinator" ? "Koordinatör" : "Personel"
+                : user?.roles?.[0]?.name ?? user?.role}
+            </p>
           </div>
         </div>
         <button
@@ -101,12 +108,14 @@ export function UnifiedPanelSidebar() {
 export function MobilePanelNav() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { logout, user, hasPermission, hasAnyPermission, panelModules, panelModulesLoaded } = useAuth();
+  const { logout, user, hasPermission, hasAnyPermission, panelModules, panelModulesLoaded, panelModulesError, activeUnitId } = useAuth();
+  const navigationModules = panelNavigationModules(panelModules, user, activeUnitId, panelModulesLoaded, Boolean(panelModulesError));
+  const activeMembership = activeOrganizationMembership(user, activeUnitId);
   const grouped = getVisiblePanelMenuGrouped(
     hasPermission,
     hasAnyPermission,
     user,
-    panelModulesLoaded ? panelModules : undefined
+    navigationModules
   );
   const allItems = grouped.flatMap((group) => group.items);
   const primaryItems = allItems.slice(0, 4);
@@ -121,7 +130,9 @@ export function MobilePanelNav() {
             <img src="/branding/kademe-logo-turuncu.svg" alt="KADEME" className="h-8 w-auto" width={96} height={30} />
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-slate-900">Ortak Panel</p>
-              <p className="truncate text-xs text-slate-500">{activeItem?.label ?? user?.role ?? "Panel"}</p>
+              <p className="truncate text-xs text-slate-500">
+                {activeItem?.label ?? (activeMembership?.position === "coordinator" ? "Koordinatör" : activeMembership ? "Personel" : user?.role ?? "Panel")}
+              </p>
             </div>
           </Link>
           <button

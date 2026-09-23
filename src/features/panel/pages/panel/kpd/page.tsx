@@ -10,6 +10,7 @@ import { periodHasWriteCapability, PeriodArchiveModeNotice, type PeriodOption } 
 import { downloadBlobResponse } from "@/lib/download";
 import { formatIstanbulDate, formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
 import { panelStatusChipClass } from "@/lib/status-style";
+import { optionalPanelRequest } from "@/lib/panel-load-state";
 
 type Paginated<T> = {
   data: T[];
@@ -127,17 +128,29 @@ export default function PanelKpdPage() {
     try {
       const requests = [
         canViewReports
-          ? api.get<{ reports: Paginated<KpdReport> }>("/panel/kpd/reports", {
-              params: { period_id: periodFilter !== "all" ? periodFilter : undefined },
-            })
+          ? optionalPanelRequest(
+              api.get<{ reports: Paginated<KpdReport> }>("/panel/kpd/reports", {
+                params: { period_id: periodFilter !== "all" ? periodFilter : undefined },
+              }),
+              { data: { reports: { data: [] as KpdReport[] } } },
+              "KPD raporları",
+            )
           : Promise.resolve({ data: { reports: { data: [] as KpdReport[] } } }),
         canViewAppointments || canManageAppointments
-          ? api.get<AppointmentsResponse>("/panel/kpd/appointments", {
-              params: { period_id: periodFilter !== "all" ? periodFilter : undefined },
-            })
+          ? optionalPanelRequest(
+              api.get<AppointmentsResponse>("/panel/kpd/appointments", {
+                params: { period_id: periodFilter !== "all" ? periodFilter : undefined },
+              }),
+              { data: { appointments: { data: [] as KpdAppointment[] }, counselees: [], counselors: [], rooms: [], room_schedule: [] } satisfies AppointmentsResponse },
+              "KPD randevuları",
+            )
           : Promise.resolve({ data: { appointments: { data: [] as KpdAppointment[] }, counselees: [], counselors: [], rooms: [], room_schedule: [] } satisfies AppointmentsResponse }),
         canCreateReports
-          ? api.get<KpdOptionsResponse>("/panel/kpd/options", { params: { permission: "kpd.reports.create" } })
+          ? optionalPanelRequest(
+              api.get<KpdOptionsResponse>("/panel/kpd/options", { params: { permission: "kpd.reports.create" } }),
+              { data: { counselees: [] as UserOption[] } },
+              "KPD danışan seçimi",
+            )
           : Promise.resolve({ data: { counselees: [] as UserOption[] } }),
       ] as const;
 

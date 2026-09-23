@@ -11,35 +11,44 @@ function NewsletterUnsubscribeInner() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const email = searchParams.get("email")?.trim();
+  const token = searchParams.get("token")?.trim();
+  const invalidLink = !email || !token;
 
   useEffect(() => {
-    const email = searchParams.get("email")?.trim();
-    const token = searchParams.get("token")?.trim();
+    if (invalidLink) return;
 
-    if (!email || !token) {
-      setStatus("error");
-      setMessage("Geçersiz bağlantı. E-posta ve token parametreleri gerekli.");
-      return;
-    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setStatus("loading");
+      api
+        .get<{ message?: string }>("/newsletter/unsubscribe", {
+          params: { email, token },
+        })
+        .then((res) => {
+          if (cancelled) return;
+          setStatus("done");
+          setMessage(res.data.message ?? "İşlem tamamlandı.");
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setStatus("error");
+          setMessage("Abonelik iptali sırasında bir hata oluştu veya bağlantı geçersiz.");
+        });
+    }, 0);
 
-    setStatus("loading");
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [email, invalidLink, token]);
 
-    api
-      .get<{ message?: string }>("/newsletter/unsubscribe", {
-        params: { email, token },
-      })
-      .then((res) => {
-        setStatus("done");
-        setMessage(res.data.message ?? "İşlem tamamlandı.");
-      })
-      .catch(() => {
-        setStatus("error");
-        setMessage("Abonelik iptali sırasında bir hata oluştu veya bağlantı geçersiz.");
-      });
-  }, [searchParams]);
-
-  const isLoading = status === "loading";
-  const isError = status === "error";
+  const effectiveStatus = invalidLink ? "error" : status;
+  const effectiveMessage = invalidLink
+    ? "Geçersiz bağlantı. E-posta ve token parametreleri gerekli."
+    : message;
+  const isLoading = effectiveStatus === "loading";
+  const isError = effectiveStatus === "error";
 
   return (
     <main className="kdm-public-shell relative min-h-ecresn overflow-hidden bg-[#edecec] pb-16">
@@ -60,7 +69,7 @@ function NewsletterUnsubscribeInner() {
               <span className="inline-flex items-center gap-3">
                 <MailX className="h-5 w-5" /> İşleniyor...
               </span>
-            ) : message}
+            ) : effectiveMessage}
           </div>
           <PublicButton href="/" variant="dark" className="mt-8">
             Anasayfaya Dön

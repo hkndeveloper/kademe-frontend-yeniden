@@ -2,6 +2,13 @@
 
 import { useCallback, useMemo } from "react";
 import { useAuth } from "@/store/useAuth";
+import {
+  activeContextIsAuthoritative,
+  activeOrganizationMembership,
+  permissionIsGlobal,
+  permissionIsUsableInActiveUnit,
+  projectIdsForActiveUnitPermission,
+} from "@/lib/organization-context";
 
 type ScopePayload = {
   project_ids?: Array<number | string>;
@@ -16,10 +23,38 @@ export function usePermissions() {
   const user = useAuth((s) => s.user);
   const hasPermission = useAuth((s) => s.hasPermission);
   const hasAnyPermission = useAuth((s) => s.hasAnyPermission);
+  const activeUnitId = useAuth((s) => s.activeUnitId);
 
   const manageableProjectIds = useMemo(
-    () => user?.authorization_context?.manageable_project_ids ?? [],
-    [user?.authorization_context?.manageable_project_ids]
+    () => activeContextIsAuthoritative(user)
+      ? activeOrganizationMembership(user, activeUnitId)?.manageable_project_ids ?? []
+      : user?.authorization_context?.manageable_project_ids ?? [],
+    [activeUnitId, user]
+  );
+
+  const projectIdsForPermission = useCallback(
+    (permission: string): number[] => {
+      const directAllow = user?.permission_overrides?.some((override) =>
+        override.effect === "allow" && override.permission_name === permission
+      );
+      if (activeContextIsAuthoritative(user) && !permissionIsGlobal(user, permission) && !directAllow) {
+        return projectIdsForActiveUnitPermission(user, activeUnitId, permission);
+      }
+
+      const scope = user?.permission_scopes?.[permission];
+      if (scope?.scope_type === "selected_projects") {
+        return ((scope.scope_payload as ScopePayload | undefined)?.project_ids ?? [])
+          .map((id) => Number(id))
+          .filter((id) => Number.isFinite(id));
+      }
+      if (["all", "own_projects", "assigned_projects", "self"].includes(scope?.scope_type ?? "")) {
+        return (user?.authorization_context?.manageable_project_ids ?? [])
+          .map((id) => Number(id))
+          .filter((id) => Number.isFinite(id));
+      }
+      return [];
+    },
+    [activeUnitId, user]
   );
 
   const canAccessProject = useCallback(
@@ -43,6 +78,12 @@ export function usePermissions() {
       if (scope?.scope_type === "all") {
         return true;
       }
+      const directAllow = user.permission_overrides?.some((override) =>
+        override.effect === "allow" && override.permission_name === permission
+      );
+      if (activeContextIsAuthoritative(user) && !directAllow) {
+        return projectIdsForActiveUnitPermission(user, activeUnitId, permission).includes(pid);
+      }
       if (scope?.scope_type === "own_projects" || scope?.scope_type === "assigned_projects") {
         const ids = (user.authorization_context?.manageable_project_ids ?? [])
           .map((id) => Number(id))
@@ -64,7 +105,7 @@ export function usePermissions() {
 
       return false;
     },
-    [user, hasPermission]
+    [activeUnitId, user, hasPermission]
   );
 
   const canAccessUnit = useCallback(
@@ -84,6 +125,16 @@ export function usePermissions() {
       if (scope?.scope_type === "all") {
         return true;
       }
+      const directAllow = user.permission_overrides?.some((override) =>
+        override.effect === "allow" && override.permission_name === permission
+      );
+      if (activeContextIsAuthoritative(user) && !directAllow) {
+        const membership = activeOrganizationMembership(user, activeUnitId);
+        if (!membership?.permissions.includes(permission)) return false;
+        const normalizedTarget = unit.trim().toLocaleLowerCase("tr-TR");
+        return [membership.unit_name, membership.unit_code]
+          .some((candidate) => candidate.trim().toLocaleLowerCase("tr-TR") === normalizedTarget);
+      }
       if (scope?.scope_type === "own_unit") {
         const allowedUnit = (scope.scope_payload as ScopePayload | undefined)?.unit;
         return allowedUnit?.trim().toLocaleLowerCase("tr-TR") === unit.trim().toLocaleLowerCase("tr-TR");
@@ -91,7 +142,7 @@ export function usePermissions() {
 
       return false;
     },
-    [user, hasPermission]
+    [activeUnitId, user, hasPermission]
   );
 
   const hasGlobalScope = useCallback(
@@ -117,6 +168,9 @@ export function usePermissions() {
       if (!hasPermission(permission)) {
         return false;
       }
+      if (!permissionIsUsableInActiveUnit(user, activeUnitId, permission)) {
+        return false;
+      }
 
       const scope = user?.permission_scopes?.[permission];
       if (!scope) {
@@ -133,15 +187,18 @@ export function usePermissions() {
       }
 
       if (scope.scope_type === "selected_projects") {
+        if (activeContextIsAuthoritative(user)) {
+          return projectIdsForActiveUnitPermission(user, activeUnitId, permission).length > 0;
+        }
         const ids = ((scope.scope_payload as ScopePayload | undefined)?.project_ids ?? [])
           .map((id) => Number(id))
           .filter((id) => Number.isFinite(id));
         return ids.length > 0;
       }
 
-      return (user?.authorization_context?.manageable_project_ids ?? []).length > 0;
+      return manageableProjectIds.length > 0;
     },
-    [user, hasPermission]
+    [activeUnitId, manageableProjectIds, user, hasPermission]
   );
 
   const hasKpdAccess = useCallback(
@@ -164,12 +221,12 @@ export function usePermissions() {
         return false;
       }
 
-      return (user?.authorization_context?.manageable_project_ids ?? [])
+      return manageableProjectIds
         .map((id) => Number(id))
         .filter((id) => Number.isFinite(id))
         .some((projectId) => kpdProjectIds.includes(projectId));
     },
-    [user, hasScopedPermission]
+    [manageableProjectIds, user, hasScopedPermission]
   );
 
   return {
@@ -181,5 +238,7 @@ export function usePermissions() {
     hasScopedPermission,
     hasKpdAccess,
     manageableProjectIds,
+    projectIdsForPermission,
+    activeUnitId,
   };
 }

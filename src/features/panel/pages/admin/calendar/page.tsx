@@ -29,12 +29,14 @@ import {
   type PeriodOption,
 } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
+import { panelLoadErrorMessage } from "@/lib/panel-load-state";
 import { formatIstanbulDateTime, formatIstanbulTime, toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 
 interface Project {
   id: number;
   name: string;
-  active_period?: { id: number; name: string } | null;
+  active_period?: PeriodOption | null;
+  periods?: Period[];
 }
 
 interface Period extends PeriodOption {
@@ -51,6 +53,7 @@ interface CalendarAssignee {
 
 interface Program {
   id: number;
+  program_kind?: "core_program" | "community_event";
   calendar_event_id?: number | null;
   event_type?: "program" | "meeting";
   title: string;
@@ -70,6 +73,7 @@ interface Program {
   application_quota?: number | null;
   project_id?: number | null;
   project?: { id: number; name: string } | null;
+  responsible_unit?: { id: number; name: string; code: string; kind: "project" | "service" } | null;
   period?: PeriodOption | null;
   calendar_event?: {
     google_event_id?: string | null;
@@ -113,6 +117,7 @@ interface CalendarOverviewResponse {
 
 type ViewMode = "daily" | "weekly" | "monthly";
 type ProgramStatusFilter = "all" | "scheduled" | "active" | "completed" | "cancelled";
+type RecordTypeFilter = "all" | "program" | "meeting";
 type CreateMode = "program" | "meeting";
 
 const initialForm = {
@@ -178,7 +183,7 @@ function statusMeta(status?: string | null) {
 
 export default function AdminCalendarPage() {
   const searchParams = useSearchParams();
-  const { hasPermission, canAccessProject, hasGlobalScope } = usePermissions();
+  const { hasScopedPermission, canAccessProject, hasGlobalScope } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -204,6 +209,8 @@ export default function AdminCalendarPage() {
   const [selectedProject, setSelectedProject] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState("all");
   const [statusFilter, setStatusFilter] = useState<ProgramStatusFilter>("all");
+  const [recordTypeFilter, setRecordTypeFilter] = useState<RecordTypeFilter>("all");
+  const [responsibleUnitFilter, setResponsibleUnitFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -213,14 +220,17 @@ export default function AdminCalendarPage() {
   );
   const [form, setForm] = useState(initialForm);
 
-  const canCreateProgram = hasPermission("programs.create");
-  const canViewPeriods = hasPermission("periods.view");
-  const canCreateMeeting = hasPermission("calendar.meetings.create");
-  const canExportCalendar = hasPermission("calendar.export");
-  const canConnectGoogle = hasPermission("calendar.google.connect");
-  const canSyncGoogle = hasPermission("calendar.google.sync");
-  const canManageAssignments = hasPermission("calendar.assignments.manage");
-  const canManageMeetings = hasPermission("calendar.meetings.manage");
+  const canCreateCoreProgram = hasScopedPermission("programs.create");
+  const canCreateCommunityEvent = hasScopedPermission("programs.community_event.create");
+  const canCreateProgram = canCreateCoreProgram || canCreateCommunityEvent;
+  const programCreatePermission = canCreateCoreProgram ? "programs.create" : "programs.community_event.create";
+  const canViewPeriods = hasScopedPermission("periods.view");
+  const canCreateMeeting = hasScopedPermission("calendar.meetings.create");
+  const canExportCalendar = hasScopedPermission("calendar.export");
+  const canConnectGoogle = hasScopedPermission("calendar.google.connect");
+  const canSyncGoogle = hasScopedPermission("calendar.google.sync");
+  const canManageAssignments = hasScopedPermission("calendar.assignments.manage");
+  const canManageMeetings = hasScopedPermission("calendar.meetings.manage");
 
   const loadAssignees = useCallback(async (projectId?: number | null, context: "program" | "meeting_create" | "meeting_manage" = "program") => {
     try {
@@ -262,7 +272,8 @@ export default function AdminCalendarPage() {
       setUpcomingTasks(overviewResponse.data.upcoming_tasks ?? []);
       setAttentionItems(overviewResponse.data.attention_items ?? []);
       setGoogleStatus(overviewResponse.data.google_calendar ?? null);
-      const periodItems = periodResponse?.data.periods ?? [];
+      const overviewPeriods = (overviewResponse.data.projects ?? []).flatMap((project) => project.periods ?? []);
+      const periodItems = (periodResponse?.data.periods?.length ? periodResponse.data.periods : overviewPeriods);
       setPeriods(periodItems);
       if (selectedProject !== "all" && selectedPeriod === "all") {
         const projectPeriods = periodItems.filter((period) => String(period.project_id) === selectedProject);
@@ -271,7 +282,7 @@ export default function AdminCalendarPage() {
       }
     } catch (error) {
       console.error("Admin takvim verileri yuklenemedi", error);
-      setErrorMessage("Takvim verileri yuklenemedi.");
+      setErrorMessage(panelLoadErrorMessage(error, "Takvim verileri"));
     } finally {
       setLoading(false);
     }
@@ -289,8 +300,8 @@ export default function AdminCalendarPage() {
   }, [canManageAssignments, loadAssignees]);
 
   const availableCreateProjects = useMemo(
-    () => projects.filter((project) => canAccessProject("programs.create", project.id)),
-    [canAccessProject, projects],
+    () => projects.filter((project) => canAccessProject(programCreatePermission, project.id)),
+    [canAccessProject, programCreatePermission, projects],
   );
 
   const availableMeetingProjects = useMemo(
@@ -363,7 +374,7 @@ export default function AdminCalendarPage() {
     const selectedProjectId =
       selectedProject !== "all" &&
       (nextMode === "program"
-        ? canAccessProject("programs.create", Number(selectedProject))
+        ? canAccessProject(programCreatePermission, Number(selectedProject))
         : canAccessProject("calendar.meetings.create", Number(selectedProject)))
         ? selectedProject
         : "";
@@ -426,17 +437,19 @@ export default function AdminCalendarPage() {
         setSuccessMessage("Toplanti takvime eklendi.");
       } else {
         const projectId = Number(form.project_id);
-        if (!canCreateProgram || !Number.isFinite(projectId) || !canAccessProject("programs.create", projectId)) {
+        if (!canCreateProgram || !Number.isFinite(projectId) || !canAccessProject(programCreatePermission, projectId)) {
           setErrorMessage("Bu proje icin program olusturma yetkiniz yok.");
           return;
         }
 
-        await api.post("/panel/programs", {
-          ...form,
-          start_at: withIstanbulOffset(form.start_at),
-          end_at: withIstanbulOffset(form.end_at),
+        const sharedPayload = {
           project_id: projectId,
           period_id: Number(form.period_id),
+          title: form.title,
+          description: form.description || null,
+          location: form.location || null,
+          start_at: withIstanbulOffset(form.start_at),
+          end_at: withIstanbulOffset(form.end_at),
           location_place_name: form.location_place_name || null,
           location_place_address: form.location_place_address || null,
           location_place_id: form.location_place_id || null,
@@ -444,10 +457,13 @@ export default function AdminCalendarPage() {
           latitude: form.latitude ? Number(form.latitude) : null,
           longitude: form.longitude ? Number(form.longitude) : null,
           radius_meters: Number(form.radius_meters),
+        };
+        await api.post(canCreateCoreProgram ? "/panel/programs" : "/panel/programs/community-events", canCreateCoreProgram ? {
+          ...sharedPayload,
           credit_deduction: Number(form.credit_deduction),
           application_quota: form.application_quota ? Number(form.application_quota) : null,
-        });
-        setSuccessMessage("Program takvime eklendi.");
+        } : sharedPayload);
+        setSuccessMessage(canCreateCoreProgram ? "Program takvime eklendi." : "Ortak etkinlik takvime eklendi.");
       }
 
       setForm(initialForm);
@@ -605,15 +621,25 @@ export default function AdminCalendarPage() {
       .filter((program) => (selectedProject === "all" ? true : program.project_id === Number(selectedProject)))
       .filter((program) => (selectedPeriod === "all" ? true : String(program.period?.id ?? "") === selectedPeriod))
       .filter((program) => (statusFilter === "all" ? true : (program.status ?? "scheduled") === statusFilter))
+      .filter((program) => (recordTypeFilter === "all" ? true : (program.event_type ?? "program") === recordTypeFilter))
+      .filter((program) => (responsibleUnitFilter === "all" ? true : String(program.responsible_unit?.id ?? "none") === responsibleUnitFilter))
       .filter((program) => {
         const normalizedTerm = searchTerm.trim().toLowerCase();
         if (!normalizedTerm) return true;
-        return `${program.title} ${program.project?.name ?? ""} ${program.period?.name ?? ""} ${program.location ?? ""}`
+        return `${program.title} ${program.project?.name ?? ""} ${program.period?.name ?? ""} ${program.location ?? ""} ${program.responsible_unit?.name ?? ""}`
           .toLowerCase()
           .includes(normalizedTerm);
       })
       .sort((left, right) => new Date(left.start_at).getTime() - new Date(right.start_at).getTime());
-  }, [programs, searchTerm, selectedPeriod, selectedProject, statusFilter]);
+  }, [programs, recordTypeFilter, responsibleUnitFilter, searchTerm, selectedPeriod, selectedProject, statusFilter]);
+
+  const responsibleUnitOptions = useMemo(() => Array.from(
+    new Map(
+      programs
+        .filter((program) => program.responsible_unit)
+        .map((program) => [program.responsible_unit!.id, program.responsible_unit!]),
+    ).values(),
+  ).sort((left, right) => left.name.localeCompare(right.name, "tr")), [programs]);
 
   const rangeStart = useMemo(() => {
     const base = new Date(currentDate);
@@ -719,7 +745,7 @@ export default function AdminCalendarPage() {
               <p className="truncate text-sm font-bold text-slate-900">{program.title}</p>
             </div>
             <p className="mt-1 truncate text-xs text-slate-500">
-              {isMeeting ? "Toplanti" : "Program"} / {program.project?.name ?? "Genel"}
+              {isMeeting ? "Toplanti" : program.program_kind === "community_event" ? "Ortak etkinlik" : "Program"} / {program.project?.name ?? "Genel"}
             </p>
           </div>
           <span className="shrink-0 text-xs font-semibold text-slate-500">{formatTimeRange(program)}</span>
@@ -730,6 +756,11 @@ export default function AdminCalendarPage() {
             <span className="rounded-full bg-slate-100 px-2 py-0.5">
               {program.calendar_event?.assigned_count ?? 0} {isMeeting ? "davetli" : "gorevli"}
             </span>
+            {program.responsible_unit ? (
+              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
+                {program.responsible_unit.name}
+              </span>
+            ) : null}
             {!isMeeting && (
               program.calendar_event?.google_event_id ? (
                 <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">Google</span>
@@ -936,6 +967,18 @@ export default function AdminCalendarPage() {
                     <option value="active">Aktif</option>
                     <option value="completed">Tamamlandi</option>
                     <option value="cancelled">Iptal</option>
+                  </select>
+                  <select value={recordTypeFilter} onChange={(event) => setRecordTypeFilter(event.target.value as RecordTypeFilter)} className={inputClass}>
+                    <option value="all">Tüm kayıt türleri</option>
+                    <option value="program">Program ve etkinlik</option>
+                    <option value="meeting">Toplantı</option>
+                  </select>
+                  <select value={responsibleUnitFilter} onChange={(event) => setResponsibleUnitFilter(event.target.value)} className={inputClass}>
+                    <option value="all">Tüm sorumlu birimler</option>
+                    {responsibleUnitOptions.map((unit) => (
+                      <option key={unit.id} value={unit.id}>{unit.name}</option>
+                    ))}
+                    {programs.some((program) => !program.responsible_unit) ? <option value="none">Birimsiz / genel</option> : null}
                   </select>
                   <div className="relative min-w-[230px]">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -1155,7 +1198,7 @@ export default function AdminCalendarPage() {
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-black text-slate-950">Yeni</h2>
-                  <p className="mt-1 text-sm text-slate-500">{createMode === "meeting" ? "Toplanti davetlileri takvimde gorunur." : "Program kaydi Google Calendar entegrasyonuna hazirlanir."}</p>
+                  <p className="mt-1 text-sm text-slate-500">{createMode === "meeting" ? "Toplanti davetlileri takvimde gorunur." : canCreateCoreProgram ? "Program kaydi Google Calendar entegrasyonuna hazirlanir." : "Ortak etkinlik, Topluluk ve Kultur birimi adina takvime eklenir."}</p>
                 </div>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100">
                   <X className="h-5 w-5" />
@@ -1291,14 +1334,14 @@ export default function AdminCalendarPage() {
                       <label className={labelClass}>Yoklama Yari Capi</label>
                       <input type="number" min={10} value={form.radius_meters} onChange={(event) => setForm((current) => ({ ...current, radius_meters: event.target.value }))} className={inputClass} />
                     </div>
-                    <div>
+                    {canCreateCoreProgram ? <div>
                       <label className={labelClass}>Kredi Dusumu</label>
                       <input type="number" min={0} value={form.credit_deduction} onChange={(event) => setForm((current) => ({ ...current, credit_deduction: event.target.value }))} className={inputClass} />
-                    </div>
-                    <div>
+                    </div> : null}
+                    {canCreateCoreProgram ? <div>
                       <label className={labelClass}>Basvuru Kontenjani</label>
                       <input type="number" min={1} value={form.application_quota} onChange={(event) => setForm((current) => ({ ...current, application_quota: event.target.value }))} placeholder="Opsiyonel" className={inputClass} />
-                    </div>
+                    </div> : null}
                   </>
                 ) : null}
                 <div className="md:col-span-2">
@@ -1365,7 +1408,7 @@ export default function AdminCalendarPage() {
                     creating ||
                     !formPeriodCanCreate ||
                     (createMode === "program"
-                      ? (!canUseProgramCreate || !form.project_id || !canAccessProject("programs.create", Number(form.project_id)))
+                      ? (!canUseProgramCreate || !form.project_id || !canAccessProject(programCreatePermission, Number(form.project_id)))
                       : (!canUseMeetingCreate || !canCreateMeetingInSelectedScope(form.project_id)))
                   }
                   className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50"

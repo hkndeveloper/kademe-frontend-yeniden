@@ -8,6 +8,7 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, periodsForProject, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadBlobResponse } from "@/lib/download";
+import { optionalPanelRequest } from "@/lib/panel-load-state";
 
 interface Project {
   id: number;
@@ -70,15 +71,27 @@ export default function AdminCertificatesPage() {
     const loadFilters = async () => {
       try {
         const viewProjectsReq = hasPermission("certificates.view")
-          ? api.get<{ projects?: Project[] }>("/panel/projects/manageable", { params: { permission: "certificates.view" } })
+          ? optionalPanelRequest(
+              api.get<{ projects?: Project[] }>("/panel/projects/manageable", { params: { permission: "certificates.view" } }),
+              { data: { projects: [] as Project[] } },
+              "Sertifika proje filtresi",
+            )
           : Promise.resolve({ data: { projects: [] as Project[] } });
         const createProjectsReq = hasPermission("certificates.create")
-          ? api.get<{ projects?: Project[] }>("/panel/projects/manageable", { params: { permission: "certificates.create" } })
+          ? optionalPanelRequest(
+              api.get<{ projects?: Project[] }>("/panel/projects/manageable", { params: { permission: "certificates.create" } }),
+              { data: { projects: [] as Project[] } },
+              "Sertifika oluşturma proje listesi",
+            )
           : Promise.resolve({ data: { projects: [] as Project[] } });
 
         const usersReq =
           canListUsers && canCreate
-            ? api.get<{ users?: { data?: User[] } }>("/panel/users", { params: { per_page: 500 } })
+            ? optionalPanelRequest(
+                api.get<{ users?: { data?: User[] } }>("/panel/users", { params: { per_page: 500 } }),
+                { data: { users: { data: [] as User[] } } },
+                "Sertifika kullanıcı seçimi",
+              )
             : Promise.resolve({ data: { users: { data: [] as User[] } } });
 
         const [viewProjectsRes, createProjectsRes, usersRes] = await Promise.all([viewProjectsReq, createProjectsReq, usersReq]);

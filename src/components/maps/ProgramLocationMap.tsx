@@ -182,6 +182,15 @@ export function ProgramLocationMap({
     onChangeRef.current = onChange;
   }, [onChange]);
 
+  const handleSearchQueryChange = (value: string) => {
+    setSearchQuery(value);
+    if (value.trim().length < 3) {
+      setSearchResults([]);
+      setSearchError(null);
+      setSearchLoading(false);
+    }
+  };
+
   const emitSelection = (coordinates: MapCoordinates, place: PlaceMetadata = EMPTY_PLACE) => {
     onChangeRef.current?.({ ...coordinates, ...place });
   };
@@ -190,9 +199,6 @@ export function ProgramLocationMap({
     if (!isPicker) return;
     const query = searchQuery.trim();
     if (query.length < 3) {
-      setSearchResults([]);
-      setSearchError(null);
-      setSearchLoading(false);
       return;
     }
 
@@ -374,6 +380,24 @@ export function ProgramLocationMap({
     };
   }, [isPicker, leafletReady, radius, selected]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    const map = mapRef.current;
+    if (!container || !map || !leafletReady || typeof ResizeObserver === "undefined") return;
+
+    let animationFrame = 0;
+    const observer = new ResizeObserver(() => {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+    });
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(animationFrame);
+    };
+  }, [leafletReady]);
+
   const handleUseCurrentLocation = () => {
     if (!isPicker) return;
     if (!navigator.geolocation) {
@@ -419,9 +443,9 @@ export function ProgramLocationMap({
   const links = selected ? externalMapLinks(selected, currentPlace) : [];
 
   return (
-    <div className="program-location-map-shell relative z-0 isolate overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="relative z-0 bg-slate-100">
-        <div ref={containerRef} className={`program-location-map-canvas relative z-0 w-full ${heightClassName}`} />
+    <div className="program-location-map-shell relative z-0 isolate w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="relative z-0 min-w-0 overflow-hidden bg-slate-100">
+        <div ref={containerRef} className={`program-location-map-canvas relative z-0 w-full min-w-0 max-w-full ${heightClassName}`} />
 
         {!leafletReady && !mapLoadError ? (
           <div className="absolute inset-0 z-[450] flex items-center justify-center bg-slate-100/80 text-sm font-semibold text-slate-600 backdrop-blur-[1px]">
@@ -446,7 +470,7 @@ export function ProgramLocationMap({
                   <Search className="h-4 w-4 text-[#f36d26]" />
                   <input
                     value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onChange={(event) => handleSearchQueryChange(event.target.value)}
                     placeholder="Bina, mekan veya adres ara"
                     className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400"
                   />

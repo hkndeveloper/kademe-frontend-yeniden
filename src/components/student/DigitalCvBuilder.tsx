@@ -508,7 +508,7 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
       {message && <div className="cv-no-print rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">{message}</div>}
       {certificates.length > 0 ? (
         <div className="cv-no-print rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-black uppercase tracking-widest text-slate-600">CV'ye eklenecek sertifikalar</h2>
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-600">CV&apos;ye eklenecek sertifikalar</h2>
           <div className="mt-3 grid gap-2 md:grid-cols-2">
             {certificates.map((certificate) => (
               <label key={certificate.id} className="flex items-start gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">

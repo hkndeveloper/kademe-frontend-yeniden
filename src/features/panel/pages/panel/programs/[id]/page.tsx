@@ -57,6 +57,9 @@ interface ProgramPhoto {
 
 interface PanelProgram {
   id: number;
+  program_kind?: "core_program" | "community_event";
+  work_mode?: "core" | "media" | "logistics" | "community_event";
+  managing_unit?: { id: number; name: string } | null;
   project_id: number;
   title: string;
   description?: string | null;
@@ -83,6 +86,18 @@ interface PanelProgram {
   is_public?: boolean;
   is_featured?: boolean;
   questions?: ProgramQuestion[];
+  capabilities?: {
+    update_core?: boolean;
+    update_community_event?: boolean;
+    update_logistics?: boolean;
+    view_attendance?: boolean;
+    manage_attendance?: boolean;
+    export_attendance?: boolean;
+    manage_media?: boolean;
+    view_media?: boolean;
+    complete?: boolean;
+    manage_qr?: boolean;
+  };
 }
 
 interface ApiErrorPayload {
@@ -146,7 +161,7 @@ export default function PanelProgramDetailPage() {
   const params = useParams();
   const rawId = params?.id;
   const programId = typeof rawId === "string" ? Number(rawId) : Number(Array.isArray(rawId) ? rawId[0] : NaN);
-  const { hasPermission, canAccessProject } = usePermissions();
+  const { hasScopedPermission, canAccessProject } = usePermissions();
   const [program, setProgram] = useState<PanelProgram | null>(null);
   const [photos, setPhotos] = useState<ProgramPhoto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,9 +180,14 @@ export default function PanelProgramDetailPage() {
     setError(null);
     try {
       const response = await api.get<{ program: PanelProgram }>(`/panel/programs/${programId}`);
-      setProgram(response.data.program);
-      const photoResponse = await api.get<{ photos: ProgramPhoto[] }>(`/panel/programs/${programId}/photos`);
-      setPhotos(photoResponse.data.photos ?? []);
+      const loadedProgram = response.data.program;
+      setProgram(loadedProgram);
+      if (loadedProgram.capabilities?.view_media) {
+        const photoResponse = await api.get<{ photos: ProgramPhoto[] }>(`/panel/programs/${programId}/photos`);
+        setPhotos(photoResponse.data.photos ?? []);
+      } else {
+        setPhotos([]);
+      }
     } catch (requestError) {
       setError(apiErrorMessage(requestError, "Program detayı yüklenemedi."));
     } finally {
@@ -183,13 +203,14 @@ export default function PanelProgramDetailPage() {
   const status = normalizeStatus(program?.status);
   const canCreatePeriodOperation = periodHasWriteCapability(program?.period ?? undefined, "create_operations");
   const canResolvePeriodOperation = periodHasWriteCapability(program?.period ?? undefined, "resolve_operations");
-  const canUpdate = Boolean(program && canCreatePeriodOperation && hasPermission("programs.update") && canAccessProject("programs.update", program.project_id));
-  const canComplete = Boolean(program && canResolvePeriodOperation && hasPermission("programs.complete") && canAccessProject("programs.complete", program.project_id));
-  const canQr = Boolean(program && canResolvePeriodOperation && hasPermission("programs.qr.manage") && canAccessProject("programs.qr.manage", program.project_id));
-  const canViewAttendance = Boolean(program && hasPermission("programs.attendance.view") && canAccessProject("programs.attendance.view", program.project_id));
-  const canExportAttendance = Boolean(program && hasPermission("programs.attendance.export") && canAccessProject("programs.attendance.export", program.project_id));
-  const canManageMedia = Boolean(program && canCreatePeriodOperation && hasPermission("programs.media.upload") && canAccessProject("programs.media.upload", program.project_id));
-  const canViewFeedback = Boolean(program && canAccessProject("programs.view", program.project_id));
+  const canUpdate = Boolean(program && canCreatePeriodOperation && (program.capabilities?.update_core || program.capabilities?.update_community_event));
+  const canUpdateVisibility = Boolean(program && canCreatePeriodOperation && program.capabilities?.update_core);
+  const canComplete = Boolean(program && canResolvePeriodOperation && program.capabilities?.complete);
+  const canQr = Boolean(program && canResolvePeriodOperation && program.capabilities?.manage_qr);
+  const canViewAttendance = Boolean(program?.capabilities?.view_attendance);
+  const canExportAttendance = Boolean(program?.capabilities?.export_attendance);
+  const canManageMedia = Boolean(program && canCreatePeriodOperation && program.capabilities?.manage_media);
+  const canViewFeedback = Boolean(program && hasScopedPermission("programs.view") && canAccessProject("programs.view", program.project_id));
   const detailQuery = useMemo(() => {
     if (!program) return "";
     const query = new URLSearchParams({ project_id: String(program.project_id) });
@@ -197,11 +218,11 @@ export default function PanelProgramDetailPage() {
     return query.toString();
   }, [program]);
 
-  const listActionHref = (action: "edit_id" | "attendance_id" | "gallery_id" | "feedback_id") =>
+  const listActionHref = (action: "edit_id" | "attendance_id" | "gallery_id" | "feedback_id" | "logistics_id") =>
     `/panel/programs?${detailQuery}&${action}=${programId}`;
 
   const updateVisibility = async (field: "is_public" | "is_featured") => {
-    if (!program || !canUpdate) return;
+    if (!program || !canUpdateVisibility) return;
     const nextValue = field === "is_public" ? program.is_public === false : !program.is_featured;
     setActionLoading(field);
     setError(null);
@@ -259,11 +280,11 @@ export default function PanelProgramDetailPage() {
 
   return (
     <PermissionGate
-      permission="programs.view"
-      requireProjectAccess={{ permission: "programs.view", projectId: program.project_id }}
+      permissions={["programs.view", "programs.community_event.view", "programs.logistics.view"]}
+      require="any"
       fallback={<div className="panel-notice panel-notice-error">Bu programı görüntüleme yetkiniz veya proje kapsamınız bulunmuyor.</div>}
     >
-      <div className="min-w-0 space-y-6 pb-8">
+      <div className="w-full min-w-0 max-w-full space-y-6 overflow-x-clip pb-8">
         <Link href="/panel/programs" className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-accent">
           <ArrowLeft className="h-4 w-4" />Programlara dön
         </Link>
@@ -274,9 +295,10 @@ export default function PanelProgramDetailPage() {
               <div className="min-w-0">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
                   <span className={`panel-chip ${panelStatusChipClass(status)}`}>{statusLabels[status]}</span>
+                  {program.program_kind === "community_event" ? <span className="panel-chip panel-chip-info">Ortak etkinlik</span> : null}
                   <span className="panel-chip panel-chip-info">{fixMojibake(program.project?.name ?? `Proje #${program.project_id}`)}</span>
                   {program.period?.name ? <span className="panel-chip">{fixMojibake(program.period.name)}</span> : null}
-                  {program.is_public === false ? <span className="panel-chip"><EyeOff className="h-3 w-3" />Gizli</span> : <span className="panel-chip panel-chip-success"><Eye className="h-3 w-3" />Yayında</span>}
+                  {program.program_kind !== "community_event" ? (program.is_public === false ? <span className="panel-chip"><EyeOff className="h-3 w-3" />Gizli</span> : <span className="panel-chip panel-chip-success"><Eye className="h-3 w-3" />Yayında</span>) : null}
                   {program.is_featured ? <span className="panel-chip panel-chip-warning"><Sparkles className="h-3 w-3" />Öne çıkan</span> : null}
                 </div>
                 <h1 className="break-words text-2xl font-black text-slate-950 md:text-3xl">{fixMojibake(program.title)}</h1>
@@ -287,6 +309,7 @@ export default function PanelProgramDetailPage() {
 
               <div className="flex max-w-xl flex-wrap gap-2 xl:justify-end">
                 {canUpdate ? <Link href={listActionHref("edit_id")} className="panel-card-action"><Pencil className="h-4 w-4" />Düzenle</Link> : null}
+                {program.capabilities?.update_logistics ? <Link href={listActionHref("logistics_id")} className="panel-card-action panel-card-action-info"><MapPin className="h-4 w-4" />Lojistik</Link> : null}
                 {canViewAttendance ? <Link href={listActionHref("attendance_id")} className="panel-card-action"><ClipboardCheck className="h-4 w-4" />Yoklama</Link> : null}
                 {canViewFeedback && status === "completed" ? <Link href={listActionHref("feedback_id")} className="panel-card-action panel-card-action-info"><BarChart3 className="h-4 w-4" />Değerlendirme</Link> : null}
                 {canQr && (status === "scheduled" || status === "active") ? (
@@ -313,16 +336,16 @@ export default function PanelProgramDetailPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className={`grid gap-4 sm:grid-cols-2 ${program.work_mode === "core" && program.program_kind !== "community_event" ? "xl:grid-cols-4" : "xl:grid-cols-2"}`}>
           <Metric icon={<CalendarDays className="h-5 w-5" />} label="Başlangıç" value={formatDateTime(program.start_at)} />
           <Metric icon={<Clock3 className="h-5 w-5" />} label="Bitiş" value={formatDateTime(program.end_at)} />
-          <Metric icon={<Users className="h-5 w-5" />} label="Kontenjan" value={program.application_quota?.toLocaleString("tr-TR") ?? "Sınırsız"} />
-          <Metric icon={<ClipboardCheck className="h-5 w-5" />} label="Kredi kesintisi" value={`${program.credit_deduction ?? 0} kredi`} />
+          {program.work_mode === "core" && program.program_kind !== "community_event" ? <Metric icon={<Users className="h-5 w-5" />} label="Kontenjan" value={program.application_quota?.toLocaleString("tr-TR") ?? "Sınırsız"} /> : null}
+          {program.work_mode === "core" && program.program_kind !== "community_event" ? <Metric icon={<ClipboardCheck className="h-5 w-5" />} label="Kredi kesintisi" value={`${program.credit_deduction ?? 0} kredi`} /> : null}
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(310px,0.65fr)]">
+        <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
           <main className="min-w-0 space-y-6">
-            <section className="panel-section-card">
+            <section className="panel-section-card min-w-0 overflow-hidden">
               <div className="mb-5 flex items-center gap-3">
                 <MapPin className="h-5 w-5 text-accent" />
                 <div><h2 className="font-black text-slate-950">Konum ve yoklama alanı</h2><p className="text-xs text-slate-500">{fixMojibake(program.location_place_name ?? program.location) || "Konum girilmemiş"}</p></div>
@@ -341,7 +364,7 @@ export default function PanelProgramDetailPage() {
               ) : <div className="panel-empty-card">Bu program için harita koordinatı kaydedilmemiş.</div>}
             </section>
 
-            <section className="panel-section-card">
+            {program.capabilities?.view_media ? <section className="panel-section-card min-w-0 overflow-hidden">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3"><ImageIcon className="h-5 w-5 text-indigo-600" /><div><h2 className="font-black text-slate-950">Program galerisi</h2><p className="text-xs text-slate-500">{photos.length} fotoğraf</p></div></div>
                 <Link href={listActionHref("gallery_id")} className="panel-card-action">
@@ -358,9 +381,9 @@ export default function PanelProgramDetailPage() {
                   ))}
                 </div>
               ) : <div className="panel-empty-card">Henüz program fotoğrafı eklenmemiş.</div>}
-            </section>
+            </section> : null}
 
-            <section className="panel-section-card">
+            {program.work_mode === "core" && program.questions?.length ? <section className="panel-section-card min-w-0 overflow-hidden">
               <div className="mb-5 flex items-center gap-3"><FileQuestion className="h-5 w-5 text-indigo-600" /><div><h2 className="font-black text-slate-950">Değerlendirme formu</h2><p className="text-xs text-slate-500">Katılımcıya gösterilecek sorular</p></div></div>
               <div className="space-y-3">
                 {(program.questions ?? []).map((question, index) => (
@@ -370,7 +393,7 @@ export default function PanelProgramDetailPage() {
                   </div>
                 ))}
               </div>
-            </section>
+            </section> : null}
           </main>
 
           <aside className="min-w-0 space-y-6">
@@ -391,10 +414,13 @@ export default function PanelProgramDetailPage() {
                 <DetailRow label="Hedef kitle" value={audiences.map((item) => audienceLabels[item]).join(", ")} />
                 <DetailRow label="Yoklama yarıçapı" value={`${program.radius_meters ?? 100} m`} />
                 <DetailRow label="Form şablonu" value={program.feedback_form_template_id ? `#${program.feedback_form_template_id}` : "Varsayılan"} />
-                <DetailRow label="Yayın durumu" value={program.is_public === false ? "Gizli" : "Herkese açık"} />
+                <DetailRow
+                  label="Yayın durumu"
+                  value={program.program_kind === "community_event" || program.is_public === false ? "Gizli" : program.is_public === true ? "Herkese açık" : "Yetki kapsamında gösterilmiyor"}
+                />
                 <DetailRow label="Öne çıkarma" value={program.is_featured ? "Evet" : "Hayır"} />
               </dl>
-              {canUpdate ? (
+              {canUpdateVisibility ? (
                 <div className="mt-5 grid gap-2">
                   <button type="button" onClick={() => void updateVisibility("is_public")} disabled={actionLoading === "is_public"} className="panel-card-action w-full">
                     {actionLoading === "is_public" ? <Loader2 className="h-4 w-4 animate-spin" /> : program.is_public === false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}{program.is_public === false ? "Yayınla" : "Gizle"}

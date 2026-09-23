@@ -2,6 +2,7 @@ import { unifiedPanelMenu } from "@/lib/panel-menu";
 import type { PanelNavUser } from "@/lib/panel-scope";
 import { shouldShowMyProjectNav, shouldShowProjectsListNav } from "@/lib/panel-scope";
 import type { PanelModule } from "@/store/useAuth";
+import { panelPathAllowedByManifest } from "@/lib/panel-module-contract";
 
 function normalizePanelPath(pathname: string): string {
   const withoutQuery = pathname.split("?")[0] ?? pathname;
@@ -130,14 +131,13 @@ export function canAccessPanelPath(
   hasPermission: (permission: string) => boolean,
   hasAnyPermission: (permissions: string[]) => boolean,
   user: PanelNavUser | null,
-  panelModules: PanelModule[] = []
+  panelModules?: PanelModule[]
 ): boolean {
   const normalized = normalizePanelPath(pathname);
   if (!normalized.startsWith("/panel")) return true;
 
-  const moduleMatch = panelModules.find((module) => module.panel_type === "authority" && module.href === normalized);
-  if (moduleMatch) {
-    return true;
+  if (panelModules !== undefined) {
+    return panelPathAllowedByManifest(normalized, panelModules);
   }
 
   if (normalized === "/panel/projects") {
@@ -214,7 +214,10 @@ export function canAccessPanelPath(
     const pid = Number(projectContent[1]);
     return (
       (hasPermission("projects.view") && canAccessProjectFromUser(user, "projects.view", pid)) ||
-      (hasPermission("projects.content.update") && canAccessProjectFromUser(user, "projects.content.update", pid))
+      (hasPermission("projects.content.update") && canAccessProjectFromUser(user, "projects.content.update", pid)) ||
+      (hasPermission("projects.public_content.view") && canAccessProjectFromUser(user, "projects.public_content.view", pid)) ||
+      (hasPermission("projects.public_content.update") && canAccessProjectFromUser(user, "projects.public_content.update", pid)) ||
+      (hasPermission("projects.gallery.update") && canAccessProjectFromUser(user, "projects.gallery.update", pid))
     );
   }
   const projectSpecialModules = normalized.match(/^\/panel\/projects\/(\d+)\/special-modules$/);
@@ -249,7 +252,9 @@ export function canAccessPanelPath(
     // URL'deki kimlik program kimligidir; proje kapsami bu katmanda guvenilir
     // bicimde cikarilamaz. Kesin programs.view + project scope kontrolu detay
     // API'sinde programin project_id degeri uzerinden yapilir.
-    return hasPermission("programs.view");
+    return hasPermission("programs.view")
+      || hasPermission("programs.community_event.view")
+      || hasPermission("programs.logistics.view");
   }
   const programQr = normalized.match(/^\/panel\/programs\/(\d+)\/qr$/);
   if (programQr) {

@@ -46,6 +46,11 @@ interface BlogPost {
   project?: ContentProject | null;
   status: "draft" | "published";
   published_at?: string | null;
+  capabilities?: {
+    update: boolean;
+    publish: boolean;
+    delete: boolean;
+  };
 }
 
 interface FaqItem {
@@ -166,12 +171,13 @@ const CONTENT_MODULES: Array<{
 
 export default function AdminContentPage() {
   const { hasPermission } = useAuth();
-  const { hasGlobalScope, hasScopedPermission } = usePermissions();
+  const { hasGlobalScope, hasScopedPermission, canAccessProject } = usePermissions();
   const canViewContent = hasPermission("content.view") && hasScopedPermission("content.view");
 
   const canBlogCreate = hasPermission("content.blog.create") && hasScopedPermission("content.blog.create");
   const canBlogUpdate = hasPermission("content.blog.update") && hasScopedPermission("content.blog.update");
   const canBlogDelete = hasPermission("content.blog.delete") && hasScopedPermission("content.blog.delete");
+  const canBlogPublish = hasPermission("content.blog.publish") && hasScopedPermission("content.blog.publish");
   const canCreateGlobalBlog = hasGlobalScope("content.blog.create");
   const canUpdateGlobalBlog = hasGlobalScope("content.blog.update");
   const canSocialShare =
@@ -213,7 +219,14 @@ export default function AdminContentPage() {
   const [uploadingBlogCover, setUploadingBlogCover] = useState(false);
   const [sharingBlogId, setSharingBlogId] = useState<number | null>(null);
 
-  const blogFieldsDisabled = !(editingBlogId ? canBlogUpdate : canBlogCreate);
+  const editingBlog = editingBlogId ? blogs.find((blog) => blog.id === editingBlogId) ?? null : null;
+  const blogFieldsDisabled = editingBlogId
+    ? !(canBlogUpdate && editingBlog?.capabilities?.update)
+    : !canBlogCreate;
+  const selectedBlogProjectId = blogForm.project_id ? Number(blogForm.project_id) : null;
+  const canPublishSelectedBlog = canBlogPublish && (selectedBlogProjectId === null
+    ? hasGlobalScope("content.blog.publish")
+    : canAccessProject("content.blog.publish", selectedBlogProjectId));
   const faqFieldsDisabled = !(editingFaqId ? canFaqUpdate : canFaqCreate);
   const personalityFieldsDisabled = !canPersonalityManage;
 
@@ -309,6 +322,10 @@ export default function AdminContentPage() {
     const canUseGlobal = editingBlogId ? canUpdateGlobalBlog : canCreateGlobalBlog;
     if (!canUseGlobal && !blogForm.project_id) {
       setErrorMessage("Proje kapsamli blog icin proje secimi zorunludur.");
+      return;
+    }
+    if (blogForm.status === "published" && !canPublishSelectedBlog) {
+      setErrorMessage("Blog yazisini yayina almak icin bu projede content.blog.publish yetkisi gerekir.");
       return;
     }
 
@@ -854,12 +871,12 @@ export default function AdminContentPage() {
                       className={fieldBase}
                     >
                       <option value="draft">Taslak</option>
-                      <option value="published">Yayinda</option>
+                      {canPublishSelectedBlog ? <option value="published">Yayinda</option> : null}
                     </select>
                   </Field>
                   <Field label="Yayin tarihi">
                     <input
-                      disabled={blogFieldsDisabled}
+                      disabled={blogFieldsDisabled || blogForm.status !== "published" || !canPublishSelectedBlog}
                       type="date"
                       value={blogForm.published_at}
                       onChange={(e) => setBlogForm((c) => ({ ...c, published_at: e.target.value }))}
@@ -947,7 +964,7 @@ export default function AdminContentPage() {
                             {sharingBlogId === blog.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
                           </button>
                         ) : null}
-                        {canBlogUpdate && (canUpdateGlobalBlog || blog.project_id != null) ? (
+                        {canBlogUpdate && blog.capabilities?.update ? (
                           <button
                             type="button"
                             onClick={() => editBlog(blog)}
@@ -957,7 +974,7 @@ export default function AdminContentPage() {
                             <Pencil className="h-4 w-4" />
                           </button>
                         ) : null}
-                        {canBlogDelete && (hasGlobalScope("content.blog.delete") || blog.project_id != null) ? (
+                        {canBlogDelete && blog.capabilities?.delete ? (
                           <button
                             type="button"
                             onClick={() => void deleteBlog(blog.id)}

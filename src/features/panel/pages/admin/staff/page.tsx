@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BriefcaseBusiness,
   Calendar,
@@ -64,6 +64,9 @@ interface LeaveRequest {
   status: "pending" | "approved" | "rejected";
   user?: { name: string; surname: string; email: string; role: string } | null;
   approver?: { name: string; surname: string } | null;
+  unit?: { id: number; name: string; code: string; kind: "project" | "service" } | null;
+  can_approve?: boolean;
+  can_reject?: boolean;
 }
 
 interface ActiveStaffItem {
@@ -82,7 +85,7 @@ interface ActiveStats {
 type StaffDetail = StaffUser;
 
 export default function AdminStaffPage() {
-  const { hasPermission, hasGlobalScope } = usePermissions();
+  const { hasScopedPermission, hasGlobalScope, activeUnitId } = usePermissions();
   const [activeTab, setActiveTab] = useState<"staff" | "leaves">("staff");
   const [staffLoading, setStaffLoading] = useState(false);
   const [staff, setStaff] = useState<StaffUser[]>([]);
@@ -119,7 +122,13 @@ export default function AdminStaffPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const canManageProjectAssignments = hasPermission("staff.update") && hasGlobalScope("staff.update");
+  const canManageProjectAssignments = hasScopedPermission("staff.update") && hasGlobalScope("staff.update");
+  const visibleLeaves = useMemo(
+    () => activeUnitId === null
+      ? leaves
+      : leaves.filter((leave) => leave.unit?.id === activeUnitId),
+    [activeUnitId, leaves],
+  );
 
   const loadActiveStats = useCallback(async () => {
     try {
@@ -147,7 +156,7 @@ export default function AdminStaffPage() {
   }, [projectFilter, staffRole, staffSearch]);
 
   const loadProjectOptions = useCallback(async () => {
-    if (!hasPermission("projects.view")) {
+    if (!hasScopedPermission("projects.view")) {
       return;
     }
     setProjectsLoading(true);
@@ -162,7 +171,7 @@ export default function AdminStaffPage() {
     } finally {
       setProjectsLoading(false);
     }
-  }, [hasPermission]);
+  }, [hasScopedPermission]);
 
   const loadLeaves = useCallback(async () => {
     setLeavesLoading(true);
@@ -671,20 +680,21 @@ export default function AdminStaffPage() {
                         <Loader2 className="mx-auto h-8 w-8 animate-spin text-indigo-400" />
                       </td>
                     </tr>
-                  ) : leaves.length === 0 ? (
+                  ) : visibleLeaves.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
                         Izin talebi bulunamadi.
                       </td>
                     </tr>
                   ) : (
-                    leaves.map((leave) => (
+                    visibleLeaves.map((leave) => (
                       <tr key={leave.id}>
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-900">
                             {leave.user?.name} {leave.user?.surname}
                           </div>
                           <div className="text-[10px] font-bold uppercase text-indigo-400">{leave.user?.role}</div>
+                          {leave.unit?.name ? <div className="mt-1 text-[10px] font-semibold text-emerald-700">{leave.unit.name}</div> : null}
                         </td>
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-900">
@@ -716,9 +726,9 @@ export default function AdminStaffPage() {
                           )}
                         </td>
                         <td className="space-x-2 px-6 py-4 text-right">
-                          {leave.status === "pending" && (
+                          {leave.status === "pending" && (leave.can_approve || leave.can_reject) && (
                             <>
-                              <PermissionGate permission="staff.leave.approve">
+                              {leave.can_approve && hasScopedPermission("staff.leave.approve") ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleLeaveAction(leave.id, "approve")}
@@ -727,8 +737,8 @@ export default function AdminStaffPage() {
                                 >
                                   <CheckCircle className="h-4 w-4" />
                                 </button>
-                              </PermissionGate>
-                              <PermissionGate permission="staff.leave.reject">
+                              ) : null}
+                              {leave.can_reject && hasScopedPermission("staff.leave.reject") ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleLeaveAction(leave.id, "reject")}
@@ -737,7 +747,7 @@ export default function AdminStaffPage() {
                                 >
                                   <XCircle className="h-4 w-4" />
                                 </button>
-                              </PermissionGate>
+                              ) : null}
                             </>
                           )}
                         </td>

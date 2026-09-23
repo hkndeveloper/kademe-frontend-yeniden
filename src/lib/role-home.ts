@@ -25,6 +25,9 @@ const panelHomePermissions = [
   "requests.view",
   "periods.view",
   "announcements.view",
+  "inbox.view",
+  "alumni_opportunities.view",
+  "forum.view",
   "newsletter.view",
   "kpd.appointments.view",
   "kpd.reports.view",
@@ -109,6 +112,9 @@ export function homePathForUser(user: HomePathUser | null | undefined): string {
   }
   if (has("periods.view")) return "/panel/periods";
   if (has("announcements.view")) return "/panel/announcements";
+  if (has("inbox.view")) return "/panel/inbox";
+  if (has("alumni_opportunities.view")) return "/panel/alumni-opportunities";
+  if (has("forum.view")) return "/panel/forum";
   if (has("content.view") && hasGlobal("content.view")) return "/panel/content";
   if (has("newsletter.view") && hasGlobal("newsletter.view")) return "/panel/newsletter";
   if (has("logs.view")) return "/panel/logs";

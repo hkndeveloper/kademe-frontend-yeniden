@@ -12,10 +12,14 @@ export default function PanelUnifiedProjectContentPage() {
   const periodId = searchParams.get("period_id") ?? "";
   const projectIdNumber = Number(projectId);
   const { hasPermission, canAccessProject } = usePermissions();
-  const canEdit =
-    Number.isFinite(projectIdNumber) &&
-    hasPermission("projects.content.update") &&
-    canAccessProject("projects.content.update", projectIdNumber);
+  const contentPermissions = [
+    "projects.content.update",
+    "projects.public_content.update",
+    "projects.gallery.update",
+  ];
+  const canEdit = Number.isFinite(projectIdNumber) && contentPermissions.some(
+    (permission) => hasPermission(permission) && canAccessProject(permission, projectIdNumber),
+  );
 
   return <ProjectContentEditor projectId={projectId} panelBasePath="/panel" periodId={periodId} readOnly={!canEdit} />;
 }

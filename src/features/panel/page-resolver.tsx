@@ -40,6 +40,7 @@ import PanelKpdPage from "@/features/panel/pages/panel/kpd/page";
 import PanelTrainersPage from "@/features/panel/pages/panel/trainers/page";
 import PanelKvkkForgetPage from "@/features/panel/pages/panel/kvkk-forget/page";
 import PanelMotivationPage from "@/features/panel/pages/panel/motivation/page";
+import PanelCoordinationUnitsPage from "@/features/panel/pages/panel/coordination-units/page";
 import AdminPeriodFormBuilderPage from "@/features/panel/pages/admin/periods/form-builder/page";
 import AdminPeriodWorkspacePage from "@/features/panel/pages/admin/periods/[id]/page";
 import { Diplomasi360PanelPage, EurodeskPanelPage, KademePlusPanelPage, PergelPanelPage, ZirveKademePanelPage } from "@/features/panel/pages/panel/project-family/page";
@@ -73,6 +74,7 @@ const PANEL_ROUTE_COMPONENTS: Record<string, ComponentType> = {
   kpd: PanelKpdPage,
   trainers: PanelTrainersPage,
   motivation: PanelMotivationPage,
+  "coordination-units": PanelCoordinationUnitsPage,
   "kvkk-forget": PanelKvkkForgetPage,
   requests: PanelSharedRequestsPage,
   support: PanelSupportPage,

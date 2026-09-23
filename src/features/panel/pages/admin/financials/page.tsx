@@ -33,6 +33,7 @@ import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, 
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { optionalPanelRequest, panelLoadErrorMessage } from "@/lib/panel-load-state";
 import { downloadBlobResponse } from "@/lib/download";
 
 interface Project {
@@ -48,6 +49,15 @@ interface FinancialTransaction {
   period?: { id: number; name: string };
   submitter?: { id: number; name: string; surname: string };
   approver?: { id: number; name: string; surname: string };
+  processing_unit?: { id: number; code: string; name: string } | null;
+  capabilities?: {
+    view: boolean;
+    download_invoice: boolean;
+    delete: boolean;
+    approve: boolean;
+    reject: boolean;
+    mark_paid: boolean;
+  };
   type: "expense" | "payment";
   category: string;
   category_note?: string | null;
@@ -103,7 +113,7 @@ const typeLabels: Record<string, string> = {
 
 export default function AdminFinancialsPage() {
   const { hasPermission } = useAuth();
-  const { canAccessProject, hasGlobalScope } = usePermissions();
+  const { canAccessProject } = usePermissions();
   const [activeTab, setActiveTab] = useState<"list" | "new">("list");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -143,11 +153,6 @@ export default function AdminFinancialsPage() {
   const canCreateInSelectedPeriod = periodHasWriteCapability(selectedFormPeriod, "create_operations");
   const canViewFinancials = hasPermission("financial.view");
   const canCreateFinancials = hasPermission("financial.create");
-  const canDownloadInvoice = hasPermission("financial.invoice.download");
-  const canApproveFinancials = hasPermission("financial.approve") && hasGlobalScope("financial.approve");
-  const canRejectFinancials = hasPermission("financial.reject") && hasGlobalScope("financial.reject");
-  const canDeleteFinancials = hasPermission("financial.delete") && hasGlobalScope("financial.delete");
-  const canMarkPaidFinancials = hasPermission("financial.mark_paid") && hasGlobalScope("financial.mark_paid");
 
   const loadData = useCallback(async (targetPage = page) => {
     setLoading(true);
@@ -179,14 +184,22 @@ export default function AdminFinancialsPage() {
               },
             }),
         hasPermission("financial.view")
-          ? api.get<{ projects: Array<{ id: number; name: string }> }>("/panel/projects/manageable", {
-              params: { permission: "financial.view" },
-            })
+          ? optionalPanelRequest(
+              api.get<{ projects: Array<{ id: number; name: string }> }>("/panel/projects/manageable", {
+                params: { permission: "financial.view" },
+              }),
+              { data: { projects: [] as Array<{ id: number; name: string }> } },
+              "Mali işlem proje filtresi",
+            )
           : Promise.resolve({ data: { projects: [] } }),
         canCreateFinancials
-          ? api.get<{ projects: Project[] }>("/panel/projects/manageable", {
-              params: { permission: "financial.create" },
-            })
+          ? optionalPanelRequest(
+              api.get<{ projects: Project[] }>("/panel/projects/manageable", {
+                params: { permission: "financial.create" },
+              }),
+              { data: { projects: [] as Project[] } },
+              "Mali işlem oluşturma proje listesi",
+            )
           : Promise.resolve({ data: { projects: [] } }),
       ]);
 
@@ -202,7 +215,7 @@ export default function AdminFinancialsPage() {
       setCreateProjects(rawCreateProjects.filter((p) => canAccessProject("financial.create", p.id)));
     } catch (error) {
       console.error("Financial data could not be loaded", error);
-      setErrorMessage("Mali islemler yuklenemedi.");
+      setErrorMessage(panelLoadErrorMessage(error, "Mali işlemler"));
     } finally {
       setLoading(false);
     }
@@ -775,9 +788,18 @@ export default function AdminFinancialsPage() {
                       ) : null}
                       {transaction.spending_unit ? (
                         <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                          Birim: {transaction.spending_unit}
+                          Harcamayi yapan: {transaction.spending_unit}
                         </div>
                       ) : null}
+                      {transaction.processing_unit ? (
+                        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-500">
+                          Isleyen: {transaction.processing_unit.name}
+                        </div>
+                      ) : (
+                        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+                          Legacy proje kapsami
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-bold text-slate-900">{transaction.payee_name}</div>
@@ -812,10 +834,7 @@ export default function AdminFinancialsPage() {
                       ) : null}
                     </td>
                     <td className="space-x-2 px-6 py-4 text-right">
-                      {canDownloadInvoice &&
-                        transaction.invoice_path &&
-                        transaction.project?.id != null &&
-                        canAccessProject("financial.invoice.download", transaction.project.id) && (
+                      {transaction.capabilities?.download_invoice && transaction.invoice_path && (
                         <button
                           type="button"
                           onClick={() => void downloadInvoice(transaction.id, transaction.payee_name)}
@@ -832,8 +851,7 @@ export default function AdminFinancialsPage() {
 
                       {transaction.status === "pending" && transaction.project?.id != null && (
                         <>
-                          {canApproveFinancials &&
-                            canAccessProject("financial.approve", transaction.project.id) && (
+                          {transaction.capabilities?.approve && (
                             <button
                               type="button"
                               disabled={!canResolveTransaction}
@@ -844,8 +862,7 @@ export default function AdminFinancialsPage() {
                               <CheckCircle className="h-4 w-4" />
                             </button>
                           )}
-                          {canRejectFinancials &&
-                            canAccessProject("financial.reject", transaction.project.id) && (
+                          {transaction.capabilities?.reject && (
                             <button
                               type="button"
                               disabled={!canResolveTransaction}
@@ -856,8 +873,7 @@ export default function AdminFinancialsPage() {
                               <XCircle className="h-4 w-4" />
                             </button>
                           )}
-                          {canDeleteFinancials &&
-                            canAccessProject("financial.delete", transaction.project.id) && (
+                          {transaction.capabilities?.delete && (
                             <button
                               type="button"
                               disabled={!canWriteTransaction}
@@ -871,10 +887,9 @@ export default function AdminFinancialsPage() {
                         </>
                       )}
 
-                      {canMarkPaidFinancials &&
+                      {transaction.capabilities?.mark_paid &&
                         transaction.status === "approved" &&
-                        transaction.project?.id != null &&
-                        canAccessProject("financial.mark_paid", transaction.project.id) && (
+                        transaction.project?.id != null && (
                         <button
                           type="button"
                           disabled={!canResolveTransaction}

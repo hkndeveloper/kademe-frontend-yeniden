@@ -69,7 +69,7 @@ export default function PanelForumPage() {
     let active = true;
     Promise.all([
       api.get<{ posts?: Paginated<ForumPost> }>("/panel/forum/posts"),
-      api.get<{ projects: ProjectWithPeriods[] }>("/panel/projects/manageable", { params: { permission: "announcements.view" } }),
+      api.get<{ projects: ProjectWithPeriods[] }>("/panel/projects/manageable", { params: { permission: "forum.view" } }),
     ])
       .then(([postsResponse, projectsResponse]) => {
         if (!active) return;
