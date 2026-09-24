@@ -18,18 +18,34 @@ const navActive =
 const navIdle =
   "text-slate-400 hover:bg-white/[0.07] hover:text-white hover:shadow-sm hover:shadow-black/20 hover:translate-x-1";
 
+function withCommunityAlumniLabels(
+  grouped: ReturnType<typeof getVisiblePanelMenuGrouped>,
+  unitCode?: string,
+) {
+  if (unitCode !== "service_community_culture") return grouped;
+  const labels: Record<string, string> = {
+    participants: "Mezunlar ve Mezuniyet",
+    certificates: "Mezun Belgeleri",
+    alumni_opportunities_panel: "Mezun Fırsatları",
+  };
+  return grouped.map((group) => ({
+    ...group,
+    items: group.items.map((item) => labels[item.id] ? { ...item, label: labels[item.id] } : item),
+  }));
+}
+
 export function UnifiedPanelSidebar() {
   const pathname = usePathname();
   const { logout, user, hasPermission, hasAnyPermission, panelModules, panelModulesLoaded, panelModulesError, activeUnitId } = useAuth();
   const navigationModules = panelNavigationModules(panelModules, user, activeUnitId, panelModulesLoaded, Boolean(panelModulesError));
   const activeMembership = activeOrganizationMembership(user, activeUnitId);
 
-  const grouped = getVisiblePanelMenuGrouped(
+  const grouped = withCommunityAlumniLabels(getVisiblePanelMenuGrouped(
     hasPermission,
     hasAnyPermission,
     user,
     navigationModules
-  );
+  ), activeMembership?.unit_code);
 
   return (
     <aside className="peer group/sidebar fixed left-0 top-0 z-40 hidden h-screen w-20 flex-col border-r border-white/[0.08] bg-gradient-to-b from-slate-900 via-[#0a1020] to-[#05070c] shadow-[inset_-1px_0_0_rgba(255,255,255,0.04)] transition-[width] duration-300 hover:w-72 focus-within:w-72 lg:flex">
@@ -111,12 +127,12 @@ export function MobilePanelNav() {
   const { logout, user, hasPermission, hasAnyPermission, panelModules, panelModulesLoaded, panelModulesError, activeUnitId } = useAuth();
   const navigationModules = panelNavigationModules(panelModules, user, activeUnitId, panelModulesLoaded, Boolean(panelModulesError));
   const activeMembership = activeOrganizationMembership(user, activeUnitId);
-  const grouped = getVisiblePanelMenuGrouped(
+  const grouped = withCommunityAlumniLabels(getVisiblePanelMenuGrouped(
     hasPermission,
     hasAnyPermission,
     user,
     navigationModules
-  );
+  ), activeMembership?.unit_code);
   const allItems = grouped.flatMap((group) => group.items);
   const primaryItems = allItems.slice(0, 4);
   const activeItem = allItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));

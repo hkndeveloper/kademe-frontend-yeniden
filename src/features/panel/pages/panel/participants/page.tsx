@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { CheckCircle2, Coins, Download, FileText, GraduationCap, History, Loader2, Mail, Phone, Save, Search, Star, Users, X, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
@@ -8,6 +8,8 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/store/useAuth";
+import { activeOrganizationMembership } from "@/lib/organization-context";
 import { downloadBlobResponse } from "@/lib/download";
 import { panelStatusChipClass } from "@/lib/status-style";
 
@@ -170,6 +172,15 @@ function cvItemDescription(item: CvRecord): string {
 }
 export default function PanelParticipantsPage() {
   const { canAccessProject, hasPermission, hasAnyPermission } = usePermissions();
+  const canManageGraduation = useCallback((projectId: number) =>
+    canAccessProject("projects.participants.manage", projectId)
+    || canAccessProject("projects.alumni.manage", projectId), [canAccessProject]);
+  const canManageVisibility = (participant: ParticipantItem) =>
+    canAccessProject("projects.participants.manage", participant.project.id)
+    || ((participant.graduation_status === "graduated" || !!participant.graduated_at)
+      && canAccessProject("projects.alumni.manage", participant.project.id));
+  const { user, activeUnitId } = useAuth();
+  const isCommunityCulture = activeOrganizationMembership(user, activeUnitId)?.unit_code === "service_community_culture";
   const [projects, setProjects] = useState<Project[]>([]);
   const [participants, setParticipants] = useState<ParticipantItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,12 +290,11 @@ export default function PanelParticipantsPage() {
     return filteredParticipants
       .filter(
         (p) =>
-          hasPermission("projects.participants.manage") &&
-          canAccessProject("projects.participants.manage", p.project.id) &&
+          canManageGraduation(p.project.id) &&
           periodHasWriteCapability(periodOptionById(projects, p.period?.id), "resolve_operations"),
       )
       .map((p) => p.id);
-  }, [filteredParticipants, hasPermission, canAccessProject, projects]);
+  }, [filteredParticipants, canManageGraduation, projects]);
 
   const participantIds = useMemo(() => new Set(participants.map((participant) => participant.id)), [participants]);
   const selectedIdsInDataset = useMemo(
@@ -374,8 +384,8 @@ export default function PanelParticipantsPage() {
     participant: ParticipantItem,
     patch: Partial<Pick<ParticipantItem["user"], "public_profile_visible" | "public_photo_visible" | "public_alumni_visible">>
   ) => {
-    if (!hasPermission("projects.participants.manage") || !canAccessProject("projects.participants.manage", participant.project.id)) {
-      setMessage("Public gorunurluk icin katilimci yonetim yetkisi gerekir.");
+    if (!canManageVisibility(participant)) {
+      setMessage("Bu kaydin kamusal gorunurlugunu yonetme yetkiniz yok.");
       return;
     }
 
@@ -586,13 +596,15 @@ export default function PanelParticipantsPage() {
           </div>
         <div>
             <h1 className="text-2xl font-bold">
-              {hasPermission("projects.participants.view")
+              {isCommunityCulture
+                ? hasPermission("projects.alumni.manage") ? "Mezunlar ve Mezuniyet" : "Mezunlar"
+                : hasPermission("projects.participants.view")
                 ? "Katilimcilar"
                 : hasPermission("projects.alumni.view")
                   ? "Mezunlar"
                   : "Ogrenci CV'leri"}
             </h1>
-            <p className="text-sm text-muted-foreground">Yetkili oldugunuz projelerdeki katilimci, mezun ve CV kayitlarini scope bazli takip edin.</p>
+            <p className="text-sm text-muted-foreground">{isCommunityCulture ? "Topluluk ve Kültür sorumluluğundaki projelerin mezun, mezuniyet ve CV kayıtları." : "Yetkili oldugunuz projelerdeki katilimci, mezun ve CV kayitlarini scope bazli takip edin."}</p>
             {selectedProjectName ? <p className="mt-1 text-xs font-bold uppercase tracking-widest text-accent">Filtre: {selectedProjectName}</p> : null}
           </div>
         </div>
@@ -686,7 +698,7 @@ export default function PanelParticipantsPage() {
             </select>
           </label>
         </div>
-        {hasPermission("projects.participants.manage") && manageableIdsInView.length > 0 ? (
+        {hasAnyPermission(["projects.participants.manage", "projects.alumni.manage"]) && manageableIdsInView.length > 0 ? (
           <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <span className="font-semibold text-slate-900">
@@ -761,8 +773,7 @@ export default function PanelParticipantsPage() {
             <div key={participant.id} className="panel-list-card">
               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
-                  {hasPermission("projects.participants.manage") &&
-                  canAccessProject("projects.participants.manage", participant.project.id) ? (
+                  {canManageGraduation(participant.project.id) ? (
                     <label className="mt-1 flex cursor-pointer items-center">
                       <input
                         type="checkbox"
@@ -836,7 +847,7 @@ export default function PanelParticipantsPage() {
                 </div>
               ) : null}
 
-              {hasPermission("projects.participants.manage") && canAccessProject("projects.participants.manage", participant.project.id) ? (
+              {canManageGraduation(participant.project.id) ? (
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -868,7 +879,7 @@ export default function PanelParticipantsPage() {
                 </div>
               ) : null}
 
-              {hasPermission("projects.participants.manage") && canAccessProject("projects.participants.manage", participant.project.id) ? (
+              {canManageVisibility(participant) ? (
                 <div className="panel-card-muted mt-4">
                   <div className="mb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     Public gorunurluk

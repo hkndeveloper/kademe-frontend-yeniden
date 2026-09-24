@@ -25,6 +25,12 @@ let projectsPromise: Promise<PublicProject[]> | null = null;
 let homepageCache: { expiresAt: number; data: PublicHomepagePayload } | null = null;
 let homepagePromise: Promise<PublicHomepagePayload> | null = null;
 
+export function invalidatePublicProjectCaches(): void {
+  projectsCache = null;
+  homepageCache = null;
+  siteConfigCache = null;
+}
+
 export async function getCachedHomepage(): Promise<PublicHomepagePayload> {
   const now = Date.now();
   if (homepageCache && homepageCache.expiresAt > now) {

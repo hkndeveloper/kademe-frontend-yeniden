@@ -6,6 +6,7 @@ import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/store/useAuth";
+import { activeOrganizationMembership } from "@/lib/organization-context";
 import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 
 type Project = { id: number; name: string };
@@ -81,8 +82,10 @@ function formFromRow(row: Opportunity): OpportunityForm {
 }
 
 export default function PanelAlumniOpportunitiesPage() {
-  const user = useAuth((state) => state.user);
+  const { user, activeUnitId } = useAuth();
+  const isCommunityCulture = activeOrganizationMembership(user, activeUnitId)?.unit_code === "service_community_culture";
   const { canAccessProject, hasPermission, hasGlobalScope } = usePermissions();
+  const requireProject = isCommunityCulture && !hasGlobalScope("alumni_opportunities.manage");
   const [rows, setRows] = useState<Opportunity[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,7 +168,10 @@ export default function PanelAlumniOpportunitiesPage() {
 
   function openCreateForm() {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      project_id: requireProject ? String(manageableForCreate[0]?.id ?? "") : "",
+    });
     setShowForm(true);
   }
 
@@ -295,13 +301,14 @@ export default function PanelAlumniOpportunitiesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="panel-label">Proje (opsiyonel)</label>
+                  <label className="panel-label">Proje{requireProject ? "" : " (opsiyonel)"}</label>
                   <select
                     className="panel-control"
                     value={form.project_id}
+                    required={requireProject}
                     onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))}
                   >
-                    <option value="">Genel (tum uygun katilimcilar)</option>
+                    <option value="">{requireProject ? "Proje secin" : "Genel (tum uygun katilimcilar)"}</option>
                     {manageableForForm.map((project) => (
                       <option key={project.id} value={String(project.id)}>
                         {project.name}

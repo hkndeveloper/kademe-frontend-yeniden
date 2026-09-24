@@ -21,6 +21,7 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
 import { panelStatusChipClass } from "@/lib/status-style";
+import { invalidatePublicProjectCaches } from "@/lib/public-api-cache";
 
 interface ActivePeriod {
   id: number;
@@ -33,6 +34,7 @@ interface Project {
   type?: string;
   slug?: string;
   status: string;
+  is_public: boolean;
   is_application_open?: boolean;
   quota?: number | null;
   active_period?: ActivePeriod | null;
@@ -65,6 +67,26 @@ export default function AdminProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "passive">("all");
+  const [visibilitySavingId, setVisibilitySavingId] = useState<number | null>(null);
+  const [visibilityError, setVisibilityError] = useState("");
+
+  const togglePublicVisibility = async (project: Project) => {
+    setVisibilitySavingId(project.id);
+    setVisibilityError("");
+    try {
+      const response = await api.patch<{ project: { is_public: boolean } }>(`/panel/projects/${project.id}/visibility`, {
+        is_public: !project.is_public,
+      });
+      invalidatePublicProjectCaches();
+      setProjects((current) => current.map((item) => item.id === project.id
+        ? { ...item, is_public: response.data.project.is_public }
+        : item));
+    } catch {
+      setVisibilityError(`${project.name} için kamusal görünürlük değiştirilemedi.`);
+    } finally {
+      setVisibilitySavingId(null);
+    }
+  };
 
   const hrefWithActivePeriod = (href: string, project: Project) => {
     if (!project.active_period?.id) return href;
@@ -111,6 +133,7 @@ export default function AdminProjectsPage() {
 
   return (
     <div className="space-y-6 pb-8">
+      {visibilityError ? <div className="panel-notice panel-notice-error">{visibilityError}</div> : null}
       <header className="panel-section-card overflow-hidden p-0">
         <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
           <div className="flex items-start gap-4">
@@ -224,6 +247,9 @@ export default function AdminProjectsPage() {
               </div>
 
               <div className="space-y-3">
+                <div className={`text-xs font-bold ${project.is_public && project.status === "active" ? "text-emerald-700" : "text-slate-500"}`}>
+                  {project.is_public && project.status === "active" ? "Kamusal alanda yayında" : "Kamusal alanda gizli"}
+                </div>
                 <div className="panel-card-muted p-4">
                   <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                     <Calendar className="h-3 w-3" />
@@ -273,6 +299,17 @@ export default function AdminProjectsPage() {
               </div>
 
               <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+                {hasPermission("projects.content.update") && canAccessProject("projects.content.update", project.id) ? (
+                  <button
+                    type="button"
+                    onClick={() => void togglePublicVisibility(project)}
+                    disabled={visibilitySavingId === project.id || project.status !== "active"}
+                    className="panel-card-action panel-card-action-info"
+                    title="Kamusal proje sayfasını ve bu projeye ait kamusal etkinlikleri birlikte açar veya kapatır"
+                  >
+                    {visibilitySavingId === project.id ? "Kaydediliyor..." : project.status !== "active" ? "Proje Pasif" : project.is_public ? "Kamudan Gizle" : "Kamuda Yayınla"}
+                  </button>
+                ) : null}
                 {hasStructuralProjectView ? <Link
                   href={hrefWithActivePeriod(`/panel/projects/${project.id}`, project)}
                   className="panel-card-action panel-card-action-primary flex-1"

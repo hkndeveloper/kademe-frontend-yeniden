@@ -46,6 +46,7 @@ interface ProjectPeriodFiltersProps {
   labelClassName?: string;
   labelTextClassName?: string;
   syncUrl?: boolean;
+  hideProjectSelect?: boolean;
 }
 
 export function periodsForProject(project?: ProjectWithPeriods): PeriodOption[] {
@@ -120,6 +121,7 @@ export function ProjectPeriodFilters({
   labelClassName = "panel-field",
   labelTextClassName = "panel-label",
   syncUrl = true,
+  hideProjectSelect = false,
 }: ProjectPeriodFiltersProps) {
   const selectedProject = projects.find((project) => String(project.id) === selectedProjectId);
   const periods = periodsForProject(selectedProject);
@@ -141,7 +143,7 @@ export function ProjectPeriodFilters({
 
   return (
     <div className={className}>
-      <label className={labelClassName}>
+      {!hideProjectSelect ? <label className={labelClassName}>
         <span className={labelTextClassName}>{projectLabel}</span>
         <select
           value={selectedProjectId}
@@ -155,7 +157,7 @@ export function ProjectPeriodFilters({
             </option>
           ))}
         </select>
-      </label>
+      </label> : null}
       <label className={labelClassName}>
         <span className={labelTextClassName}>{periodLabel}</span>
         <select

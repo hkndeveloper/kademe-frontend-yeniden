@@ -33,6 +33,7 @@ import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, 
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { activeOrganizationMembership } from "@/lib/organization-context";
 import { optionalPanelRequest, panelLoadErrorMessage } from "@/lib/panel-load-state";
 import { downloadBlobResponse } from "@/lib/download";
 
@@ -111,8 +112,16 @@ const typeLabels: Record<string, string> = {
   payment: "Odeme",
 };
 
+function initialFinancialProjectId(): string {
+  if (typeof window === "undefined") return "";
+  const value = new URLSearchParams(window.location.search).get("project_id") ?? "";
+  return /^\d+$/.test(value) ? value : "";
+}
+
 export default function AdminFinancialsPage() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user, activeUnitId } = useAuth();
+  const activeMembership = activeOrganizationMembership(user, activeUnitId);
+  const isProjectUnit = activeMembership?.unit_kind === "project";
   const { canAccessProject } = usePermissions();
   const [activeTab, setActiveTab] = useState<"list" | "new">("list");
   const [loading, setLoading] = useState(true);
@@ -124,7 +133,7 @@ export default function AdminFinancialsPage() {
   const [categoryStats, setCategoryStats] = useState<Array<{ category: string; total: number }>>([]);
   const [projectStats, setProjectStats] = useState<Array<{ project?: { name: string }; total: number }>>([]);
   const [statusStats, setStatusStats] = useState<Array<{ status: string; total: number; count: number }>>([]);
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(initialFinancialProjectId);
   const [periodId, setPeriodId] = useState("all");
   const [status, setStatus] = useState("");
   const [category, setCategory] = useState("");
@@ -137,7 +146,7 @@ export default function AdminFinancialsPage() {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [formProjectId, setFormProjectId] = useState("");
+  const [formProjectId, setFormProjectId] = useState(initialFinancialProjectId);
   const [formPeriodId, setFormPeriodId] = useState("");
   const [formCategory, setFormCategory] = useState("food");
   const [formCategoryNote, setFormCategoryNote] = useState("");
@@ -149,7 +158,9 @@ export default function AdminFinancialsPage() {
   const [formPaymentMethod, setFormPaymentMethod] = useState("");
   const [formAccountingCode, setFormAccountingCode] = useState("");
   const [formFile, setFormFile] = useState<File | null>(null);
-  const selectedFormPeriod = periodOptionById([...projects, ...createProjects], formPeriodId || createProjects.find((project) => String(project.id) === formProjectId)?.active_period?.id);
+  const scopedProjectId = isProjectUnit ? String(activeMembership.project_id ?? 0) : projectId;
+  const scopedFormProjectId = isProjectUnit ? scopedProjectId : formProjectId;
+  const selectedFormPeriod = periodOptionById([...projects, ...createProjects], formPeriodId || createProjects.find((project) => String(project.id) === scopedFormProjectId)?.active_period?.id);
   const canCreateInSelectedPeriod = periodHasWriteCapability(selectedFormPeriod, "create_operations");
   const canViewFinancials = hasPermission("financial.view");
   const canCreateFinancials = hasPermission("financial.create");
@@ -164,7 +175,7 @@ export default function AdminFinancialsPage() {
           ? api.get("/panel/financials", {
               params: {
                 page: targetPage,
-                project_id: projectId || undefined,
+                project_id: scopedProjectId || undefined,
                 period_id: periodId !== "all" ? periodId : undefined,
                 status: status || undefined,
                 category: category || undefined,
@@ -210,9 +221,9 @@ export default function AdminFinancialsPage() {
       setProjectStats(financialResponse.data.project_stats ?? []);
       setStatusStats(financialResponse.data.status_stats ?? []);
       const rawProjects = projectsResponse.data.projects ?? [];
-      setProjects(rawProjects.filter((p) => canAccessProject("financial.view", p.id)));
+      setProjects(rawProjects.filter((p) => canAccessProject("financial.view", p.id) && (!isProjectUnit || String(p.id) === scopedProjectId)));
       const rawCreateProjects = createProjectsResponse.data.projects ?? [];
-      setCreateProjects(rawCreateProjects.filter((p) => canAccessProject("financial.create", p.id)));
+      setCreateProjects(rawCreateProjects.filter((p) => canAccessProject("financial.create", p.id) && (!isProjectUnit || String(p.id) === scopedProjectId)));
     } catch (error) {
       console.error("Financial data could not be loaded", error);
       setErrorMessage(panelLoadErrorMessage(error, "Mali işlemler"));
@@ -224,7 +235,8 @@ export default function AdminFinancialsPage() {
     dateTo,
     category,
     page,
-    projectId,
+    scopedProjectId,
+    isProjectUnit,
     periodId,
     search,
     status,
@@ -302,7 +314,7 @@ export default function AdminFinancialsPage() {
   };
 
   const resetForm = () => {
-    setFormProjectId("");
+    setFormProjectId(projectId);
     setFormPeriodId("");
     setFormCategory("food");
     setFormCategoryNote("");
@@ -319,12 +331,12 @@ export default function AdminFinancialsPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!formProjectId || !formPayee.trim() || !formAmount || !formFile || (formCategory === "other" && !formCategoryNote.trim())) {
+    if (!scopedFormProjectId || !formPayee.trim() || !formAmount || !formFile || (formCategory === "other" && !formCategoryNote.trim())) {
       setErrorMessage(formCategory === "other" && !formCategoryNote.trim() ? "Diger kategori secildiginde not alani zorunludur." : "Proje, kategori, alici, tutar ve belge zorunludur.");
       return;
     }
 
-    const selectedProject = createProjects.find((project) => String(project.id) === formProjectId);
+    const selectedProject = createProjects.find((project) => String(project.id) === scopedFormProjectId);
     if (!selectedProject || !canAccessProject("financial.create", selectedProject.id)) {
       setErrorMessage("Bu proje icin fatura olusturma yetkiniz bulunmuyor.");
       return;
@@ -336,7 +348,7 @@ export default function AdminFinancialsPage() {
 
     try {
       const formData = new FormData();
-      formData.append("project_id", formProjectId);
+      formData.append("project_id", scopedFormProjectId);
       if (formPeriodId || selectedProject.active_period?.id) {
         formData.append("period_id", formPeriodId || String(selectedProject.active_period?.id));
       }
@@ -347,9 +359,9 @@ export default function AdminFinancialsPage() {
       formData.append("payee_name", formPayee.trim());
       formData.append("amount", formAmount);
       if (formInvoiceNo.trim()) formData.append("invoice_no", formInvoiceNo.trim());
-      if (formPaymentDate) formData.append("payment_date", formPaymentDate);
-      if (formPaymentMethod) formData.append("payment_method", formPaymentMethod);
-      if (formAccountingCode.trim()) formData.append("accounting_code", formAccountingCode.trim());
+      if (!isProjectUnit && formPaymentDate) formData.append("payment_date", formPaymentDate);
+      if (!isProjectUnit && formPaymentMethod) formData.append("payment_method", formPaymentMethod);
+      if (!isProjectUnit && formAccountingCode.trim()) formData.append("accounting_code", formAccountingCode.trim());
       formData.append("invoice", formFile);
 
       await api.post("/panel/financials", formData, {
@@ -374,7 +386,7 @@ export default function AdminFinancialsPage() {
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Mali Islemler</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Harcama, odeme, onay ve fatura yonetimi
+            {isProjectUnit ? `${activeMembership.unit_name} · fatura ve harcama kayitlari` : "Harcama, odeme, onay ve fatura yonetimi"}
           </p>
         </div>
         <PermissionGate permission="financial.export">
@@ -382,7 +394,7 @@ export default function AdminFinancialsPage() {
             endpoint="/panel/financials/export"
             filename={`finansal_islemler_${new Date().toISOString().slice(0, 10)}`}
             params={{
-              project_id: projectId || undefined,
+              project_id: scopedProjectId || undefined,
               period_id: periodId !== "all" ? periodId : undefined,
               status: status || undefined,
               category: category || undefined,
@@ -652,15 +664,16 @@ export default function AdminFinancialsPage() {
 
           <ProjectPeriodFilters
             projects={projects}
-            selectedProjectId={projectId || "all"}
+            selectedProjectId={scopedProjectId || "all"}
             selectedPeriodId={periodId}
+            hideProjectSelect={isProjectUnit}
             onProjectChange={(value) => {
               const project = projects.find((item) => String(item.id) === value);
               setProjectId(value === "all" ? "" : value);
               setPeriodId(value === "all" ? "all" : defaultPeriodIdForProject(project) || "all");
             }}
             onPeriodChange={setPeriodId}
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            className={isProjectUnit ? "grid grid-cols-1 gap-3" : "grid grid-cols-1 gap-3 sm:grid-cols-2"}
           />
 
           <label className="panel-field">
@@ -940,7 +953,9 @@ export default function AdminFinancialsPage() {
           <div className="panel-form-grid">
             <div className="panel-field">
               <label className="panel-label">Proje</label>
-              <select
+              {isProjectUnit ? (
+                <div className="panel-control flex items-center">{createProjects[0]?.name ?? activeMembership.unit_name}</div>
+              ) : <select
                 value={formProjectId}
                 onChange={(event) => {
                   const nextProjectId = event.target.value;
@@ -957,7 +972,7 @@ export default function AdminFinancialsPage() {
                     {project.name}
                   </option>
                 ))}
-              </select>
+              </select>}
               {createProjects.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
                   Fatura yukleyebileceginiz bir proje bulunamadi.
@@ -970,11 +985,11 @@ export default function AdminFinancialsPage() {
               <select
                 value={formPeriodId}
                 onChange={(event) => setFormPeriodId(event.target.value)}
-                disabled={!formProjectId}
+                disabled={!scopedFormProjectId}
                 className="panel-control"
               >
                 <option value="">Aktif donem</option>
-                {(createProjects.find((project) => String(project.id) === formProjectId)?.periods ?? []).map((period) => (
+                {(createProjects.find((project) => String(project.id) === scopedFormProjectId)?.periods ?? []).map((period) => (
                   <option key={period.id} value={period.id}>{period.name}</option>
                 ))}
               </select>
@@ -1048,7 +1063,7 @@ export default function AdminFinancialsPage() {
             </div>
           </div>
 
-          <div className="panel-form-grid-3">
+          {!isProjectUnit ? <div className="panel-form-grid-3">
             <div className="panel-field">
               <label className="panel-label">Odeme Tarihi</label>
               <input
@@ -1084,7 +1099,7 @@ export default function AdminFinancialsPage() {
                 placeholder="Orn: 770.01"
               />
             </div>
-          </div>
+          </div> : null}
 
           <div className="panel-form-grid">
             <div className="panel-field">
@@ -1120,7 +1135,7 @@ export default function AdminFinancialsPage() {
             <button
               type="submit"
               disabled={submitting || createProjects.length === 0 || !canCreateInSelectedPeriod}
-              title={!canCreateInSelectedPeriod && formProjectId ? "Seçili dönemde yeni finans kaydı açılamaz." : undefined}
+              title={!canCreateInSelectedPeriod && scopedFormProjectId ? "Seçili dönemde yeni finans kaydı açılamaz." : undefined}
               className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}

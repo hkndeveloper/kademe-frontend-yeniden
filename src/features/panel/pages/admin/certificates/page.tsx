@@ -22,6 +22,7 @@ interface User {
   name: string;
   surname: string;
   email: string;
+  project_ids?: number[];
 }
 
 interface Certificate {
@@ -42,6 +43,7 @@ export default function AdminCertificatesPage() {
   const canCreate = hasPermission("certificates.create");
   const canDelete = hasPermission("certificates.delete");
   const canListUsers = hasPermission("users.view");
+  const canListParticipants = hasPermission("projects.participants.view");
 
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +96,15 @@ export default function AdminCertificatesPage() {
               )
             : Promise.resolve({ data: { users: { data: [] as User[] } } });
 
-        const [viewProjectsRes, createProjectsRes, usersRes] = await Promise.all([viewProjectsReq, createProjectsReq, usersReq]);
+        const participantsReq = canCreate && !canListUsers && canListParticipants
+          ? optionalPanelRequest(
+              api.get<{ participants?: Array<{ project: { id: number }; user: User }> }>("/panel/participants"),
+              { data: { participants: [] as Array<{ project: { id: number }; user: User }> } },
+              "Sertifika alıcısı seçimi",
+            )
+          : Promise.resolve({ data: { participants: [] as Array<{ project: { id: number }; user: User }> } });
+
+        const [viewProjectsRes, createProjectsRes, usersRes, participantsRes] = await Promise.all([viewProjectsReq, createProjectsReq, usersReq, participantsReq]);
         const merged = new Map<number, Project>();
         [...(viewProjectsRes.data.projects ?? []), ...(createProjectsRes.data.projects ?? [])].forEach((project) => {
           const existing = merged.get(project.id);
@@ -110,13 +120,22 @@ export default function AdminCertificatesPage() {
         });
         const raw = Array.from(merged.values());
         setProjects(raw);
-        setUsers(usersRes.data.users?.data ?? []);
+        const scopedUsers = new Map<number, User>();
+        for (const participant of participantsRes.data.participants ?? []) {
+          if (!participant.user?.id || !participant.project?.id) continue;
+          const existing = scopedUsers.get(participant.user.id);
+          scopedUsers.set(participant.user.id, {
+            ...participant.user,
+            project_ids: [...new Set([...(existing?.project_ids ?? []), participant.project.id])],
+          });
+        }
+        setUsers(canListUsers ? usersRes.data.users?.data ?? [] : Array.from(scopedUsers.values()));
       } catch (error) {
         console.error("Filtre verileri yüklenemedi", error);
       }
     };
     void loadFilters();
-  }, [hasPermission, canListUsers, canCreate]);
+  }, [hasPermission, canListUsers, canListParticipants, canCreate]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -399,26 +418,22 @@ export default function AdminCertificatesPage() {
             </div>
             <div className="panel-modal-body space-y-4">
               <div>
-                <label className="panel-label">Kullanıcı (Öğrenci)</label>
+                <label className="panel-label">Alıcı (Öğrenci / Mezun)</label>
                 <select
                   required
                   value={form.user_id}
                   onChange={(e) => setForm((f) => ({ ...f, user_id: e.target.value }))}
                   className="panel-control"
-                  disabled={!canListUsers}
+                  disabled={!canListUsers && !canListParticipants}
                 >
                   <option value="">Seçiniz...</option>
-                  {users.map((u) => (
+                  {users.filter((u) => !u.project_ids || u.project_ids.includes(Number(form.project_id))).map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name} {u.surname} ({u.email})
                     </option>
                   ))}
                 </select>
-                {!canListUsers ? (
-                  <p className="mt-1 text-[10px] text-amber-500/90">
-                    Kullanıcı listesi için users.view gerekir; yine de API proje kapsamını doğrular.
-                  </p>
-                ) : null}
+                {!canListUsers && canListParticipants ? <p className="mt-1 text-[10px] text-slate-500">Seçilen projenin katılımcıları listelenir.</p> : null}
               </div>
               <div>
                 <label className="panel-label">Proje</label>
@@ -428,7 +443,7 @@ export default function AdminCertificatesPage() {
                   onChange={(e) => {
                     const value = e.target.value;
                     const project = creatableProjects.find((item) => String(item.id) === value);
-                    setForm((f) => ({ ...f, project_id: value, period_id: defaultPeriodIdForProject(project) }));
+                    setForm((f) => ({ ...f, user_id: "", project_id: value, period_id: defaultPeriodIdForProject(project) }));
                   }}
                   className="panel-control"
                 >
