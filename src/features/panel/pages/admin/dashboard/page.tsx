@@ -202,6 +202,7 @@ function MiniMetric({ label, value }: { label: string; value: number | string })
 export default function AdminDashboardPage() {
   const { hasScopedPermission, canAccessProject, hasGlobalScope, projectIdsForPermission } = usePermissions();
   const { user, activeUnitId, activeProjectId, setActiveProjectId } = useAuth();
+  const canCreateQuickAnnouncement = hasScopedPermission("announcements.create");
   const activeMembership = activeOrganizationMembership(user, activeUnitId);
   const role = user?.role === "super_admin"
     ? "super_admin"
@@ -319,6 +320,11 @@ export default function AdminDashboardPage() {
     };
 
     const loadQuickAnnouncementProjects = async () => {
+      if (!canCreateQuickAnnouncement) {
+        setQuickAnnProjects([]);
+        return;
+      }
+
       try {
         const response = await api.get<{ projects: AnnouncementProject[] }>("/panel/projects/manageable", {
           params: { permission: "announcements.create" },
@@ -332,7 +338,7 @@ export default function AdminDashboardPage() {
     void loadDashboard();
     void loadNotifications();
     void loadQuickAnnouncementProjects();
-  }, [activeDashboardProjectIds, dashboardPeriodId, dashboardProjectId, user?.organization_context?.authoritative]);
+  }, [activeDashboardProjectIds, canCreateQuickAnnouncement, dashboardPeriodId, dashboardProjectId, user?.organization_context?.authoritative]);
 
   const markNotificationRead = async (id: number) => {
     const selected = notifications.find((notification) => notification.id === id);
@@ -389,7 +395,7 @@ export default function AdminDashboardPage() {
       setQuickAnnError("Duyuru metni zorunludur.");
       return;
     }
-    if (!hasScopedPermission("announcements.create")) {
+    if (!canCreateQuickAnnouncement) {
       setQuickAnnError("Duyuru olusturma yetkiniz yok.");
       return;
     }
@@ -1064,7 +1070,7 @@ export default function AdminDashboardPage() {
                 )}
               </div>
 
-              {hasScopedPermission("announcements.create") ? (
+              {canCreateQuickAnnouncement ? (
                 <div className="panel-surface border-2 border-dashed border-slate-200/90 bg-slate-50/50 p-5">
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="text-[10px] font-bold uppercase text-slate-500">Hizli Duyuru</h4>
