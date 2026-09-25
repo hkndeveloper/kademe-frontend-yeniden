@@ -1892,7 +1892,8 @@ export default function PanelProgramsPage() {
               const cfg = statusConfig[programStatus];
               const programPeriod = periodOptionById(projects, program.period?.id);
               const canWriteProgram = periodHasWriteCapability(programPeriod, "create_operations");
-              const canTogglePublicVisibility = canWriteProgram || isPeriodArchiveMode(programPeriod ?? program.period ?? undefined);
+              const visibilityPeriod = programPeriod ?? program.period ?? undefined;
+              const canTogglePublicVisibility = canWriteProgram || isPeriodArchiveMode(visibilityPeriod) || visibilityPeriod?.status === "passive";
               const canResolveProgram = periodHasWriteCapability(programPeriod, "resolve_operations");
               const canCompleteThisProgram = canResolveProgram && Boolean(program.capabilities?.complete) && programStatus !== "completed" && programStatus !== "cancelled";
               const qrWindowOpen = isProgramAttendanceWindowOpen(program);
@@ -2018,7 +2019,7 @@ export default function PanelProgramsPage() {
                         <button
                           type="button"
                           disabled={visibilityTogglingId === program.id || !canTogglePublicVisibility}
-                          title={!canTogglePublicVisibility ? "Bu dönem yayın ayarlarına kapalıdır." : !canWriteProgram ? "Arşiv dönemi: yalnızca kamusal görünürlük değiştirilebilir." : undefined}
+                          title={!canTogglePublicVisibility ? "Bu dönem yayın ayarlarına kapalıdır." : !canWriteProgram ? "Bu dönemde yalnızca kamusal görünürlük değiştirilebilir." : undefined}
                           onClick={() => void handleToggleVisibility(program, "is_public")}
                           className={`panel-card-action w-full px-2.5 disabled:cursor-not-allowed disabled:opacity-40 ${
                             program.is_public !== false

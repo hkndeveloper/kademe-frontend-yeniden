@@ -206,7 +206,7 @@ export default function PanelProgramDetailPage() {
   const canCreatePeriodOperation = periodHasWriteCapability(program?.period ?? undefined, "create_operations");
   const canResolvePeriodOperation = periodHasWriteCapability(program?.period ?? undefined, "resolve_operations");
   const canUpdate = Boolean(program && canCreatePeriodOperation && (program.capabilities?.update_core || program.capabilities?.update_community_event));
-  const canUpdateVisibility = Boolean(program && (canCreatePeriodOperation || isPeriodArchiveMode(program.period ?? undefined)) && program.capabilities?.update_core);
+  const canUpdateVisibility = Boolean(program && (canCreatePeriodOperation || isPeriodArchiveMode(program.period ?? undefined) || program.period?.status === "passive") && program.capabilities?.update_core);
   const canComplete = Boolean(program && canResolvePeriodOperation && program.capabilities?.complete);
   const canQr = Boolean(program && canResolvePeriodOperation && program.capabilities?.manage_qr);
   const canViewAttendance = Boolean(program?.capabilities?.view_attendance);
