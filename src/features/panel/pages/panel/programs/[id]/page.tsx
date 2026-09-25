@@ -25,10 +25,12 @@ import {
 } from "lucide-react";
 import type { AxiosError } from "axios";
 import api from "@/lib/api/axios";
+import { invalidatePublicProjectCaches } from "@/lib/public-api-cache";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
 import {
+  isPeriodArchiveMode,
   periodHasWriteCapability,
   PeriodArchiveModeNotice,
   type PeriodOption,
@@ -204,7 +206,7 @@ export default function PanelProgramDetailPage() {
   const canCreatePeriodOperation = periodHasWriteCapability(program?.period ?? undefined, "create_operations");
   const canResolvePeriodOperation = periodHasWriteCapability(program?.period ?? undefined, "resolve_operations");
   const canUpdate = Boolean(program && canCreatePeriodOperation && (program.capabilities?.update_core || program.capabilities?.update_community_event));
-  const canUpdateVisibility = Boolean(program && canCreatePeriodOperation && program.capabilities?.update_core);
+  const canUpdateVisibility = Boolean(program && (canCreatePeriodOperation || isPeriodArchiveMode(program.period ?? undefined)) && program.capabilities?.update_core);
   const canComplete = Boolean(program && canResolvePeriodOperation && program.capabilities?.complete);
   const canQr = Boolean(program && canResolvePeriodOperation && program.capabilities?.manage_qr);
   const canViewAttendance = Boolean(program?.capabilities?.view_attendance);
@@ -222,7 +224,7 @@ export default function PanelProgramDetailPage() {
     `/panel/programs?${detailQuery}&${action}=${programId}`;
 
   const updateVisibility = async (field: "is_public" | "is_featured") => {
-    if (!program || !canUpdateVisibility) return;
+    if (!program || !canUpdateVisibility || (field === "is_featured" && !canCreatePeriodOperation)) return;
     const nextValue = field === "is_public" ? program.is_public === false : !program.is_featured;
     setActionLoading(field);
     setError(null);
@@ -231,6 +233,7 @@ export default function PanelProgramDetailPage() {
       const response = await api.patch<{ program: PanelProgram }>(`/panel/programs/${program.id}/visibility`, {
         [field]: nextValue,
       });
+      invalidatePublicProjectCaches();
       setProgram(response.data.program);
       setMessage(field === "is_public" ? "Program görünürlüğü güncellendi." : "Öne çıkarma ayarı güncellendi.");
     } catch (requestError) {
@@ -425,9 +428,11 @@ export default function PanelProgramDetailPage() {
                   <button type="button" onClick={() => void updateVisibility("is_public")} disabled={actionLoading === "is_public"} className="panel-card-action w-full">
                     {actionLoading === "is_public" ? <Loader2 className="h-4 w-4 animate-spin" /> : program.is_public === false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}{program.is_public === false ? "Yayınla" : "Gizle"}
                   </button>
-                  <button type="button" onClick={() => void updateVisibility("is_featured")} disabled={actionLoading === "is_featured"} className="panel-card-action w-full">
-                    {actionLoading === "is_featured" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{program.is_featured ? "Öne çıkandan kaldır" : "Öne çıkar"}
-                  </button>
+                  {canCreatePeriodOperation ? (
+                    <button type="button" onClick={() => void updateVisibility("is_featured")} disabled={actionLoading === "is_featured"} className="panel-card-action w-full">
+                      {actionLoading === "is_featured" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{program.is_featured ? "Öne çıkandan kaldır" : "Öne çıkar"}
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </section>

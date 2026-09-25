@@ -10,7 +10,7 @@ import api from "@/lib/api/axios";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
 
 type Project = { id: number; name: string; slug: string };
-type Program = { id: number; title: string; location?: string | null; start_at: string; status: string; project_id?: number; project?: Project };
+type Program = { id: number; title: string; location?: string | null; start_at: string; status: string; cover_image?: string | null; project_id?: number; project?: Project };
 type Paginated<T> = { data: T[]; current_page: number; last_page: number; total: number };
 
 const statusLabels: Record<string, string> = {
@@ -135,7 +135,7 @@ export default function ActivitiesPage() {
                 <Link href={`/activities/${program.id}`}>
                   <PublicCard interactive className="flex h-full flex-col overflow-hidden p-4 sm:p-5">
                     <div className="kdm-public-media-frame relative mb-5 aspect-[16/10] overflow-hidden rounded-[1.35rem] bg-[#e7e7e4]">
-                      <Image src={activityImages[index % activityImages.length]} alt={program.title} fill className="object-cover transition duration-700 group-hover:scale-105" sizes="(min-width: 1280px) 380px, (min-width: 768px) 50vw, 100vw" />
+                      <Image src={program.cover_image || activityImages[index % activityImages.length]} alt={program.title} fill unoptimized={Boolean(program.cover_image)} className="object-cover transition duration-700 group-hover:scale-105" sizes="(min-width: 1280px) 380px, (min-width: 768px) 50vw, 100vw" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
                       <span className="absolute left-4 top-4 rounded-full bg-[#fd3a25] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white">{statusLabels[program.status] ?? program.status}</span>
                     </div>

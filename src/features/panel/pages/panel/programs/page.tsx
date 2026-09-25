@@ -30,10 +30,11 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import api from "@/lib/api/axios";
+import { invalidatePublicProjectCaches } from "@/lib/public-api-cache";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
-import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
+import { defaultPeriodIdForProject, isPeriodArchiveMode, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { AxiosError } from "axios";
 import { fixMojibake } from "@/lib/text";
@@ -93,7 +94,7 @@ interface Program {
   feedback_form_template_id?: number | null;
   project_id: number;
   project?: { id: number; name: string } | null;
-  period?: { id: number; name: string } | null;
+  period?: PeriodOption | null;
   attendance_count?: number;
   feedback_count?: number;
   is_public?: boolean;
@@ -1018,6 +1019,7 @@ export default function PanelProgramsPage() {
         { headers: { "Content-Type": "multipart/form-data" } },
       );
       setGalleryPhotos((prev) => [...prev, response.data.photo]);
+      invalidatePublicProjectCaches();
       setPhotoCaption("");
       if (photoInputRef.current) photoInputRef.current.value = "";
     } catch {
@@ -1032,6 +1034,7 @@ export default function PanelProgramsPage() {
     setPhotoDeletingId(photoId);
     try {
       await api.delete(`/panel/programs/${galleryModalProgram.id}/photos/${photoId}`);
+      invalidatePublicProjectCaches();
       setGalleryPhotos((prev) => prev.filter((p) => p.id !== photoId));
     } catch {
       setErrorMessage("Fotograf silinemedi.");
@@ -1045,6 +1048,7 @@ export default function PanelProgramsPage() {
     try {
       const newVal = field === "is_public" ? program.is_public !== false ? false : true : !program.is_featured;
       await api.patch(`/panel/programs/${program.id}/visibility`, { [field]: newVal });
+      invalidatePublicProjectCaches();
       setPrograms((prev) => prev.map((p) => (p.id === program.id ? { ...p, [field]: newVal } : p)));
       if (galleryModalProgram?.id === program.id) {
         setGalleryModalProgram((prev) => (prev ? { ...prev, [field]: newVal } : prev));
@@ -1888,6 +1892,7 @@ export default function PanelProgramsPage() {
               const cfg = statusConfig[programStatus];
               const programPeriod = periodOptionById(projects, program.period?.id);
               const canWriteProgram = periodHasWriteCapability(programPeriod, "create_operations");
+              const canTogglePublicVisibility = canWriteProgram || isPeriodArchiveMode(programPeriod ?? program.period ?? undefined);
               const canResolveProgram = periodHasWriteCapability(programPeriod, "resolve_operations");
               const canCompleteThisProgram = canResolveProgram && Boolean(program.capabilities?.complete) && programStatus !== "completed" && programStatus !== "cancelled";
               const qrWindowOpen = isProgramAttendanceWindowOpen(program);
@@ -2012,8 +2017,8 @@ export default function PanelProgramsPage() {
                       {program.capabilities?.update_core && (
                         <button
                           type="button"
-                          disabled={visibilityTogglingId === program.id || !canWriteProgram}
-                          title={!canWriteProgram ? "Bu dönem normal değişikliklere kapalıdır." : undefined}
+                          disabled={visibilityTogglingId === program.id || !canTogglePublicVisibility}
+                          title={!canTogglePublicVisibility ? "Bu dönem yayın ayarlarına kapalıdır." : !canWriteProgram ? "Arşiv dönemi: yalnızca kamusal görünürlük değiştirilebilir." : undefined}
                           onClick={() => void handleToggleVisibility(program, "is_public")}
                           className={`panel-card-action w-full px-2.5 disabled:cursor-not-allowed disabled:opacity-40 ${
                             program.is_public !== false
