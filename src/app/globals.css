@@ -368,6 +368,33 @@
   }
 }
 
+/* Shared public canvas. Keep these unlayered to override legacy page utilities,
+   without changing cards, forms, media frames or panel pages. */
+.kdm-public-shell {
+  background-color: #f6f5ef;
+}
+
+.kdm-public-shell .kdm-public-hero-wrap {
+  padding: 0 !important; /* Replaces the legacy inline outer frame spacing. */
+}
+
+.kdm-public-shell .kdm-public-hero-bg-panel,
+.kdm-public-shell .kdm-public-detail-hero-bg {
+  inset: 0 !important; /* Detail pages previously inset this decorative panel. */
+  border-radius: 0 !important;
+  box-shadow: none;
+  background:
+    radial-gradient(ellipse at 82% 28%, #e4e9d6 0, transparent 58%),
+    linear-gradient(180deg, #f6f3e9, #f6f5ef);
+  pointer-events: none;
+}
+
+/* These wrappers contain decoration only; actual page images live outside. */
+.kdm-public-shell .kdm-public-hero-bg-panel > *,
+.kdm-public-shell .kdm-public-detail-hero-bg > * {
+  display: none;
+}
+
 /* KADEME public surface layer, adapted from the Aigocy visual system. */
 @layer components {
   .kdm-public-shell {
@@ -1664,4 +1691,3 @@ body:has(.kdm-public-shell) :where(
     box-shadow: 0 40px 100px rgb(9 9 11 / 0.32);
   }
 }
-

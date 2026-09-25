@@ -1,0 +1,47 @@
+.page { overflow: hidden; background: #f6f5ef; color: #29372e; font-family: var(--font-urbanist), sans-serif; padding-bottom: 110px; }
+.container { max-width: 1280px; margin: auto; padding: 0 40px; }
+.hero { padding-top: 145px; background: radial-gradient(ellipse at 82% 36%, #e4e9d6 0, transparent 55%), linear-gradient(180deg, #f6f3e9, #f6f5ef); }
+.heroGrid { display: grid; grid-template-columns: .95fr 1.05fr; align-items: center; gap: 36px; min-height: 480px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; color: #a3633f; font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+.hero h1 { font-size: clamp(48px, 6vw, 82px); line-height: 1.04; letter-spacing: -.055em; font-weight: 500; margin: 27px 0 23px; overflow-wrap: anywhere; }
+.description { max-width: 520px; font-size: 18px; line-height: 1.85; color: #70786c; }
+.heroArt { position: relative; padding: 20px 0; }
+.heroArt::before { content: ''; position: absolute; inset: 13% 3% 5%; border: 1px solid #aab39435; border-radius: 50%; transform: rotate(-15deg); }
+.heroArt img { position: relative; display: block; width: 100%; height: auto; max-height: 510px; object-fit: contain; }
+.artIcon { position: absolute; right: 4%; top: 12%; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 16px; border: 1px solid #fff9; background: #f8f9e9d9; color: #819465; box-shadow: 0 8px 24px #5c6b3310; transform: rotate(8deg); }
+.stats { display: grid; grid-template-columns: repeat(3,1fr); margin-top: 40px; padding: 26px 0; border-top: 1px solid #dfe2d5; border-bottom: 1px solid #dfe2d5; }
+.stat { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 8px 20px; }
+.stat + .stat { border-left: 1px solid #dfe2d5; }
+.statIcon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 15px; background: #e8edde; color: #7a8b66; flex-shrink: 0; }
+.stat:nth-child(2) .statIcon { background: #f6e8d9; color: #b47b47; }
+.stat strong { display: block; font-size: 35px; font-weight: 500; letter-spacing: -.04em; line-height: 1; }
+.stat small { display: block; margin-top: 7px; color: #7c8571; font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.stat .showcase { font-size: 20px; line-height: 1.3; letter-spacing: -.02em; font-weight: 500; }
+.values { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 64px; }
+.valueCard { display: flex; flex-direction: column; position: relative; overflow: hidden; border-radius: 30px; border: 1px solid #e5e1d7; background: #f0eade; }
+.valueCard:nth-child(2) { background: #e7ecdf; border-color: #dce2d1; }
+.valueCopy { padding: 34px 36px 0; }
+.valueTop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+.valueIcon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 16px; background: #fcfaf0; color: #ac7752; box-shadow: 0 4px 8px #857e5110; }
+.valueCard:nth-child(2) .valueIcon { color: #788d60; }
+.number { color: #9d9d86; font-size: 12px; letter-spacing: .1em; }
+.valueCard h2 { font-size: clamp(30px,3vw,42px); line-height: 1.2; letter-spacing: -.04em; font-weight: 500; margin-bottom: 15px; }
+.valueCard p { font-size: 15px; line-height: 1.85; color: #71776b; }
+.valueArt { margin-top: auto; padding: 24px 25px 0; }
+.valueArt img { width: 100%; height: 340px; object-fit: contain; object-position: bottom; display: block; }
+.resources { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 22px; margin-top: 52px; }
+.resource { display: flex; flex-direction: column; padding: 30px 26px; border-radius: 26px; border: 1px solid #e1e5d9; background: #fcfcf8; min-width: 0; }
+.resourceIcon { display: grid; place-items: center; width: 57px; height: 57px; margin-bottom: 27px; border-radius: 19px; background: #edf1e6; color: #7e9068; box-shadow: inset 0 1px 0 white, 0 5px 0 #dfe5d9; }
+.resource:nth-child(2) .resourceIcon { color: #b87849; background: #f6ebdc; box-shadow: inset 0 1px 0 white, 0 5px 0 #eee0cf; }
+.resource:nth-child(3) .resourceIcon { color: #75888c; background: #e8eeee; box-shadow: inset 0 1px 0 white, 0 5px 0 #dce4e4; }
+.resource h3 { font-size: 25px; line-height: 1.25; letter-spacing: -.03em; font-weight: 600; margin-bottom: 13px; }
+.resource p { font-size: 14px; line-height: 1.8; color: #7a8172; }
+.links { display: grid; gap: 0; margin-top: 22px; }
+.links a, .activityLink { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 15px 0; border-top: 1px solid #e6e8de; font-size: 12px; line-height: 1.6; color: #5d6f4c; font-weight: 600; transition: color .2s; }
+.links a svg, .activityLink svg { flex-shrink: 0; }
+.links a:hover, .activityLink:hover { color: #c17849; }
+.links a:focus-visible, .activityLink:focus-visible { outline: 2px solid #b87849; outline-offset: 4px; }
+.activityLink { margin-top: auto; }
+@media (max-width: 900px) { .container { padding: 0 26px; } .hero { padding-top: 125px; } .heroGrid { gap: 20px; min-height: 380px; } .description { font-size: 16px; } .valueCopy { padding: 27px 25px 0; } .valueArt img { height: 280px; } .resources { gap: 14px; } .resource { padding: 25px 20px; } }
+@media (max-width: 640px) { .container { padding: 0 22px; } .hero { padding-top: 128px; } .heroGrid { grid-template-columns: 1fr; gap: 12px; } .hero h1 { margin-top: 20px; font-size: 52px; } .description { font-size: 16px; } .heroArt { max-width: 430px; margin: auto; padding: 8px 0 0; } .stats { margin-top: 25px; padding: 18px 0; } .stat { flex-direction: column; gap: 13px; text-align: center; padding: 0 6px; } .statIcon { width: 37px; height: 37px; border-radius: 12px; } .stat strong { font-size: 28px; } .stat small { font-size: 8px; letter-spacing: .05em; } .stat .showcase { font-size: 15px; } .values { grid-template-columns: 1fr; margin-top: 35px; gap: 18px; } .valueArt img { height: 290px; } .resources { grid-template-columns: 1fr; margin-top: 32px; gap: 16px; } .resource { padding: 28px; } .resourceIcon { margin-bottom: 22px; } .activityLink { margin-top: 22px; } }
+@media (prefers-reduced-motion: reduce) { .links a, .activityLink { transition: none; } }

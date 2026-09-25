@@ -4,10 +4,11 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Briefcase, Camera, Loader2, Mail, MapPin, Phone, PlayCircle, Send, Sparkles, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PublicBadge, PublicCard, PublicGradientTitle, PublicHeroSection } from "@/components/public";
+import { PublicBadge, PublicCard, PublicHeroSection } from "@/components/public";
 import api from "@/lib/api/axios";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
 import { useAuth } from "@/store/useAuth";
+import { ContactMessageArtwork } from "@/components/public/ContactMessageArtwork";
 
 interface ProjectOption {
   id: number;
@@ -149,23 +150,7 @@ export default function ContactPage() {
           {/* Sol: Resim + İletişim Bilgileri + Sosyal Medya */}
           <div className="space-y-5">
             {/* Büyük resim kartı */}
-            <div className="kdm-public-media-frame relative overflow-hidden rounded-[2rem] border-[10px] border-[#09090b] bg-[#09090b] kdm-public-dark-gradient shadow-[0_34px_90px_rgba(9,9,11,0.28)]">
-              <div className="relative aspect-[16/13] min-h-[360px] overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(253,58,37,0.42),transparent_18rem),radial-gradient(circle_at_78%_12%,rgba(255,255,255,0.13),transparent_16rem),linear-gradient(135deg,#09090b_0%,#171717_54%,#2b1a18_100%)]" />
-                <div className="absolute left-6 top-6 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-orange-100 backdrop-blur">
-                  İletişim
-                </div>
-                <div className="absolute right-8 top-12 h-28 w-28 rounded-full border border-white/10" />
-                <div className="absolute -right-8 bottom-10 h-40 w-40 rounded-full border border-orange-300/20" />
-                <div className="absolute bottom-5 left-5 right-5 rounded-[1.5rem] border border-white/15 bg-white/12 p-5 text-white backdrop-blur">
-                  <Mail className="mb-4 h-10 w-10 text-orange-200" />
-                  <h2 className="text-2xl font-black">KADEME ile bağlantıda kalın</h2>
-                  <p className="mt-3 text-sm leading-7 text-slate-100">
-                    Başvuru, proje, faaliyet ve destek talepleriniz tek yerden ekibe ulaşır.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <ContactMessageArtwork />
 
             {/* İletişim bilgileri — Aigocy tarzı geniş info kartlar */}
             <div className="grid gap-4">

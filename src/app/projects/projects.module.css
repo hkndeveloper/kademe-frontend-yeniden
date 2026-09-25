@@ -1,0 +1,23 @@
+.hero { position: relative; overflow: hidden; padding: 150px 0 64px; background: radial-gradient(ellipse at 80% 40%, #e0e5d1, transparent 58%), linear-gradient(135deg, #faf5eb, #f0f1e7); color: #29372e; font-family: var(--font-urbanist), sans-serif; }
+.container { max-width: 1360px; margin: auto; padding: 0 56px; }
+.breadcrumbs { margin-bottom: 18px; opacity: .75; }
+.grid { display: grid; grid-template-columns: .95fr 1.05fr; gap: 24px; align-items: center; }
+.copy { position: relative; z-index: 1; padding: 26px 0 36px; }
+.badge { display: flex; align-items: center; gap: 9px; font-size: 10px; text-transform: uppercase; letter-spacing: .16em; color: #778569; font-weight: 700; }
+.badge svg { color: #c88552; flex-shrink: 0; }
+.title { margin: 29px 0 23px; font-size: clamp(49px, 6.1vw, 85px); line-height: 1.06; letter-spacing: -.055em; font-weight: 500; overflow-wrap: anywhere; }
+.title em { display: block; font-family: Georgia, 'Times New Roman', serif; color: #677955; font-weight: 400; line-height: 1.2; }
+.description { max-width: 440px; font-size: 17px; line-height: 1.85; color: #77806f; }
+.art { position: relative; min-width: 0; padding: 14px 0 20px; }
+.art::before { content: ''; position: absolute; inset: 12% 1% 8%; border: 1px solid #a4b18a30; border-radius: 50%; transform: rotate(-22deg); }
+.image { position: relative; width: 100%; height: auto; max-height: 550px; object-fit: contain; filter: drop-shadow(0 24px 20px #50603616); }
+.detail { position: absolute; bottom: 4%; left: 0; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 40px; border: 1px solid #fff9; background: #f8faeedb; color: #7a8a65; font-size: 10px; backdrop-filter: blur(8px); }
+.stats { display: grid; grid-template-columns: repeat(3,1fr); margin-top: 34px; padding: 24px 0 0; border-top: 1px solid #aeb99c55; }
+.stat { display: flex; align-items: center; gap: 16px; justify-content: center; }
+.stat + .stat { border-left: 1px solid #aeb99c55; }
+.statIcon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; background: #e3e9d7; color: #798c5f; }
+.stat:nth-child(2) .statIcon { background: #f3e5d3; color: #be8950; }
+.stat strong { font-size: 32px; font-weight: 500; line-height: 1; letter-spacing: -.04em; }
+.stat small { display: block; margin-top: 6px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .13em; color: #849077; }
+@media (max-width: 1023px) { .hero { padding-top: 140px; } .container { padding: 0 30px; } .title { font-size: clamp(43px, 6.2vw, 65px); } .description { font-size: 15px; } .badge { font-size: 9px; letter-spacing: .1em; } }
+@media (max-width: 640px) { .hero { padding: 122px 0 56px; } .container { padding: 0 22px; } .breadcrumbs { margin-bottom: 24px; font-size: 11px; } .grid { grid-template-columns: 1fr; gap: 5px; } .copy { padding: 0; } .title { font-size: clamp(43px, 11.8vw, 69px); margin: 22px 0 17px; } .description { font-size: 15px; line-height: 1.8; } .art { max-width: 450px; margin: auto; padding-top: 25px; } .detail { bottom: 0; font-size: 9px; padding: 8px 13px; } .stats { margin-top: 25px; padding-top: 20px; } .stat { flex-direction: column; gap: 11px; text-align: center; padding: 0 3px; } .statIcon { width: 35px; height: 35px; border-radius: 12px; } .stat strong { font-size: 28px; } .stat small { font-size: 8px; letter-spacing: .04em; } }

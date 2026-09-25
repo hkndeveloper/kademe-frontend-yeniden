@@ -5,10 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Layers3, Loader2, Search, Sparkles } from "lucide-react";
-import { PublicBadge, PublicButton, PublicCard, PublicCounter, PublicIconBadge } from "@/components/public";
+import { PublicButton, PublicCard, PublicCounter, PublicIconBadge } from "@/components/public";
 import { PublicBreadcrumbs } from "@/components/shared/PublicBreadcrumbs";
 import api from "@/lib/api/axios";
 import { cn } from "@/lib/utils";
+import styles from "./projects.module.css";
 
 interface Project {
   id: number;
@@ -79,46 +80,25 @@ export default function ProjectsPage() {
 
   return (
     <main className="kdm-public-shell relative overflow-hidden bg-[#edecec] pb-20">
-      <section className="relative isolate min-h-[72vh] overflow-hidden px-4 pb-16 pt-36 sm:px-5 sm:pt-40 lg:pt-44">
-        <div className="absolute inset-4 top-4 overflow-hidden rounded-[2rem] bg-[#e5e5e3] sm:rounded-[2.5rem]">
-          <div className="absolute inset-0 bg-[url('/aigocy/images/section/hero-1.jpg')] bg-cover bg-center opacity-45" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.86),transparent_32rem),radial-gradient(circle_at_82%_20%,rgba(255,255,255,0.62),transparent_28rem),linear-gradient(180deg,rgba(237,236,236,0.22),rgba(237,236,236,0.74))]" />
-        </div>
-
-        <div className="container relative z-10 mx-auto px-4 sm:px-6">
-          <PublicBreadcrumbs className="mb-12" items={[{ label: "Ana Sayfa", href: "/" }, { label: "Projeler" }]} />
-
-          <div className="mx-auto max-w-5xl text-center">
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-              <PublicBadge className="mb-6 bg-white/76 shadow-[0_6px_12px_rgba(9,9,11,0.16)] backdrop-blur-xl">
-                <Sparkles className="h-3.5 w-3.5" />
-                KADEME Proje Ekosistemi
-              </PublicBadge>
-              <h1 className="text-balance text-5xl font-semibold leading-[1.05] tracking-normal text-[#2f3337] sm:text-6xl lg:text-7xl xl:text-[6rem]">
-                Projelerimizi
-                <br />
-                keşfedin
-              </h1>
-              <p className="mx-auto mt-7 max-w-3xl text-lg leading-8 text-[#292c2e]">
-                KADEME altındaki gelişim, mentorluk, diplomasi ve destek odaklı proje akışları burada listelenir.
-              </p>
-            </motion.div>
+      <section className={styles.hero} aria-labelledby="projects-title">
+        <div className={styles.container}>
+          <PublicBreadcrumbs className={styles.breadcrumbs} items={[{ label: "Ana Sayfa", href: "/" }, { label: "Projeler" }]} />
+          <div className={styles.grid}>
+            <div className={styles.copy}>
+              <div className={styles.badge}><Sparkles size={15} aria-hidden="true" /> KADEME Proje Ekosistemi</div>
+              <h1 id="projects-title" className={styles.title}>Projelerimizi <em>keşfedin</em></h1>
+              <p className={styles.description}>KADEME altındaki gelişim, mentorluk, diplomasi ve destek odaklı proje akışları burada listelenir.</p>
+            </div>
+            <div className={styles.art}>
+              <Image src="/images/projects-workshop.png" alt="Toplantı, üretim ve mentorluk alanlarıyla üç boyutlu proje atölyesi illüstrasyonu" width={1280} height={1280} unoptimized loading="eager" className={styles.image} />
+              <span className={styles.detail}><Layers3 size={14} aria-hidden="true" /> KADEME Proje Ekosistemi</span>
+            </div>
           </div>
-
-          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.08 }} className="mx-auto mt-12 grid max-w-3xl grid-cols-3 gap-3">
-            <div className="kdm-public-stat-card">
-              <div className="text-3xl font-black text-[#292c2e]"><PublicCounter value={projects.length} /></div>
-              <div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Proje</div>
-            </div>
-            <div className="kdm-public-stat-card">
-              <div className="text-3xl font-black text-[#fd3a25]"><PublicCounter value={openProjectCount} /></div>
-              <div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Başvurusu Açık</div>
-            </div>
-            <div className="kdm-public-stat-card">
-              <div className="text-3xl font-black text-[#292c2e]"><PublicCounter value={visibleProjects.length} /></div>
-              <div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Gösterilen</div>
-            </div>
-          </motion.div>
+          <div className={styles.stats}>
+            <div className={styles.stat}><span className={styles.statIcon}><Layers3 size={21} aria-hidden="true" /></span><div><strong><PublicCounter value={projects.length} /></strong><small>Proje</small></div></div>
+            <div className={styles.stat}><span className={styles.statIcon}><CheckCircle2 size={21} aria-hidden="true" /></span><div><strong><PublicCounter value={openProjectCount} /></strong><small>Başvurusu Açık</small></div></div>
+            <div className={styles.stat}><span className={styles.statIcon}><Search size={21} aria-hidden="true" /></span><div><strong><PublicCounter value={visibleProjects.length} /></strong><small>Gösterilen</small></div></div>
+          </div>
         </div>
       </section>
 
@@ -272,5 +252,4 @@ export default function ProjectsPage() {
     </main>
   );
 }
-
 

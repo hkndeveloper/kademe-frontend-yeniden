@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { PublicScrollTop, PublicSmoothScroll } from "@/components/public";
 import { Header, isPanelPath } from "@/components/shared/Header";
 import { Footer } from "@/components/shared/Footer";
+import { PublicHelpAssistant } from "@/components/public/PublicHelpAssistant";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -17,6 +18,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {!panel && <Footer />}
       {!panel && <PublicSmoothScroll />}
       {!panel && <PublicScrollTop />}
+      {!panel && <PublicHelpAssistant key={pathname} />}
     </>
   );
 }

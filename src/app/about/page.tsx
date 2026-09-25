@@ -1,10 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, CalendarDays, Eye, HelpCircle, Loader2, Sparkles, Target } from "lucide-react";
+import { ArrowUpRight, BookOpen, CalendarDays, Eye, HelpCircle, Loader2, Sparkles, Target } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import styles from "./about.module.css";
 import { useEffect, useMemo, useState } from "react";
-import { PublicBadge, PublicButton, PublicCard, PublicCounter, PublicGradientTitle, PublicHeroSection, PublicIconBadge } from "@/components/public";
+import { PublicCounter } from "@/components/public";
 import api from "@/lib/api/axios";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
 
@@ -68,76 +69,75 @@ export default function AboutPage() {
   }
 
   return (
-    <main className="kdm-public-shell relative min-h-screen overflow-hidden bg-[#edecec] pb-24">
-      <PublicHeroSection
-        badge={<PublicBadge><Sparkles className="h-3.5 w-3.5" /> KADEME Hakkında</PublicBadge>}
-        title={<h1 className="kdm-public-heading-title max-w-5xl text-balance" style={{ letterSpacing: '-0.02em' }}>{pageSettings.about.hero_title}</h1>}
-        description={<p className="mt-7 max-w-3xl text-base leading-8 text-[#3f4653] sm:text-lg">{pageSettings.about.hero_description}</p>}
-        aside={
-          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="grid gap-3 sm:grid-cols-2">
-            {stats.map((item) => (
-              <div key={item.label} className="kdm-public-stat-card">
-                <div className={`text-3xl font-black ${item.tone}`}><PublicCounter value={item.value} /></div>
-                <div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">{item.label}</div>
-              </div>
-            ))}
-            <div className="kdm-public-stat-card sm:col-span-2">
-              <div className="flex justify-center text-[#fd3a25]"><CalendarDays className="h-8 w-8" /></div>
-              <div className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Dinamik Vitrin</div>
+    <div className={styles.page}>
+      <section className={styles.hero} aria-labelledby="about-title">
+        <div className={styles.container}>
+          <div className={styles.heroGrid}>
+            <div>
+              <div className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" /> KADEME Hakkında</div>
+              <h1 id="about-title">{pageSettings.about.hero_title}</h1>
+              <p className={styles.description}>{pageSettings.about.hero_description}</p>
             </div>
-          </motion.div>
-        }
-      />
-
-      <section className="container mx-auto px-4 py-14 sm:px-6 lg:py-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]"
-        >
-          <PublicCard className="p-7 sm:p-8">
-            <PublicIconBadge className="mb-7 h-16 w-16 rounded-[1.25rem] bg-slate-950 shadow-[0_16px_32px_rgba(9,9,11,0.24),inset_0_1px_0_rgba(255,255,255,0.06)]">
-              <Target className="h-8 w-8" />
-            </PublicIconBadge>
-            <h2 className="text-3xl font-semibold text-slate-950" style={{ letterSpacing: '-0.02em' }}>{pageSettings.about.mission_title}</h2>
-            <p className="mt-5 text-base leading-8 text-slate-600">{pageSettings.about.mission_text}</p>
-          </PublicCard>
-          <PublicCard tone="gradient" className="p-7 sm:p-8">
-            <PublicIconBadge className="mb-7 h-16 w-16 rounded-[1.25rem] bg-orange-600 shadow-[0_16px_32px_rgba(253,58,37,0.28),inset_0_1px_0_rgba(255,255,255,0.16)]">
-              <Eye className="h-8 w-8" />
-            </PublicIconBadge>
-            <h2 className="text-3xl font-black text-slate-950">{pageSettings.about.vision_title}</h2>
-            <p className="mt-5 text-base leading-8 text-slate-700">{pageSettings.about.vision_text}</p>
-          </PublicCard>
-        </motion.div>
-
-        <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          <PublicCard>
-            <PublicIconBadge className="mb-5 bg-slate-950"><HelpCircle className="h-6 w-6" /></PublicIconBadge>
-            <h3 className="text-xl font-black text-slate-950">{pageSettings.about.faq_teaser_title}</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{pageSettings.about.faq_teaser_text}</p>
-            <div className="mt-5 space-y-2">
-              {featuredFaqs.length ? featuredFaqs.map((faq) => <Link key={faq.id} href="/faq" className="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700">{faq.question}</Link>) : <p className="text-sm text-slate-500">SSS içerikleri yakında listelenecek.</p>}
+            <div className={styles.heroArt}>
+              <Image src="/images/about-community.png" alt="Bir masa etrafında birlikte fikir geliştiren gençlerin üç boyutlu illüstrasyonu" width={1280} height={1280} unoptimized loading="eager" />
+              <span className={styles.artIcon} aria-hidden="true"><Sparkles size={22} /></span>
             </div>
-          </PublicCard>
-          <PublicCard>
-            <PublicIconBadge className="mb-5 bg-slate-950"><CalendarDays className="h-6 w-6" /></PublicIconBadge>
-            <h3 className="text-xl font-black text-slate-950">{pageSettings.about.activities_teaser_title}</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{pageSettings.about.activities_teaser_text}</p>
-            <PublicButton href="/activities" variant="secondary" size="sm" className="mt-5" icon={<ArrowRight className="h-4 w-4" />}>Faaliyetlere Git</PublicButton>
-          </PublicCard>
-          <PublicCard>
-            <PublicIconBadge className="mb-5 bg-orange-600"><BookOpen className="h-6 w-6" /></PublicIconBadge>
-            <h3 className="text-xl font-black text-slate-950">{pageSettings.about.blog_teaser_title}</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{pageSettings.about.blog_teaser_text}</p>
-            <div className="mt-5 space-y-2">
-              {featuredBlogs.length ? featuredBlogs.map((blog) => <Link key={blog.id} href={`/blog/${blog.slug}`} className="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700">{blog.title}</Link>) : <p className="text-sm text-slate-500">Blog içerikleri yakında listelenecek.</p>}
-            </div>
-          </PublicCard>
+          </div>
+          <div className={styles.stats}>
+            {stats.map((item, index) => <div className={styles.stat} key={item.label}>
+              <span className={styles.statIcon}>{index === 0 ? <BookOpen size={22} aria-hidden="true" /> : <HelpCircle size={22} aria-hidden="true" />}</span>
+              <div><strong><PublicCounter value={item.value} /></strong><small>{item.label}</small></div>
+            </div>)}
+            <div className={styles.stat}><span className={styles.statIcon}><CalendarDays size={22} aria-hidden="true" /></span><strong className={styles.showcase}>Dinamik Vitrin</strong></div>
+          </div>
         </div>
       </section>
-    </main>
+
+      <div className={styles.container}>
+        <section className={styles.values} aria-label="Misyon ve vizyon">
+          <article className={styles.valueCard}>
+            <div className={styles.valueCopy}>
+              <div className={styles.valueTop}><span className={styles.valueIcon}><Target size={23} aria-hidden="true" /></span><span className={styles.number} aria-hidden="true">01 /</span></div>
+              <h2>{pageSettings.about.mission_title}</h2>
+              <p>{pageSettings.about.mission_text}</p>
+            </div>
+            <div className={styles.valueArt}><Image src="/images/about-mentoring.png" alt="Bir mentor ve öğrencinin birlikte çalışmasını anlatan illüstrasyon" width={1280} height={1280} unoptimized /></div>
+          </article>
+          <article className={styles.valueCard}>
+            <div className={styles.valueCopy}>
+              <div className={styles.valueTop}><span className={styles.valueIcon}><Eye size={23} aria-hidden="true" /></span><span className={styles.number} aria-hidden="true">02 /</span></div>
+              <h2>{pageSettings.about.vision_title}</h2>
+              <p>{pageSettings.about.vision_text}</p>
+            </div>
+            <div className={styles.valueArt}><Image src="/images/about-vision.png" alt="Birlikte geleceğe bakan gençler ve yükselen yön oku illüstrasyonu" width={1280} height={1280} unoptimized /></div>
+          </article>
+        </section>
+
+        <section className={styles.resources} aria-label="SSS, faaliyetler ve blog">
+          <article className={styles.resource}>
+            <span className={styles.resourceIcon}><HelpCircle size={28} strokeWidth={1.6} aria-hidden="true" /></span>
+            <h3>{pageSettings.about.faq_teaser_title}</h3>
+            <p>{pageSettings.about.faq_teaser_text}</p>
+            <div className={styles.links}>
+              {featuredFaqs.length ? featuredFaqs.map(faq => <Link key={faq.id} href="/faq">{faq.question}<ArrowUpRight size={16} aria-hidden="true" /></Link>) : <p>SSS içerikleri yakında listelenecek.</p>}
+            </div>
+          </article>
+          <article className={styles.resource}>
+            <span className={styles.resourceIcon}><CalendarDays size={28} strokeWidth={1.6} aria-hidden="true" /></span>
+            <h3>{pageSettings.about.activities_teaser_title}</h3>
+            <p>{pageSettings.about.activities_teaser_text}</p>
+            <Link href="/activities" className={styles.activityLink}>Faaliyetlere Git<ArrowUpRight size={17} aria-hidden="true" /></Link>
+          </article>
+          <article className={styles.resource}>
+            <span className={styles.resourceIcon}><BookOpen size={28} strokeWidth={1.6} aria-hidden="true" /></span>
+            <h3>{pageSettings.about.blog_teaser_title}</h3>
+            <p>{pageSettings.about.blog_teaser_text}</p>
+            <div className={styles.links}>
+              {featuredBlogs.length ? featuredBlogs.map(blog => <Link key={blog.id} href={`/blog/${blog.slug}`}>{blog.title}<ArrowUpRight size={16} aria-hidden="true" /></Link>) : <p>Blog içerikleri yakında listelenecek.</p>}
+            </div>
+          </article>
+        </section>
+      </div>
+    </div>
   );
 }

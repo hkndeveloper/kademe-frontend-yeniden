@@ -1,0 +1,19 @@
+.card { overflow: hidden; border-radius: 30px; border: 1px solid #e0e3d4; background: radial-gradient(ellipse at 80% 26%, #e4ebd5, transparent 62%), #f5f2e8; color: #29372e; }
+.top { display: flex; align-items: center; justify-content: space-between; padding: 23px 27px 0; }
+.top > span { display: inline-flex; align-items: center; gap: 9px; color: #9f724e; font-size: 10px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; }
+.motionToggle { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 1px solid #d7ddcb; background: #fafaf080; color: #758464; cursor: pointer; }
+.motionToggle:focus-visible { outline: 2px solid #798c63; outline-offset: 4px; }
+.scene { position: relative; width: 100%; aspect-ratio: 1.35; }
+.mailbox { position: absolute; width: 84%; height: 110%; object-fit: contain; left: 0; bottom: -10%; }
+.trail { position: absolute; inset: 0; width: 100%; height: 100%; color: #9caa7d; opacity: .65; pointer-events: none; }
+.flight { position: absolute; width: 22%; right: 9%; top: 10%; pointer-events: none; transition: transform .9s cubic-bezier(.22,1,.36,1); }
+.plane { width: 100%; height: auto; filter: drop-shadow(0 9px 6px #56603a24); animation: paperFlight 8s ease-in-out infinite; }
+.card:hover .flight { transform: translate(12px, -12px) rotate(8deg); }
+.copy { position: relative; padding: 21px 29px 30px; }
+.copy h2 { font-size: clamp(24px, 2.5vw, 33px); font-weight: 600; line-height: 1.16; letter-spacing: -.035em; }
+.copy p { margin-top: 14px; font-size: 14px; line-height: 1.85; color: #727c67; }
+@keyframes paperFlight { 0%, 100% { transform: translate(0, 0) rotate(-3deg); } 50% { transform: translate(-8px, -9px) rotate(5deg); } }
+.card[data-paused="true"] .plane { animation-play-state: paused; }
+.card[data-paused="true"] .flight { transform: none; }
+@media (max-width: 640px) { .top { padding: 20px 22px 0; } .copy { padding: 18px 23px 26px; } }
+@media (prefers-reduced-motion: reduce) { .plane { animation: none; } .flight { transition: none; } .card:hover .flight { transform: none; } .motionToggle { display: none; } }
