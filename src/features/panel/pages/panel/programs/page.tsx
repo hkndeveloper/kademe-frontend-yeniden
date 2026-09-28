@@ -137,6 +137,9 @@ interface AttendanceRecord {
   feedback_submitted?: boolean;
   credit_deducted?: boolean;
   credit_restored?: boolean;
+  zero_credit_absence_id?: number | null;
+  zero_credit_absence_excused?: boolean;
+  zero_credit_absence_reason?: string | null;
   recorded_at?: string | null;
 }
 
@@ -443,6 +446,8 @@ export default function PanelProgramsPage() {
   const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
   const [attendanceUpdatedAt, setAttendanceUpdatedAt] = useState<Date | null>(null);
   const [attendanceActionLoading, setAttendanceActionLoading] = useState<number | null>(null);
+  const [absenceEditingParticipantId, setAbsenceEditingParticipantId] = useState<number | null>(null);
+  const [absenceReason, setAbsenceReason] = useState("");
   const [feedbackModalProgram, setFeedbackModalProgram] = useState<Program | null>(null);
   const [feedbackStats, setFeedbackStats] = useState<FeedbackStatsData | null>(null);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
@@ -986,6 +991,31 @@ export default function PanelProgramsPage() {
     } catch (error) {
       console.error("Manuel yoklama guncellenemedi", error);
       setErrorMessage("Manuel yoklama guncellenemedi.");
+    } finally {
+      setAttendanceActionLoading(null);
+    }
+  };
+
+  const updateZeroCreditAbsence = async (record: AttendanceRecord) => {
+    if (!attendanceModalProgram || !record.participant_id || !record.zero_credit_absence_id) return;
+    const reason = absenceReason.trim();
+    if (reason.length < 10) {
+      setErrorMessage("Mazeret kararı için en az 10 karakterlik gerekçe yazın.");
+      return;
+    }
+    setAttendanceActionLoading(record.participant_id);
+    setErrorMessage(null);
+    try {
+      await api.put(`/panel/programs/${attendanceModalProgram.id}/attendances/${record.participant_id}/excuse`, {
+        excused: !record.zero_credit_absence_excused,
+        reason,
+      });
+      setAbsenceEditingParticipantId(null);
+      setAbsenceReason("");
+      await openAttendanceModal(attendanceModalProgram);
+    } catch (error) {
+      console.error("Devamsızlık mazereti güncellenemedi", error);
+      setErrorMessage("Devamsızlık mazereti güncellenemedi.");
     } finally {
       setAttendanceActionLoading(null);
     }
@@ -2123,6 +2153,12 @@ export default function PanelProgramsPage() {
                 </div>
               </div>
 
+              {errorMessage ? (
+                <div role="alert" className="shrink-0 border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-800">
+                  {errorMessage}
+                </div>
+              ) : null}
+
               {attendanceSummary && (
                 <div className="shrink-0 grid grid-cols-3 gap-3 border-b border-slate-100 bg-slate-50/80 px-6 py-4 md:grid-cols-6">
                   {[
@@ -2182,6 +2218,11 @@ export default function PanelProgramsPage() {
                             <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${record.is_valid ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
                               {record.is_valid ? "Geldi" : "Gelmedi"}
                             </span>
+                            {!record.is_valid && record.zero_credit_absence_id ? (
+                              <p className={`mt-1 text-xs font-semibold ${record.zero_credit_absence_excused ? "text-sky-700" : "text-red-700"}`}>
+                                {record.zero_credit_absence_excused ? "Mazeretli" : "Mazeretsiz"} devamsızlık
+                              </p>
+                            ) : null}
                           </td>
                           <td className="px-5 py-3 text-xs text-slate-600">{record.method ?? "-"}</td>
                           {hasExtendedAttendanceData ? <td className="px-5 py-3 text-xs text-slate-600">
@@ -2202,6 +2243,7 @@ export default function PanelProgramsPage() {
                           {canManageAttendance && attendanceModalProgram.capabilities?.manage_attendance && (
                             <td className="px-5 py-3 text-right">
                               {record.participant_id ? (
+                                <div className="flex flex-col items-end gap-2">
                                 <button
                                   type="button"
                                   onClick={() => void updateManualAttendance(record, !record.is_valid)}
@@ -2221,6 +2263,32 @@ export default function PanelProgramsPage() {
                                     "Katildi Yap"
                                   )}
                                 </button>
+                                {!record.is_valid && record.zero_credit_absence_id ? (
+                                  absenceEditingParticipantId === record.participant_id ? (
+                                    <div className="w-64 text-left">
+                                      <label className="block text-xs font-semibold text-slate-700">Mazeret kararı gerekçesi</label>
+                                      <textarea
+                                        value={absenceReason}
+                                        onChange={(event) => setAbsenceReason(event.target.value)}
+                                        maxLength={1000}
+                                        rows={3}
+                                        className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-900"
+                                      />
+                                      <div className="mt-1 flex gap-2">
+                                        <button type="button" onClick={() => void updateZeroCreditAbsence(record)} disabled={attendanceActionLoading === record.participant_id || !canResolveAttendancePeriod || absenceReason.trim().length < 10} className="rounded-lg bg-indigo-600 px-2 py-1 text-xs font-bold text-white disabled:opacity-50">Kaydet</button>
+                                        <button type="button" onClick={() => { setAbsenceEditingParticipantId(null); setAbsenceReason(""); }} className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-bold text-slate-600">Vazgeç</button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {record.zero_credit_absence_reason ? <p className="max-w-64 text-right text-xs text-slate-500">Son gerekçe: {record.zero_credit_absence_reason}</p> : null}
+                                      <button type="button" onClick={() => { setAbsenceEditingParticipantId(record.participant_id ?? null); setAbsenceReason(""); }} disabled={!canResolveAttendancePeriod} className="text-xs font-semibold text-indigo-700 underline disabled:opacity-50">
+                                        {record.zero_credit_absence_excused ? "Mazereti kaldır" : "Mazeret kaydet"}
+                                      </button>
+                                    </>
+                                  )
+                                ) : null}
+                                </div>
                               ) : (
                                 "-"
                               )}

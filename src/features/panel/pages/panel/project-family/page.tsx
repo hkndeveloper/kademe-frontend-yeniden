@@ -188,6 +188,7 @@ type KademeModuleEnrollment = {
   participant_id?: number | null;
   status: string;
   note?: string | null;
+  consent_text_snapshot?: string | null;
   user?: { name?: string | null; email?: string | null } | null;
 };
 
@@ -204,6 +205,7 @@ type KademeModule = {
   warning_text?: string | null;
   requires_coordinator_approval: boolean;
   outcomes?: string[];
+  faq_items?: Array<{ question: string; answer: string }>;
   enrollments?: KademeModuleEnrollment[];
   enrollments_count?: number;
 };
@@ -236,6 +238,7 @@ type KademeModuleForm = {
   consent_checkbox_label: string;
   warning_text: string;
   outcomesText: string;
+  faqItems: Array<{ question: string; answer: string }>;
 };
 
 type PergelMentor = {
@@ -606,6 +609,7 @@ const emptyKademeModuleForm: KademeModuleForm = {
   consent_checkbox_label: "Okudum, kabul ediyorum.",
   warning_text: "",
   outcomesText: "",
+  faqItems: [],
 };
 
 const rewardStatusMeta: Record<string, { label: string; className: string }> = {
@@ -783,11 +787,12 @@ function KademeRewardsFamilyContent({
       sort_order: String(module.sort_order ?? 0),
       is_active: module.is_active,
       application_open: module.application_open,
-      requires_consent: module.requires_consent,
+      requires_consent: true,
       requires_coordinator_approval: module.requires_coordinator_approval,
       consent_checkbox_label: module.consent_checkbox_label ?? "Okudum, kabul ediyorum.",
       warning_text: module.warning_text ?? "",
       outcomesText: (module.outcomes ?? []).join("\n"),
+      faqItems: (module.faq_items ?? []).map((item) => ({ ...item })),
     });
   }
 
@@ -809,11 +814,12 @@ function KademeRewardsFamilyContent({
       sort_order: Number(moduleForm.sort_order || 0),
       is_active: moduleForm.is_active,
       application_open: moduleForm.application_open,
-      requires_consent: moduleForm.requires_consent,
+      requires_consent: true,
       requires_coordinator_approval: moduleForm.requires_coordinator_approval,
       consent_checkbox_label: moduleForm.consent_checkbox_label || null,
       warning_text: moduleForm.warning_text || null,
       outcomes: moduleForm.outcomesText.split("\n").map((item) => item.trim()).filter(Boolean),
+      faq_items: moduleForm.faqItems.filter((item) => item.question.trim() || item.answer.trim()),
     };
 
     try {
@@ -956,7 +962,7 @@ function KademeRewardsFamilyContent({
                   {canManage ? (
                     <div className="flex gap-2">
                       <button type="button" onClick={() => editModule(module)} className="panel-button-icon" title="Duzenle"><Edit2 className="h-4 w-4" /></button>
-                      <button type="button" onClick={() => void deleteModule(module.id)} disabled={busy === `module-${module.id}`} className="panel-button-icon panel-table-action-danger disabled:opacity-50" title="Sil"><Trash2 className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => void deleteModule(module.id)} disabled={busy === `module-${module.id}` || (module.enrollments_count ?? module.enrollments?.length ?? 0) > 0} className="panel-button-icon panel-table-action-danger disabled:opacity-50" title={(module.enrollments_count ?? module.enrollments?.length ?? 0) > 0 ? "Başvurusu bulunan modülü silmek yerine pasife alın." : "Sil"}><Trash2 className="h-4 w-4" /></button>
                     </div>
                   ) : null}
                 </div>
@@ -967,6 +973,10 @@ function KademeRewardsFamilyContent({
                         <div>
                           <div className="font-bold text-slate-800">{enrollment.user?.name || enrollment.user?.email || `Kullanici #${enrollment.user_id}`}</div>
                           <div className="text-xs text-slate-500">{enrollment.status}</div>
+                          <details className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+                            <summary className="cursor-pointer font-semibold">Kabul edilen bilgilendirme</summary>
+                            <p className="mt-2 whitespace-pre-line">{enrollment.consent_text_snapshot || "Bu eski kayıt için kabul edilen metin bulunmuyor."}</p>
+                          </details>
                         </div>
                         {enrollment.status === "pending" ? (
                           <div className="flex gap-2">
@@ -1023,10 +1033,24 @@ function KademeRewardsFamilyContent({
                 <textarea value={moduleForm.outcomesText} onChange={(event) => setModuleForm((current) => ({ ...current, outcomesText: event.target.value }))} className="panel-textarea min-h-20" placeholder="Kazanimlar, her satira bir madde" />
                 <input type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm((current) => ({ ...current, sort_order: event.target.value }))} className="panel-control" placeholder="Sira" />
                 <textarea value={moduleForm.warning_text} onChange={(event) => setModuleForm((current) => ({ ...current, warning_text: event.target.value }))} className="panel-textarea min-h-20" placeholder="Uyari metni" />
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-slate-700">Sık sorulan sorular (isteğe bağlı)</span>
+                    <button type="button" className="panel-card-action" onClick={() => setModuleForm((current) => ({ ...current, faqItems: [...current.faqItems, { question: "", answer: "" }] }))}>Soru ekle</button>
+                  </div>
+                  {moduleForm.faqItems.map((item, index) => (
+                    <div key={index} className="space-y-2 rounded-lg bg-white p-2">
+                      <input value={item.question} onChange={(event) => setModuleForm((current) => ({ ...current, faqItems: current.faqItems.map((row, rowIndex) => rowIndex === index ? { ...row, question: event.target.value } : row) }))} className="panel-control" placeholder="Soru" maxLength={500} />
+                      <textarea value={item.answer} onChange={(event) => setModuleForm((current) => ({ ...current, faqItems: current.faqItems.map((row, rowIndex) => rowIndex === index ? { ...row, answer: event.target.value } : row) }))} className="panel-textarea min-h-16" placeholder="Yanıt" maxLength={5000} />
+                      <button type="button" className="text-xs font-semibold text-red-700" onClick={() => setModuleForm((current) => ({ ...current, faqItems: current.faqItems.filter((_, rowIndex) => rowIndex !== index) }))}>Soruyu kaldır</button>
+                    </div>
+                  ))}
+                  <p className="text-xs text-slate-500">Soru eklenmezse katılımcıya modül kaydının nasıl sonuçlanacağı açıklanır.</p>
+                </div>
                 <input value={moduleForm.consent_checkbox_label} onChange={(event) => setModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} className="panel-control" placeholder="Onay metni" />
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.is_active} onChange={(event) => setModuleForm((current) => ({ ...current, is_active: event.target.checked }))} /> Aktif</label>
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.application_open} onChange={(event) => setModuleForm((current) => ({ ...current, application_open: event.target.checked }))} /> Basvuru acik</label>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.requires_consent} onChange={(event) => setModuleForm((current) => ({ ...current, requires_consent: event.target.checked }))} /> Onay gerekli</label>
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked disabled /> Bilgilendirme onayı zorunlu</label>
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.requires_coordinator_approval} onChange={(event) => setModuleForm((current) => ({ ...current, requires_coordinator_approval: event.target.checked }))} /> Koordinator onayi</label>
                 <button type="submit" disabled={busy === "module"} className="panel-button panel-button-primary disabled:opacity-50"><Plus className="h-4 w-4" /> {editingModuleId ? "Guncelle" : "Kaydet"}</button>
               </div>

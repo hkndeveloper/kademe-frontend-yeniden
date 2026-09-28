@@ -14,12 +14,17 @@ interface Application {
   period?: {
     name: string;
   } | null;
+  program?: {
+    title: string;
+  } | null;
   status: string;
   created_at: string;
   interview_at?: string | null;
   rejection_reason?: string | null;
   auto_rejected?: boolean;
   auto_rejection_reason?: string | null;
+  consent_text_snapshot?: string | null;
+  consent_accepted_at?: string | null;
   form_entries?: Array<{
     id: string;
     label: string;
@@ -29,6 +34,7 @@ interface Application {
       original_name?: string | null;
       mime_type?: string | null;
       size?: number | null;
+      download_url?: string | null;
     } | null;
   }>;
 }
@@ -86,6 +92,24 @@ function nextStepText(application: Application): string {
 export default function StudentApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  const downloadFormFile = async (url: string, filename: string) => {
+    setDownloadError(null);
+    try {
+      const response = await api.get<Blob>(url, { responseType: "blob" });
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      setDownloadError("Başvuru dosyası indirilemedi. Lütfen tekrar deneyin.");
+    }
+  };
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -107,6 +131,7 @@ export default function StudentApplicationsPage() {
       <div className="flex items-center justify-center py-32">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
+
     );
   }
 
@@ -121,6 +146,8 @@ export default function StudentApplicationsPage() {
           <p className="text-sm text-muted-foreground">Yaptiginiz tum program basvurularinin guncel durumu.</p>
         </div>
       </div>
+
+      {downloadError ? <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{downloadError}</p> : null}
 
       {applications.length === 0 ? (
         <div className="glass-panel rounded-3xl p-20 text-center text-muted-foreground">Henuz bir basvurunuz bulunmuyor.</div>
@@ -146,6 +173,9 @@ export default function StudentApplicationsPage() {
                       {config.label.toUpperCase()}
                     </div>
                     <h2 className="text-xl font-extrabold text-foreground">{application.project.name}</h2>
+                    {application.program?.title ? (
+                      <p className="mt-2 text-sm font-semibold text-foreground">Program: {application.program.title}</p>
+                    ) : null}
                     <p className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">{application.project.type || "Proje"}</p>
                   </div>
 
@@ -183,7 +213,18 @@ export default function StudentApplicationsPage() {
                         <div key={entry.id} className="rounded-xl border border-border/50 bg-background/70 p-3">
                           <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{entry.label}</div>
                           {entry.file ? (
-                            <div className="mt-2 text-sm font-semibold text-foreground">{entry.file.original_name || "Dosya"}</div>
+                            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-foreground">
+                              <span>{entry.file.original_name || "Dosya"}</span>
+                              {entry.file.download_url ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void downloadFormFile(entry.file?.download_url || "", entry.file?.original_name || `basvuru_${application.id}_${entry.id}`)}
+                                  className="rounded-lg border border-primary/30 px-3 py-1 text-xs font-bold text-primary hover:bg-primary/10"
+                                >
+                                  İndir
+                                </button>
+                              ) : null}
+                            </div>
                           ) : (
                             <div className="mt-2 break-words text-sm text-muted-foreground">{formatEntryValue(entry.value)}</div>
                           )}
@@ -192,6 +233,17 @@ export default function StudentApplicationsPage() {
                     </div>
                   </details>
                 ) : null}
+                <details className="mt-4 rounded-2xl border border-border/50 bg-muted/10 p-4">
+                  <summary className="cursor-pointer text-sm font-bold text-foreground">Başvuru koşulu onayı</summary>
+                  {application.consent_accepted_at && application.consent_text_snapshot ? (
+                    <div className="mt-3 text-sm text-muted-foreground">
+                      <p>Kabul zamanı: {formatDateTime(application.consent_accepted_at)}</p>
+                      <p className="mt-2 whitespace-pre-line">{application.consent_text_snapshot}</p>
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-muted-foreground">Bu eski başvuru için onay kaydı bulunmuyor.</p>
+                  )}
+                </details>
               </motion.div>
             );
           })}

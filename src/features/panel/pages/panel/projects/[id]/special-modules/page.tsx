@@ -126,6 +126,7 @@ type KademeModuleEnrollment = {
   user_id: number;
   status: string;
   consented_at?: string | null;
+  consent_text_snapshot?: string | null;
   reviewed_at?: string | null;
   note?: string | null;
   user?: { name?: string; email?: string | null } | null;
@@ -183,7 +184,7 @@ const initialKademeModule = {
   is_active: true,
   outcomesText: "",
   instructorsJson: "[]",
-  faqJson: "[]",
+  faqItems: [] as Array<{ question: string; answer: string }>,
 };
 const inputClass = "panel-control";
 const buttonClass = "panel-button panel-button-primary";
@@ -429,24 +430,19 @@ export default function PanelProjectSpecialModulesPage() {
       .map((line) => line.trim())
       .filter(Boolean);
     let instructors: Array<{ name: string; bio?: string; photo_path?: string }> = [];
-    let faq_items: Array<{ question: string; answer: string }> = [];
     try {
       instructors = JSON.parse(kademeModuleForm.instructorsJson || "[]");
     } catch {
       throw new Error("Egitmen JSON gecersiz.");
     }
-    try {
-      faq_items = JSON.parse(kademeModuleForm.faqJson || "[]");
-    } catch {
-      throw new Error("SSS JSON gecersiz.");
-    }
+    const faq_items = kademeModuleForm.faqItems.filter((item) => item.question.trim() || item.answer.trim());
     return {
       title: kademeModuleForm.title,
       description: kademeModuleForm.description || null,
       sort_order: Number(kademeModuleForm.sort_order) || 0,
       warning_text: kademeModuleForm.warning_text || null,
       consent_checkbox_label: kademeModuleForm.consent_checkbox_label || null,
-      requires_consent: Boolean(kademeModuleForm.requires_consent),
+      requires_consent: true,
       requires_coordinator_approval: Boolean(kademeModuleForm.requires_coordinator_approval),
       application_open: Boolean(kademeModuleForm.application_open),
       is_active: Boolean(kademeModuleForm.is_active),
@@ -989,9 +985,22 @@ export default function PanelProjectSpecialModulesPage() {
                   <textarea value={kademeModuleForm.warning_text} onChange={(event) => setKademeModuleForm((current) => ({ ...current, warning_text: event.target.value }))} placeholder="Uyari / yaptirim metni" className="panel-textarea md:col-span-2 min-h-[64px]" />
                   <input value={kademeModuleForm.consent_checkbox_label} onChange={(event) => setKademeModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} placeholder="Onay kutusu metni" className="panel-control md:col-span-2" />
                   <textarea value={kademeModuleForm.instructorsJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, instructorsJson: event.target.value }))} placeholder='Egitmenler JSON ornek: [{"name":"Ad Soyad","bio":"..."}]' className="panel-textarea md:col-span-2 min-h-[64px] font-mono text-xs" />
-                  <textarea value={kademeModuleForm.faqJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, faqJson: event.target.value }))} placeholder='SSS JSON ornek: [{"question":"?","answer":"..."}]' className="panel-textarea md:col-span-2 min-h-[64px] font-mono text-xs" />
+                  <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 md:col-span-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-800">Sık sorulan sorular (isteğe bağlı)</span>
+                      <button type="button" className="panel-card-action" onClick={() => setKademeModuleForm((current) => ({ ...current, faqItems: [...current.faqItems, { question: "", answer: "" }] }))}>Soru ekle</button>
+                    </div>
+                    {kademeModuleForm.faqItems.map((item, index) => (
+                      <div key={index} className="space-y-2 rounded-lg bg-white p-2">
+                        <input value={item.question} onChange={(event) => setKademeModuleForm((current) => ({ ...current, faqItems: current.faqItems.map((row, rowIndex) => rowIndex === index ? { ...row, question: event.target.value } : row) }))} className="panel-control" placeholder="Soru" maxLength={500} />
+                        <textarea value={item.answer} onChange={(event) => setKademeModuleForm((current) => ({ ...current, faqItems: current.faqItems.map((row, rowIndex) => rowIndex === index ? { ...row, answer: event.target.value } : row) }))} className="panel-textarea min-h-16" placeholder="Yanıt" maxLength={5000} />
+                        <button type="button" className="text-xs font-semibold text-red-700" onClick={() => setKademeModuleForm((current) => ({ ...current, faqItems: current.faqItems.filter((_, rowIndex) => rowIndex !== index) }))}>Soruyu kaldır</button>
+                      </div>
+                    ))}
+                    <p className="text-xs text-slate-500">Soru eklenmezse katılımcıya modül kaydının nasıl sonuçlanacağı açıklanır.</p>
+                  </div>
                   <label className="flex items-center gap-2 text-sm text-slate-900">
-                    <input type="checkbox" checked={kademeModuleForm.requires_consent} onChange={(event) => setKademeModuleForm((current) => ({ ...current, requires_consent: event.target.checked }))} />
+                    <input type="checkbox" checked disabled />
                     Katilimci onayi zorunlu
                   </label>
                   <label className="flex items-center gap-2 text-sm text-slate-900">
@@ -1056,13 +1065,13 @@ export default function PanelProjectSpecialModulesPage() {
                                     sort_order: String(mod.sort_order ?? 0),
                                     warning_text: mod.warning_text ?? "",
                                     consent_checkbox_label: mod.consent_checkbox_label ?? "Okudum, kabul ediyorum.",
-                                    requires_consent: mod.requires_consent,
+                                    requires_consent: true,
                                     requires_coordinator_approval: mod.requires_coordinator_approval,
                                     application_open: mod.application_open,
                                     is_active: mod.is_active,
                                     outcomesText: (mod.outcomes ?? []).join("\n"),
                                     instructorsJson: JSON.stringify(mod.instructors ?? [], null, 0),
-                                    faqJson: JSON.stringify(mod.faq_items ?? [], null, 0),
+                                    faqItems: (mod.faq_items ?? []).map((item) => ({ ...item })),
                                   });
                                 }}
                               >
@@ -1070,8 +1079,9 @@ export default function PanelProjectSpecialModulesPage() {
                               </button>
                               <button
                                 type="button"
-                                className="panel-button-icon panel-table-action-danger"
-                                title="Sil"
+                                className="panel-button-icon panel-table-action-danger disabled:cursor-not-allowed disabled:opacity-40"
+                                title={(mod.enrollments_count ?? mod.enrollments?.length ?? 0) > 0 ? "Başvurusu bulunan modülü silmek yerine pasife alın." : "Sil"}
+                                disabled={(mod.enrollments_count ?? mod.enrollments?.length ?? 0) > 0}
                                 onClick={() => destroy("kademe-modules", mod.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1087,6 +1097,10 @@ export default function PanelProjectSpecialModulesPage() {
                             <div key={en.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2 text-sm">
                               <span className="text-slate-900">{en.user?.name || en.user?.email || `Kullanici #${en.user_id}`}</span>
                               <span className="text-xs text-muted-foreground">{en.status}</span>
+                              <details className="w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+                                <summary className="cursor-pointer font-semibold">Kabul edilen bilgilendirme</summary>
+                                <p className="mt-2 whitespace-pre-line">{en.consent_text_snapshot || "Bu eski kayıt için kabul edilen metin bulunmuyor."}</p>
+                              </details>
                               {en.status === "pending" ? (
                                 <div className="flex gap-1">
                                   <button type="button" className="panel-card-action panel-card-action-success px-2 py-1" onClick={() => void updateKademeEnrollment(en.id, "approved")}>

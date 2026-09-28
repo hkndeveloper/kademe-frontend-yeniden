@@ -51,6 +51,27 @@ interface UserDetail extends User {
   certificates?: CertificateItem[];
   documents?: Array<{ path: string; label: string; uploaded_at: string }>;
   coordinated_projects?: Array<{ id: number; name: string }>;
+  restriction_review?: {
+    confirmed_absence_count: number;
+    unclassified_deduction_count: number;
+    unclassified_deductions: Array<{
+      id: number;
+      program_id: number;
+      program_title: string | null;
+      program_status: string | null;
+      amount: number;
+      excused: boolean;
+      valid_attendance: boolean;
+      credit_restored: boolean;
+      created_at: string | null;
+    }>;
+  } | null;
+  restriction_reviews?: Array<{
+    id: number;
+    reason: string;
+    reviewed_by: string;
+    created_at: string | null;
+  }>;
 }
 
 const roleLabels: Record<string, string> = {
@@ -78,6 +99,8 @@ export default function AdminUsersPage() {
   const [modalLoading, setModalLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [restrictionReviewReason, setRestrictionReviewReason] = useState("");
+  const [restrictionReviewError, setRestrictionReviewError] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createRoles, setCreateRoles] = useState<RoleOption[]>([]);
@@ -120,6 +143,10 @@ export default function AdminUsersPage() {
   }, [loadUsers]);
 
   const handleUpdateStatus = async (id: number, currentStatus: User["status"]) => {
+    if (currentStatus === "blacklisted") {
+      await openUserModal(id);
+      return;
+    }
     if (!confirm(`Kullaniciyi ${currentStatus === "active" ? "pasif" : "aktif"} yapmak istiyor musunuz?`)) {
       return;
     }
@@ -170,6 +197,8 @@ export default function AdminUsersPage() {
     setIsModalOpen(true);
     setModalLoading(true);
     setErrorMessage("");
+    setRestrictionReviewReason("");
+    setRestrictionReviewError("");
     try {
       const res = await api.get(`/panel/users/${id}`);
       setSelectedUser({
@@ -177,6 +206,8 @@ export default function AdminUsersPage() {
         documents: res.data.documents || [],
         credit_score: res.data.credit_score || 0,
         absent_count: res.data.absent_count || 0,
+        restriction_review: res.data.restriction_review ?? null,
+        restriction_reviews: res.data.restriction_reviews ?? [],
       });
     } catch (error) {
       console.error("Kullanici detaylari yuklenemedi", error);
@@ -184,6 +215,31 @@ export default function AdminUsersPage() {
       setSelectedUser(null);
     } finally {
       setModalLoading(false);
+    }
+  };
+
+  const releaseRestriction = async () => {
+    if (!selectedUser || restrictionReviewReason.trim().length < 10) {
+      setRestrictionReviewError("Kısıtı kaldırma nedenini en az 10 karakterle yazın.");
+      return;
+    }
+    setActionLoading(selectedUser.id);
+    setRestrictionReviewError("");
+    try {
+      await api.put(`/panel/users/${selectedUser.id}`, {
+        status: "active",
+        restriction_review_reason: restrictionReviewReason.trim(),
+      });
+      setIsModalOpen(false);
+      setRestrictionReviewReason("");
+      setSuccessMessage("Başvuru kısıtı gerekçeli inceleme kaydıyla kaldırıldı.");
+      await loadUsers();
+    } catch (error) {
+      setRestrictionReviewError(isAxiosError(error)
+        ? (error.response?.data?.errors?.restriction_review_reason?.[0] ?? error.response?.data?.message ?? "Kısıt kaldırılamadı.")
+        : "Kısıt kaldırılamadı.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -651,6 +707,65 @@ export default function AdminUsersPage() {
 
                   <hr className="border-slate-200" />
 
+                  {selectedUser.status === "blacklisted" && selectedUser.restriction_review ? (
+                    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                      <h3 className="font-bold text-slate-900">Başvuru kısıtını incele</h3>
+                      <p className="mt-2 text-sm text-slate-700">
+                        Yeni kayıtlarla doğrulanan mazeretsiz katılmama: {selectedUser.restriction_review.confirmed_absence_count}.
+                        Sınıflandırılmamış program düşümü: {selectedUser.restriction_review.unclassified_deduction_count}.
+                        Bu düşümler tek başına devamsızlık kanıtı değildir; yoklama, mazeret ve iade bilgilerini inceleyin.
+                      </p>
+                      {selectedUser.restriction_review.unclassified_deductions.length ? (
+                        <ul className="mt-4 max-h-48 space-y-2 overflow-y-auto">
+                          {selectedUser.restriction_review.unclassified_deductions.map((item) => (
+                            <li key={item.id} className="rounded-lg border border-amber-200 bg-white p-3 text-sm text-slate-700">
+                              <span className="font-semibold">{item.program_title || `Program #${item.program_id}`}</span>
+                              {` · ${item.amount} kredi · ${item.program_status || "Program bulunamadı"}`}
+                              <div className="text-xs text-slate-500">
+                                Yoklama: {item.valid_attendance ? "geçerli" : "geçerli yoklama bulunamadı"} ·
+                                Mazeret: {item.excused ? "var" : "yok"} ·
+                                İade: {item.credit_restored ? "var" : "yok"}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      {hasPermission("users.update") ? (
+                        <div className="mt-4 space-y-2">
+                          <label htmlFor="restriction-review-reason" className="block text-sm font-semibold text-slate-900">Kısıtı kaldırma gerekçesi</label>
+                          <textarea
+                            id="restriction-review-reason"
+                            value={restrictionReviewReason}
+                            onChange={(event) => setRestrictionReviewReason(event.target.value)}
+                            maxLength={1000}
+                            rows={3}
+                            className="panel-control w-full"
+                            placeholder="İncelediğiniz yoklama, mazeret veya iade kaydını ve karar nedenini yazın."
+                          />
+                          {restrictionReviewError ? <p className="text-sm text-red-700">{restrictionReviewError}</p> : null}
+                          <button type="button" onClick={() => void releaseRestriction()} disabled={actionLoading === selectedUser.id} className="panel-button panel-button-primary">
+                            {actionLoading === selectedUser.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                            Gerekçeyle aktifleştir
+                          </button>
+                        </div>
+                      ) : null}
+                    </section>
+                  ) : null}
+
+                  {selectedUser.restriction_reviews?.length ? (
+                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                      <h3 className="font-bold text-slate-900">Önceki kısıt incelemeleri</h3>
+                      <ul className="mt-3 space-y-2">
+                        {selectedUser.restriction_reviews.map((review) => (
+                          <li key={review.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                            <p className="text-slate-800">{review.reason}</p>
+                            <p className="mt-1 text-xs text-slate-500">{review.reviewed_by || "Yetkili kullanıcı"} · {review.created_at ? new Date(review.created_at).toLocaleString("tr-TR") : "Tarih yok"}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
+
                   <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-6">
                     <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-indigo-600">
                       <GraduationCap className="h-4 w-4" />
@@ -685,7 +800,7 @@ export default function AdminUsersPage() {
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
                           <div className="text-3xl font-black text-amber-500">{selectedUser.absent_count || 0}</div>
                           <div className="mt-1 text-[10px] uppercase tracking-widest text-slate-500">
-                            Devamsizlik
+                            Geçersiz yoklama kaydı
                           </div>
                         </div>
                       </div>

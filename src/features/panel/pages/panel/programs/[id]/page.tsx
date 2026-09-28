@@ -57,6 +57,20 @@ interface ProgramPhoto {
   caption?: string | null;
 }
 
+interface ApplicationConflict {
+  id: number;
+  status: string;
+  candidate: string;
+}
+
+const applicationStatusLabels: Record<string, string> = {
+  pending: "Değerlendirme bekliyor",
+  waitlisted: "Yedek liste",
+  interview_planned: "Mülakat planlandı",
+  interview_passed: "Mülakat olumlu",
+  accepted: "Kabul edildi",
+};
+
 interface PanelProgram {
   id: number;
   program_kind?: "core_program" | "community_event";
@@ -170,6 +184,10 @@ export default function PanelProgramDetailPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [applicationConflicts, setApplicationConflicts] = useState<ApplicationConflict[] | null>(null);
+  const [audienceMismatches, setAudienceMismatches] = useState<ApplicationConflict[] | null>(null);
+  const [conflictsLoading, setConflictsLoading] = useState(false);
+  const [conflictsError, setConflictsError] = useState<string | null>(null);
 
   const loadProgram = useCallback(async () => {
     if (!Number.isFinite(programId) || programId <= 0) {
@@ -180,6 +198,8 @@ export default function PanelProgramDetailPage() {
 
     setLoading(true);
     setError(null);
+    setApplicationConflicts(null);
+    setAudienceMismatches(null);
     try {
       const response = await api.get<{ program: PanelProgram }>(`/panel/programs/${programId}`);
       const loadedProgram = response.data.program;
@@ -197,6 +217,20 @@ export default function PanelProgramDetailPage() {
     }
   }, [programId]);
 
+  const loadApplicationConflicts = async () => {
+    setConflictsLoading(true);
+    setConflictsError(null);
+    try {
+      const response = await api.get<{ applications: ApplicationConflict[]; audience_mismatches: ApplicationConflict[] }>(`/panel/programs/${programId}/application-conflicts`);
+      setApplicationConflicts(response.data.applications ?? []);
+      setAudienceMismatches(response.data.audience_mismatches ?? []);
+    } catch (requestError) {
+      setConflictsError(apiErrorMessage(requestError, "Başvuru kontrolleri yüklenemedi."));
+    } finally {
+      setConflictsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const timer = window.setTimeout(() => void loadProgram(), 0);
     return () => window.clearTimeout(timer);
@@ -213,6 +247,7 @@ export default function PanelProgramDetailPage() {
   const canExportAttendance = Boolean(program?.capabilities?.export_attendance);
   const canManageMedia = Boolean(program && canCreatePeriodOperation && program.capabilities?.manage_media);
   const canViewFeedback = Boolean(program && hasScopedPermission("programs.view") && canAccessProject("programs.view", program.project_id));
+  const canViewApplicationConflicts = Boolean(program && hasScopedPermission("applications.view") && canAccessProject("applications.view", program.project_id));
   const detailQuery = useMemo(() => {
     if (!program) return "";
     const query = new URLSearchParams({ project_id: String(program.project_id) });
@@ -345,6 +380,51 @@ export default function PanelProgramDetailPage() {
           {program.work_mode === "core" && program.program_kind !== "community_event" ? <Metric icon={<Users className="h-5 w-5" />} label="Kontenjan" value={program.application_quota?.toLocaleString("tr-TR") ?? "Sınırsız"} /> : null}
           {program.work_mode === "core" && program.program_kind !== "community_event" ? <Metric icon={<ClipboardCheck className="h-5 w-5" />} label="Kredi kesintisi" value={`${program.credit_deduction ?? 0} kredi`} /> : null}
         </div>
+
+        {canViewApplicationConflicts && program.program_kind !== "community_event" ? (
+          <section className="panel-section-card">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-black text-slate-950">Başvuru uygunluğunu kontrol et</h2>
+                <p className="mt-1 text-sm text-slate-500">Saat, hedef kitle veya adayın güncel grubu değiştiyse etkilenen kişileri inceleyin. Mevcut kararlar otomatik değiştirilmez.</p>
+              </div>
+              <button type="button" onClick={() => void loadApplicationConflicts()} disabled={conflictsLoading} className="panel-card-action">
+                {conflictsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}Başvuruları kontrol et
+              </button>
+            </div>
+            {conflictsError ? <div className="panel-notice panel-notice-error mt-4">{conflictsError}</div> : null}
+            {applicationConflicts !== null ? (
+              <div className="mt-4 space-y-2">
+                <h3 className="text-sm font-bold text-slate-800">Saat çakışması ({applicationConflicts.length})</h3>
+                {applicationConflicts.length ? (
+                  <ul className="space-y-2">
+                    {applicationConflicts.map((item) => (
+                      <li key={item.id} className="panel-card-muted flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+                        <span className="font-bold text-slate-800">{item.candidate || `Başvuru #${item.id}`}</span>
+                        <span className="text-slate-600">#{item.id} · {applicationStatusLabels[item.status] ?? item.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p className="text-sm text-slate-600">Çakışan başvuru bulunmuyor.</p>}
+              </div>
+            ) : null}
+            {audienceMismatches !== null ? (
+              <div className="mt-5 space-y-2">
+                <h3 className="text-sm font-bold text-slate-800">Hedef kitle uyuşmazlığı ({audienceMismatches.length})</h3>
+                {audienceMismatches.length ? (
+                  <ul className="space-y-2">
+                    {audienceMismatches.map((item) => (
+                      <li key={item.id} className="panel-card-muted flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+                        <span className="font-bold text-slate-800">{item.candidate || `Başvuru #${item.id}`}</span>
+                        <span className="text-slate-600">#{item.id} · {applicationStatusLabels[item.status] ?? item.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p className="text-sm text-slate-600">Hedef kitleyle uyuşmayan başvuru bulunmuyor.</p>}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         <div className="grid min-w-0 max-w-full gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
           <main className="min-w-0 space-y-6">

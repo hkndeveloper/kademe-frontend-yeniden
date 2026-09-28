@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import Link from "next/link";
+import { isAxiosError } from "axios";
 import { Award, BookOpen, BookMarked, Briefcase, Calendar, ChevronRight, Clock, Download, FileCheck, FileText, Gift, Handshake, Loader2, Trophy, Users } from "lucide-react";
 import api from "@/lib/api/axios";
 import { downloadBlobResponse } from "@/lib/download";
@@ -50,11 +51,13 @@ interface KademeModuleRow {
   instructors?: Array<{ name: string; bio?: string | null; photo_path?: string | null }>;
   faq_items?: Array<{ question: string; answer: string }>;
   warning_text?: string | null;
+  application_consent_text: string;
+  application_consent_hash: string;
   requires_consent: boolean;
   consent_checkbox_label?: string | null;
   application_open: boolean;
   requires_coordinator_approval: boolean;
-  enrollment?: { id: number; status: string; consented_at?: string | null; reviewed_at?: string | null; note?: string | null } | null;
+  enrollment?: { id: number; status: string; consented_at?: string | null; consent_text_snapshot?: string | null; reviewed_at?: string | null; note?: string | null } | null;
 }
 
 interface LeaderboardRow {
@@ -125,6 +128,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
   const [leaderboardByProject, setLeaderboardByProject] = useState<Record<number, LeaderboardRow[]>>({});
   const [enrolling, setEnrolling] = useState<{ projectId: number; moduleId: number } | null>(null);
   const [consentByModule, setConsentByModule] = useState<Record<string, boolean>>({});
+  const [moduleErrors, setModuleErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadProjectData = async () => {
@@ -174,16 +178,20 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
   const activeSpecial = specials.find((item) => item.project.id === activeParticipation?.project?.id) ?? specials[0] ?? null;
 
   async function enrollModule(projectId: number, module: KademeModuleRow) {
-    if (module.requires_consent && !consentByModule[`${projectId}-${module.id}`]) {
+    const key = `${projectId}-${module.id}`;
+    if (!consentByModule[key] || !module.application_consent_hash) {
       return;
     }
+    setModuleErrors((current) => ({ ...current, [key]: "" }));
     setEnrolling({ projectId, moduleId: module.id });
     try {
       await api.post(`/dashboard/projects/${projectId}/kademe-modules/${module.id}/enroll`, {
         accepted_terms: true,
+        expected_consent_hash: module.application_consent_hash,
       });
       const res = await api.get<{ projects: ProjectSpecial[] }>("/dashboard/project-specials");
       setSpecials(res.data.projects ?? []);
+      setConsentByModule((current) => ({ ...current, [key]: false }));
       try {
         const board = await api.get<{ leaderboard: LeaderboardRow[] }>(`/dashboard/projects/${projectId}/badge-leaderboard`);
         setLeaderboardByProject((prev) => ({ ...prev, [projectId]: board.data.leaderboard ?? [] }));
@@ -192,6 +200,21 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
       }
     } catch (e) {
       console.error("Modul kaydi basarisiz", e);
+      if (isAxiosError(e) && e.response?.data?.errors?.expected_consent_hash) {
+        try {
+          const refreshed = await api.get<{ projects: ProjectSpecial[] }>("/dashboard/project-specials");
+          setSpecials(refreshed.data.projects ?? []);
+          setModuleErrors((current) => ({ ...current, [key]: "Modül bilgilendirmesi değişti. Güncel içeriği yeniden okuyup onaylayın." }));
+        } catch {
+          setModuleErrors((current) => ({ ...current, [key]: "Modül bilgilendirmesi değişti. Sayfayı yenileyip tekrar okuyun." }));
+        }
+        setConsentByModule((current) => ({ ...current, [key]: false }));
+      } else {
+        const message = isAxiosError(e) && typeof e.response?.data?.message === "string"
+          ? e.response.data.message
+          : "Modül başvurusu gönderilemedi. Lütfen tekrar deneyin.";
+        setModuleErrors((current) => ({ ...current, [key]: message }));
+      }
     } finally {
       setEnrolling(null);
     }
@@ -304,6 +327,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
                   leaderboard={leaderboardByProject[activeSpecial.project.id] ?? []}
                   consentByModule={consentByModule}
                   setConsentByModule={setConsentByModule}
+                  moduleErrors={moduleErrors}
                   enrolling={enrolling}
                   onEnroll={enrollModule}
                 />
@@ -388,6 +412,7 @@ function ProjectSpecialSection({
   leaderboard,
   consentByModule,
   setConsentByModule,
+  moduleErrors,
   enrolling,
   onEnroll,
 }: {
@@ -395,6 +420,7 @@ function ProjectSpecialSection({
   leaderboard: LeaderboardRow[];
   consentByModule: Record<string, boolean>;
   setConsentByModule: Dispatch<SetStateAction<Record<string, boolean>>>;
+  moduleErrors: Record<string, string>;
   enrolling: { projectId: number; moduleId: number } | null;
   onEnroll: (projectId: number, module: KademeModuleRow) => void;
 }) {
@@ -547,7 +573,7 @@ function ProjectSpecialSection({
                     </div>
                   </div>
                 ) : null}
-                {(mod.faq_items ?? []).length > 0 ? (
+                {(!mod.application_open || mod.enrollment) && (mod.faq_items ?? []).length > 0 ? (
                   <div className="mt-4 space-y-2">
                     <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sik sorulanlar</div>
                     {(mod.faq_items ?? []).map((f, idx) => (
@@ -558,7 +584,7 @@ function ProjectSpecialSection({
                     ))}
                   </div>
                 ) : null}
-                {mod.warning_text ? (
+                {(!mod.application_open || mod.enrollment) && mod.warning_text ? (
                   <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-950">
                     <div className="text-[10px] font-black uppercase tracking-widest">Uyari ve yaptirimlar</div>
                     <p className="mt-1 whitespace-pre-wrap text-xs leading-5">{mod.warning_text}</p>
@@ -575,6 +601,14 @@ function ProjectSpecialSection({
                         <span>Inceleme: {formatDate(mod.enrollment.reviewed_at)}</span>
                       </div>
                       {mod.enrollment.note ? <div className="rounded-lg bg-white px-3 py-2 text-xs text-slate-700">{mod.enrollment.note}</div> : null}
+                      <details className="rounded-lg bg-white px-3 py-2 text-xs text-slate-700">
+                        <summary className="cursor-pointer font-semibold">Başvuruda kabul edilen bilgilendirme</summary>
+                        {mod.enrollment.consent_text_snapshot ? (
+                          <p className="mt-2 whitespace-pre-line">{mod.enrollment.consent_text_snapshot}</p>
+                        ) : (
+                          <p className="mt-2">Bu eski modül kaydı için kabul edilen metin bulunmuyor.</p>
+                        )}
+                      </details>
                     </div>
                   ) : mod.application_open ? (
                     <div className="space-y-3">
@@ -582,7 +616,11 @@ function ProjectSpecialSection({
                         <FileCheck className="mt-0.5 h-4 w-4 text-primary" />
                         <span>{mod.requires_coordinator_approval ? "Basvurunuz gonderildikten sonra koordinator onayina dusecek." : "Basvurunuz gonderildiginde modul kaydiniz otomatik onaylanacak."}</span>
                       </div>
-                      {mod.requires_consent ? (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
+                        <div className="font-black">Başvuru öncesi sık sorulan sorular ve uyarılar</div>
+                        <p className="mt-2 whitespace-pre-line leading-5">{mod.application_consent_text}</p>
+                      </div>
+                      {moduleErrors[`${pid}-${mod.id}`] ? <p role="alert" className="text-xs font-semibold text-red-700">{moduleErrors[`${pid}-${mod.id}`]}</p> : null}
                         <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
                           <input
                             type="checkbox"
@@ -595,12 +633,11 @@ function ProjectSpecialSection({
                               }))
                             }
                           />
-                          <span>{mod.consent_checkbox_label || "Okudum, kabul ediyorum."}</span>
+                          <span>Sık sorulan soruları, başvuru koşullarını ve uyarıları okudum, kabul ediyorum.</span>
                         </label>
-                      ) : null}
                       <button
                         type="button"
-                        disabled={Boolean(enrolling && enrolling.projectId === pid && enrolling.moduleId === mod.id) || (mod.requires_consent && !consentByModule[`${pid}-${mod.id}`])}
+                        disabled={Boolean(enrolling && enrolling.projectId === pid && enrolling.moduleId === mod.id) || !consentByModule[`${pid}-${mod.id}`] || !mod.application_consent_hash}
                         onClick={() => onEnroll(pid, mod)}
                         className="inline-flex w-fit items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
