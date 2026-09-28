@@ -13,7 +13,7 @@ export function HomeEcosystem({ cards }: { cards: SiteSettingsPayload["homepage"
         <Link href="/projects" className={styles.button}>Projeleri keşfet <ArrowUpRight size={17} aria-hidden="true" /></Link>
       </div>
       <div className={styles.portrait}>
-        <Image src="/images/kademe-owl.png" alt="Kehribar gözleri, fildişi yüzü ve bakır mekanik tüyleriyle KADEME rehber baykuşu" width={1254} height={1254} sizes="(min-width: 1024px) 44vw, 100vw" className={styles.owl} />
+        <Image src="/images/kademe-growth-arch.png" alt="Açık bir kitaptan adaçayı ve kiremit renkli kemerlere yükselen basamaklar ve ışıklı küre" width={1280} height={1280} unoptimized sizes="(min-width: 1024px) 44vw, 100vw" className={styles.artwork} />
       </div>
       <div className={styles.signature}><span>MERAK · KEŞİF · GELİŞİM</span><span>KADEME ↗</span></div>
     </article>

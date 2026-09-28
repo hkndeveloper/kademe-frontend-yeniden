@@ -10,6 +10,7 @@ import { homePathForUser } from "@/lib/role-home";
 import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/store/useAuth";
+import styles from "./Header.module.css";
 
 interface HeaderProject {
   id: number;
@@ -126,9 +127,10 @@ export function Header() {
   );
 
   return (
-    <header className={cn("fixed inset-x-0 top-0 z-50 px-4 pt-5 font-[var(--font-urbanist)] transition-all duration-500 ease-out sm:pt-7 lg:pt-9", shouldHideHeader ? "pointer-events-none -translate-y-[calc(100%+2rem)] opacity-0" : "translate-y-0 opacity-100")}>
+    <header data-scrolled={scrolled} className={cn(styles.header, "fixed inset-x-0 top-0 z-50 px-4 pt-5 font-[var(--font-urbanist)] transition-all duration-500 ease-out sm:pt-7 lg:pt-9", shouldHideHeader ? "pointer-events-none -translate-y-[calc(100%+2rem)] opacity-0" : "translate-y-0 opacity-100")}>
       <div
         className={cn(
+          styles.surface,
           "mx-auto flex h-[86px] max-w-[1296px] items-center justify-between gap-4 rounded-full border px-5 transition-all duration-300 backdrop-blur-2xl min-[1180px]:px-8",
           scrolled
             ? "border-white/80 bg-white/92 shadow-[0_10px_32px_rgba(9,9,11,0.14),inset_0_1px_0_rgba(255,255,255,0.95)]"
@@ -148,7 +150,7 @@ export function Header() {
         <nav className="hidden items-center gap-1 min-[1180px]:flex">
           {navLinks.map((item, index) => (
             <div key={`${item.label}-${item.href}`} className="contents">
-              <Link href={item.href} className={navItemClass(isActive(item.href))}>
+              <Link href={item.href} aria-current={isActive(item.href) ? "page" : undefined} className={navItemClass(isActive(item.href))}>
                 {item.label}
               </Link>
               {index === aboutIndex ? (
@@ -214,12 +216,13 @@ export function Header() {
       </div>
 
       {mobileMenuOpen ? (
-        <div className="mx-auto mt-3 max-h-[calc(100dvh-7rem)] max-w-[1296px] overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white/94 p-3 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur-2xl min-[1180px]:hidden">
+        <div className={`${styles.mobile} mx-auto mt-3 max-h-[calc(100dvh-7rem)] max-w-[1296px] overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white/94 p-3 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur-2xl min-[1180px]:hidden`}>
           <nav className="flex flex-col gap-2">
             {navLinks.map((item) => (
               <Link
                 key={`mobile-${item.label}-${item.href}`}
                 href={item.href}
+                aria-current={isActive(item.href) ? "page" : undefined}
                 onClick={() => setMobileMenuOpen(false)}
                 className={cn(
                   "rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 transition hover:bg-[#f4f4f5] hover:text-[#fd3a25]",

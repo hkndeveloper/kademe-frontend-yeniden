@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRight, Calendar, ChevronLeft, Loader2, MapPin, Sparkles, X } from "lucide-react";
+import { ArrowRight, Calendar, ChevronLeft, MapPin, Sparkles, X } from "lucide-react";
+import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
@@ -84,16 +85,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
     void loadProgram();
   }, [params]);
 
-  if (loading) {
-    return (
-      <div className="kdm-public-shell flex min-h-[70vh] items-center justify-center pt-20">
-        <div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-white/80 px-8 py-7 shadow-xl shadow-slate-900/5 backdrop-blur">
-          <Loader2 className="h-10 w-10 animate-spin text-orange-600" />
-          <span className="text-sm font-bold text-slate-600">Faaliyet detayı yükleniyor...</span>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PublicBrandLoader fullPage />;
 
   if (!program) {
     return (
@@ -284,8 +276,6 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
     </main>
   );
 }
-
-
 
 
 

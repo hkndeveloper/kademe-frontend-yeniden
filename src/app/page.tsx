@@ -1,12 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import {
   ArrowRight,
   Calendar,
   ChevronRight,
   Globe,
-  Loader2,
   Mail,
   MapPin,
   ShieldCheck,
@@ -24,6 +24,7 @@ import { getCachedHomepage, getCachedPublicProjects, getCachedSiteConfig } from 
 import { homePathForUser } from "@/lib/role-home";
 import { defaultSiteSettings, SiteSettingsPayload } from "@/lib/site-config";
 import { useAuth } from "@/store/useAuth";
+import styles from "./home.module.css";
 
 interface HomeProject { id: number; name: string; slug: string; short_description?: string | null; cover_image?: string | null; }
 interface HomeBlog { id: number; title: string; slug: string; cover_image?: string | null; category?: string | { name?: string | null } | null; excerpt?: string | null; content?: string | null; }
@@ -40,10 +41,10 @@ function formatDate(value: string) { const date = new Date(value); if (Number.is
 function getBlogCategory(blog: HomeBlog) { if (typeof blog.category === "string") return blog.category; return blog.category?.name || "Haberler"; }
 function parseCounterValue(value: string) { const match = value.trim().match(/^([^0-9]*)([0-9][0-9.,]*)(.*)$/); if (!match) return null; const numeric = Number(match[2].replace(/\./g, "").replace(",", ".")); if (!Number.isFinite(numeric)) return null; return { prefix: match[1], value: Math.round(numeric), suffix: match[3] }; }
 function AnimatedStatValue({ value }: { value: string }) { const parsed = parseCounterValue(value); if (!parsed) return <>{value}</>; return <PublicCounter value={parsed.value} prefix={parsed.prefix} suffix={parsed.suffix} />; }
-function SectionHeading({ eyebrow, title, description, center = false, dark = false }: { eyebrow: ReactNode; title: ReactNode; description?: ReactNode; center?: boolean; dark?: boolean }) {
-  const headingClass = ["kdm-public-section-heading", center ? "center" : "", dark ? "text-white" : ""].filter(Boolean).join(" ");
-  const titleClass = ["kdm-public-heading-title", dark ? "!text-white ![background:none] ![-webkit-text-fill-color:white]" : ""].filter(Boolean).join(" ");
-  const descClass = ["mt-5 max-w-2xl text-base leading-8", center ? "mx-auto" : "", dark ? "text-zinc-400" : "text-[#71717a]"].filter(Boolean).join(" ");
+function SectionHeading({ eyebrow, title, description, center = false }: { eyebrow: ReactNode; title: ReactNode; description?: ReactNode; center?: boolean; dark?: boolean }) {
+  const headingClass = ["kdm-public-section-heading", center ? "center" : ""].filter(Boolean).join(" ");
+  const titleClass = "kdm-public-heading-title";
+  const descClass = ["mt-5 max-w-2xl text-base leading-8 text-[#71717a]", center ? "mx-auto" : ""].filter(Boolean).join(" ");
   return <div className={headingClass}><div className="kdm-public-heading-sub">{eyebrow}</div><h2 className={titleClass}>{title}</h2>{description ? <p className={descClass}>{description}</p> : null}</div>;
 }
 
@@ -102,7 +103,7 @@ export default function HomePage() {
 
   const handleNewsletterSubmit = async () => { if (!newsletterEmail.trim()) { setNewsletterFeedback("Lütfen geçerli bir e-posta adresi girin."); return; } setNewsletterSubmitting(true); setNewsletterFeedback(null); try { const response = await api.post<{ message: string }>("/newsletter/subscribe", { name: newsletterName, email: newsletterEmail }); setNewsletterFeedback(response.data.message); setNewsletterName(""); setNewsletterEmail(""); } catch (error) { console.error("E-bülten aboneliği kaydedilemedi", error); setNewsletterFeedback("E-bülten aboneliği kaydedilemedi."); } finally { setNewsletterSubmitting(false); } };
 
-  if (loading) return <div className="kdm-public-shell flex min-h-[70vh] items-center justify-center pt-20"><div className="kdm-public-card flex flex-col items-center gap-4 px-8 py-7"><Loader2 className="h-10 w-10 animate-spin text-[#fd3a25]" /><span className="text-sm font-bold text-[#71717a]">Anasayfa hazırlanıyor...</span></div></div>;
+  if (loading) return <PublicBrandLoader fullPage />;
 
   const sectionMap: Record<HomeBlock, ReactNode> = {
     hero: <HomeDiscoveryHero settings={resolvedSettings.homepage} projects={featuredProjects} isAuthenticated={isAuthenticated} dashboardLink={dashboardLink} showIntro={visibleBlockOrder.includes("intro")} />,
@@ -117,5 +118,5 @@ export default function HomePage() {
     certificate_verify: <section className="bg-[#edecec] px-4 pb-20 sm:px-6"><div className="container mx-auto"><div className="kdm-public-card-dark overflow-hidden rounded-[32px] p-6 sm:p-8 lg:p-10"><div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center"><div><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-orange-300/30 bg-orange-400/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-orange-100"><ShieldCheck className="h-4 w-4" /> Kamusal Doğrulama</div><h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{resolvedSettings.homepage.certificate_verify_title}</h2><p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">{resolvedSettings.homepage.certificate_verify_description}</p></div><PublicButton href={resolvedSettings.homepage.certificate_verify_cta_href} variant="primary" size="lg" icon={<ArrowRight className="h-4 w-4" />}>{resolvedSettings.homepage.certificate_verify_cta_label}</PublicButton></div></div></div></section>,
   };
 
-  return <div className="kdm-public-shell flex w-full flex-col bg-[#edecec] font-[var(--font-urbanist)]">{visibleBlockOrder.map((block) => <div key={block}>{sectionMap[block]}</div>)}</div>;
+  return <div className={`${styles.home} kdm-public-shell flex w-full flex-col font-[var(--font-urbanist)]`}>{visibleBlockOrder.map((block) => <div key={block} data-home-block={block}>{sectionMap[block]}</div>)}</div>;
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowUpRight, BookOpen, CalendarDays, Eye, HelpCircle, Loader2, Sparkles, Target } from "lucide-react";
+import { ArrowUpRight, BookOpen, CalendarDays, Eye, HelpCircle, Sparkles, Target } from "lucide-react";
+import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./about.module.css";
@@ -57,16 +58,7 @@ export default function AboutPage() {
     [blogCount, faqCount],
   );
 
-  if (loading) {
-    return (
-      <main className="kdm-public-shell flex min-h-[70vh] items-center justify-center bg-[#edecec] pt-24">
-        <div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-white/80 px-8 py-7 shadow-xl shadow-slate-900/5 backdrop-blur">
-          <Loader2 className="h-10 w-10 animate-spin text-orange-600" />
-          <span className="text-sm font-bold text-slate-600">Sayfa ayarları yükleniyor...</span>
-        </div>
-      </main>
-    );
-  }
+  if (loading) return <PublicBrandLoader fullPage />;
 
   return (
     <div className={styles.page}>

@@ -1,0 +1,30 @@
+.header { padding-top: 22px; }
+.header .surface { height: 74px; border: 1px solid #d7dfcb90; background: #faf8f0e8; box-shadow: 0 8px 28px #3a4d2910; backdrop-filter: blur(16px); }
+.header[data-scrolled="true"] { padding-top: 12px; }
+.header[data-scrolled="true"] .surface { height: 66px; background: #faf8f0f7; box-shadow: 0 6px 22px #3a4d2914; }
+.surface > a > span:first-child { width: 42px; height: 42px; background: #fffdf5; box-shadow: none; border: 1px solid #e6e8da; }
+.surface > a img { height: 33px; }
+.surface > a > span:last-child > span { color: #34432e; font-size: 22px; font-weight: 700; }
+.header :global(.kdm-public-nav-link) { color: #5b6752; font-size: 14px; padding: 9px 13px; font-weight: 600; }
+.header :global(.kdm-public-nav-link)::after { display: none; }
+.header :global(.kdm-public-nav-link):hover { color: #3e5233; background: #edf0e5; }
+.header :global(.kdm-public-nav-link.active) { color: #3f5532; background: #e4ebd8; }
+.header :global(.kdm-public-btn-dark) { background: #627650; border: 1px solid #627650; color: #fffdf4; box-shadow: none; }
+.header :global(.kdm-public-btn-dark):hover { background: #4c623d; }
+.header :global(.kdm-public-btn-light) { background: transparent; border: 1px solid #d6dfca; color: #506342; box-shadow: none; }
+.header :global(.kdm-public-btn-light):hover { background: #eaf0df; }
+.header :global(.kdm-public-btn-shine)::after { display: none; }
+.surface button[aria-label="Menüyü aç"], .surface button[aria-label="Menüyü kapat"] { width: 42px; height: 42px; background: #f3f5eb; color: #536a43; border-color: #dce3d0; box-shadow: none; }
+.header :global(.kdm-public-sub-menu) > div { background: #faf9f2f7; border: 1px solid #dde4d2; border-radius: 20px; box-shadow: 0 14px 32px #344b2414; }
+.header :global(.kdm-public-sub-menu) a { border-radius: 12px; color: #58664c; }
+.header :global(.kdm-public-sub-menu) a:hover { background: #e9efdf; color: #3f5632; }
+.header :global(.kdm-public-sub-menu) a > span:last-child { background: #99ab83; }
+.header .mobile { background: #faf8f0fa; border-color: #dce3d0; box-shadow: 0 14px 32px #344b2414; }
+.mobile nav > a { color: #526247; font-weight: 600; }
+.mobile nav > a:hover, .mobile nav > a[aria-current="page"] { background: #e5ecd9; color: #3e5532; }
+.mobile nav > div:first-of-type { background: #eef2e6; border-color: #dae2cd; }
+.mobile nav > div:first-of-type a, .mobile nav > div:first-of-type svg { color: #546b43; }
+.header a:focus-visible, .header button:focus-visible { outline: 2px solid #7b9265; outline-offset: 3px; }
+@media (max-width: 640px) { .header { padding-top: 14px; padding-inline: 12px; } .header .surface { height: 66px; padding-inline: 14px; } .header[data-scrolled="true"] .surface { height: 62px; } }
+@media (prefers-reduced-motion: reduce) { .header, .header * { transition: none; } }
+@media (prefers-reduced-transparency: reduce) { .header .surface, .header .mobile { background: #faf8f0; backdrop-filter: none; } }

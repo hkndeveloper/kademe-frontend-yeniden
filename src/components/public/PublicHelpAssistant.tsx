@@ -82,7 +82,7 @@ export function PublicHelpAssistant() {
       <form onSubmit={submit} className={styles.form}><label className="sr-only" htmlFor="kado-message">Kado’ya sor</label><input id="kado-message" value={input} onChange={event => setInput(event.target.value)} maxLength={500} autoComplete="off" placeholder="Birlikte ne keşfedelim?" /><button type="submit" disabled={!input.trim()} aria-label="Mesajı gönder"><Send size={17} /></button></form>
       <p className={styles.disclaimer}>{faqStatus === "error" ? "SSS yüklenemedi; sayfa rehberi kullanılabilir." : faqStatus === "loading" ? "Güncel SSS içerikleri yükleniyor…" : "SSS ve sayfa rehberi · Yapay zekâ yanıtı üretmez."}</p>
     </section> : null}
-    {!open && hint ? <div className={styles.hint}><button type="button" onClick={openHelp}>Merhaba! Yardım edeyim mi? <span>Ben Kado, keşif arkadaşın.</span></button><button type="button" className={styles.dismissHint} onClick={() => setHint(false)} aria-label="Karşılama mesajını gizle"><X size={12} /></button></div> : null}
+    {!open && hint ? <div className={styles.hint}><button type="button" onClick={openHelp}>Merhaba! Nasıl yardımcı olabilirim? <span>Ben Kado, keşif arkadaşın.</span></button><button type="button" className={styles.dismissHint} onClick={() => setHint(false)} aria-label="Karşılama mesajını gizle"><X size={12} /></button></div> : null}
     <button ref={launcher} type="button" className={styles.launcher} aria-label={open ? "Kado yardımını kapat" : "Kado yardımını aç"} aria-expanded={open} onClick={() => { if (open) close(); else openHelp(); }}><HelpMascot tracking /><span className={styles.launcherLabel}>{open ? "Kapat" : "Bir sorun mu var?"}</span></button>
   </div>;
 }

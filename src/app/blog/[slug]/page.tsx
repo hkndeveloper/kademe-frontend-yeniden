@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, BookOpen, Calendar, Loader2, User } from "lucide-react";
+import { ArrowLeft, BookOpen, Calendar, User } from "lucide-react";
 import { PublicBadge, PublicButton, PublicCard } from "@/components/public";
 import api from "@/lib/api/axios";
 import { defaultSiteSettings, type SiteSettingsResponse } from "@/lib/site-config";
@@ -54,16 +55,7 @@ export default function BlogDetailPage() {
     }
   }, [params.slug, router]);
 
-  if (loading) {
-    return (
-      <main className="kdm-public-shell flex min-h-[70vh] items-center justify-center bg-[#edecec] pt-24">
-        <div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-white/80 px-8 py-7 shadow-xl shadow-slate-900/5 backdrop-blur">
-          <Loader2 className="h-10 w-10 animate-spin text-orange-600" />
-          <span className="text-sm font-bold text-slate-600">Blog detayı yükleniyor...</span>
-        </div>
-      </main>
-    );
-  }
+  if (loading) return <PublicBrandLoader fullPage />;
 
   if (!blog) return null;
 
@@ -142,6 +134,4 @@ export default function BlogDetailPage() {
     </main>
   );
 }
-
-
 

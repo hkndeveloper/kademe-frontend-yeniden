@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Layers3, Loader2, Search, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Layers3, Search, Sparkles } from "lucide-react";
 import { PublicButton, PublicCard, PublicCounter, PublicIconBadge } from "@/components/public";
 import { PublicBreadcrumbs } from "@/components/shared/PublicBreadcrumbs";
 import api from "@/lib/api/axios";
@@ -149,10 +150,7 @@ export default function ProjectsPage() {
 
           {loading ? (
             <div className="flex items-center justify-center py-32">
-              <div className="flex flex-col items-center gap-4 rounded-[1.75rem] border border-white/70 bg-white/80 px-8 py-7 shadow-xl shadow-slate-900/5 backdrop-blur">
-                <Loader2 className="h-10 w-10 animate-spin text-[#fd3a25]" />
-                <span className="text-sm font-bold text-zinc-600">Projeler yükleniyor...</span>
-              </div>
+              <PublicBrandLoader />
             </div>
           ) : visibleProjects.length === 0 ? (
             <PublicCard className="py-16 text-center">
@@ -252,4 +250,3 @@ export default function ProjectsPage() {
     </main>
   );
 }
-

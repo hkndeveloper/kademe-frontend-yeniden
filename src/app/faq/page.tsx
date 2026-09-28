@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, HelpCircle, Loader2, MessageCircle, Search } from "lucide-react";
+import { ChevronDown, HelpCircle, MessageCircle, Search } from "lucide-react";
 import { PublicBadge, PublicButton, PublicCard, PublicCounter, PublicHeroSection, PublicIconBadge } from "@/components/public";
 import api from "@/lib/api/axios";
 import { defaultSiteSettings, type SiteSettingsResponse } from "@/lib/site-config";
@@ -85,10 +86,7 @@ export default function FaqPage() {
 
           {loading ? (
             <div className="flex justify-center py-20">
-              <div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-white/80 px-8 py-7 shadow-xl shadow-slate-900/5 backdrop-blur">
-                <Loader2 className="h-10 w-10 animate-spin text-orange-600" />
-                <span className="text-sm font-bold text-slate-600">SSS verileri yükleniyor...</span>
-              </div>
+              <PublicBrandLoader />
             </div>
           ) : faqCategoryEntries.length === 0 ? (
             <PublicCard className="py-16 text-center text-slate-600">{copy.empty_text}</PublicCard>
@@ -196,6 +194,4 @@ export default function FaqPage() {
     </main>
   );
 }
-
-
 

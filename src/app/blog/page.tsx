@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Calendar, ChevronLeft, ChevronRight, Loader2, Search, User } from "lucide-react";
+import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
+import { ArrowRight, BookOpen, Calendar, ChevronLeft, ChevronRight, Search, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -100,7 +101,7 @@ export default function BlogPage() {
 
       <section className="container mx-auto px-4 py-14 sm:px-6 lg:py-20">
         {loading ? (
-          <div className="flex justify-center py-20"><div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-white/80 px-8 py-7 shadow-xl shadow-slate-900/5 backdrop-blur"><Loader2 className="h-10 w-10 animate-spin text-orange-600" /><span className="text-sm font-bold text-slate-600">Blog yazıları yükleniyor...</span></div></div>
+          <div className="flex justify-center py-20"><PublicBrandLoader /></div>
         ) : blogs.length === 0 ? (
           <PublicCard className="py-16 text-center"><h2 className="text-2xl font-black text-slate-950">Yazı bulunamadı</h2><p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-600">Henüz yayına alınmış blog yazısı bulunmuyor.</p></PublicCard>
         ) : (

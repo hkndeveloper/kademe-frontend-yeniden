@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -704,13 +705,7 @@ export default function ProjectDetailPage() {
     </div>
   );
 
-  if (loading) {
-    return (
-      <div className="kdm-public-shell flex min-h-screen items-center justify-center bg-[#edecec]">
-        <Loader2 className="h-12 w-12 animate-spin text-orange-600" />
-      </div>
-    );
-  }
+  if (loading) return <PublicBrandLoader fullPage />;
 
   if (!project) return null;
 
@@ -1421,7 +1416,6 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
-
 
 
 

@@ -1,0 +1,59 @@
+/* Homepage-only visual system; API content and other routes stay unchanged. */
+.home { background: #f6f5ef; color: #29372e; }
+.home :where([data-home-block]:not([data-home-block="hero"])) > section { background: #f6f5ef; color: #29372e; }
+.home :global(.kdm-public-flat-spacing) { padding-block: clamp(56px, 7vw, 96px); }
+.home [data-home-block]:not([data-home-block="hero"]) :global(.container) { max-width: 1360px; padding-inline: 56px; }
+.home :global(.kdm-public-section-heading) { margin-bottom: 36px; }
+.home :global(.kdm-public-heading-title) { font-size: clamp(32px, 4vw, 52px); font-weight: 500; line-height: 1.12; letter-spacing: -.045em; color: #29372e !important; -webkit-text-fill-color: #29372e !important; background: none !important; }
+.home :global(.kdm-public-section-heading) > p { color: #737e6c; font-size: 15px; line-height: 1.85; }
+.home :global(.kdm-public-heading-sub) { background: transparent; border: 0; box-shadow: none; color: #8d704f; padding: 0; margin-bottom: 18px; font-size: 10px; letter-spacing: .16em; }
+.home :global(.kdm-public-heading-sub)::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #869574; margin-right: 9px; }
+.home :global(.kdm-public-btn-dark), .home :global(.kdm-public-btn-brand) { background: #637551; color: #fffdf5; border-color: #637551; box-shadow: none; }
+.home :global(.kdm-public-btn-dark):hover, .home :global(.kdm-public-btn-brand):hover { background: #4e6241; }
+.home :global(.kdm-public-card), .home :global(.kdm-public-review-box) { background: #fdfcf7; border-color: #dfe3d5; box-shadow: none; }
+.home [data-home-block="stats"] > section { background: #e8edde; border-block: 1px solid #d9dfcd; }
+.home [data-home-block="stats"] :global(.kdm-public-section-heading) { text-align: left; }
+.home [data-home-block="stats"] :global(.kdm-public-section-heading) > p { margin-left: 0; }
+.home [data-home-block="stats"] :global(.kdm-public-stat-card) { border: 0; border-radius: 0; background: none; box-shadow: none; padding: 24px 28px; text-align: left; transform: none; }
+.home [data-home-block="stats"] :global(.kdm-public-stat-card)::before,
+.home [data-home-block="stats"] :global(.kdm-public-stat-card)::after { display: none; }
+.home [data-home-block="stats"] :global(.kdm-public-stat-card) + :global(.kdm-public-stat-card) { border-left: 1px solid #bcc7ab; }
+.home [data-home-block="stats"] :global(.kdm-public-stat-card) > div:first-child { background: transparent; box-shadow: none; color: #82926c; width: 28px; height: 28px; margin-bottom: 18px; }
+.home [data-home-block="stats"] :global(.kdm-public-stat-card) > div:nth-child(2) { font-size: clamp(40px, 5vw, 66px); font-weight: 500; color: #394a31; }
+.home [data-home-block="stats"] :global(.kdm-public-stat-card) > div:last-child { color: #66735c; font-weight: 600; font-size: 10px; letter-spacing: .12em; }
+.home [data-home-block="activities"] > section { background: #eef0e6; }
+.home [data-home-block="activities"] a:global(.group) { background: #fcfcf6; border-color: #dbe1cf; border-radius: 28px; }
+.home [data-home-block="activities"] a:global(.group) h3 { color: #35452e; font-size: 27px; }
+.home [data-home-block="activities"] a:global(.group) > span { color: #a4764f; }
+.home [data-home-block="activities"] :global(.text-zinc-400), .home [data-home-block="activities"] :global(.text-zinc-300) { color: #718068; }
+.home [data-home-block="activities"] a:global(.group) img { opacity: 1; }
+.home [data-home-block="activities"] a:global(.group) :global(.absolute.inset-0) { background: linear-gradient(0deg, #29372e30, transparent); }
+.home [data-home-block="activities"] a:global(.group) span:global(.absolute) { background: #f5f2e5; color: #5d7050; }
+.home [data-home-block="projects"] :global(.kdm-public-project-card) { box-shadow: none; border: 1px solid #dfe3d5; }
+.home [data-home-block="projects"] :global(.kdm-public-project-card) > div:global(.absolute) { background: linear-gradient(180deg, #23302000 15%, #233020ed); }
+.home [data-home-block="projects"] :global(.text-zinc-500) { color: #c5cfb8; }
+.home [data-home-block="blog"] :global(.kdm-public-blog-card) h3 { color: #34442e; }
+.home [data-home-block="blog"] :global(.kdm-public-blog-card) :global(.inline-flex) { color: #71845d; }
+.home [data-home-block="newsletter"] :global(.section-contact) { background: #e8edde; border: 1px solid #dce3d0; box-shadow: none; color: #29372e; border-radius: 32px; }
+.home [data-home-block="newsletter"] :global(.section-contact) > div:global(.absolute) { display: none; }
+.home [data-home-block="newsletter"] h2 { color: #34442e; font-weight: 500; }
+.home [data-home-block="newsletter"] p, .home [data-home-block="newsletter"] :global(.text-zinc-200) { color: #65755a; }
+.home [data-home-block="newsletter"] :global(.backdrop-blur-xl) { background: #f9faf2; border: 1px solid #d9e0cd; box-shadow: none; backdrop-filter: none; }
+.home :global(.kdm-public-input) { background: #fffef9; border-color: #d8dece; box-shadow: none; }
+.home [data-home-block="certificate_verify"] :global(.kdm-public-card-dark) { background: #eee6d8; box-shadow: none; border: 1px solid #e2d8c7; }
+.home [data-home-block="certificate_verify"] h2 { color: #394632; font-weight: 500; }
+.home [data-home-block="certificate_verify"] p { color: #757b6b; }
+.home [data-home-block="certificate_verify"] :global(.inline-flex.rounded-full) { color: #936f4d; background: transparent; border: 0; padding-left: 0; }
+.home :global(.kdm-public-marquee) { background: #ece5d8 !important; border-image: none; border-color: #ddd5c6; padding-block: 24px; }
+.home :global(.kdm-public-marquee-item) { font-size: clamp(24px, 3vw, 40px); font-weight: 400; letter-spacing: -.025em; }
+.home :global(.kdm-public-marquee-text) { background: none; color: #637353; -webkit-text-fill-color: #637353; }
+.home :global(.kdm-public-marquee-mark) { background: #ac805b; width: 7px; height: 7px; box-shadow: none; }
+@media (max-width: 1023px) {
+  .home [data-home-block]:not([data-home-block="hero"]) :global(.container) { padding-inline: 30px; }
+  .home [data-home-block="stats"] :global(.kdm-public-stat-card):nth-child(3) { border-left: 0; }
+}
+@media (max-width: 640px) {
+  .home [data-home-block]:not([data-home-block="hero"]) :global(.container) { padding-inline: 20px; }
+  .home [data-home-block="stats"] :global(.kdm-public-stat-card) { padding: 16px 10px; }
+  .home :global(.kdm-public-flat-spacing) { padding-block: 54px; }
+}
