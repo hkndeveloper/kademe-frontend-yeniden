@@ -43,7 +43,10 @@ export function moduleForPanelPath<T extends ManifestPanelModule>(
     return modules.find((module) => module.id === "periods") ?? null;
   }
   if (normalized === "/panel/periods/form-builder") {
-    return modules.find((module) => module.id === "projects") ?? null;
+    return modules.find((module) =>
+      (module.id === "projects" || module.id === "my_project")
+      && (module.enabled_actions ?? []).includes("projects.application_form.update")
+    ) ?? null;
   }
 
   const applicationProjectId = projectIdFrom(normalized, "/applications");
