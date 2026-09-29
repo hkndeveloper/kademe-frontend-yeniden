@@ -73,7 +73,7 @@ export default function QrScanPage() {
       return;
     }
 
-    setLocationMessage("Konum aliniyor...");
+    setLocationMessage("Konum alınıyor...");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const nextLocation = {
@@ -82,11 +82,11 @@ export default function QrScanPage() {
           accuracy: pos.coords.accuracy,
         };
         setLocation(nextLocation);
-        setLocationMessage("Konum alindi.");
+        setLocationMessage("Konum alındı.");
       },
       () => {
         setLocation(null);
-        setLocationMessage("Yoklama icin konum izni zorunludur. Tarayicidan konum izni verip tekrar dene.");
+        setLocationMessage("Yoklama için konum izni zorunludur. Tarayicidan konum izni verip tekrar dene.");
       },
       { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 },
     );
@@ -98,8 +98,8 @@ export default function QrScanPage() {
       const response = await api.get<{ programs: Program[] }>("/programs");
       setPrograms(response.data.programs ?? []);
     } catch (error) {
-      console.error("QR programlari yuklenemedi", error);
-      setMessage("Program bilgileri yuklenemedi.");
+      console.error("QR programları yüklenemedi", error);
+      setMessage("Program bilgileri yüklenemedi.");
       setStatus("error");
     } finally {
       setLoadingPrograms(false);
@@ -149,20 +149,20 @@ export default function QrScanPage() {
 
     if (!qrToken) {
       setStatus("error");
-      setMessage("QR kod gecersiz. Lutfen tekrar okut.");
+      setMessage("QR kod geçersiz. Lütfen tekrar okut.");
       submittedRef.current = false;
       return;
     }
 
     if (!currentLocation) {
       setStatus("error");
-      setMessage("Konum verisi alinamadi. Konum izni verip tekrar dene.");
+      setMessage("Konum verisi alınamadı. Konum izni verip tekrar dene.");
       submittedRef.current = false;
       return;
     }
 
     setStatus("loading");
-    setMessage("Konum ve QR kod dogrulaniyor...");
+    setMessage("Konum ve QR kod doğrulanıyor...");
 
     try {
       const response = await api.post("/attendances/qr", {
@@ -172,7 +172,7 @@ export default function QrScanPage() {
       });
 
       setStatus("success");
-      setMessage(response.data.message || "Yoklaman basariyla alindi.");
+      setMessage(response.data.message || "Yoklaman başarıyla alındı.");
       await fetchPrograms();
     } catch (error: unknown) {
       const axiosErr = error as { response?: { status?: number; data?: { message?: string; redirect_to?: string } } };
@@ -181,7 +181,7 @@ export default function QrScanPage() {
 
       if (httpStatus === 423) {
         setStatus("error");
-        setMessage(responseData?.message || "Yoklama oncesi bekleyen degerlendirme formun var.");
+        setMessage(responseData?.message || "Yoklama oncesi bekleyen değerlendirme formun var.");
         const redirectTo = responseData?.redirect_to || `${portalBase}/evaluate`;
         window.setTimeout(() => {
           window.location.href = redirectTo;
@@ -190,7 +190,7 @@ export default function QrScanPage() {
       }
 
       setStatus("error");
-      setMessage(responseData?.message || "Yoklama islemi basarisiz oldu.");
+      setMessage(responseData?.message || "Yoklama işlemi başarısız oldu.");
       submittedRef.current = false;
     }
   }, [extractToken, fetchPrograms, portalBase]);
@@ -250,7 +250,7 @@ export default function QrScanPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900">QR Yoklama</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Aktif etkinlik icin guvenli yoklama</p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Aktif etkinlik için güvenli yoklama</p>
           </div>
         </div>
 
@@ -268,12 +268,12 @@ export default function QrScanPage() {
         <StatusCard
           icon={<MapPin className="h-5 w-5" />}
           label="Konum"
-          value={location ? "Alindi" : "Bekleniyor"}
+          value={location ? "Alındı" : "Bekleniyor"}
           detail={location?.accuracy ? `Yaklasik dogruluk: ${Math.round(location.accuracy)} m${nearestActiveRadius ? ` / izinli yaricap: ${nearestActiveRadius} m` : ""}` : locationMessage}
           tone={locationAccuracyWarning ? "amber" : location ? "emerald" : "amber"}
         />
         <StatusCard icon={<QrCode className="h-5 w-5" />} label="Okutulabilir" value={scannablePrograms.length} detail={scannablePrograms.length > 0 ? "Kamera aktif edilebilir" : activePrograms.length > 0 ? "Aktif etkinliklerin yoklamasi alinmis" : "Kamera aktif edilmez"} />
-        <StatusCard icon={<ShieldAlert className="h-5 w-5" />} label="Dogrulama" value="Backend" detail="QR token, hedef kitle ve konum backend'de kontrol edilir." />
+        <StatusCard icon={<ShieldAlert className="h-5 w-5" />} label="Doğrulama" value="Backend" detail="QR token, hedef kitle ve konum backend'de kontrol edilir." />
       </div>
 
       {loadingPrograms ? (
@@ -290,7 +290,7 @@ export default function QrScanPage() {
               <div>
                 <h2 className="text-xl font-black text-slate-900">Su anda okutulabilir QR yoklamasi yok</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                  Kamera sadece aktif, panel turune acik ve henuz yoklamasi alinmamis etkinliklerde acilir. Etkinlik basladiginda ya da yeni QR acildiginda bu ekrandaki buton aktif hale gelir.
+                  Kamera sadece aktif, panel turune açık ve henüz yoklamasi alinmamis etkinliklerde açılır. Etkinlik basladiginda ya da yeni QR açıldığında bu ekrandaki buton aktif hale gelir.
                 </p>
               </div>
             </div>
@@ -299,13 +299,13 @@ export default function QrScanPage() {
           {attendedActivePrograms.length > 0 ? (
             <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
               {attendedActivePrograms.map((program) => (
-                <ProgramCard key={program.id} program={program} actionLabel="Yoklama Alindi" disabled />
+                <ProgramCard key={program.id} program={program} actionLabel="Yoklama Alındı" disabled />
               ))}
             </div>
           ) : upcomingPrograms.length > 0 ? (
             <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
               {upcomingPrograms.map((program) => (
-                <ProgramCard key={program.id} program={program} actionLabel="Henuz Aktif Degil" disabled />
+                <ProgramCard key={program.id} program={program} actionLabel="Henüz Aktif Değil" disabled />
               ))}
             </div>
           ) : null}
@@ -352,8 +352,8 @@ export default function QrScanPage() {
                   <div className="space-y-5">
                     <div id="participant-qr-reader" className="overflow-hidden rounded-2xl border border-border bg-slate-950" />
                     <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold uppercase tracking-widest">
-                      <span className={location ? "text-emerald-600" : "text-amber-600"}>{location ? "Konum alindi" : "Konum bekleniyor"}</span>
-                      <span className="text-primary">Guvenli yoklama</span>
+                      <span className={location ? "text-emerald-600" : "text-amber-600"}>{location ? "Konum alındı" : "Konum bekleniyor"}</span>
+                      <span className="text-primary">Güvenli yoklama</span>
                     </div>
                     {location?.accuracy ? (
                       <p className={`text-center text-xs ${locationAccuracyWarning ? "text-amber-600" : "text-muted-foreground"}`}>
@@ -365,8 +365,8 @@ export default function QrScanPage() {
                 ) : null}
 
                 {status === "loading" ? <ResultState icon={<Loader2 className="h-12 w-12 animate-spin" />} title="Yoklama Isleniyor" message={message} tone="primary" /> : null}
-                {status === "success" ? <ResultState icon={<CheckCircle2 className="h-12 w-12" />} title="Yoklama Alindi" message={message} tone="emerald" actionLabel="Tamam" onAction={closeScanner} /> : null}
-                {status === "error" ? <ResultState icon={<XCircle className="h-12 w-12" />} title="Yoklama Alinamadi" message={message} tone="red" actionLabel="Tekrar Dene" onAction={restartScanner} /> : null}
+                {status === "success" ? <ResultState icon={<CheckCircle2 className="h-12 w-12" />} title="Yoklama Alındı" message={message} tone="emerald" actionLabel="Tamam" onAction={closeScanner} /> : null}
+                {status === "error" ? <ResultState icon={<XCircle className="h-12 w-12" />} title="Yoklama Alınamadı" message={message} tone="red" actionLabel="Tekrar Dene" onAction={restartScanner} /> : null}
               </div>
             </motion.div>
           </motion.div>
@@ -402,13 +402,13 @@ function ProgramCard({ program, actionLabel, disabled = false, onAction }: { pro
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">{program.project?.name || "Program"}</span>
-            <span className="rounded-full bg-muted px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{program.status || "Kayit"}</span>
-            {program.attendance_status === "present" ? <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-700">Yoklama alindi</span> : null}
+            <span className="rounded-full bg-muted px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{program.status || "Kayıt"}</span>
+            {program.attendance_status === "present" ? <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-700">Yoklama alındı</span> : null}
           </div>
           <h2 className="text-xl font-black text-slate-900">{program.title}</h2>
           <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5"><Calendar className="h-4 w-4" />{formatDateTime(program.start_at)}</span>
-            <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" />{program.end_at ? formatDateTime(program.end_at) : "Bitis belirtilmedi"}</span>
+            <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" />{program.end_at ? formatDateTime(program.end_at) : "Bitiş belirtilmedi"}</span>
             <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" />{program.location || "Konum bilgisi yok"}</span>
             {program.radius_meters ? <span className="inline-flex items-center gap-1.5"><ShieldAlert className="h-4 w-4" />Yaricap: {program.radius_meters} m</span> : null}
           </div>

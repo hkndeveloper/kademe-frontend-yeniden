@@ -115,7 +115,7 @@ export function ProjectPeriodFilters({
   onProjectChange,
   onPeriodChange,
   projectLabel = "Proje",
-  periodLabel = "Donem",
+  periodLabel = "Dönem",
   className = "grid grid-cols-1 gap-3 md:grid-cols-2",
   selectClassName = "panel-control",
   labelClassName = "panel-field",
@@ -150,7 +150,7 @@ export function ProjectPeriodFilters({
           onChange={(event) => onProjectChange(event.target.value)}
           className={selectClassName}
         >
-          <option value="all">Tum projeler</option>
+          <option value="all">Tüm projeler</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}
@@ -166,10 +166,10 @@ export function ProjectPeriodFilters({
           disabled={selectedProjectId === "all" || periods.length === 0}
           className={selectClassName}
         >
-          <option value="all">{selectedProjectId === "all" ? "Proje secince donem filtrelenir" : "Tum donemler"}</option>
+          <option value="all">{selectedProjectId === "all" ? "Proje seçince dönem filtrelenir" : "Tüm dönemler"}</option>
           {periods.map((period) => (
             <option key={period.id} value={period.id}>
-              {period.name}{period.id === (selectedProject?.current_period ?? selectedProject?.active_period)?.id ? " (guncel)" : period.status === "completed" ? " (tamamlandi)" : ""}
+              {period.name}{period.id === (selectedProject?.current_period ?? selectedProject?.active_period)?.id ? " (güncel)" : period.status === "completed" ? " (tamamlandı)" : ""}
             </option>
           ))}
         </select>

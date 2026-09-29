@@ -70,7 +70,7 @@ function ForgotPasswordInner() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-14 w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-              placeholder="isim@ornek.com"
+              placeholder="isim@örnek.com"
             />
           </span>
         </label>

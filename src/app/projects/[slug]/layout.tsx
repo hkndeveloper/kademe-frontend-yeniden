@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const description =
     (project.short_description && project.short_description.trim()) ||
-    `${project.name} — KADEME proje sayfasi, programlar ve basvuru bilgileri.`;
+    `${project.name} — KADEME proje sayfasi, programlar ve başvuru bilgileri.`;
 
   const ogImages = project.cover_image ? [{ url: project.cover_image }] : undefined;
 

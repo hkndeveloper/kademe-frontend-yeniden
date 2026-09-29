@@ -43,7 +43,7 @@ export default function AlumniAssignmentsPage() {
         const response = await api.get<{ assignments: Assignment[] }>("/assignments");
         setAssignments(response.data.assignments ?? []);
       } catch (error) {
-        console.error("Mezun odevleri cekilemedi", error);
+        console.error("Mezun ödevleri çekilemedi", error);
       } finally {
         setLoading(false);
       }
@@ -87,7 +87,7 @@ export default function AlumniAssignmentsPage() {
       setAssignments(refreshed.data.assignments ?? []);
       setActiveAssignmentId(null);
     } catch (error) {
-      console.error("Mezun teslimi basarisiz", error);
+      console.error("Mezun teslimi başarısız", error);
     } finally {
       setSubmitting(null);
     }
@@ -100,7 +100,7 @@ export default function AlumniAssignmentsPage() {
       const response = await api.get(submission.download_url, { responseType: "blob" });
       await downloadBlobResponse(response.data, response.headers, `odev_teslimi_${submission.id}`);
     } catch (error) {
-      console.error("Teslim dosyasi indirilemedi", error);
+      console.error("Teslim dosyası indirilemedi", error);
     }
   };
 
@@ -122,8 +122,8 @@ export default function AlumniAssignmentsPage() {
             <FileCheck className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900">Odevlerim ve Gorevlerim</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Mezuniyet sonrasi ve gecmis teslim kayitlari</p>
+            <h1 className="text-3xl font-black text-slate-900">Ödevlerim ve Gorevlerim</h1>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Mezuniyet sonrası ve geçmiş teslim kayıtları</p>
           </div>
         </div>
 
@@ -138,7 +138,7 @@ export default function AlumniAssignmentsPage() {
         {assignments.length === 0 ? (
           <div className="glass-panel rounded-3xl border border-dashed border-border p-20 text-center text-muted-foreground">
             <FileCheck className="mx-auto mb-4 h-12 w-12 text-primary/30" />
-            Henuz atanmis bir odev veya gorev gorunmuyor.
+            Henüz atanmış bir ödev veya görev görünmüyor.
           </div>
         ) : (
           assignments.map((assignment, index) => {
@@ -162,14 +162,14 @@ export default function AlumniAssignmentsPage() {
                       </div>
                     </div>
 
-                    <p className="max-w-3xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{assignment.description || "Aciklama girilmemis."}</p>
+                    <p className="max-w-3xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{assignment.description || "Açıklama girilmemiş."}</p>
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <InfoBox label="Son Tarih">
                         <Calendar className="h-4 w-4" />
                         {assignment.due_date ? new Date(assignment.due_date).toLocaleDateString("tr-TR") : "Belirtilmedi"}
                       </InfoBox>
-                      <InfoBox label="Teslim Sayisi">{assignment.submissions?.length ?? 0}</InfoBox>
+                      <InfoBox label="Teslim Sayısı">{assignment.submissions?.length ?? 0}</InfoBox>
                     </div>
 
                     {assignment.submissions?.[0]?.download_url ? (
@@ -187,14 +187,14 @@ export default function AlumniAssignmentsPage() {
                   <div className="flex flex-col justify-between border-t border-border bg-background/50 p-6 lg:border-l lg:border-t-0">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aksiyon</p>
-                      <p className="mt-2 text-sm text-muted-foreground">{submitted ? "Gerekirse mevcut teslimini guncelleyebilirsin." : "Teslim aciklamasi ve dosya ekleyerek gonderebilirsin."}</p>
+                      <p className="mt-2 text-sm text-muted-foreground">{submitted ? "Gerekirse mevcut teslimini güncelleyebilirsin." : "Teslim açıklaması ve dosya ekleyerek gönderebilirsin."}</p>
                     </div>
                     <button
                       onClick={() => setActiveAssignmentId(activeAssignmentId === assignment.id ? null : assignment.id)}
                       className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
                     >
                       <Upload className="h-4 w-4" />
-                      {submitted ? "Teslimi Guncelle" : "Teslim Et"}
+                      {submitted ? "Teslimi Güncelle" : "Teslim Et"}
                     </button>
                   </div>
                 </div>
@@ -203,14 +203,14 @@ export default function AlumniAssignmentsPage() {
                   <div className="space-y-4 border-t border-border bg-background/40 p-6 md:p-7">
                     <input
                       type="text"
-                      placeholder="Teslim basligi (opsiyonel)"
+                      placeholder="Teslim başlığı (opsiyonel)"
                       value={form[assignment.id]?.title || ""}
                       onChange={(e) => updateForm(assignment.id, "title", e.target.value)}
                       className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
                     />
                     <textarea
                       rows={4}
-                      placeholder="Teslim aciklamasi"
+                      placeholder="Teslim açıklaması"
                       value={form[assignment.id]?.description || ""}
                       onChange={(e) => updateForm(assignment.id, "description", e.target.value)}
                       className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
@@ -226,7 +226,7 @@ export default function AlumniAssignmentsPage() {
                       className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {submitting === assignment.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                      Gonder
+                      Gönder
                     </button>
                   </div>
                 )}

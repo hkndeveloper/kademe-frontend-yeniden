@@ -71,8 +71,8 @@ const emptyForm: VolunteerForm = {
 };
 
 const opportunityStatusLabel: Record<Opportunity["status"], string> = {
-  open: "Acik",
-  closed: "Kapali",
+  open: "Açık",
+  closed: "Kapalı",
   archived: "Arsiv",
 };
 
@@ -227,8 +227,8 @@ export default function PanelVolunteerPage() {
       setFeedback(response.data.message);
       closeForm();
     } catch (error) {
-      console.error("Gonullu ilani kaydedilemedi", error);
-      setFeedback("Gonullu ilani kaydedilirken bir hata olustu.");
+      console.error("Gönüllü ilanı kaydedilemedi", error);
+      setFeedback("Gönüllü ilanı kaydedilirken bir hata oluştu.");
     } finally {
       setSaving(false);
     }
@@ -250,8 +250,8 @@ export default function PanelVolunteerPage() {
         })),
       );
     } catch (error) {
-      console.error("Gonullu basvurusu guncellenemedi", error);
-      setFeedback("Basvuru guncellenirken bir hata olustu.");
+      console.error("Gönüllü başvurusu güncellenemedi", error);
+      setFeedback("Başvuru güncellenirken bir hata oluştu.");
     }
   }
 
@@ -260,15 +260,15 @@ export default function PanelVolunteerPage() {
       await api.delete(`/panel/volunteer/opportunities/${opportunity.id}`);
       setOpportunities((current) => current.filter((item) => item.id !== opportunity.id));
     } catch (error) {
-      console.error("Gonullu ilani silinemedi", error);
-      setFeedback("Ilan silinirken bir hata olustu.");
+      console.error("Gönüllü ilanı silinemedi", error);
+      setFeedback("Ilan silinirken bir hata oluştu.");
     }
   }
 
   return (
     <PermissionGate
       permission="volunteer.view"
-      fallback={<div className="panel-empty-card text-amber-700">Gonullu basvurularini goruntuleme yetkiniz bulunmuyor.</div>}
+      fallback={<div className="panel-empty-card text-amber-700">Gönüllü basvurularini görüntüleme yetkiniz bulunmuyor.</div>}
     >
       <div className="space-y-8">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -277,8 +277,8 @@ export default function PanelVolunteerPage() {
               <ClipboardList className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-slate-900">Gonullu Basvurulari</h1>
-              <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Proje kapsaminda ilan ve basvuru yonetimi</p>
+              <h1 className="text-3xl font-black text-slate-900">Gönüllü Başvuruları</h1>
+              <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Proje kapsamında ilan ve başvuru yönetimi</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -289,7 +289,7 @@ export default function PanelVolunteerPage() {
                 project_id: projectFilter !== "all" ? projectFilter : undefined,
                 period_id: periodFilter !== "all" ? periodFilter : undefined,
               }}
-              buttonLabel="Gonullu Kayitlarini Disa Aktar"
+              buttonLabel="Gönüllü Kayıtlarını Dışa Aktar"
             />
             <PermissionGate permission="volunteer.manage">
               <button type="button" disabled={!canCreateInFilterPeriod} title={!canCreateInFilterPeriod ? "Seçili dönemde yeni ilan açılamaz." : undefined} onClick={openCreateForm} className="panel-button panel-button-primary h-11 disabled:cursor-not-allowed disabled:opacity-50">
@@ -306,7 +306,7 @@ export default function PanelVolunteerPage() {
           <PermissionGate permission="volunteer.manage">
             <form onSubmit={handleSubmit} className="panel-section-card">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-lg font-bold text-slate-900">{editingId ? "Gonullu Ilanini Duzenle" : "Yeni Gonullu Ilani"}</h2>
+                <h2 className="text-lg font-bold text-slate-900">{editingId ? "Gönüllü İlanını Düzenle" : "Yeni Gönüllü İlanı"}</h2>
                 <button type="button" onClick={closeForm} className="rounded-full p-2 text-slate-500 hover:bg-slate-100">
                   <X className="h-4 w-4" />
                 </button>
@@ -322,7 +322,7 @@ export default function PanelVolunteerPage() {
                   }}
                   className="panel-control"
                 >
-                  <option value="">Proje sec</option>
+                  <option value="">Proje seç</option>
                   {manageableProjects.map((project) => (
                     <option key={project.id} value={project.id}>{project.name}</option>
                   ))}
@@ -333,7 +333,7 @@ export default function PanelVolunteerPage() {
                   disabled={!form.project_id}
                   className="panel-control"
                 >
-                  <option value="">Tum donemler / genel</option>
+                  <option value="">Tüm dönemler / genel</option>
                   {(manageableProjects.find((project) => String(project.id) === form.project_id)?.periods ?? []).map((period) => (
                     <option key={period.id} value={period.id}>{period.name}</option>
                   ))}
@@ -351,7 +351,7 @@ export default function PanelVolunteerPage() {
                   required
                   value={form.title}
                   onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-                  placeholder="Ilan basligi"
+                  placeholder="Ilan başlığı"
                   className="panel-control"
                 />
                 <input
@@ -385,13 +385,13 @@ export default function PanelVolunteerPage() {
                 rows={3}
                 value={form.description}
                 onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                placeholder="Aciklama"
+                placeholder="Açıklama"
                 className="panel-textarea mt-4"
               />
               <div className="panel-modal-footer mt-4">
                 <button type="button" onClick={closeForm} className="panel-button panel-button-secondary h-11 px-5">Iptal</button>
                 <button disabled={saving || !canWriteSelectedOpportunityPeriod} title={!canWriteSelectedOpportunityPeriod ? "Bu dönemde ilan ekleme veya düzenleme işlemi kapalıdır." : undefined} className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50">
-                  {saving ? "Kaydediliyor..." : editingId ? "Ilani Guncelle" : "Ilani Olustur"}
+                  {saving ? "Kaydediliyor..." : editingId ? "İlanı Güncelle" : "İlanı Oluştur"}
                 </button>
               </div>
             </form>
@@ -437,7 +437,7 @@ export default function PanelVolunteerPage() {
                         <span className={`panel-chip ${panelStatusChipClass(opportunity.status)}`}>{opportunityStatusLabel[opportunity.status]}</span>
                       </div>
                       <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                        {opportunity.project?.name ?? "-"} {opportunity.period?.name ? `/ ${opportunity.period.name}` : ""} / {opportunity.applications_count ?? opportunity.applications?.length ?? 0} basvuru
+                        {opportunity.project?.name ?? "-"} {opportunity.period?.name ? `/ ${opportunity.period.name}` : ""} / {opportunity.applications_count ?? opportunity.applications?.length ?? 0} başvuru
                       </div>
                       {opportunity.description ? <p className="mt-2 text-sm text-muted-foreground">{opportunity.description}</p> : null}
                     </div>
@@ -445,7 +445,7 @@ export default function PanelVolunteerPage() {
                       <div className="flex flex-wrap gap-2">
                         <button type="button" disabled={!canWriteOpportunity} title={!canWriteOpportunity ? "Bu dönem normal değişikliklere kapalıdır." : undefined} onClick={() => startEdit(opportunity)} className="panel-card-action disabled:cursor-not-allowed disabled:opacity-40">
                           <Pencil className="h-4 w-4" />
-                          Duzenle
+                          Düzenle
                         </button>
                         <button type="button" disabled={!canWriteOpportunity} title={!canWriteOpportunity ? "Bu dönem normal değişikliklere kapalıdır." : undefined} onClick={() => void deleteOpportunity(opportunity)} className="panel-card-action panel-card-action-danger disabled:cursor-not-allowed disabled:opacity-40">
                           <Trash2 className="h-4 w-4" />
@@ -486,7 +486,7 @@ export default function PanelVolunteerPage() {
                 </div>
                 );
               })}
-              {opportunities.length === 0 ? <div className="panel-empty-card">Gonullu ilani bulunamadi.</div> : null}
+              {opportunities.length === 0 ? <div className="panel-empty-card">Gönüllü ilanı bulunamadı.</div> : null}
             </div>
           )}
         </div>

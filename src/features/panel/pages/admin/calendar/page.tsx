@@ -140,9 +140,9 @@ const initialForm = {
 };
 
 const statusStyles: Record<string, { label: string; dot: string; chip: string; text: string }> = {
-  scheduled: { label: "Planlandi", dot: "bg-sky-500", chip: "bg-sky-50 border-sky-200", text: "text-sky-700" },
+  scheduled: { label: "Planlandı", dot: "bg-sky-500", chip: "bg-sky-50 border-sky-200", text: "text-sky-700" },
   active: { label: "Aktif", dot: "bg-emerald-500", chip: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
-  completed: { label: "Tamamlandi", dot: "bg-emerald-500", chip: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
+  completed: { label: "Tamamlandı", dot: "bg-emerald-500", chip: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
   cancelled: { label: "Iptal", dot: "bg-red-400", chip: "bg-red-50 border-red-200", text: "text-red-700" },
 };
 
@@ -216,7 +216,7 @@ export default function AdminCalendarPage() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState(() =>
-    searchParams.get("google_calendar") === "connected" ? "Google Calendar baglantisi basariyla kuruldu." : "",
+    searchParams.get("google_calendar") === "connected" ? "Google Calendar bağlantısı başarıyla kuruldu." : "",
   );
   const [form, setForm] = useState(initialForm);
 
@@ -242,7 +242,7 @@ export default function AdminCalendarPage() {
       });
       setAssignees(response.data.users ?? []);
     } catch (error) {
-      console.error("Takvim atama listesi yuklenemedi", error);
+      console.error("Takvim atama listesi yüklenemedi", error);
     }
   }, []);
 
@@ -252,7 +252,7 @@ export default function AdminCalendarPage() {
     try {
       const periodRequest = canViewPeriods
         ? api.get<{ periods?: Period[] }>("/panel/periods").catch((error) => {
-            console.warn("Takvim donem listesi yuklenemedi; takvim ozeti gosterilmeye devam edecek.", error);
+            console.warn("Takvim dönem listesi yüklenemedi; takvim özeti gosterilmeye devam edecek.", error);
             return null;
           })
         : Promise.resolve(null);
@@ -281,7 +281,7 @@ export default function AdminCalendarPage() {
         setSelectedPeriod(active?.id ? String(active.id) : projectPeriods[0]?.id ? String(projectPeriods[0].id) : "all");
       }
     } catch (error) {
-      console.error("Admin takvim verileri yuklenemedi", error);
+      console.error("Admin takvim verileri yüklenemedi", error);
       setErrorMessage(panelLoadErrorMessage(error, "Takvim verileri"));
     } finally {
       setLoading(false);
@@ -420,7 +420,7 @@ export default function AdminCalendarPage() {
       if (createMode === "meeting") {
         const projectId = form.project_id ? Number(form.project_id) : null;
         if (!canCreateMeetingInSelectedScope(form.project_id)) {
-          setErrorMessage("Bu kapsamda toplanti olusturma yetkiniz yok.");
+          setErrorMessage("Bu kapsamda toplantı oluşturma yetkiniz yok.");
           return;
         }
 
@@ -434,11 +434,11 @@ export default function AdminCalendarPage() {
           end_at: withIstanbulOffset(form.end_at),
           assigned_user_ids: createAssigneeIds,
         });
-        setSuccessMessage("Toplanti takvime eklendi.");
+        setSuccessMessage("Toplantı takvime eklendi.");
       } else {
         const projectId = Number(form.project_id);
         if (!canCreateProgram || !Number.isFinite(projectId) || !canAccessProject(programCreatePermission, projectId)) {
-          setErrorMessage("Bu proje icin program olusturma yetkiniz yok.");
+          setErrorMessage("Bu proje için program oluşturma yetkiniz yok.");
           return;
         }
 
@@ -471,14 +471,14 @@ export default function AdminCalendarPage() {
       setIsModalOpen(false);
       await loadCalendar();
     } catch (error: unknown) {
-      console.error("Program olusturulamadi", error);
+      console.error("Program oluşturulamadı", error);
       const message =
         typeof error === "object" &&
         error !== null &&
         "response" in error &&
         typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message ?? "Kayit olusturulamadi."
-          : "Kayit olusturulamadi.";
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message ?? "Kayıt oluşturulamadı."
+          : "Kayıt oluşturulamadı.";
       setErrorMessage(message);
     } finally {
       setCreating(false);
@@ -494,8 +494,8 @@ export default function AdminCalendarPage() {
       });
       window.location.href = response.data.authorization_url;
     } catch (error) {
-      console.error("Google Calendar baglantisi baslatilamadi", error);
-      setErrorMessage("Google Calendar baglantisi baslatilamadi.");
+      console.error("Google Calendar bağlantısı baslatilamadi", error);
+      setErrorMessage("Google Calendar bağlantısı baslatilamadi.");
       setConnecting(false);
     }
   };
@@ -510,8 +510,8 @@ export default function AdminCalendarPage() {
       setSuccessMessage(response.data.message);
       await loadCalendar();
     } catch (error) {
-      console.error("Google Calendar senkronizasyonu basarisiz", error);
-      setErrorMessage("Google Calendar senkronizasyonu basarisiz oldu.");
+      console.error("Google Calendar senkronizasyonu başarısız", error);
+      setErrorMessage("Google Calendar senkronizasyonu başarısız oldu.");
     } finally {
       setSyncing(false);
     }
@@ -549,7 +549,7 @@ export default function AdminCalendarPage() {
     if (!selectedProgram) return;
     const isMeeting = (selectedProgram.event_type ?? "program") === "meeting";
     if (!canManageCalendarItemAssignments(selectedProgram)) {
-      setErrorMessage(isMeeting ? "Bu toplanti icin davetli yonetme yetkiniz yok." : "Bu program icin gorev atama yetkiniz yok.");
+      setErrorMessage(isMeeting ? "Bu toplantı için davetli yonetme yetkiniz yok." : "Bu program için görev atama yetkiniz yok.");
       return;
     }
 
@@ -563,13 +563,13 @@ export default function AdminCalendarPage() {
       await api.put(endpoint, {
         assigned_user_ids: selectedAssigneeIds,
       });
-      setSuccessMessage(isMeeting ? "Toplanti davetlileri guncellendi." : "Gorev atamalari guncellendi.");
+      setSuccessMessage(isMeeting ? "Toplantı davetlileri güncellendi." : "Görev atamaları güncellendi.");
       setIsAssignmentModalOpen(false);
       setSelectedProgram(null);
       await loadCalendar();
     } catch (error) {
       console.error("Atamalar kaydedilemedi", error);
-      setErrorMessage(isMeeting ? "Toplanti davetlileri kaydedilemedi." : "Gorev atamalari kaydedilemedi.");
+      setErrorMessage(isMeeting ? "Toplantı davetlileri kaydedilemedi." : "Görev atamaları kaydedilemedi.");
     } finally {
       setAssignmentSaving(false);
     }
@@ -722,9 +722,9 @@ export default function AdminCalendarPage() {
 
   const googleStatusText = googleStatus?.configured
     ? googleStatus.connected
-      ? `Bagli${googleStatus.last_synced_at ? ` / ${formatIstanbulDateTime(googleStatus.last_synced_at)}` : ""}`
-      : "Baglanti bekleniyor"
-    : "Google ayarlari eksik";
+      ? `Bağlı${googleStatus.last_synced_at ? ` / ${formatIstanbulDateTime(googleStatus.last_synced_at)}` : ""}`
+      : "Bağlantı bekleniyor"
+    : "Google ayarları eksik";
 
   const ProgramChip = ({ program, compact = false }: { program: Program; compact?: boolean }) => {
     const meta = statusMeta(program.status);
@@ -745,7 +745,7 @@ export default function AdminCalendarPage() {
               <p className="truncate text-sm font-bold text-slate-900">{program.title}</p>
             </div>
             <p className="mt-1 truncate text-xs text-slate-500">
-              {isMeeting ? "Toplanti" : program.program_kind === "community_event" ? "Ortak etkinlik" : "Program"} / {program.project?.name ?? "Genel"}
+              {isMeeting ? "Toplantı" : program.program_kind === "community_event" ? "Ortak etkinlik" : "Program"} / {program.project?.name ?? "Genel"}
             </p>
           </div>
           <span className="shrink-0 text-xs font-semibold text-slate-500">{formatTimeRange(program)}</span>
@@ -778,7 +778,7 @@ export default function AdminCalendarPage() {
   return (
     <PermissionGate
       permission="calendar.view"
-      fallback={<div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">Takvimi goruntuleme yetkiniz bulunmuyor.</div>}
+      fallback={<div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">Takvimi görüntüleme yetkiniz bulunmuyor.</div>}
     >
       <div className="space-y-6">
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -789,7 +789,7 @@ export default function AdminCalendarPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-black text-slate-950">Takvim</h1>
-                <p className="text-sm text-slate-500">Programlar, toplantilar, davetliler ve Google Calendar senkron merkezi</p>
+                <p className="text-sm text-slate-500">Programlar, toplantılar, davetliler ve Google Calendar senkron merkezi</p>
               </div>
             </div>
 
@@ -802,7 +802,7 @@ export default function AdminCalendarPage() {
                     project_id: selectedProject !== "all" ? selectedProject : undefined,
                     period_id: selectedPeriod !== "all" ? selectedPeriod : undefined,
                   }}
-                  buttonLabel="Disa Aktar"
+                  buttonLabel="Dışa Aktar"
                 />
               </PermissionGate>
               <button
@@ -812,7 +812,7 @@ export default function AdminCalendarPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
-                {googleStatus?.connected ? "Baglantiyi Yenile" : "Google Bagla"}
+                {googleStatus?.connected ? "Bağlantıyı Yenile" : "Google Bagla"}
               </button>
               <button
                 type="button"
@@ -852,10 +852,10 @@ export default function AdminCalendarPage() {
                 <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">Google Calendar durumu</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   {!googleStatus?.configured
-                    ? "Google Calendar ayarlari eksik."
+                    ? "Google Calendar ayarları eksik."
                     : googleStatus.connected
-                      ? "Baglanti aktif, manuel senkron ile bekleyen programlar Google takvime yazilir."
-                      : "Ayarlar hazir, baglanti bekleniyor."}
+                      ? "Bağlantı aktif, manuel senkron ile bekleyen programlar Google takvime yazilir."
+                      : "Ayarlar hazir, bağlantı bekleniyor."}
                 </p>
               </div>
             </div>
@@ -878,7 +878,7 @@ export default function AdminCalendarPage() {
             { label: "Bugun", value: summary?.today_programs ?? 0, icon: CalendarDays, color: "text-indigo-700", bg: "bg-indigo-50" },
             { label: "Bu Hafta", value: summary?.upcoming_this_week ?? 0, icon: Filter, color: "text-sky-700", bg: "bg-sky-50" },
             { label: "Atamasiz", value: summary?.unassigned_count ?? 0, icon: Users, color: "text-amber-700", bg: "bg-amber-50" },
-            { label: "Toplanti", value: summary?.total_meetings ?? 0, icon: Users, color: "text-violet-700", bg: "bg-violet-50" },
+            { label: "Toplantı", value: summary?.total_meetings ?? 0, icon: Users, color: "text-violet-700", bg: "bg-violet-50" },
             { label: "Google", value: summary?.google_synced_count ?? 0, icon: LinkIcon, color: "text-emerald-700", bg: "bg-emerald-50" },
           ].map((item) => {
             const Icon = item.icon;
@@ -907,7 +907,7 @@ export default function AdminCalendarPage() {
                         onClick={() => setViewMode(mode)}
                         className={`rounded-lg px-3 py-1.5 text-sm font-bold transition ${viewMode === mode ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                       >
-                        {mode === "daily" ? "Gun" : mode === "weekly" ? "Hafta" : "Ay"}
+                        {mode === "daily" ? "Gün" : mode === "weekly" ? "Hafta" : "Ay"}
                       </button>
                     ))}
                   </div>
@@ -941,7 +941,7 @@ export default function AdminCalendarPage() {
                     }}
                     className={inputClass}
                   >
-                    <option value="all">Tum projeler</option>
+                    <option value="all">Tüm projeler</option>
                     {projects.map((project) => (
                       <option key={project.id} value={project.id}>{project.name}</option>
                     ))}
@@ -952,20 +952,20 @@ export default function AdminCalendarPage() {
                     disabled={selectedProject === "all"}
                     className={inputClass}
                   >
-                    <option value="all">{selectedProject === "all" ? "Proje secince donem" : "Tum donemler"}</option>
+                    <option value="all">{selectedProject === "all" ? "Proje seçince dönem" : "Tüm dönemler"}</option>
                     {periods
                       .filter((period) => selectedProject === "all" || String(period.project_id) === selectedProject)
                       .map((period) => (
                         <option key={period.id} value={period.id}>
-                          {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                          {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
                         </option>
                       ))}
                   </select>
                   <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as ProgramStatusFilter)} className={inputClass}>
-                    <option value="all">Tum durumlar</option>
-                    <option value="scheduled">Planlandi</option>
+                    <option value="all">Tüm durumlar</option>
+                    <option value="scheduled">Planlandı</option>
                     <option value="active">Aktif</option>
-                    <option value="completed">Tamamlandi</option>
+                    <option value="completed">Tamamlandı</option>
                     <option value="cancelled">Iptal</option>
                   </select>
                   <select value={recordTypeFilter} onChange={(event) => setRecordTypeFilter(event.target.value as RecordTypeFilter)} className={inputClass}>
@@ -982,7 +982,7 @@ export default function AdminCalendarPage() {
                   </select>
                   <div className="relative min-w-[230px]">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Baslik, proje, konum ara" className={`${inputClass} pl-9`} />
+                    <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Başlık, proje, konum ara" className={`${inputClass} pl-9`} />
                   </div>
                 </div>
               </div>
@@ -994,7 +994,7 @@ export default function AdminCalendarPage() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">Takvim Cizelgesi</h2>
-                  <p className="text-xs text-slate-500">{visiblePrograms.length} kayit listeleniyor{canExportCalendar ? " / export hazir" : ""}</p>
+                  <p className="text-xs text-slate-500">{visiblePrograms.length} kayıt listeleniyor{canExportCalendar ? " / export hazir" : ""}</p>
                 </div>
                 <div className="text-xs font-semibold text-slate-500">{googleStatusText}</div>
               </div>
@@ -1003,7 +1003,7 @@ export default function AdminCalendarPage() {
                 <div className="flex justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-indigo-500" /></div>
               ) : Object.keys(groupedPrograms).length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-500">
-                  Secili aralikta planlanmis kayit bulunmuyor.
+                  Seçili aralikta planlanmis kayıt bulunmuyor.
                 </div>
               ) : viewMode === "monthly" ? (
                 <div className="grid grid-cols-7 gap-2">
@@ -1067,13 +1067,13 @@ export default function AdminCalendarPage() {
               </div>
               <div className="space-y-2">
                 {attentionItems.length === 0 ? (
-                  <p className="rounded-2xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700">Yaklasan kayitlarda kritik eksik yok.</p>
+                  <p className="rounded-2xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700">Yaklaşan kayitlarda kritik eksik yok.</p>
                 ) : (
                   attentionItems.map((program) => (
                     <button key={`${program.event_type ?? "program"}-${program.id}`} type="button" onClick={() => openAssignmentModal(program)} className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-3 text-left transition hover:bg-amber-100">
                       <p className="truncate text-sm font-bold text-slate-900">{program.title}</p>
                       <p className="mt-1 text-xs text-amber-800">
-                        {formatDateTime(program.start_at)} / {program.calendar_event?.assigned_count ? "Senkron kontrolu bekliyor" : "Kisi atanmamis"}
+                        {formatDateTime(program.start_at)} / {program.calendar_event?.assigned_count ? "Senkron kontrolu bekliyor" : "Kişi atanmamis"}
                       </p>
                     </button>
                   ))
@@ -1084,11 +1084,11 @@ export default function AdminCalendarPage() {
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2">
                 <Users className="h-4 w-4 text-indigo-600" />
-                <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">Yaklasan Gorevler</h2>
+                <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">Yaklaşan Görevler</h2>
               </div>
               <div className="space-y-2">
                 {upcomingTasks.length === 0 ? (
-                  <p className="rounded-2xl bg-slate-50 p-3 text-sm text-slate-500">Yaklasan kayit yok.</p>
+                  <p className="rounded-2xl bg-slate-50 p-3 text-sm text-slate-500">Yaklaşan kayıt yok.</p>
                 ) : (
                   upcomingTasks.slice(0, 6).map((program) => (
                     <button key={`${program.event_type ?? "program"}-${program.id}`} type="button" onClick={() => openAssignmentModal(program)} className="w-full rounded-2xl border border-slate-200 p-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50/50">
@@ -1112,8 +1112,8 @@ export default function AdminCalendarPage() {
                 <div>
                   <h2 className="text-xl font-black text-slate-950">
                     {canManageCalendarItemAssignments(selectedProgram)
-                      ? ((selectedProgram.event_type ?? "program") === "meeting" ? "Davetli Yonet" : "Gorev Ata")
-                      : ((selectedProgram.event_type ?? "program") === "meeting" ? "Toplanti Detayi" : "Gorev Detayi")}
+                      ? ((selectedProgram.event_type ?? "program") === "meeting" ? "Davetli Yonet" : "Görev Ata")
+                      : ((selectedProgram.event_type ?? "program") === "meeting" ? "Toplantı Detayi" : "Görev Detayi")}
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">{selectedProgram.title}</p>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
@@ -1130,21 +1130,21 @@ export default function AdminCalendarPage() {
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_160px_180px]">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input value={assignmentSearch} onChange={(event) => setAssignmentSearch(event.target.value)} placeholder="Personel veya koordinator ara..." className={`${inputClass} pl-9`} />
+                    <input value={assignmentSearch} onChange={(event) => setAssignmentSearch(event.target.value)} placeholder="Personel veya koordinatör ara..." className={`${inputClass} pl-9`} />
                   </div>
                   <select value={assignmentRoleFilter} onChange={(event) => setAssignmentRoleFilter(event.target.value)} className={inputClass}>
-                    <option value="all">Tum roller</option>
+                    <option value="all">Tüm roller</option>
                     {assignmentRoleOptions.map((role) => <option key={role} value={role}>{role}</option>)}
                   </select>
                   <select value={assignmentUnitFilter} onChange={(event) => setAssignmentUnitFilter(event.target.value)} className={inputClass}>
-                    <option value="all">Tum birimler</option>
+                    <option value="all">Tüm birimler</option>
                     {assignmentUnitOptions.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
                   </select>
                 </div>
                 {canManageCalendarItemAssignments(selectedProgram) ? (
                   <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={selectFilteredAssignees} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-100">Gorunenleri sec</button>
-                    <button type="button" onClick={clearFilteredAssignees} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-50">Gorunenleri temizle</button>
+                    <button type="button" onClick={selectFilteredAssignees} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-100">Görünenleri seç</button>
+                    <button type="button" onClick={clearFilteredAssignees} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-50">Görünenleri temizle</button>
                     <span className="self-center text-xs text-slate-500">Filtre sonucu: {filteredAssignees.length}</span>
                   </div>
                 ) : null}
@@ -1177,7 +1177,7 @@ export default function AdminCalendarPage() {
               </div>
 
               <div className="flex shrink-0 items-center justify-between border-t border-slate-200 p-5">
-                <p className="text-sm font-semibold text-slate-500">Secili kisi: {selectedAssigneeIds.length}</p>
+                <p className="text-sm font-semibold text-slate-500">Seçili kişi: {selectedAssigneeIds.length}</p>
                 <button
                   type="button"
                   onClick={() => void handleSaveAssignments()}
@@ -1198,7 +1198,7 @@ export default function AdminCalendarPage() {
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-black text-slate-950">Yeni</h2>
-                  <p className="mt-1 text-sm text-slate-500">{createMode === "meeting" ? "Toplanti davetlileri takvimde gorunur." : canCreateCoreProgram ? "Program kaydi Google Calendar entegrasyonuna hazirlanir." : "Ortak etkinlik, Topluluk ve Kultur birimi adina takvime eklenir."}</p>
+                  <p className="mt-1 text-sm text-slate-500">{createMode === "meeting" ? "Toplantı davetlileri takvimde görünür." : canCreateCoreProgram ? "Program kaydı Google Calendar entegrasyonuna hazirlanir." : "Ortak etkinlik, Topluluk ve Kultur birimi adina takvime eklenir."}</p>
                 </div>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100">
                   <X className="h-5 w-5" />
@@ -1230,7 +1230,7 @@ export default function AdminCalendarPage() {
                   }}
                   className={`rounded-xl px-4 py-2 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${createMode === "meeting" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                 >
-                  Toplanti
+                  Toplantı
                 </button>
               </div>
 
@@ -1251,15 +1251,15 @@ export default function AdminCalendarPage() {
                     }}
                     className={inputClass}
                   >
-                    {createMode === "meeting" && hasGlobalScope("calendar.meetings.create") ? <option value="">Genel toplanti</option> : <option value="">Seciniz</option>}
+                    {createMode === "meeting" && hasGlobalScope("calendar.meetings.create") ? <option value="">Genel toplantı</option> : <option value="">Seçiniz</option>}
                     {(createMode === "meeting" ? availableMeetingProjects : availableCreateProjects).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
                   </select>
                 </div>
                 {createMode === "program" || form.project_id ? (
                   <div>
-                    <label className={labelClass}>{createMode === "meeting" ? "Donem (opsiyonel)" : "Donem"}</label>
+                    <label className={labelClass}>{createMode === "meeting" ? "Dönem (opsiyonel)" : "Dönem"}</label>
                     <select required={createMode === "program"} value={form.period_id} onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))} className={inputClass}>
-                      <option value="">{createMode === "meeting" ? "Genel proje toplantisi" : "Seciniz"}</option>
+                      <option value="">{createMode === "meeting" ? "Genel proje toplantısı" : "Seçiniz"}</option>
                       {periods.filter((period) => !form.project_id || String(period.project_id) === form.project_id).map((period) => <option key={period.id} value={period.id}>{period.name}</option>)}
                     </select>
                   </div>
@@ -1273,15 +1273,15 @@ export default function AdminCalendarPage() {
                   </div>
                 ) : null}
                 <div className="md:col-span-2">
-                  <label className={labelClass}>Baslik</label>
+                  <label className={labelClass}>Başlık</label>
                   <input required value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className={inputClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>Baslangic</label>
+                  <label className={labelClass}>Başlangıç</label>
                   <input type="datetime-local" required value={form.start_at} onChange={(event) => setForm((current) => ({ ...current, start_at: event.target.value }))} className={inputClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>Bitis</label>
+                  <label className={labelClass}>Bitiş</label>
                   <input type="datetime-local" required={createMode === "program"} value={form.end_at} onChange={(event) => setForm((current) => ({ ...current, end_at: event.target.value }))} className={inputClass} />
                 </div>
                 <div>
@@ -1292,7 +1292,7 @@ export default function AdminCalendarPage() {
                   <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <label className={labelClass}>Haritadan Konum Secimi</label>
+                        <label className={labelClass}>Haritadan Konum Seçimi</label>
                         <p className="text-xs text-slate-500">Haritaya tiklayarak program yoklama koordinatini belirleyin.</p>
                       </div>
                       <button
@@ -1339,13 +1339,13 @@ export default function AdminCalendarPage() {
                       <input type="number" min={0} value={form.credit_deduction} onChange={(event) => setForm((current) => ({ ...current, credit_deduction: event.target.value }))} className={inputClass} />
                     </div> : null}
                     {canCreateCoreProgram ? <div>
-                      <label className={labelClass}>Basvuru Kontenjani</label>
+                      <label className={labelClass}>Başvuru Kontenjani</label>
                       <input type="number" min={1} value={form.application_quota} onChange={(event) => setForm((current) => ({ ...current, application_quota: event.target.value }))} placeholder="Opsiyonel" className={inputClass} />
                     </div> : null}
                   </>
                 ) : null}
                 <div className="md:col-span-2">
-                  <label className={labelClass}>Aciklama</label>
+                  <label className={labelClass}>Açıklama</label>
                   <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={`${inputClass} h-28 resize-none`} />
                 </div>
               </div>
@@ -1355,31 +1355,31 @@ export default function AdminCalendarPage() {
                   <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Davetliler</h3>
-                      <p className="text-xs text-slate-500">Secili kisi: {createAssigneeIds.length}</p>
+                      <p className="text-xs text-slate-500">Seçili kişi: {createAssigneeIds.length}</p>
                     </div>
                     <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[1fr_140px_150px] lg:w-[620px]">
                       <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <input value={assignmentSearch} onChange={(event) => setAssignmentSearch(event.target.value)} placeholder="Kisi ara" className={`${inputClass} bg-white pl-9`} />
+                        <input value={assignmentSearch} onChange={(event) => setAssignmentSearch(event.target.value)} placeholder="Kişi ara" className={`${inputClass} bg-white pl-9`} />
                       </div>
                       <select value={assignmentRoleFilter} onChange={(event) => setAssignmentRoleFilter(event.target.value)} className={`${inputClass} bg-white`}>
-                        <option value="all">Tum roller</option>
+                        <option value="all">Tüm roller</option>
                         {assignmentRoleOptions.map((role) => <option key={role} value={role}>{role}</option>)}
                       </select>
                       <select value={assignmentUnitFilter} onChange={(event) => setAssignmentUnitFilter(event.target.value)} className={`${inputClass} bg-white`}>
-                        <option value="all">Tum birimler</option>
+                        <option value="all">Tüm birimler</option>
                         {assignmentUnitOptions.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
                       </select>
                     </div>
                   </div>
                   <div className="mb-3 flex flex-wrap gap-2">
-                    <button type="button" onClick={selectFilteredCreateAssignees} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-100">Gorunenleri sec</button>
-                    <button type="button" onClick={clearFilteredCreateAssignees} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 hover:bg-white">Gorunenleri temizle</button>
+                    <button type="button" onClick={selectFilteredCreateAssignees} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-100">Görünenleri seç</button>
+                    <button type="button" onClick={clearFilteredCreateAssignees} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 hover:bg-white">Görünenleri temizle</button>
                     <span className="self-center text-xs text-slate-500">Filtre sonucu: {filteredAssignees.length}</span>
                   </div>
                   <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 md:grid-cols-2">
                     {filteredAssignees.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-500 md:col-span-2">Secilebilir kisi bulunmuyor.</div>
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-500 md:col-span-2">Secilebilir kişi bulunmuyor.</div>
                     ) : (
                       filteredAssignees.map((assignee) => {
                         const checked = createAssigneeIds.includes(assignee.id);
@@ -1401,7 +1401,7 @@ export default function AdminCalendarPage() {
               ) : null}
 
               <div className="mt-6 flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-500">{createMode === "meeting" ? "Toplanti davetlilerin yaklasan kayitlarinda gorunur." : "Saat cakismalari backend tarafinda tum projeler icin kontrol edilir."}</p>
+                <p className="text-xs text-slate-500">{createMode === "meeting" ? "Toplantı davetlilerin yaklaşan kayitlarinda görünür." : "Saat cakismalari backend tarafinda tüm projeler için kontrol edilir."}</p>
                 <button
                   type="submit"
                   disabled={

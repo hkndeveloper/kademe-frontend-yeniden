@@ -79,7 +79,7 @@ export default function PanelProgramQrPage() {
 
   const load = useCallback(async () => {
     if (!Number.isFinite(programId) || programId <= 0) {
-      setError("Gecersiz program.");
+      setError("Geçersiz program.");
       setLoading(false);
       return;
     }
@@ -118,7 +118,7 @@ export default function PanelProgramQrPage() {
       setError(
         validationMessage
           || axiosError.response?.data?.message
-          || "QR uretilemedi. Yetki, proje kapsami ve program saat araligini kontrol edin."
+          || "QR uretilemedi. Yetki, proje kapsamı ve program saat aralığını kontrol edin."
       );
       setToken(null);
       setScanUrl(null);
@@ -142,7 +142,7 @@ export default function PanelProgramQrPage() {
       setAttendanceRecords(res.data.records ?? []);
       setAttendanceUpdatedAt(new Date());
     } catch {
-      setAttendanceError("Canli yoklama listesi yuklenemedi. programs.attendance.view yetkisini ve proje kapsamini kontrol edin.");
+      setAttendanceError("Canlı yoklama listesi yüklenemedi. programs.attendance.view yetkisini ve proje kapsamini kontrol edin.");
     } finally {
       setAttendanceLoading(false);
     }
@@ -219,7 +219,7 @@ export default function PanelProgramQrPage() {
       </div>
 
       <div className="panel-filter-card flex flex-wrap items-center gap-3">
-        <div className="mr-2 text-xs font-black uppercase tracking-widest text-slate-500">Kod suresi</div>
+        <div className="mr-2 text-xs font-black uppercase tracking-widest text-slate-500">Kod süresi</div>
         {rotationOptions.map((seconds) => (
           <button
             key={seconds}
@@ -261,9 +261,9 @@ export default function PanelProgramQrPage() {
             <div className="border-b border-slate-200 bg-slate-50 px-6 py-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-black text-slate-950">Ogrenciye Okutulacak Kod</h2>
+                  <h2 className="text-lg font-black text-slate-950">Öğrenciye Okutulacak Kod</h2>
                   <p className="mt-1 text-sm text-slate-600">
-                    Ogrenci Programlarim ekranindaki QR okuma araciyla bu kodu okutur.
+                    Öğrenci Programlarim ekranindaki QR okuma araciyla bu kodu okutur.
                   </p>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-700">
@@ -278,7 +278,7 @@ export default function PanelProgramQrPage() {
                 <QRCodeSVG value={scanUrl ?? token} size={320} className="block" />
               </div>
               <div className="max-w-2xl rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-center text-sm font-medium text-orange-900">
-                Kod otomatik yenilenir. Ekrani projeksiyonda acik tutabilir veya gerekirse yukaridaki yenile butonunu kullanabilirsin.
+                Kod otomatik yenilenir. Ekrani projeksiyonda açık tutabilir veya gerekirse yukaridaki yenile butonunu kullanabilirsin.
               </div>
             </div>
           </div>
@@ -291,9 +291,9 @@ export default function PanelProgramQrPage() {
                     <UsersRound className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-black text-slate-950">Canli Yoklama</h2>
+                    <h2 className="text-lg font-black text-slate-950">Canlı Yoklama</h2>
                     <p className="mt-1 text-xs font-medium text-slate-500">
-                      10 saniyede bir guncellenir{attendanceUpdatedAt ? ` - Son: ${attendanceUpdatedAt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : ""}
+                      10 saniyede bir güncellenir{attendanceUpdatedAt ? ` - Son: ${attendanceUpdatedAt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : ""}
                     </p>
                   </div>
                 </div>
@@ -309,7 +309,7 @@ export default function PanelProgramQrPage() {
               </div>
 
               <div className="grid gap-3 border-b border-slate-100 p-5 sm:grid-cols-4">
-                <LiveMetric label="Katilimci" value={participantCount} />
+                <LiveMetric label="Katılımcı" value={participantCount} />
                 <LiveMetric label="Gelen" value={presentCount} tone="emerald" />
                 <LiveMetric label="Gelmeyen" value={attendanceSummary?.absent_count ?? Math.max(participantCount - presentCount, 0)} tone="amber" />
                 <LiveMetric label="Oran" value={`${attendanceRate}%`} />
@@ -335,11 +335,11 @@ export default function PanelProgramQrPage() {
                 {attendanceLoading && attendanceRecords.length === 0 ? (
                   <div className="panel-empty-card flex items-center justify-center py-10">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Canli liste yukleniyor...
+                    Canlı liste yükleniyor...
                   </div>
                 ) : latestPresentRecords.length === 0 ? (
                   <div className="panel-empty-card px-5 py-8">
-                    Henuz dogrulanmis QR okutmasi yok.
+                    Henüz doğrulanmış QR okutmasi yok.
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100">
@@ -348,7 +348,7 @@ export default function PanelProgramQrPage() {
                         <div>
                           <p className="text-sm font-bold text-slate-900">{record.student}</p>
                           <p className="text-xs text-slate-500">
-                            {record.email ?? "-"} - {record.role === "alumni" ? "Mezun" : "Ogrenci"}
+                            {record.email ?? "-"} - {record.role === "alumni" ? "Mezun" : "Öğrenci"}
                           </p>
                         </div>
                         <div className="text-right">
@@ -378,7 +378,7 @@ export default function PanelProgramQrPage() {
                 </div>
               </div>
               <p className="text-sm leading-6 text-slate-600">
-                Kod bu sure sonunda otomatik olarak yeniden uretilir. Eski kodlar expiry doldugunda backend tarafinda reddedilir.
+                Kod bu süre sonunda otomatik olarak yeniden uretilir. Eski kodlar expiry doldugunda backend tarafinda reddedilir.
               </p>
             </div>
 
@@ -388,14 +388,14 @@ export default function PanelProgramQrPage() {
                   <Smartphone className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="text-xs font-black uppercase tracking-widest text-slate-500">Ogrenci Akisi</div>
+                  <div className="text-xs font-black uppercase tracking-widest text-slate-500">Öğrenci Akışı</div>
                   <div className="text-base font-black text-slate-950">Programlarim icinden okur</div>
                 </div>
               </div>
               <ol className="space-y-3 text-sm text-slate-600">
-                <li className="panel-card-muted p-3">1. Ogrenci kendi panelinde Programlarim sayfasini acar.</li>
+                <li className="panel-card-muted p-3">1. Öğrenci kendi panelinde Programlarim sayfasini acar.</li>
                 <li className="panel-card-muted p-3">2. QR Yoklama Oku butonuna basar.</li>
-                <li className="panel-card-muted p-3">3. Kamera ve konum izniyle yoklama kaydi olusur.</li>
+                <li className="panel-card-muted p-3">3. Kamera ve konum izniyle yoklama kaydı olusur.</li>
               </ol>
             </div>
 
@@ -403,7 +403,7 @@ export default function PanelProgramQrPage() {
               {generatedAt ? (
                 <>Son uretim: {generatedAt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</>
               ) : (
-                "Kod henuz uretilmedi."
+                "Kod henüz uretilmedi."
               )}
             </div>
           </aside>

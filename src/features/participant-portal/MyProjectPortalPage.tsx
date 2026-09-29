@@ -81,10 +81,10 @@ interface ProjectSpecial {
 
 function statusLabel(status?: string | null): string {
   const labels: Record<string, string> = {
-    active: "Aktif katilimci",
+    active: "Aktif katılımcı",
     passive: "Pasif",
     graduated: "Mezun",
-    failed: "Tamamlayamadi",
+    failed: "Tamamlayamadı",
     waitlist: "Yedek",
     completed: "Tamamladi",
   };
@@ -99,7 +99,7 @@ function formatDate(value?: string | null): string {
 function moduleEnrollmentLabel(status?: string | null): string {
   const labels: Record<string, string> = {
     pending: "Onay Bekleniyor",
-    approved: "Onaylandi",
+    approved: "Onaylandı",
     rejected: "Reddedildi",
     revoked: "Iptal Edildi",
   };
@@ -156,7 +156,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
         );
         setLeaderboardByProject(Object.fromEntries(boardEntries));
       } catch (error) {
-        console.error("Projem verileri cekilemedi", error);
+        console.error("Projem verileri çekilemedi", error);
       } finally {
         setLoading(false);
       }
@@ -168,7 +168,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
   }, []);
 
   const activeParticipation = participations[0] ?? null;
-  const activeProjectName = activeParticipation?.project?.name || "Aktif Proje Bulunamadi";
+  const activeProjectName = activeParticipation?.project?.name || "Aktif Proje Bulunamadı";
   const activeThreshold = activeParticipation?.period?.credit_threshold ?? 100;
   const progress = activeThreshold > 0 ? Math.min(Math.round(((activeParticipation?.credit ?? 0) / activeThreshold) * 100), 100) : 0;
   const activeSpecial = specials.find((item) => item.project.id === activeParticipation?.project?.id) ?? specials[0] ?? null;
@@ -191,7 +191,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
         /* ignore */
       }
     } catch (e) {
-      console.error("Modul kaydi basarisiz", e);
+      console.error("Modül kaydı başarısız", e);
     } finally {
       setEnrolling(null);
     }
@@ -229,11 +229,11 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">{activeProjectName}</h1>
           <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            {portal === "alumni" ? "Mezun proje ozetin ve KADEME araclari" : "Proje detaylari ve araclar"}
+            {portal === "alumni" ? "Mezun proje ozetin ve KADEME araclari" : "Proje detayları ve araclar"}
           </p>
           {activeParticipation?.period?.name ? (
             <p className="mt-2 text-xs font-black uppercase tracking-widest text-primary">
-              {portal === "alumni" ? "Mezuniyet donemi" : "Katilim donemi"}: {activeParticipation.period.name}
+              {portal === "alumni" ? "Mezuniyet dönemi" : "Katılım dönemi"}: {activeParticipation.period.name}
             </p>
           ) : null}
         </div>
@@ -241,15 +241,15 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
 
       {!activeParticipation ? (
         <div className="glass-panel rounded-[32px] p-12 text-center">
-          <h2 className="mb-3 text-2xl font-bold text-slate-900">Aktif proje kaydi gorunmuyor</h2>
+          <h2 className="mb-3 text-2xl font-bold text-slate-900">Aktif proje kaydı görünmüyor</h2>
           <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Bu ekran kabul edildigin aktif veya mezun oldugun proje katilimi uzerinden calisir. Basvurun kabul edildiginde proje iceriklerin burada gorunur.
+            Bu ekran kabul edildigin aktif veya mezun olduğun proje katılımı üzerinden çalışır. Başvurun kabul edildiginde proje içeriklerin burada görünür.
           </p>
           <Link
             href={portal === "alumni" ? `${base}/programs` : `${base}/applications`}
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
           >
-            {portal === "alumni" ? "Program gecmisim" : "Basvurularimi Gor"}
+            {portal === "alumni" ? "Program geçmişim" : "Başvurularımı Gör"}
             <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
@@ -259,7 +259,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Link href={`${base}/bohca`} className="glass-panel group rounded-[28px] p-8 transition-all hover:border-primary/40">
                 <BookOpen className="mb-6 h-10 w-10 text-primary" />
-                <h3 className="mb-2 text-xl font-bold">Dijital Bohca</h3>
+                <h3 className="mb-2 text-xl font-bold">Dijital Bohça</h3>
                 <p className="mb-6 text-sm text-muted-foreground">Bu projeye ait belge, dosya ve materyallere buradan ulasabilirsin.</p>
                 <span className="flex items-center gap-2 text-sm font-bold text-primary">
                   Dosyalara Git
@@ -269,29 +269,29 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
 
               <Link href={`${base}/assignments`} className="glass-panel group rounded-[28px] p-8 transition-all hover:border-primary/40">
                 <FileCheck className="mb-6 h-10 w-10 text-primary" />
-                <h3 className="mb-2 text-xl font-bold">Odev Gonderimi</h3>
-                <p className="mb-6 text-sm text-muted-foreground">Aktif proje donemine ait odevleri ve teslim durumunu takip et.</p>
+                <h3 className="mb-2 text-xl font-bold">Ödev Gonderimi</h3>
+                <p className="mb-6 text-sm text-muted-foreground">Aktif proje dönemine ait ödevleri ve teslim durumunu takip et.</p>
                 <span className="flex items-center gap-2 text-sm font-bold text-primary">
-                  Odevleri Gor
+                  Ödevleri Gör
                   <ChevronRight className="h-4 w-4" />
                 </span>
               </Link>
             </div>
 
             <div className="glass-panel rounded-[32px] border-primary/20 bg-primary/5 p-8">
-              <h3 className="mb-8 text-2xl font-black">Proje Ozeti</h3>
+              <h3 className="mb-8 text-2xl font-black">Proje Özeti</h3>
 
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <InfoPanel title="Katilim Bilgisi">
-                  <InfoLine icon={<Calendar className="h-4 w-4" />} label="Donem" value={activeParticipation.period?.name || "Bilinmiyor"} />
+                <InfoPanel title="Katılım Bilgisi">
+                  <InfoLine icon={<Calendar className="h-4 w-4" />} label="Dönem" value={activeParticipation.period?.name || "Bilinmiyor"} />
                   <InfoLine icon={<FileText className="h-4 w-4" />} label="Durum" value={statusLabel(activeParticipation.status)} />
                   {activeParticipation.graduation_status ? (
                     <InfoLine icon={<Award className="h-4 w-4" />} label="Mezuniyet" value={statusLabel(activeParticipation.graduation_status)} />
                   ) : null}
                 </InfoPanel>
 
-                <InfoPanel title="Odev Ozeti">
-                  <InfoLine label="Toplam odev" value={String(assignmentSummary.total)} />
+                <InfoPanel title="Ödev Özeti">
+                  <InfoLine label="Toplam ödev" value={String(assignmentSummary.total)} />
                   <InfoLine label="Teslim edilen" value={String(assignmentSummary.submitted)} />
                   <InfoLine label="Bekleyen" value={String(assignmentSummary.pending)} />
                 </InfoPanel>
@@ -339,12 +339,12 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
                 <Award className="h-8 w-8" />
               </div>
               <h4 className="mb-2 text-sm font-bold">Sertifikalarim</h4>
-              <p className="mb-6 text-[10px] uppercase tracking-widest text-muted-foreground">Katilim belgeleri ve sertifikalari goruntule</p>
+              <p className="mb-6 text-[10px] uppercase tracking-widest text-muted-foreground">Katılım belgeleri ve sertifikalari görüntüle</p>
               <span className="w-full rounded-xl bg-primary py-3 text-[10px] font-black uppercase tracking-widest text-primary-foreground">Sertifikalara Git</span>
             </Link>
 
             <div className="glass-panel rounded-[32px] p-8">
-              <h3 className="mb-4 text-lg font-bold text-slate-900">Yaklasan Teslim</h3>
+              <h3 className="mb-4 text-lg font-bold text-slate-900">Yaklaşan Teslim</h3>
               {nextAssignment ? (
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <div className="font-bold text-slate-900">{nextAssignment.title}</div>
@@ -354,7 +354,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">Bekleyen teslim tarihi olan odev gorunmuyor.</div>
+                <div className="text-sm text-muted-foreground">Bekleyen teslim tarihi olan ödev görünmüyor.</div>
               )}
             </div>
           </div>
@@ -406,25 +406,25 @@ function ProjectSpecialSection({
       const response = await api.get(item.download_url, { responseType: "blob" });
       await downloadBlobResponse(response.data, response.headers, item.title || `dosya-${item.id}`);
     } catch (error) {
-      console.error("Proje dosyasi indirilemedi", error);
+      console.error("Proje dosyası indirilemedi", error);
     }
   }
 
   return (
     <div className="mt-8 rounded-3xl border border-white/40 bg-white/60 p-6">
-      <h4 className="mb-4 text-lg font-bold text-slate-900">Projeye Ozel Icerikler</h4>
+      <h4 className="mb-4 text-lg font-bold text-slate-900">Projeye Özel İçerikler</h4>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {special.modules.includes("internships") ? (
           <SpecialBox icon={<Briefcase className="h-5 w-5" />} title="Staj Bilgileri">
             {special.internships.length === 0 ? (
-              <p>Staj kaydi bulunmuyor.</p>
+              <p>Staj kaydı bulunmuyor.</p>
             ) : (
               special.internships.slice(0, 3).map((item) => (
                 <div key={item.id} className="rounded-2xl bg-slate-100 p-3">
                   <div className="font-bold text-slate-900">{item.company_name}</div>
                   <div>
                     {item.position}
-                    {item.has_document ? " - belge yuklendi" : ""}
+                    {item.has_document ? " - belge yüklendi" : ""}
                   </div>
                 </div>
               ))
@@ -440,7 +440,7 @@ function ProjectSpecialSection({
               special.mentors.slice(0, 3).map((item) => (
                 <div key={item.id} className="rounded-2xl bg-slate-100 p-3">
                   <div className="font-bold text-slate-900">{item.name}</div>
-                  <div>{item.expertise || "Uzmanlik girilmemis"}</div>
+                  <div>{item.expertise || "Uzmanlık girilmemiş"}</div>
                 </div>
               ))
             )}
@@ -448,9 +448,9 @@ function ProjectSpecialSection({
         ) : null}
 
         {special.modules.includes("uploaded_files") ? (
-          <SpecialBox icon={<Download className="h-5 w-5" />} title="Yuklenen Dosyalar">
+          <SpecialBox icon={<Download className="h-5 w-5" />} title="Yüklenen Dosyalar">
             {(special.uploaded_files ?? []).length === 0 ? (
-              <p>Bu projeye ait gorunur dosya bulunmuyor.</p>
+              <p>Bu projeye ait görünür dosya bulunmuyor.</p>
             ) : (
               (special.uploaded_files ?? []).slice(0, 4).map((item) => (
                 <button
@@ -470,7 +470,7 @@ function ProjectSpecialSection({
         {special.modules.includes("eurodesk_projects") ? (
           <SpecialBox icon={<Handshake className="h-5 w-5" />} title="Eurodesk Projeleri">
             {special.eurodesk_projects.length === 0 ? (
-              <p>Eurodesk proje kaydi bulunmuyor.</p>
+              <p>Eurodesk proje kaydı bulunmuyor.</p>
             ) : (
               special.eurodesk_projects.slice(0, 3).map((item) => (
                 <div key={item.id} className="rounded-2xl bg-slate-100 p-3">
@@ -491,7 +491,7 @@ function ProjectSpecialSection({
               {special.reward_progress?.badge_count ?? 0} rozet / {special.reward_progress?.credit ?? 0} kredi
             </p>
             {special.reward_tiers.length === 0 ? (
-              <p>Hediye kademesi tanimli degil.</p>
+              <p>Hediye kademesi tanımlı değil.</p>
             ) : (
               special.reward_tiers.slice(0, 3).map((item) => (
                 <div key={item.id} className="rounded-2xl bg-slate-100 p-3">
@@ -508,7 +508,7 @@ function ProjectSpecialSection({
         <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">
           <div className="mb-4 flex items-center gap-2 font-bold text-slate-900">
             <BookMarked className="h-5 w-5 text-primary" />
-            KADEME+ Modulleri
+            KADEME+ Modülleri
           </div>
           <div className="space-y-6">
             {mods.map((mod) => (
@@ -520,10 +520,10 @@ function ProjectSpecialSection({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${mod.application_open ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
-                      {mod.application_open ? "Basvuru acik" : "Basvuru kapali"}
+                      {mod.application_open ? "Başvuru açık" : "Başvuru kapalı"}
                     </span>
                     {mod.requires_coordinator_approval ? (
-                      <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700">Onayli kayit</span>
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700">Onaylı kayıt</span>
                     ) : null}
                   </div>
                 </div>
@@ -560,7 +560,7 @@ function ProjectSpecialSection({
                 ) : null}
                 {mod.warning_text ? (
                   <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-950">
-                    <div className="text-[10px] font-black uppercase tracking-widest">Uyari ve yaptirimlar</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest">Uyarı ve yaptirimlar</div>
                     <p className="mt-1 whitespace-pre-wrap text-xs leading-5">{mod.warning_text}</p>
                   </div>
                 ) : null}
@@ -571,7 +571,7 @@ function ProjectSpecialSection({
                         {moduleEnrollmentLabel(mod.enrollment.status)}
                       </span>
                       <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                        <span>Basvuru: {formatDate(mod.enrollment.consented_at)}</span>
+                        <span>Başvuru: {formatDate(mod.enrollment.consented_at)}</span>
                         <span>Inceleme: {formatDate(mod.enrollment.reviewed_at)}</span>
                       </div>
                       {mod.enrollment.note ? <div className="rounded-lg bg-white px-3 py-2 text-xs text-slate-700">{mod.enrollment.note}</div> : null}
@@ -580,7 +580,7 @@ function ProjectSpecialSection({
                     <div className="space-y-3">
                       <div className="flex items-start gap-2 text-xs text-muted-foreground">
                         <FileCheck className="mt-0.5 h-4 w-4 text-primary" />
-                        <span>{mod.requires_coordinator_approval ? "Basvurunuz gonderildikten sonra koordinator onayina dusecek." : "Basvurunuz gonderildiginde modul kaydiniz otomatik onaylanacak."}</span>
+                        <span>{mod.requires_coordinator_approval ? "Başvurunuz gönderildikten sonra koordinatör onayına dusecek." : "Başvurunuz gönderildiğinde modül kaydınız otomatik onaylanacak."}</span>
                       </div>
                       {mod.requires_consent ? (
                         <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
@@ -604,13 +604,13 @@ function ProjectSpecialSection({
                         onClick={() => onEnroll(pid, mod)}
                         className="inline-flex w-fit items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {enrolling && enrolling.projectId === pid && enrolling.moduleId === mod.id ? "Kaydediliyor..." : mod.requires_coordinator_approval ? "Basvuruyu gonder" : "Module kayit ol"}
+                        {enrolling && enrolling.projectId === pid && enrolling.moduleId === mod.id ? "Kaydediliyor..." : mod.requires_coordinator_approval ? "Başvuruyu gönder" : "Module kayıt ol"}
                       </button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      Bu modul icin basvuru kapali.
+                      Bu modül için başvuru kapalı.
                     </div>
                   )}
                 </div>
@@ -626,7 +626,7 @@ function ProjectSpecialSection({
             <Trophy className="h-5 w-5 text-primary" />
             Rozet liderlik tablosu (motivasyon)
           </div>
-          <p className="mb-4 text-xs text-muted-foreground">Aktif katilimcilarin KADEME+ rozet sayisina gore siralanmis ozeti. E-posta ve hassas veriler gosterilmez.</p>
+          <p className="mb-4 text-xs text-muted-foreground">Aktif katılımcıların KADEME+ rozet sayisina göre siralanmis özeti. E-posta ve hassas veriler gösterilmez.</p>
           <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
             {leaderboard.slice(0, 20).map((row) => (
               <div key={row.user_id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm">

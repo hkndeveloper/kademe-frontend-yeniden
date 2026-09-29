@@ -164,8 +164,8 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
           gallery_paths: normalizeGalleryItems(response.data.editable.gallery_paths),
         });
       } catch (error) {
-        console.error("Proje icerigi yuklenemedi", error);
-        setErrorMessage("Proje icerigi yuklenemedi.");
+        console.error("Proje içeriği yüklenemedi", error);
+        setErrorMessage("Proje içeriği yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -222,8 +222,8 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
 
       onSuccess(response.data.url);
     } catch (error) {
-      console.error("Proje gorseli yuklenemedi", error);
-      setErrorMessage("Proje gorseli yuklenemedi.");
+      console.error("Proje görseli yüklenemedi", error);
+      setErrorMessage("Proje görseli yüklenemedi.");
     } finally {
       setUploadingField(null);
     }
@@ -235,7 +235,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
     setErrorMessage(null);
 
     if (canUpdateStructure && (!form.name?.trim() || !form.slug?.trim() || !form.type?.trim())) {
-      setErrorMessage("Proje adi, slug ve proje tipi zorunludur.");
+      setErrorMessage("Proje adı, slug ve proje tipi zorunludur.");
       return;
     }
 
@@ -279,17 +279,17 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
           operations.push(api.put(`${root}/projects/${projectId}/gallery`, { gallery_paths: galleryPaths }));
         }
         await Promise.all(operations);
-        setMessage("Projenin kamusal icerigi kaydedildi.");
+        setMessage("Projenin kamusal içeriği kaydedildi.");
       }
     } catch (error) {
-      console.error("Proje icerigi kaydedilemedi", error);
+      console.error("Proje içeriği kaydedilemedi", error);
       const responseMessage = isAxiosError(error)
         ? error.response?.data?.message ||
           Object.values(error.response?.data?.errors ?? {})
             .flat()
             .join(" ")
         : null;
-      setErrorMessage(responseMessage || "Proje icerigi kaydedilemedi.");
+      setErrorMessage(responseMessage || "Proje içeriği kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -311,8 +311,8 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
             <ArrowLeft className="h-4 w-4" />
             Proje listesine don
           </Link>
-          <h1 className="text-3xl font-black text-slate-900">{project?.name || "Proje Icerigi"}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Bu ekran proje detay sayfasinda ve anasayfa baglantilarinda gorunen alanlari duzenler.</p>
+          <h1 className="text-3xl font-black text-slate-900">{project?.name || "Proje İçeriği"}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Bu ekran proje detay sayfasinda ve anasayfa baglantilarinda gorunen alanları duzenler.</p>
         </div>
         <button
           type="button"
@@ -327,7 +327,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
 
       {!canSaveAnything ? (
         <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
-          Bu proje icin degistirebileceginiz bir icerik alani yok; alanlar salt okunurdur.
+          Bu proje için degistirebileceginiz bir içerik alanı yok; alanlar salt okunurdur.
         </div>
       ) : null}
       {periodReadOnly ? <PeriodArchiveModeNotice period={selectedPeriod} /> : null}
@@ -348,7 +348,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                   readOnly={!canUpdateStructure}
                   value={form.name ?? ""}
                   onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                  placeholder="Proje adi"
+                  placeholder="Proje adı"
                   className={inputClass}
                 />
                 <div className="panel-form-grid">
@@ -424,7 +424,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
               </>
             ) : (
               <div className="panel-card-muted text-sm text-slate-600">
-                Proje kimligi ve turu proje koordinatorlugu tarafindan yonetilir. Bu ekranda yalnizca kamusal tanitim alanlari duzenlenebilir.
+                Proje kimliği ve türü proje koordinatorlugu tarafından yönetilir. Bu ekranda yalnızca kamusal tanıtım alanları düzenlenebilir.
               </div>
             )}
             <textarea
@@ -432,7 +432,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
               value={form.short_description}
               onChange={(event) => setForm((current) => ({ ...current, short_description: event.target.value }))}
               rows={3}
-              placeholder="Kisa tanitim yazisi"
+              placeholder="Kısa tanıtım yazısı"
               className={textareaClass}
             />
             <textarea
@@ -440,14 +440,14 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
               value={form.description}
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
               rows={8}
-              placeholder="Detayli proje aciklamasi"
+              placeholder="Detaylı proje açıklaması"
               className={textareaClass}
             />
           </div>
 
           <div className="panel-section-card space-y-4">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-lg font-bold text-slate-900">Galeri ve Gorseller</h2>
+              <h2 className="text-lg font-bold text-slate-900">Galeri ve Görseller</h2>
               <div className="flex items-center gap-3">
                 <button onClick={addGalleryItem} type="button" disabled={!canUpdateGallery} className="panel-button panel-button-secondary disabled:opacity-40">
                   <Plus className="h-4 w-4" />
@@ -457,7 +457,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                   className={`${compactActionClass} ${!canUpdateGallery ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
                 >
                   {uploadingField === "gallery-new" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  Galeri Yukle
+                  Galeri Yükle
                   <input
                     type="file"
                     disabled={!canUpdateGallery}
@@ -490,14 +490,14 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
               readOnly={!canUpdatePublicContent}
               value={form.cover_image_path}
               onChange={(event) => setForm((current) => ({ ...current, cover_image_path: event.target.value }))}
-              placeholder="Kapak gorsel URL"
+              placeholder="Kapak görsel URL"
               className={inputClass}
             />
             <label
               className={`${compactActionClass} w-fit ${!canUpdatePublicContent ? "pointer-events-none opacity-40" : "cursor-pointer"}`}
             >
               {uploadingField === "cover_image_path" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Kapak gorseli yukle
+              Kapak görseli yükle
               <input
                 type="file"
                 disabled={!canUpdatePublicContent}
@@ -525,7 +525,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                       readOnly={!canUpdateGallery}
                       value={item.path}
                       onChange={(event) => updateGalleryItem(index, "path", event.target.value)}
-                      placeholder={`Galeri gorsel URL ${index + 1}`}
+                      placeholder={`Galeri görsel URL ${index + 1}`}
                       className={inputClass}
                     />
                     <input
@@ -541,7 +541,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                       onChange={(event) => updateGalleryItem(index, "period_id", event.target.value ? Number(event.target.value) : "")}
                       className={inputClass}
                     >
-                      <option value="">Donem yok</option>
+                      <option value="">Dönem yok</option>
                       {(project?.periods ?? []).map((period) => (
                         <option key={period.id} value={period.id}>
                           {period.name}{period.status === "active" ? " (aktif)" : ""}
@@ -578,7 +578,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                     readOnly={!canUpdateGallery}
                     value={item.caption}
                     onChange={(event) => updateGalleryItem(index, "caption", event.target.value)}
-                    placeholder="Gorsel basligi veya kisa aciklama"
+                    placeholder="Görsel başlığı veya kısa açıklama"
                     className={`${inputClass} mt-3`}
                   />
                 </div>
@@ -590,10 +590,10 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
             <div>
               <div className="flex items-center gap-2 text-lg font-bold text-slate-900">
                 <CalendarClock className="h-5 w-5 text-indigo-600" />
-                Basvuru yonetimi ayri ekranda
+                Başvuru yönetimi ayri ekranda
               </div>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                Basvuruyu kimin actigi, hangi donem icin acik oldugu, takvim, kontenjan ve mulakat akisi denetim kayitlariyla birlikte Basvuru Yonetimi ekranindan yonetilir.
+                Başvuruyu kimin açtığı, hangi dönem için açık olduğu, takvim, kontenjan ve mülakat akışı denetim kayitlariyla birlikte Başvuru Yönetimi ekranindan yönetilir.
               </p>
             </div>
             {canAccessIntake ? (
@@ -601,7 +601,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
                 href={`/panel/projects/${projectId}/applications${periodId ? `?period_id=${periodId}` : ""}`}
                 className="panel-button panel-button-secondary shrink-0 text-indigo-700 hover:border-indigo-200 hover:bg-indigo-50"
               >
-                Basvuru Yonetimine Git
+                Başvuru Yönetimine Git
               </Link>
             ) : null}
           </div>
@@ -610,7 +610,7 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
         <div className="panel-section-card space-y-6">
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <ImageIcon className="h-5 w-5 text-primary" />
-            Canli Onizleme
+            Canlı Önizleme
           </h2>
           <div className="relative h-56 overflow-hidden rounded-2xl bg-slate-100">
             {form.cover_image_path ? (
@@ -619,8 +619,8 @@ export function ProjectContentEditor({ projectId, panelBasePath, periodId = "", 
           </div>
           <div>
             <div className="text-xs font-bold uppercase tracking-widest text-primary">{form.type || "Proje"}</div>
-            <h3 className="mt-2 text-2xl font-black text-slate-900">{form.name || "Proje adi"}</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{form.short_description || "Kisa tanitim burada gorunecek."}</p>
+            <h3 className="mt-2 text-2xl font-black text-slate-900">{form.name || "Proje adı"}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{form.short_description || "Kısa tanıtım burada gorunecek."}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {form.gallery_paths.filter((item) => item.path.trim()).slice(0, 4).map((item, index) => (

@@ -15,7 +15,7 @@ export function LogTable({ logs, loading }: Props) {
           <thead>
             <tr>
               <th className="px-5 py-4">Tarih</th>
-              <th className="px-5 py-4">Kullanici</th>
+              <th className="px-5 py-4">Kullanıcı</th>
               <th className="px-5 py-4">Kaynak</th>
               <th className="px-5 py-4">Aksiyon</th>
               <th className="px-5 py-4">Detay</th>
@@ -31,7 +31,7 @@ export function LogTable({ logs, loading }: Props) {
               </tr>
             ) : logs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-14 text-center text-slate-500">Log bulunamadi.</td>
+                <td colSpan={6} className="px-6 py-14 text-center text-slate-500">Log bulunamadı.</td>
               </tr>
             ) : logs.map((log) => (
               <tr key={log.id} className="align-top">

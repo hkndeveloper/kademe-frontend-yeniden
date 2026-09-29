@@ -243,7 +243,7 @@ export const useAuth = create<AuthState>()(
             ...selection,
           });
         } catch (error: unknown) {
-          console.error("Profil guncellenemedi:", error);
+          console.error("Profil güncellenemedi:", error);
           const axiosError = error as AxiosError;
           const errorCode = (axiosError.response?.data as { error?: string } | undefined)?.error;
           if (axiosError.response?.status === 401
@@ -274,7 +274,7 @@ export const useAuth = create<AuthState>()(
           const backendActiveUnitId = response.data.authorization_context?.active_unit_id ?? null;
           const requestedActiveUnitId = get().activeUnitId;
           if (!activeCoordinationContextMatches(requestedActiveUnitId, backendActiveUnitId)) {
-            throw new Error("Backend aktif birim baglami frontend secimiyle eslesmiyor.");
+            throw new Error("Backend aktif birim bağlamı frontend secimiyle eslesmiyor.");
           }
           set({
             panelModules: response.data.modules ?? [],
@@ -282,11 +282,11 @@ export const useAuth = create<AuthState>()(
             panelModulesError: null,
           });
         } catch (error: unknown) {
-          console.error("Panel modulleri yuklenemedi:", error);
+          console.error("Panel modülleri yüklenemedi:", error);
           set({
             panelModules: [],
             panelModulesLoaded: false,
-            panelModulesError: "Panel modulleri yuklenemedi.",
+            panelModulesError: "Panel modülleri yüklenemedi.",
           });
         }
       },
@@ -320,6 +320,4 @@ function contextSelection(user: User | null, unitId: number | null, projectId: n
       : allowedProjectIds[0] ?? null,
   };
 }
-
-
 

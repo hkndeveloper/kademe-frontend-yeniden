@@ -274,7 +274,7 @@ export default function ContactPage() {
                       value={form.email}
                       onChange={(event) => handleChange("email", event.target.value)}
                       className="kdm-public-input"
-                      placeholder="email@ornek.com"
+                      placeholder="email@örnek.com"
                     />
                   </label>
                 </div>

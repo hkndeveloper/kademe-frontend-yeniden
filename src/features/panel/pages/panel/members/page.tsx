@@ -47,8 +47,8 @@ export default function StaffMembersPage() {
           setError(response.data.message);
         }
       } catch (requestError) {
-        console.error("Staff uye listesi yuklenemedi", requestError);
-        setError("Birim uye listesi su anda yuklenemedi.");
+        console.error("Staff uye listesi yüklenemedi", requestError);
+        setError("Birim uye listesi su anda yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -71,11 +71,11 @@ export default function StaffMembersPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900">Personel Listesi</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Kendi biriminize ait sade ekip gorunumu</p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Kendi biriminize ait sade ekip görünümü</p>
           </div>
         </div>
         <PermissionGate permission="staff.export">
-          <ExportButtons endpoint="/panel/members/export" filename="birim_uyeleri" params={{ search: search || undefined }} buttonLabel="Uyeleri Disa Aktar" />
+          <ExportButtons endpoint="/panel/members/export" filename="birim_uyeleri" params={{ search: search || undefined }} buttonLabel="Uyeleri Dışa Aktar" />
         </PermissionGate>
       </div>
 
@@ -83,7 +83,7 @@ export default function StaffMembersPage() {
         permission="staff.view"
         fallback={
         <div className="panel-empty-card">
-          Bu modulu goruntulemek icin yetkiniz bulunmuyor.
+          Bu modülü görüntülemek için yetkiniz bulunmuyor.
         </div>
         }
       >
@@ -91,10 +91,10 @@ export default function StaffMembersPage() {
         <>
       <div className="panel-section-card">
         <div className="space-y-5 text-sm text-muted-foreground">
-          <p>Bu ekran artik sahte ekip kartlari yerine gercek birim listesine bagli calisiyor.</p>
+          <p>Bu ekran artık sahte ekip kartları yerine gercek birim listesine bağlı çalışıyor.</p>
           <p>
-            Personel rolunde hassas ozluk verileri gosterilmiyor. Bu yuzey yalnizca ayni birimdeki ekip arkadaslarini ad, unvan ve
-            temel iletisim ozeti ile sunuyor.
+            Personel rolunde hassas özlük verileri gosterilmiyor. Bu yuzey yalnızca ayni birimdeki ekip arkadaslarini ad, unvan ve
+            temel iletişim özeti ile sunuyor.
           </p>
         </div>
       </div>
@@ -103,24 +103,24 @@ export default function StaffMembersPage() {
         <div className="panel-section-card">
           <div className="mb-4 flex items-center gap-2 text-amber-500">
             <ShieldCheck className="h-5 w-5" />
-            <h2 className="text-lg font-bold text-slate-900">Beklenen Veri Kapsami</h2>
+            <h2 className="text-lg font-bold text-slate-900">Beklenen Veri Kapsamı</h2>
           </div>
           <div className="space-y-3 text-sm text-muted-foreground">
-            <div className="panel-card-muted px-4 py-3">Birim bazli uye listesi</div>
-            <div className="panel-card-muted px-4 py-3">Ad soyad, gorev, iletisim, aktif/pasif durumu</div>
-            <div className="panel-card-muted px-4 py-3">Detayli ozluk verisi olmayan sade gorunum</div>
-            <div className="panel-card-muted px-4 py-3">Yetki bazli sadece kendi birimine erisim</div>
+            <div className="panel-card-muted px-4 py-3">Birim bazlı uye listesi</div>
+            <div className="panel-card-muted px-4 py-3">Ad soyad, görev, iletişim, aktif/pasif durumu</div>
+            <div className="panel-card-muted px-4 py-3">Detaylı özlük verisi olmayan sade görünüm</div>
+            <div className="panel-card-muted px-4 py-3">Yetki bazlı sadece kendi birimine erişim</div>
           </div>
         </div>
 
         <div className="panel-section-card">
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Canli Birim Listesi</h2>
+              <h2 className="text-lg font-bold text-slate-900">Canlı Birim Listesi</h2>
               <p className="text-sm text-muted-foreground">
                 Hesap: {user?.name} {user?.surname} ({user?.role || "staff"})
               </p>
-              <p className="text-sm font-semibold text-amber-700">{unit ? `Birim: ${unit}` : "Birim bilgisi tanimli degil"}</p>
+              <p className="text-sm font-semibold text-amber-700">{unit ? `Birim: ${unit}` : "Birim bilgisi tanımlı değil"}</p>
             </div>
             <label className="relative block md:w-72">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -155,7 +155,7 @@ export default function StaffMembersPage() {
                           {member.role}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{member.staff_profile?.title || "Unvan tanimli degil"}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{member.staff_profile?.title || "Unvan tanımlı değil"}</p>
                     </div>
                     <div className="space-y-1 text-xs text-muted-foreground md:text-right">
                       <div className="flex items-center gap-2 md:justify-end">

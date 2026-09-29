@@ -170,7 +170,7 @@ export default function PanelTrainersPage() {
         setLastPage(payload?.last_page ?? 1);
         setSelectedId((current) => current && rows.some((trainer) => trainer.id === current) ? current : rows[0]?.id ?? null);
       } catch (error) {
-        setFeedback(errorMessage(error, "Egitmen listesi yuklenemedi."));
+        setFeedback(errorMessage(error, "Eğitmen listesi yüklenemedi."));
       } finally {
         setLoading(false);
       }
@@ -188,7 +188,7 @@ export default function PanelTrainersPage() {
 
 
   const activeCommentDraft = selected && commentDraft.trainerId === selected.id ? commentDraft.value : selected?.kademe_comment ?? "";
-  const activeMailSubject = selected && mailDraft.trainerId === selected.id ? mailDraft.subject : selected ? `${selected.full_name} - KADEME iletisim` : "";
+  const activeMailSubject = selected && mailDraft.trainerId === selected.id ? mailDraft.subject : selected ? `${selected.full_name} - KADEME iletişim` : "";
   const activeMailBody = selected && mailDraft.trainerId === selected.id ? mailDraft.body : "";
   function beginCreate() {
     setEditingId("new");
@@ -232,7 +232,7 @@ export default function PanelTrainersPage() {
       setSelectedId(response.data.trainer.id);
       await loadTrainers(page);
     } catch (error) {
-      setFeedback(errorMessage(error, "Egitmen kaydi kaydedilemedi."));
+      setFeedback(errorMessage(error, "Eğitmen kaydı kaydedilemedi."));
     } finally {
       setSaving(false);
     }
@@ -269,23 +269,23 @@ export default function PanelTrainersPage() {
       setFeedback(response.data.message);
       setMailDraft({ trainerId: selected.id, subject: activeMailSubject, body: "" });
     } catch (error) {
-      setFeedback(errorMessage(error, "E-posta gonderilemedi."));
+      setFeedback(errorMessage(error, "E-posta gönderilemedi."));
     } finally {
       setMailSending(false);
     }
   }
 
   async function deleteTrainer(trainer: Trainer) {
-    if (!window.confirm(`${trainer.full_name} kaydi silinsin mi?`)) return;
+    if (!window.confirm(`${trainer.full_name} kaydı silinsin mi?`)) return;
     setSaving(true);
     setFeedback(null);
     try {
       await api.delete(`/panel/trainers/${trainer.id}`);
-      setFeedback("Egitmen kaydi silindi.");
+      setFeedback("Eğitmen kaydı silindi.");
       setSelectedId(null);
       await loadTrainers(page);
     } catch (error) {
-      setFeedback(errorMessage(error, "Egitmen kaydi silinemedi."));
+      setFeedback(errorMessage(error, "Eğitmen kaydı silinemedi."));
     } finally {
       setSaving(false);
     }
@@ -294,7 +294,7 @@ export default function PanelTrainersPage() {
   if (!canView) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-semibold text-amber-800">
-        Egitmen bilgilerini gorme yetkiniz veya kapsam atamaniz bulunmuyor.
+        Eğitmen bilgilerini gorme yetkiniz veya kapsam atamaniz bulunmuyor.
       </div>
     );
   }
@@ -303,9 +303,9 @@ export default function PanelTrainersPage() {
     <div className="space-y-6">
       <header className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <p className="text-xs font-black uppercase tracking-widest text-primary">Yonetim ve kisiler</p>
-          <h1 className="mt-2 text-2xl font-black text-slate-950 md:text-3xl">Egitmen Bilgileri</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">KADEME egitmen havuzu, iletisim bilgileri, uzmanlik alanlari ve Kademe yorumu.</p>
+          <p className="text-xs font-black uppercase tracking-widest text-primary">Yönetim ve kişiler</p>
+          <h1 className="mt-2 text-2xl font-black text-slate-950 md:text-3xl">Eğitmen Bilgileri</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">KADEME eğitmen havuzu, iletişim bilgileri, uzmanlık alanları ve Kademe yorumu.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {canExport ? (
@@ -313,12 +313,12 @@ export default function PanelTrainersPage() {
               endpoint="/panel/trainers/export"
               filename="egitmenler"
               params={{ search: search || undefined, status: status !== "all" ? status : undefined }}
-              buttonLabel="Disa Aktar"
+              buttonLabel="Dışa Aktar"
             />
           ) : null}
           {canCreate ? (
             <button type="button" onClick={beginCreate} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800">
-              <Plus className="h-4 w-4" /> Yeni Egitmen
+              <Plus className="h-4 w-4" /> Yeni Eğitmen
             </button>
           ) : null}
         </div>
@@ -357,12 +357,12 @@ export default function PanelTrainersPage() {
                   }
                 }}
                 className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
-                placeholder="Isim, e-posta, uzmanlik ara"
+                placeholder="Isim, e-posta, uzmanlık ara"
               />
             </div>
             <div className="flex gap-2">
               <select value={status} onChange={(event) => { setStatus(event.target.value as typeof status); setPage(1); }} className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary">
-                <option value="all">Tum durumlar</option>
+                <option value="all">Tüm durumlar</option>
                 <option value="active">Aktif</option>
                 <option value="candidate">Aday</option>
                 <option value="passive">Pasif</option>
@@ -377,24 +377,24 @@ export default function PanelTrainersPage() {
             {loading ? (
               <div className="flex min-h-48 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
             ) : trainers.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm font-semibold text-slate-500">Kayit bulunamadi.</div>
+              <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm font-semibold text-slate-500">Kayıt bulunamadı.</div>
             ) : trainers.map((trainer) => (
               <button key={trainer.id} type="button" onClick={() => { setSelectedId(trainer.id); setEditingId(null); }} className={`w-full rounded-xl border p-3 text-left transition ${selected?.id === trainer.id ? "border-primary bg-primary/5" : "border-slate-200 hover:bg-slate-50"}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-black text-slate-950">{trainer.full_name}</p>
-                    <p className="mt-1 truncate text-xs text-slate-500">{trainer.expertise || trainer.title || "Uzmanlik bilgisi yok"}</p>
+                    <p className="mt-1 truncate text-xs text-slate-500">{trainer.expertise || trainer.title || "Uzmanlık bilgisi yok"}</p>
                   </div>
                   <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black uppercase text-slate-600">{statusLabels[trainer.status]}</span>
                 </div>
-                <p className="mt-2 truncate text-xs text-slate-400">{trainer.email || trainer.phone || trainer.organization || "Iletisim bilgisi yok"}</p>
+                <p className="mt-2 truncate text-xs text-slate-400">{trainer.email || trainer.phone || trainer.organization || "İletişim bilgisi yok"}</p>
               </button>
             ))}
           </div>
 
           {lastPage > 1 ? (
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-              <button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold disabled:opacity-50">Onceki</button>
+              <button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold disabled:opacity-50">Önceki</button>
               <span className="text-xs font-bold text-slate-500">{page} / {lastPage}</span>
               <button type="button" disabled={page >= lastPage} onClick={() => setPage((current) => current + 1)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold disabled:opacity-50">Sonraki</button>
             </div>
@@ -405,8 +405,8 @@ export default function PanelTrainersPage() {
           {editingId ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-lg font-black text-slate-950">{editingId === "new" ? "Yeni egitmen" : "Egitmen kaydini duzenle"}</h2>
-                <button type="button" onClick={() => setEditingId(null)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Vazgec</button>
+                <h2 className="text-lg font-black text-slate-950">{editingId === "new" ? "Yeni eğitmen" : "Eğitmen kaydını düzenle"}</h2>
+                <button type="button" onClick={() => setEditingId(null)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Vazgeç</button>
               </div>
               <form onSubmit={submitTrainer} className="grid gap-4 md:grid-cols-2">
                 <Field label="Ad" value={form.first_name} onChange={(value) => setForm((current) => ({ ...current, first_name: value }))} required />
@@ -415,7 +415,7 @@ export default function PanelTrainersPage() {
                 <Field label="Telefon" value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
                 <Field label="Unvan" value={form.title} onChange={(value) => setForm((current) => ({ ...current, title: value }))} />
                 <Field label="Kurum" value={form.organization} onChange={(value) => setForm((current) => ({ ...current, organization: value }))} />
-                <Field label="Uzmanlik" value={form.expertise} onChange={(value) => setForm((current) => ({ ...current, expertise: value }))} />
+                <Field label="Uzmanlık" value={form.expertise} onChange={(value) => setForm((current) => ({ ...current, expertise: value }))} />
                 <label className="text-sm font-bold text-slate-700">
                   Durum
                   <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as Trainer["status"] }))} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary">
@@ -424,8 +424,8 @@ export default function PanelTrainersPage() {
                     <option value="passive">Pasif</option>
                   </select>
                 </label>
-                <Field label="Son calisma tarihi" value={form.last_worked_at} onChange={(value) => setForm((current) => ({ ...current, last_worked_at: value }))} type="date" />
-                <TextArea label="Biyografi / tanitim" value={form.bio} onChange={(value) => setForm((current) => ({ ...current, bio: value }))} />
+                <Field label="Son çalışma tarihi" value={form.last_worked_at} onChange={(value) => setForm((current) => ({ ...current, last_worked_at: value }))} type="date" />
+                <TextArea label="Biyografi / tanıtım" value={form.bio} onChange={(value) => setForm((current) => ({ ...current, bio: value }))} />
                 <TextArea label="Genel notlar" value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} />
                 <div className="md:col-span-2">
                   <button type="submit" disabled={saving || !form.first_name.trim()} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50">
@@ -443,20 +443,20 @@ export default function PanelTrainersPage() {
                       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Users className="h-5 w-5" /></div>
                       <div className="min-w-0">
                         <h2 className="truncate text-2xl font-black text-slate-950">{selected.full_name}</h2>
-                        <p className="text-sm font-semibold text-slate-500">{selected.title || selected.expertise || "Egitmen"}</p>
+                        <p className="text-sm font-semibold text-slate-500">{selected.title || selected.expertise || "Eğitmen"}</p>
                       </div>
                     </div>
                     <div className="mt-5 grid gap-3 md:grid-cols-2">
                       <Info label="E-posta" value={selected.email} />
                       <Info label="Telefon" value={selected.phone} />
                       <Info label="Kurum" value={selected.organization} />
-                      <Info label="Uzmanlik" value={selected.expertise} />
+                      <Info label="Uzmanlık" value={selected.expertise} />
                       <Info label="Durum" value={statusLabels[selected.status]} />
-                      <Info label="Son calisma" value={selected.last_worked_at ? new Date(selected.last_worked_at).toLocaleDateString("tr-TR") : null} />
+                      <Info label="Son çalışma" value={selected.last_worked_at ? new Date(selected.last_worked_at).toLocaleDateString("tr-TR") : null} />
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
-                    {canUpdate ? <button type="button" onClick={() => beginEdit(selected)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"><Edit3 className="h-4 w-4" /> Duzenle</button> : null}
+                    {canUpdate ? <button type="button" onClick={() => beginEdit(selected)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"><Edit3 className="h-4 w-4" /> Düzenle</button> : null}
                     {canDelete ? <button type="button" onClick={() => void deleteTrainer(selected)} className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700"><Trash2 className="h-4 w-4" /> Sil</button> : null}
                   </div>
                 </div>
@@ -467,20 +467,20 @@ export default function PanelTrainersPage() {
                   </div>
                 ) : null}
                 <div className="mt-5 border-t border-slate-100 pt-4 text-xs font-semibold text-slate-400">
-                  Olusturan: {compactUser(selected.creator)} | Son guncelleme: {selected.updated_at ? new Date(selected.updated_at).toLocaleString("tr-TR") : "-"}
+                  Olusturan: {compactUser(selected.creator)} | Son güncelleme: {selected.updated_at ? new Date(selected.updated_at).toLocaleString("tr-TR") : "-"}
                 </div>
               </section>
 
               <section className="grid gap-5 xl:grid-cols-2">
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <h3 className="text-base font-black text-slate-950">Kademe yorumu</h3>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">Bu alan tek yorumdur; yetkisi olan kisiler son izlenimi gunceller.</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">Bu alan tek yorumdur; yetkisi olan kişiler son izlenimi gunceller.</p>
                   <textarea
                     value={activeCommentDraft}
                     onChange={(event) => setCommentDraft({ trainerId: selected.id, value: event.target.value })}
                     readOnly={!canComment}
                     className="mt-4 min-h-36 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-primary disabled:bg-slate-50"
-                    placeholder="Egitmenin calismalari, saha izlenimi, guvenilirlik ve tekrar calisma notlari..."
+                    placeholder="Egitmenin çalışmaları, saha izlenimi, guvenilirlik ve tekrar çalışma notlari..."
                   />
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <span className="text-xs font-semibold text-slate-400">Son yorum: {selected.comment_updated_at ? new Date(selected.comment_updated_at).toLocaleString("tr-TR") : "-"}</span>
@@ -489,8 +489,8 @@ export default function PanelTrainersPage() {
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h3 className="text-base font-black text-slate-950">E-posta gonder</h3>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">Adres varsa secili egitmene sistem uzerinden mesaj gonderilir.</p>
+                  <h3 className="text-base font-black text-slate-950">E-posta gönder</h3>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">Adres varsa seçili egitmene sistem üzerinden mesaj gonderilir.</p>
                   {!selected.email ? (
                     <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">Bu egitmenin e-posta adresi yok.</div>
                   ) : !canEmail ? (
@@ -501,7 +501,7 @@ export default function PanelTrainersPage() {
                       <input value={activeMailSubject} onChange={(event) => setMailDraft({ trainerId: selected.id, subject: event.target.value, body: activeMailBody })} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary" placeholder="Konu" />
                       <textarea value={activeMailBody} onChange={(event) => setMailDraft({ trainerId: selected.id, subject: activeMailSubject, body: event.target.value })} className="min-h-32 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-primary" placeholder="Mesaj" />
                       <button type="submit" disabled={mailSending || !activeMailSubject.trim() || !activeMailBody.trim()} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50">
-                        {mailSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Gonder
+                        {mailSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Gönder
                       </button>
                     </form>
                   )}
@@ -509,7 +509,7 @@ export default function PanelTrainersPage() {
               </section>
             </>
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm font-semibold text-slate-500">Bir egitmen secin veya yeni kayit olusturun.</div>
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm font-semibold text-slate-500">Bir eğitmen seçin veya yeni kayıt oluşturun.</div>
           )}
         </main>
       </section>

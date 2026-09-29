@@ -103,7 +103,7 @@ function Pill({ label, verified }: { label: string; verified: boolean }) {
       )}
     >
       {verified ? <CheckCircle className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-      {label} {verified ? "dogrulandi" : "bekliyor"}
+      {label} {verified ? "doğrulandı" : "bekliyor"}
     </div>
   );
 }
@@ -126,8 +126,8 @@ export function ProfileLockedField({
       <div className="font-semibold text-slate-900">{value}</div>
       <p className={cn("mt-2 text-xs font-medium", verified ? "text-emerald-700" : "text-amber-800")}>
         {verified
-          ? "Bu alan kullanici tarafindan degistirilemez (KVKK / dogrulama)."
-          : "Entegrasyon tamamlandiginda sistem tarafindan dogrulanacak."}
+          ? "Bu alan kullanıcı tarafından değiştirilemez (KVKK / doğrulama)."
+          : "Entegrasyon tamamlandığında sistem tarafından doğrulanacak."}
       </p>
     </div>
   );
@@ -135,7 +135,7 @@ export function ProfileLockedField({
 
 export type ProfileQuickLink = { href: string; label: string; description?: string; icon: LucideIcon };
 
-export function ProfileQuickLinks({ items, title = "Ilgili moduller" }: { items: ProfileQuickLink[]; title?: string }) {
+export function ProfileQuickLinks({ items, title = "Ilgili modüller" }: { items: ProfileQuickLink[]; title?: string }) {
   if (items.length === 0) return null;
   return (
     <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-sm sm:p-6">

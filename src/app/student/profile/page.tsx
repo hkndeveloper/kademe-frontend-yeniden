@@ -75,11 +75,11 @@ const emptyPassword: PasswordForm = {
 };
 
 const quickLinks: ProfileQuickLink[] = [
-  { href: "/student/dashboard", label: "Panel ozet", description: "Kredi ve ozet", icon: LayoutDashboard },
-  { href: "/student/applications", label: "Basvurularim", description: "Kabul / red durumu", icon: FileText },
-  { href: "/student/certificates", label: "Sertifikalarim", description: "Katilim ve basari belgeleri", icon: Award },
-  { href: "/student/bohca", label: "Dijital bohca", description: "Proje materyalleri", icon: BookOpen },
-  { href: "/student/inbox", label: "Mesaj kutusu", description: "Sistem ici iletisim", icon: Megaphone },
+  { href: "/student/dashboard", label: "Panel özet", description: "Kredi ve özet", icon: LayoutDashboard },
+  { href: "/student/applications", label: "Başvurularım", description: "Kabul / red durumu", icon: FileText },
+  { href: "/student/certificates", label: "Sertifikalarim", description: "Katılım ve başarı belgeleri", icon: Award },
+  { href: "/student/bohca", label: "Dijital bohça", description: "Proje materyalleri", icon: BookOpen },
+  { href: "/student/inbox", label: "Mesaj kutusu", description: "Sistem ici iletişim", icon: Megaphone },
 ];
 
 export default function StudentProfilePage() {
@@ -118,8 +118,8 @@ export default function StudentProfilePage() {
           instagram_url: nextUser.profile?.instagram_url ?? "",
         });
       } catch (error) {
-        console.error("Profil bilgileri yuklenemedi", error);
-        setProfileMessage("Profil bilgileri yuklenirken bir hata olustu.");
+        console.error("Profil bilgileri yüklenemedi", error);
+        setProfileMessage("Profil bilgileri yüklenirken bir hata oluştu.");
         setProfileTone("error");
       } finally {
         setLoading(false);
@@ -138,11 +138,11 @@ export default function StudentProfilePage() {
     try {
       await api.put("/user/profile", form);
       await fetchProfile();
-      setProfileMessage("Profil bilgileri basariyla guncellendi.");
+      setProfileMessage("Profil bilgileri başarıyla güncellendi.");
       setProfileTone("success");
     } catch (error) {
       console.error("Profil kaydedilemedi", error);
-      setProfileMessage("Profil kaydedilirken bir hata olustu.");
+      setProfileMessage("Profil kaydedilirken bir hata oluştu.");
       setProfileTone("error");
     } finally {
       setSavingProfile(false);
@@ -158,11 +158,11 @@ export default function StudentProfilePage() {
     try {
       await api.post("/user/change-password", passwordForm);
       setPasswordForm(emptyPassword);
-      setPasswordMessage("Sifreniz basariyla guncellendi.");
+      setPasswordMessage("Şifreniz başarıyla güncellendi.");
       setPasswordTone("success");
     } catch (error) {
-      console.error("Sifre degistirilemedi", error);
-      setPasswordMessage("Sifre degistirilirken bir hata olustu.");
+      console.error("Şifre degistirilemedi", error);
+      setPasswordMessage("Şifre degistirilirken bir hata oluştu.");
       setPasswordTone("error");
     } finally {
       setSavingPassword(false);
@@ -181,19 +181,19 @@ export default function StudentProfilePage() {
     <div className="space-y-8 pb-10">
       <ProfileHero
         title="Profilim"
-        subtitle="Kisisel ve akademik bilgiler; sosyal baglantilar ve motivasyon metni. Sartname Madde 4.2 ozet verileri asagidaki modullerde toplanir."
+        subtitle="Kişisel ve akademik bilgiler; sosyal baglantilar ve motivasyon metni. Sartname Madde 4.2 özet verileri aşağıdaki modullerde toplanır."
         icon={UserCircle}
         accent="orange"
       />
 
-      <ProfileQuickLinks items={quickLinks} title="Sartname ile hizali moduller" />
+      <ProfileQuickLinks items={quickLinks} title="Sartname ile hizali modüller" />
 
       {profileMessage ? <ProfileMessageBanner type={profileTone}>{profileMessage}</ProfileMessageBanner> : null}
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
         <form onSubmit={handleProfileSubmit} className="space-y-8 xl:col-span-2">
           <ProfileCard
-            title="Kisisel ve akademik"
+            title="Kişisel ve akademik"
             description={`Hesap: ${user?.name ?? ""} ${user?.surname ?? ""} (${user?.email ?? ""})`}
           >
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -202,7 +202,7 @@ export default function StudentProfilePage() {
                 tablosunda; sosyal link ve motivasyon{" "}
                 <code className="rounded bg-slate-100 px-1 text-xs">user_profiles</code> icindedir.
               </p>
-              <ProfileVerificationPills tc={verification.tc} yok={verification.yok} yokLabel="YOK (ogrenci)" />
+              <ProfileVerificationPills tc={verification.tc} yok={verification.yok} yokLabel="YOK (öğrenci)" />
             </div>
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -225,21 +225,21 @@ export default function StudentProfilePage() {
                 />
               </div>
               <div>
-                <ProfileFieldLabel label="Universite" />
+                <ProfileFieldLabel label="Üniversite" />
                 <input
                   value={form.university}
                   onChange={(e) => setForm((prev) => ({ ...prev, university: e.target.value }))}
                   className={profileInputClass}
-                  placeholder="Universite"
+                  placeholder="Üniversite"
                 />
               </div>
               <div>
-                <ProfileFieldLabel label="Bolum" />
+                <ProfileFieldLabel label="Bölüm" />
                 <input
                   value={form.department}
                   onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
                   className={profileInputClass}
-                  placeholder="Bolum"
+                  placeholder="Bölüm"
                 />
               </div>
               <div>
@@ -248,7 +248,7 @@ export default function StudentProfilePage() {
                   value={form.class_year}
                   onChange={(e) => setForm((prev) => ({ ...prev, class_year: e.target.value }))}
                   className={profileInputClass}
-                  placeholder="Ornek: 3 veya 2026"
+                  placeholder="Örnek: 3 veya 2026"
                 />
               </div>
               <div>
@@ -265,12 +265,12 @@ export default function StudentProfilePage() {
             <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
               <ProfileLockedField
                 label="T.C. Kimlik No"
-                value={verification.tc ? "Sistemde dogrulandi" : "Dogrulama bekliyor"}
+                value={verification.tc ? "Sistemde doğrulandı" : "Doğrulama bekliyor"}
                 verified={verification.tc}
               />
               <ProfileLockedField
-                label="YOK ogrenci bilgisi"
-                value={verification.yok ? "Sistemde dogrulandi" : "Dogrulama bekliyor"}
+                label="YOK öğrenci bilgisi"
+                value={verification.yok ? "Sistemde doğrulandı" : "Doğrulama bekliyor"}
                 verified={verification.yok}
               />
             </div>
@@ -281,17 +281,17 @@ export default function StudentProfilePage() {
                 value={form.address}
                 onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
                 className={`${profileInputClass} min-h-[96px]`}
-                placeholder="Acik adres"
+                placeholder="Açık adres"
               />
             </div>
 
             <div className="mt-5">
-              <ProfileFieldLabel label="Motivasyon notu" hint="Dashboard veya iletisim metinlerinde kullanilabilir." />
+              <ProfileFieldLabel label="Motivasyon notu" hint="Dashboard veya iletişim metinlerinde kullanilabilir." />
               <textarea
                 value={form.motivation_message}
                 onChange={(e) => setForm((prev) => ({ ...prev, motivation_message: e.target.value }))}
                 className={`${profileInputClass} min-h-[120px]`}
-                placeholder="Kisa motivasyon notun"
+                placeholder="Kısa motivasyon notun"
               />
             </div>
 
@@ -338,10 +338,10 @@ export default function StudentProfilePage() {
 
         <div className="space-y-8">
           <form onSubmit={handlePasswordSubmit}>
-            <ProfileCard title="Sifre guncelle" description="Guvenli sifre icin en az 8 karakter ve tekrar alani zorunludur.">
+            <ProfileCard title="Şifre güncelle" description="Güvenli şifre için en az 8 karakter ve tekrar alanı zorunludur.">
               <div className="space-y-4">
                 <div>
-                  <ProfileFieldLabel label="Mevcut sifre" />
+                  <ProfileFieldLabel label="Mevcut şifre" />
                   <input
                     type="password"
                     value={passwordForm.current_password}
@@ -351,7 +351,7 @@ export default function StudentProfilePage() {
                   />
                 </div>
                 <div>
-                  <ProfileFieldLabel label="Yeni sifre" />
+                  <ProfileFieldLabel label="Yeni şifre" />
                   <input
                     type="password"
                     value={passwordForm.password}
@@ -361,7 +361,7 @@ export default function StudentProfilePage() {
                   />
                 </div>
                 <div>
-                  <ProfileFieldLabel label="Yeni sifre tekrar" />
+                  <ProfileFieldLabel label="Yeni şifre tekrar" />
                   <input
                     type="password"
                     value={passwordForm.password_confirmation}
@@ -382,14 +382,14 @@ export default function StudentProfilePage() {
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-60"
               >
                 {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                Sifreyi guncelle
+                Şifreyi güncelle
               </button>
             </ProfileCard>
           </form>
 
           <ProfileCard
-            title="Kisilik analizi"
-            description="Sartname ve KPD akislariyla uyumlu; sonuclar yetkili ekiple paylasilabilir."
+            title="Kişilik analizi"
+            description="Sartname ve KPD akislariyla uyumlu; sonuçlar yetkili ekiple paylasilabilir."
           >
             <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-6 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FF6B00]/15 text-[#FF6B00]">
@@ -397,9 +397,9 @@ export default function StudentProfilePage() {
               </div>
               <h3 className="mb-2 font-bold text-slate-900">Analiz testini tamamla</h3>
               <p className="mb-6 text-xs text-slate-600">
-                Kariyer planlamani desteklemek icin hazirlanan sorulari doldur. Veriler{" "}
+                Kariyer planlamani desteklemek için hazirlanan sorulari doldur. Veriler{" "}
                 <code className="rounded bg-white px-1 text-[11px]">user_profiles.personality_test_data</code>{" "}
-                alaninda saklanir.
+                alanında saklanir.
               </p>
               <Link
                 href="/student/personality"
@@ -409,7 +409,7 @@ export default function StudentProfilePage() {
               </Link>
             </div>
             <p className="mt-4 text-center text-[10px] text-slate-500">
-              TC ve YOK alanlari kullanici tarafindan degistirilemez; dogrulama entegrasyonlariyla guncellenir.
+              TC ve YOK alanları kullanıcı tarafından değiştirilemez; doğrulama entegrasyonlariyla güncellenir.
             </p>
           </ProfileCard>
         </div>

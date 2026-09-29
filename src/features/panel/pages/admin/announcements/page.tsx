@@ -54,14 +54,14 @@ interface PaginatedLogs {
 
 const roleLabels: Record<string, string> = {
   super_admin: "Admin",
-  coordinator: "Koordinator",
+  coordinator: "Koordinatör",
   staff: "Personel",
-  student: "Ogrenci",
+  student: "Öğrenci",
   alumni: "Mezun",
 };
 
 const targetUnitLabels: Record<string, string> = {
-  media: "Medya / Tasarim",
+  media: "Medya / Tasarım",
   operations: "Operasyon",
   program: "Program / Proje",
   finance: "Finans",
@@ -205,8 +205,8 @@ export default function AdminAnnouncementsPage() {
       const items = Array.isArray(res.data?.announcements?.data) ? res.data.announcements.data : [];
       setAnnouncements(items);
     } catch (error) {
-      console.error("Duyurular yuklenemedi", error);
-      setErrorMessage("Duyurular yuklenirken bir hata olustu.");
+      console.error("Duyurular yüklenemedi", error);
+      setErrorMessage("Duyurular yüklenirken bir hata oluştu.");
     } finally {
       setListLoading(false);
     }
@@ -235,7 +235,7 @@ export default function AdminAnnouncementsPage() {
       setLogLastPage(logs?.last_page ?? 1);
       setLogTotal(logs?.total ?? 0);
     } catch (error) {
-      console.error("Gonderim loglari yuklenemedi", error);
+      console.error("Gönderim loglari yüklenemedi", error);
       setCommunicationLogs([]);
     } finally {
       setLogLoading(false);
@@ -259,8 +259,8 @@ export default function AdminAnnouncementsPage() {
           raw.filter((p) => canAccessProject("announcements.create", p.id) || canAccessProject("announcements.update", p.id) || canAccessProject("announcements.view", p.id))
         );
       } catch (error) {
-        console.error("Veriler yuklenemedi", error);
-        setErrorMessage("Sayfa verileri yuklenirken bir hata olustu.");
+        console.error("Veriler yüklenemedi", error);
+        setErrorMessage("Sayfa verileri yüklenirken bir hata oluştu.");
       } finally {
         setLoading(false);
       }
@@ -319,13 +319,13 @@ export default function AdminAnnouncementsPage() {
     if (!editingAnnouncement) return;
 
     if (!editForm.title.trim() || !editForm.content.trim()) {
-      setErrorMessage("Baslik ve icerik zorunludur.");
+      setErrorMessage("Başlık ve içerik zorunludur.");
       return;
     }
 
     const editProjectIdNum = editForm.project_id ? parseInt(editForm.project_id, 10) : NaN;
     if (editForm.project_id && (Number.isNaN(editProjectIdNum) || !canAccessProject("announcements.update", editProjectIdNum))) {
-      setErrorMessage("Secilen proje icin duyuru guncelleme yetkiniz yok.");
+      setErrorMessage("Seçilen proje için duyuru güncelleme yetkiniz yok.");
       return;
     }
 
@@ -352,12 +352,12 @@ export default function AdminAnnouncementsPage() {
       }
 
       await api.put(`/panel/announcements/${editingAnnouncement.id}`, payload);
-      setSuccessMessage("Duyuru guncellendi.");
+      setSuccessMessage("Duyuru güncellendi.");
       setEditingAnnouncement(null);
       await loadAnnouncements();
     } catch (error) {
-      console.error("Duyuru guncellenemedi", error);
-      setErrorMessage("Duyuru guncellenirken bir hata olustu.");
+      console.error("Duyuru güncellenemedi", error);
+      setErrorMessage("Duyuru güncellenirken bir hata oluştu.");
     } finally {
       setUpdating(false);
     }
@@ -386,7 +386,7 @@ export default function AdminAnnouncementsPage() {
       await loadAnnouncements();
     } catch (error) {
       console.error("Duyuru silinemedi", error);
-      setErrorMessage("Duyuru silinirken bir hata olustu.");
+      setErrorMessage("Duyuru silinirken bir hata oluştu.");
     }
   };
 
@@ -394,18 +394,18 @@ export default function AdminAnnouncementsPage() {
     e.preventDefault();
 
     if (!title.trim() || !content.trim()) {
-      setErrorMessage("Baslik ve icerik zorunludur.");
+      setErrorMessage("Başlık ve içerik zorunludur.");
       return;
     }
 
     if (!canCreateAnnouncements) {
-      setErrorMessage("Duyuru olusturma yetkiniz yok.");
+      setErrorMessage("Duyuru oluşturma yetkiniz yok.");
       return;
     }
 
     const projectIdNum = projectId ? parseInt(projectId, 10) : NaN;
     if (projectId && (Number.isNaN(projectIdNum) || !canAccessProject("announcements.create", projectIdNum))) {
-      setErrorMessage("Secilen proje icin duyuru olusturma yetkiniz yok.");
+      setErrorMessage("Seçilen proje için duyuru oluşturma yetkiniz yok.");
       return;
     }
 
@@ -450,8 +450,8 @@ export default function AdminAnnouncementsPage() {
       await loadAnnouncements();
       await loadCommunicationLogs();
     } catch (error) {
-      console.error("Duyuru gonderilemedi", error);
-      setErrorMessage("Duyuru gonderilirken bir hata olustu.");
+      console.error("Duyuru gönderilemedi", error);
+      setErrorMessage("Duyuru gonderilirken bir hata oluştu.");
     } finally {
       setSubmitting(false);
     }
@@ -511,9 +511,9 @@ export default function AdminAnnouncementsPage() {
             <Bell className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Duyuru ve Iletisim</h1>
+            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Duyuru ve İletişim</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              E-posta, SMS ve sistem duyurulari
+              E-posta, SMS ve sistem duyuruları
             </p>
           </div>
         </div>
@@ -525,7 +525,7 @@ export default function AdminAnnouncementsPage() {
               project_id: filterProjectId || undefined,
               period_id: filterPeriodId !== "all" ? filterPeriodId : undefined,
             }}
-            buttonLabel="Duyurulari Disa Aktar"
+            buttonLabel="Duyuruları Dışa Aktar"
           />
         </PermissionGate>
       </div>
@@ -554,7 +554,7 @@ export default function AdminAnnouncementsPage() {
               }`}
             >
               <FileText className="h-4 w-4" />
-              Duyuru Gecmisi
+              Duyuru Geçmişi
             </button>
           </PermissionGate>
           <PermissionGate permission="announcements.create">
@@ -567,7 +567,7 @@ export default function AdminAnnouncementsPage() {
               }`}
             >
               <Send className="h-4 w-4" />
-              Yeni Gonderim
+              Yeni Gönderim
             </button>
           </PermissionGate>
         </div>
@@ -578,7 +578,7 @@ export default function AdminAnnouncementsPage() {
         require="any"
         fallback={
         <div className="panel-empty-card">
-          Bu modulu goruntulemek icin yetkiniz bulunmuyor.
+          Bu modülü görüntülemek için yetkiniz bulunmuyor.
         </div>
         }
       >
@@ -614,11 +614,11 @@ export default function AdminAnnouncementsPage() {
               <thead>
                 <tr>
                   <th className="px-6 py-4">Tarih</th>
-                  <th className="px-6 py-4">Baslik</th>
+                  <th className="px-6 py-4">Başlık</th>
                   <th className="px-6 py-4">Kategori / Proje</th>
                   <th className="px-6 py-4">Hedef Kitle</th>
                   <th className="px-6 py-4">Olusturan</th>
-                  <th className="px-6 py-4 text-right">Islem</th>
+                  <th className="px-6 py-4 text-right">İşlem</th>
                 </tr>
               </thead>
               <tbody>
@@ -631,7 +631,7 @@ export default function AdminAnnouncementsPage() {
                 ) : announcements.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                      Duyuru bulunamadi.
+                      Duyuru bulunamadı.
                     </td>
                   </tr>
                 ) : (
@@ -723,7 +723,7 @@ export default function AdminAnnouncementsPage() {
         <div className="panel-section-card">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Gonderim Ekleri</h2>
+              <h2 className="text-lg font-bold text-slate-900">Gönderim Ekleri</h2>
               <p className="panel-label">Filtrelenebilir e-posta/SMS loglari</p>
             </div>
             <div className="flex items-center gap-2">
@@ -738,7 +738,7 @@ export default function AdminAnnouncementsPage() {
                   date_from: logFilters.date_from || undefined,
                   date_to: logFilters.date_to || undefined,
                 }}
-                buttonLabel="Loglari Disa Aktar"
+                buttonLabel="Loglari Dışa Aktar"
               />
               <button type="button" onClick={() => void loadCommunicationLogs(1)} className="panel-button panel-button-secondary text-xs">
                 Yenile
@@ -749,7 +749,7 @@ export default function AdminAnnouncementsPage() {
             <input
               value={logFilters.search}
               onChange={(e) => setLogFilters((prev) => ({ ...prev, search: e.target.value }))}
-              placeholder="Konu / icerik ara"
+              placeholder="Konu / içerik ara"
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 md:col-span-2"
             />
             <select
@@ -820,11 +820,11 @@ export default function AdminAnnouncementsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
             </div>
           ) : communicationLogs.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Gonderim kaydi bulunamadi.</div>
+            <div className="text-sm text-muted-foreground">Gönderim kaydı bulunamadı.</div>
           ) : (
             <div className="space-y-3">
               <div className="panel-label">
-                Toplam {logTotal} kayit
+                Toplam {logTotal} kayıt
               </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {communicationLogs.map((log) => (
@@ -833,7 +833,7 @@ export default function AdminAnnouncementsPage() {
                     <div>
                       <div className="text-sm font-bold text-slate-900">{log.subject || log.type.toUpperCase()}</div>
                       <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        {log.type} / {log.recipients_count} kisi / {formatIstanbulDateTime(log.created_at)}
+                        {log.type} / {log.recipients_count} kişi / {formatIstanbulDateTime(log.created_at)}
                       </div>
                       {log.project?.name ? <div className="mt-1 text-xs text-indigo-400">{log.project.name}</div> : null}
                     </div>
@@ -859,7 +859,7 @@ export default function AdminAnnouncementsPage() {
                     onClick={() => void loadCommunicationLogs(Math.max(1, logPage - 1))}
                     className="panel-button panel-button-secondary text-xs"
                   >
-                    Onceki
+                    Önceki
                   </button>
                   <span className="panel-pagination-count">
                     {logPage} / {logLastPage}
@@ -885,14 +885,14 @@ export default function AdminAnnouncementsPage() {
           <div className="panel-form-grid">
             <div className="panel-field">
               <label className="panel-label">
-                Duyuru Basligi
+                Duyuru Başlığı
               </label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 className="panel-control"
-                placeholder="Orn: Yeni donem basvurulari basladi"
+                placeholder="Orn: Yeni dönem başvuruları basladi"
               />
             </div>
             <div className="panel-field">
@@ -906,13 +906,13 @@ export default function AdminAnnouncementsPage() {
           </div>
 
           <div className="panel-field">
-            <label className="panel-label">Duyuru Icerigi</label>
+            <label className="panel-label">Duyuru İçeriği</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               required
               className="panel-textarea min-h-[150px]"
-              placeholder="Mesajinizi buraya yazin..."
+              placeholder="Mesajınızı buraya yazın..."
             />
           </div>
 
@@ -925,7 +925,7 @@ export default function AdminAnnouncementsPage() {
 
               <div className="panel-field">
                 <label className="panel-label">
-                  Proje Bazli Gonderim
+                  Proje Bazlı Gönderim
                 </label>
                 <select
                   value={projectId}
@@ -937,7 +937,7 @@ export default function AdminAnnouncementsPage() {
                   }}
                   className="panel-control"
                 >
-                  <option value="">Tum Projeler</option>
+                  <option value="">Tüm Projeler</option>
                   {projects.filter((project) => canAccessProject("announcements.create", project.id)).map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}
@@ -948,7 +948,7 @@ export default function AdminAnnouncementsPage() {
 
               <div className="panel-field">
                 <label className="panel-label">
-                  Donem
+                  Dönem
                 </label>
                 <select
                   value={periodId}
@@ -956,11 +956,11 @@ export default function AdminAnnouncementsPage() {
                   disabled={!projectId || formPeriods.length === 0}
                   className="panel-control"
                 >
-                  <option value="">{projectId ? "Donem secmeden gonder" : "Proje secince donem secilebilir"}</option>
+                  <option value="">{projectId ? "Dönem seçmeden gönder" : "Proje seçince dönem secilebilir"}</option>
                   {formPeriods.map((period) => (
                     <option key={period.id} value={period.id}>
                       {period.name}
-                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
                     </option>
                   ))}
                 </select>
@@ -968,7 +968,7 @@ export default function AdminAnnouncementsPage() {
 
               <div className="panel-field pt-2">
                 <label className="panel-label">
-                  Rol Bazli Secim
+                  Rol Bazlı Seçim
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(roleLabels).map(([role, label]) => (
@@ -990,7 +990,7 @@ export default function AdminAnnouncementsPage() {
 
               <div className="panel-field pt-2">
                 <label className="panel-label">
-                  Birim Bazli Secim
+                  Birim Bazlı Seçim
                 </label>
                 {availableTargetUnits.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -1011,7 +1011,7 @@ export default function AdminAnnouncementsPage() {
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-xs text-muted-foreground">
-                    Birim hedefi icin global yetki veya tanimli personel birimi gerekir.
+                    Birim hedefi için global yetki veya tanımlı personel birimi gerekir.
                   </div>
                 )}
               </div>
@@ -1020,7 +1020,7 @@ export default function AdminAnnouncementsPage() {
             <div className="space-y-4">
               <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
                 <Send className="h-4 w-4 text-indigo-400" />
-                Gonderim Kanallari
+                Gönderim Kanallari
               </h3>
 
               {canSendEmail && (
@@ -1029,8 +1029,8 @@ export default function AdminAnnouncementsPage() {
                     <Mail className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-bold text-slate-900">E-posta Gonder</div>
-                    <div className="text-xs text-muted-foreground">Kayitli e-posta adreslerine</div>
+                    <div className="font-bold text-slate-900">E-posta Gönder</div>
+                    <div className="text-xs text-muted-foreground">Kayıtlı e-posta adreslerine</div>
                   </div>
                   <input
                     type="checkbox"
@@ -1060,8 +1060,8 @@ export default function AdminAnnouncementsPage() {
                     <MessageSquare className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-bold text-slate-900">SMS Gonder</div>
-                    <div className="text-xs text-muted-foreground">Telefon numarasi olan kullanicilara</div>
+                    <div className="font-bold text-slate-900">SMS Gönder</div>
+                    <div className="text-xs text-muted-foreground">Telefon numarası olan kullanicilara</div>
                   </div>
                   <input
                     type="checkbox"
@@ -1088,7 +1088,7 @@ export default function AdminAnnouncementsPage() {
               ) : (
                 <Send className="h-5 w-5" />
               )}
-              {submitting ? "Isleniyor..." : "Duyuruyu Yayinla ve Gonder"}
+              {submitting ? "Isleniyor..." : "Duyuruyu Yayinla ve Gönder"}
             </button>
           </div>
         </form>
@@ -1099,7 +1099,7 @@ export default function AdminAnnouncementsPage() {
           <form onSubmit={handleUpdate} className="panel-section-card max-h-[90vh] w-full max-w-4xl overflow-y-auto space-y-6 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-black text-slate-900">Duyuruyu Guncelle</h2>
+                <h2 className="text-xl font-black text-slate-900">Duyuruyu Güncelle</h2>
                 <p className="panel-label">{editingAnnouncement.project?.name || "Genel duyuru"}</p>
               </div>
               <button
@@ -1113,7 +1113,7 @@ export default function AdminAnnouncementsPage() {
 
             <div className="panel-form-grid">
               <div className="panel-field">
-                <label className="panel-label">Duyuru Basligi</label>
+                <label className="panel-label">Duyuru Başlığı</label>
                 <input
                   value={editForm.title}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
@@ -1132,7 +1132,7 @@ export default function AdminAnnouncementsPage() {
             </div>
 
             <div className="panel-field">
-              <label className="panel-label">Duyuru Icerigi</label>
+              <label className="panel-label">Duyuru İçeriği</label>
               <textarea
                 value={editForm.content}
                 onChange={(e) => setEditForm((prev) => ({ ...prev, content: e.target.value }))}
@@ -1157,7 +1157,7 @@ export default function AdminAnnouncementsPage() {
                   }}
                   className="panel-control"
                 >
-                  <option value="">Tum Projeler</option>
+                  <option value="">Tüm Projeler</option>
                   {projects.filter((project) => canAccessProject("announcements.update", project.id)).map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}
@@ -1166,18 +1166,18 @@ export default function AdminAnnouncementsPage() {
                 </select>
               </div>
               <div className="panel-field">
-                <label className="panel-label">Donem</label>
+                <label className="panel-label">Dönem</label>
                 <select
                   value={editForm.period_id}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, period_id: e.target.value }))}
                   disabled={!editForm.project_id || editPeriods.length === 0}
                   className="panel-control"
                 >
-                  <option value="">Donem secilmedi</option>
+                  <option value="">Dönem secilmedi</option>
                   {editPeriods.map((period) => (
                     <option key={period.id} value={period.id}>
                       {period.name}
-                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
                     </option>
                   ))}
                 </select>
@@ -1192,7 +1192,7 @@ export default function AdminAnnouncementsPage() {
                 />
               </div>
               <div className="panel-field">
-                <label className="panel-label">Bitis Tarihi</label>
+                <label className="panel-label">Bitiş Tarihi</label>
                 <input
                   type="datetime-local"
                   value={editForm.expires_at}
@@ -1204,7 +1204,7 @@ export default function AdminAnnouncementsPage() {
 
             <div className="grid grid-cols-1 gap-6 border-t border-slate-200 pt-6 md:grid-cols-2">
               <div className="panel-field">
-                <label className="panel-label">Rol Bazli Secim</label>
+                <label className="panel-label">Rol Bazlı Seçim</label>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(roleLabels).map(([role, label]) => (
                     <button
@@ -1223,7 +1223,7 @@ export default function AdminAnnouncementsPage() {
                 </div>
               </div>
               <div className="panel-field">
-                <label className="panel-label">Birim Bazli Secim</label>
+                <label className="panel-label">Birim Bazlı Seçim</label>
                 {availableEditTargetUnits.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {availableEditTargetUnits.map((unit) => (
@@ -1243,7 +1243,7 @@ export default function AdminAnnouncementsPage() {
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-xs text-muted-foreground">
-                    Birim hedefi icin global yetki veya tanimli personel birimi gerekir.
+                    Birim hedefi için global yetki veya tanımlı personel birimi gerekir.
                   </div>
                 )}
               </div>
@@ -1255,7 +1255,7 @@ export default function AdminAnnouncementsPage() {
                 onClick={() => setEditingAnnouncement(null)}
                 className="panel-button panel-button-secondary"
               >
-                Vazgec
+                Vazgeç
               </button>
               <button
                 type="submit"
@@ -1264,7 +1264,7 @@ export default function AdminAnnouncementsPage() {
                 className="panel-button panel-button-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                {updating ? "Guncelleniyor..." : "Duyuruyu Guncelle"}
+                {updating ? "Güncelleniyor..." : "Duyuruyu Güncelle"}
               </button>
             </div>
           </form>

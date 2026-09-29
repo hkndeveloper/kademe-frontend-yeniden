@@ -48,7 +48,7 @@ import { Diplomasi360PanelPage, EurodeskPanelPage, KademePlusPanelPage, PergelPa
 function NotFoundPanelPage() {
   return (
     <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-8 text-amber-100">
-      Bu panel sayfasi henuz tasinmadi veya yetkiniz bulunmuyor.
+      Bu panel sayfasi henüz tasinmadi veya yetkiniz bulunmuyor.
     </div>
   );
 }
@@ -108,4 +108,3 @@ export function PanelRouteContent({ routeKey }: { routeKey: string }) {
   if (!Component) return <NotFoundPanelPage />;
   return <Component />;
 }
-

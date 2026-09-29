@@ -188,13 +188,13 @@ const initialKademeModule = {
 const inputClass = "panel-control";
 const buttonClass = "panel-button panel-button-primary";
 const eurodeskStatusMeta: Record<string, { label: string; className: string }> = {
-  applied: { label: "Basvuruldu", className: "border-sky-200 bg-sky-50 text-sky-700" },
-  approved: { label: "Onaylandi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  applied: { label: "Başvuruldu", className: "border-sky-200 bg-sky-50 text-sky-700" },
+  approved: { label: "Onaylandı", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   rejected: { label: "Reddedildi", className: "border-red-200 bg-red-50 text-red-700" },
-  completed: { label: "Tamamlandi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  completed: { label: "Tamamlandı", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
 };
 const rewardStatusMeta: Record<string, { label: string; className: string }> = {
-  planned: { label: "Planlandi", className: "border-blue-200 bg-blue-50 text-blue-700" },
+  planned: { label: "Planlandı", className: "border-blue-200 bg-blue-50 text-blue-700" },
   given: { label: "Verildi", className: "border-sky-200 bg-sky-50 text-sky-700" },
   delivered: { label: "Teslim edildi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   cancelled: { label: "Iptal", className: "border-red-200 bg-red-50 text-red-700" },
@@ -235,8 +235,8 @@ export default function PanelProjectSpecialModulesPage() {
       });
       setData(response.data);
     } catch (error) {
-      console.error("Ozel modul verileri yuklenemedi", error);
-      setFeedback("Ozel modul verileri yuklenemedi.");
+      console.error("Özel modül verileri yüklenemedi", error);
+      setFeedback("Özel modül verileri yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -299,10 +299,10 @@ export default function PanelProjectSpecialModulesPage() {
       reset();
       setEditing(null);
       await loadData();
-      setFeedback(isEditing ? "Kayit guncellendi." : "Kayit eklendi.");
+      setFeedback(isEditing ? "Kayıt güncellendi." : "Kayıt eklendi.");
     } catch (error) {
-      console.error("Ozel modul kaydi kaydedilemedi", error);
-      setFeedback("Kayit kaydedilemedi. Alanlari ve yetkileri kontrol edin.");
+      console.error("Özel modül kaydı kaydedilemedi", error);
+      setFeedback("Kayıt kaydedilemedi. Alanları ve yetkileri kontrol edin.");
     }
   }
 
@@ -318,10 +318,10 @@ export default function PanelProjectSpecialModulesPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       onPath(response.data.path);
-      setFeedback("Dosya yuklendi.");
+      setFeedback("Dosya yüklendi.");
     } catch (error) {
-      console.error("Dosya yuklenemedi", error);
-      setFeedback("Dosya yuklenemedi. Yetki, dosya turu veya R2 ayarlarini kontrol edin.");
+      console.error("Dosya yüklenemedi", error);
+      setFeedback("Dosya yüklenemedi. Yetki, dosya türü veya R2 ayarlarını kontrol edin.");
     } finally {
       setUploadingField(null);
     }
@@ -332,10 +332,10 @@ export default function PanelProjectSpecialModulesPage() {
     try {
       await api.delete(`/panel/projects/${projectId}/special-modules/${endpoint}/${id}`);
       await loadData();
-      setFeedback("Kayit silindi.");
+      setFeedback("Kayıt silindi.");
     } catch (error) {
-      console.error("Ozel modul kaydi silinemedi", error);
-      setFeedback("Kayit silinemedi.");
+      console.error("Özel modül kaydı silinemedi", error);
+      setFeedback("Kayıt silinemedi.");
     }
   }
 
@@ -346,8 +346,8 @@ export default function PanelProjectSpecialModulesPage() {
       await loadData();
       setFeedback("Hediye teslim edildi olarak isaretlendi.");
     } catch (error) {
-      console.error("Hediye teslim durumu guncellenemedi", error);
-      setFeedback("Hediye teslim durumu guncellenemedi. Yetki ve donem durumunu kontrol edin.");
+      console.error("Hediye teslim durumu güncellenemedi", error);
+      setFeedback("Hediye teslim durumu güncellenemedi. Yetki ve dönem durumunu kontrol edin.");
     }
   }
 
@@ -356,10 +356,10 @@ export default function PanelProjectSpecialModulesPage() {
     try {
       await api.put(`/panel/projects/${projectId}/special-modules/kademe-module-enrollments/${enrollmentId}`, { status });
       await loadData();
-      setFeedback("Kayit durumu guncellendi.");
+      setFeedback("Kayıt durumu güncellendi.");
     } catch (error) {
-      console.error("Kayit guncellenemedi", error);
-      setFeedback("Kayit guncellenemedi.");
+      console.error("Kayıt güncellenemedi", error);
+      setFeedback("Kayıt güncellenemedi.");
     }
   }
 
@@ -374,10 +374,10 @@ export default function PanelProjectSpecialModulesPage() {
       });
       setMentorAssignmentForm(initialMentorAssignment);
       await loadData();
-      setFeedback("Mentor-katilimci eslestirmesi kaydedildi.");
+      setFeedback("Mentor-katılımcı eşleştirmesi kaydedildi.");
     } catch (error) {
-      console.error("Mentor eslestirmesi kaydedilemedi", error);
-      setFeedback("Mentor eslestirmesi kaydedilemedi. Donem ve katilimci kapsamlarini kontrol edin.");
+      console.error("Mentor eşleştirmesi kaydedilemedi", error);
+      setFeedback("Mentor eşleştirmesi kaydedilemedi. Dönem ve katılımcı kapsamlarini kontrol edin.");
     }
   }
 
@@ -386,10 +386,10 @@ export default function PanelProjectSpecialModulesPage() {
     try {
       await api.delete(`/panel/projects/${projectId}/special-modules/mentors/${mentorId}/participants/${participantId}`);
       await loadData();
-      setFeedback("Mentor eslestirmesi kaldirildi.");
+      setFeedback("Mentor eşleştirmesi kaldirildi.");
     } catch (error) {
-      console.error("Mentor eslestirmesi kaldirilamadi", error);
-      setFeedback("Mentor eslestirmesi kaldirilamadi.");
+      console.error("Mentor eşleştirmesi kaldirilamadi", error);
+      setFeedback("Mentor eşleştirmesi kaldirilamadi.");
     }
   }
 
@@ -404,10 +404,10 @@ export default function PanelProjectSpecialModulesPage() {
       });
       setPartnershipForm(initialPartnership);
       await loadData();
-      setFeedback("Eurodesk ortakligi kaydedildi.");
+      setFeedback("Eurodesk ortaklığı kaydedildi.");
     } catch (error) {
-      console.error("Eurodesk ortakligi kaydedilemedi", error);
-      setFeedback("Eurodesk ortakligi kaydedilemedi.");
+      console.error("Eurodesk ortaklığı kaydedilemedi", error);
+      setFeedback("Eurodesk ortaklığı kaydedilemedi.");
     }
   }
 
@@ -416,10 +416,10 @@ export default function PanelProjectSpecialModulesPage() {
     try {
       await api.delete(`/panel/projects/${projectId}/special-modules/eurodesk-projects/${eurodeskProjectId}/partnerships/${partnershipId}`);
       await loadData();
-      setFeedback("Eurodesk ortakligi silindi.");
+      setFeedback("Eurodesk ortaklığı silindi.");
     } catch (error) {
-      console.error("Eurodesk ortakligi silinemedi", error);
-      setFeedback("Eurodesk ortakligi silinemedi.");
+      console.error("Eurodesk ortaklığı silinemedi", error);
+      setFeedback("Eurodesk ortaklığı silinemedi.");
     }
   }
 
@@ -433,12 +433,12 @@ export default function PanelProjectSpecialModulesPage() {
     try {
       instructors = JSON.parse(kademeModuleForm.instructorsJson || "[]");
     } catch {
-      throw new Error("Egitmen JSON gecersiz.");
+      throw new Error("Eğitmen JSON geçersiz.");
     }
     try {
       faq_items = JSON.parse(kademeModuleForm.faqJson || "[]");
     } catch {
-      throw new Error("SSS JSON gecersiz.");
+      throw new Error("SSS JSON geçersiz.");
     }
     return {
       title: kademeModuleForm.title,
@@ -466,7 +466,7 @@ export default function PanelProjectSpecialModulesPage() {
   }
 
   if (invalidProjectId || !data) {
-    return <div className="panel-notice panel-notice-error">Proje modulleri acilamadi.</div>;
+    return <div className="panel-notice panel-notice-error">Proje modülleri acilamadi.</div>;
   }
 
   return (
@@ -482,7 +482,7 @@ export default function PanelProjectSpecialModulesPage() {
         "projects.rewards.manage",
       ]}
       require="any"
-      fallback={<div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">Projeye ozel modul yetkiniz yok.</div>}
+      fallback={<div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">Projeye özel modül yetkiniz yok.</div>}
     >
       <div className="space-y-8">
         <Link href={`/panel/projects/${projectId}${periodId !== "all" ? `?period_id=${periodId}` : ""}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-slate-900">
@@ -492,7 +492,7 @@ export default function PanelProjectSpecialModulesPage() {
 
         <div>
           <div className="text-xs font-bold uppercase tracking-widest text-accent">{formatProjectTypeBadge(data.project.type)}</div>
-          <h1 className="mt-2 text-3xl font-black text-slate-900">{data.project.name} - Ozel Moduller</h1>
+          <h1 className="mt-2 text-3xl font-black text-slate-900">{data.project.name} - Özel Modüller</h1>
           <p className="mt-2 text-sm text-muted-foreground">{specialModulesIntroCopy(data.project.type)}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {(data.applicable_modules ?? ["digital_bohca"]).map((module) => (
@@ -505,16 +505,16 @@ export default function PanelProjectSpecialModulesPage() {
 
         <div className="panel-filter-card">
           <label className="block max-w-md">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Donem</span>
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Dönem</span>
             <select
               value={periodId}
               onChange={(event) => setPeriodId(event.target.value)}
               className="panel-control"
             >
-              <option value="all">Tum donemler</option>
+              <option value="all">Tüm dönemler</option>
               {periods.map((period) => (
                 <option key={period.id} value={period.id}>
-                  {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                  {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
                 </option>
               ))}
             </select>
@@ -543,7 +543,7 @@ export default function PanelProjectSpecialModulesPage() {
                   }}
                 >
                   <select value={internshipForm.participant_id} onChange={(event) => setInternshipForm((current) => ({ ...current, participant_id: event.target.value }))} className={inputClass} required>
-                    <option value="">Katilimci sec</option>
+                    <option value="">Katılımcı seç</option>
                     {data.participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}</option>)}
                   </select>
                   <input value={internshipForm.company_name} onChange={(event) => setInternshipForm((current) => ({ ...current, company_name: event.target.value }))} placeholder="Firma" className={inputClass} required />
@@ -552,7 +552,7 @@ export default function PanelProjectSpecialModulesPage() {
                   <input type="date" value={internshipForm.end_date} onChange={(event) => setInternshipForm((current) => ({ ...current, end_date: event.target.value }))} className={inputClass} />
                   <input value={internshipForm.document_path} onChange={(event) => setInternshipForm((current) => ({ ...current, document_path: event.target.value }))} placeholder="Belge yolu veya URL" className={inputClass} />
                   <label className={`${inputClass} flex cursor-pointer items-center justify-between gap-3`}>
-                    <span className="truncate">{internshipForm.document_path ? "Belge yuklendi" : "Staj belgesi yukle"}</span>
+                    <span className="truncate">{internshipForm.document_path ? "Belge yüklendi" : "Staj belgesi yükle"}</span>
                     {uploadingField === "internship-documents" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     <input
                       type="file"
@@ -592,11 +592,11 @@ export default function PanelProjectSpecialModulesPage() {
             <ModuleCard icon={<Users className="h-5 w-5" />} title={mentorsSectionTitle(data.project.type)}>
               {access["projects.mentors.manage"] ? (
                 <SimpleForm isEditing={editing?.endpoint === "mentors"} label="Mentor" onCancel={() => resetEditing(() => setMentorForm(initialMentor))} onSubmit={() => submit("mentors", mentorForm, () => setMentorForm(initialMentor))}>
-                  <input value={mentorForm.name} onChange={(event) => setMentorForm((current) => ({ ...current, name: event.target.value }))} placeholder="Mentor adi" className={inputClass} required />
-                  <input value={mentorForm.expertise} onChange={(event) => setMentorForm((current) => ({ ...current, expertise: event.target.value }))} placeholder="Uzmanlik" className={inputClass} />
+                  <input value={mentorForm.name} onChange={(event) => setMentorForm((current) => ({ ...current, name: event.target.value }))} placeholder="Mentor adı" className={inputClass} required />
+                  <input value={mentorForm.expertise} onChange={(event) => setMentorForm((current) => ({ ...current, expertise: event.target.value }))} placeholder="Uzmanlık" className={inputClass} />
                   <input value={mentorForm.photo_path} onChange={(event) => setMentorForm((current) => ({ ...current, photo_path: event.target.value }))} placeholder="Foto yolu veya URL" className={inputClass} />
                   <label className={`${inputClass} flex cursor-pointer items-center justify-between gap-3`}>
-                    <span className="truncate">{mentorForm.photo_path ? "Foto yuklendi" : "Mentor fotografi yukle"}</span>
+                    <span className="truncate">{mentorForm.photo_path ? "Foto yüklendi" : "Mentor fotografi yükle"}</span>
                     {uploadingField === "mentor-photos" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     <input
                       type="file"
@@ -609,7 +609,7 @@ export default function PanelProjectSpecialModulesPage() {
                       }}
                     />
                   </label>
-                  <textarea value={mentorForm.bio} onChange={(event) => setMentorForm((current) => ({ ...current, bio: event.target.value }))} placeholder="Kisa bio" className="panel-control md:col-span-2" />
+                  <textarea value={mentorForm.bio} onChange={(event) => setMentorForm((current) => ({ ...current, bio: event.target.value }))} placeholder="Kısa bio" className="panel-control md:col-span-2" />
                 </SimpleForm>
               ) : null}
               <RecordList
@@ -627,7 +627,7 @@ export default function PanelProjectSpecialModulesPage() {
                 onDelete={access["projects.mentors.manage"] ? (id) => destroy("mentors", id) : undefined}
               />
               <div className="panel-card-muted mt-5">
-                <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Mentor-katilimci eslestirmeleri</h3>
+                <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Mentor-katılımcı eslestirmeleri</h3>
                 {access["projects.mentors.manage"] ? (
                   <form
                     className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2"
@@ -637,19 +637,19 @@ export default function PanelProjectSpecialModulesPage() {
                     }}
                   >
                     <select value={mentorAssignmentForm.mentor_id} onChange={(event) => setMentorAssignmentForm((current) => ({ ...current, mentor_id: event.target.value }))} className={inputClass} required>
-                      <option value="">Mentor sec</option>
+                      <option value="">Mentor seç</option>
                       {data.mentors.map((mentor) => <option key={mentor.id} value={mentor.id}>{mentor.name}</option>)}
                     </select>
                     <select value={mentorAssignmentForm.participant_id} onChange={(event) => setMentorAssignmentForm((current) => ({ ...current, participant_id: event.target.value }))} className={inputClass} required>
-                      <option value="">Katilimci sec</option>
+                      <option value="">Katılımcı seç</option>
                       {data.participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}</option>)}
                     </select>
-                    <input value={mentorAssignmentForm.note} onChange={(event) => setMentorAssignmentForm((current) => ({ ...current, note: event.target.value }))} placeholder="Eslestirme notu" className="panel-control md:col-span-2" />
-                    <button className={`${buttonClass} md:col-span-2`} type="submit"><Users className="h-4 w-4" /> Eslestir</button>
+                    <input value={mentorAssignmentForm.note} onChange={(event) => setMentorAssignmentForm((current) => ({ ...current, note: event.target.value }))} placeholder="Eşleştirme notu" className="panel-control md:col-span-2" />
+                    <button className={`${buttonClass} md:col-span-2`} type="submit"><Users className="h-4 w-4" /> Eşleştir</button>
                   </form>
                 ) : null}
                 {data.mentors.every((mentor) => (mentor.assigned_participants?.length ?? 0) === 0) ? (
-                  <div className="text-sm text-muted-foreground">Bu donemde mentor eslestirmesi yok.</div>
+                  <div className="text-sm text-muted-foreground">Bu dönemde mentor eşleştirmesi yok.</div>
                 ) : (
                   <div className="space-y-3">
                     {data.mentors.map((mentor) => (mentor.assigned_participants?.length ?? 0) > 0 ? (
@@ -659,11 +659,11 @@ export default function PanelProjectSpecialModulesPage() {
                           {(mentor.assigned_participants ?? []).map((participant) => (
                             <div key={participant.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm">
                               <div>
-                                <div className="font-semibold text-slate-900">{participant.name || participant.email || "Katilimci"}</div>
+                                <div className="font-semibold text-slate-900">{participant.name || participant.email || "Katılımcı"}</div>
                                 {participant.note ? <div className="text-xs text-muted-foreground">{participant.note}</div> : null}
                               </div>
                               {access["projects.mentors.manage"] ? (
-                                <button type="button" className="panel-button-icon panel-table-action-danger" onClick={() => void unassignMentor(mentor.id, participant.id)} title="Eslestirmeyi kaldir">
+                                <button type="button" className="panel-button-icon panel-table-action-danger" onClick={() => void unassignMentor(mentor.id, participant.id)} title="Eslestirmeyi kaldır">
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                               ) : null}
@@ -689,20 +689,20 @@ export default function PanelProjectSpecialModulesPage() {
                   start_date: eurodeskForm.start_date || null,
                   end_date: eurodeskForm.end_date || null,
                 }, () => setEurodeskForm(initialEurodesk))}>
-                  <input value={eurodeskForm.title} onChange={(event) => setEurodeskForm((current) => ({ ...current, title: event.target.value }))} placeholder="Proje adi" className={inputClass} required />
+                  <input value={eurodeskForm.title} onChange={(event) => setEurodeskForm((current) => ({ ...current, title: event.target.value }))} placeholder="Proje adı" className={inputClass} required />
                   <input value={eurodeskForm.partner_organizations} onChange={(event) => setEurodeskForm((current) => ({ ...current, partner_organizations: event.target.value }))} placeholder="Ortaklar, virgulle" className={inputClass} />
                   <input type="number" value={eurodeskForm.grant_amount} onChange={(event) => setEurodeskForm((current) => ({ ...current, grant_amount: event.target.value }))} placeholder="Hibe tutari" className={inputClass} />
                   <select value={eurodeskForm.grant_status} onChange={(event) => setEurodeskForm((current) => ({ ...current, grant_status: event.target.value }))} className={inputClass}>
-                    <option value="applied">Basvuruldu</option>
-                    <option value="approved">Onaylandi</option>
+                    <option value="applied">Başvuruldu</option>
+                    <option value="approved">Onaylandı</option>
                     <option value="rejected">Reddedildi</option>
-                    <option value="completed">Tamamlandi</option>
+                    <option value="completed">Tamamlandı</option>
                   </select>
                 </SimpleForm>
               ) : null}
               <EurodeskSummaryPanel summary={data.eurodesk_summary} />
               {data.eurodesk_projects.length === 0 ? (
-                <div className="panel-empty-card py-5">Eurodesk proje kaydi yok.</div>
+                <div className="panel-empty-card py-5">Eurodesk proje kaydı yok.</div>
               ) : (
                 <div className="space-y-3">
                   {data.eurodesk_projects.map((item) => {
@@ -724,7 +724,7 @@ export default function PanelProjectSpecialModulesPage() {
                         </div>
                         <div className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
                           <EurodeskMetric label="Hibe" value={formatCurrency(item.grant_amount)} />
-                          <EurodeskMetric label="Ortak kaydi" value={String(partnershipCount)} />
+                          <EurodeskMetric label="Ortak kaydı" value={String(partnershipCount)} />
                           <EurodeskMetric label="Ortak listesi" value={partners.length ? partners.join(", ") : "-"} />
                         </div>
                         {access["projects.eurodesk.manage"] ? (
@@ -745,7 +745,7 @@ export default function PanelProjectSpecialModulesPage() {
                               className="panel-card-action"
                             >
                               <Edit2 className="h-4 w-4" />
-                              Duzenle
+                              Düzenle
                             </button>
                             <button type="button" onClick={() => void destroy("eurodesk-projects", item.id)} className="panel-card-action panel-card-action-danger">
                               <Trash2 className="h-4 w-4" />
@@ -769,17 +769,17 @@ export default function PanelProjectSpecialModulesPage() {
                     }}
                   >
                     <select value={partnershipForm.eurodesk_project_id} onChange={(event) => setPartnershipForm((current) => ({ ...current, eurodesk_project_id: event.target.value }))} className={inputClass} required>
-                      <option value="">Eurodesk projesi sec</option>
+                      <option value="">Eurodesk projesi seç</option>
                       {data.eurodesk_projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
                     </select>
-                    <input value={partnershipForm.organization_name} onChange={(event) => setPartnershipForm((current) => ({ ...current, organization_name: event.target.value }))} placeholder="Kurulus adi" className={inputClass} required />
+                    <input value={partnershipForm.organization_name} onChange={(event) => setPartnershipForm((current) => ({ ...current, organization_name: event.target.value }))} placeholder="Kurulus adı" className={inputClass} required />
                     <input value={partnershipForm.country} onChange={(event) => setPartnershipForm((current) => ({ ...current, country: event.target.value }))} placeholder="Ulke" className={inputClass} />
-                    <input value={partnershipForm.contact_info} onChange={(event) => setPartnershipForm((current) => ({ ...current, contact_info: event.target.value }))} placeholder="Iletisim / not" className={inputClass} />
-                    <button className={`${buttonClass} md:col-span-2`} type="submit"><Handshake className="h-4 w-4" /> Ortaklik ekle</button>
+                    <input value={partnershipForm.contact_info} onChange={(event) => setPartnershipForm((current) => ({ ...current, contact_info: event.target.value }))} placeholder="İletişim / not" className={inputClass} />
+                    <button className={`${buttonClass} md:col-span-2`} type="submit"><Handshake className="h-4 w-4" /> Ortaklık ekle</button>
                   </form>
                 ) : null}
                 {data.eurodesk_projects.every((project) => (project.partnerships?.length ?? 0) === 0) ? (
-                  <div className="text-sm text-muted-foreground">Ortaklik kaydi yok.</div>
+                  <div className="text-sm text-muted-foreground">Ortaklık kaydı yok.</div>
                 ) : (
                   <div className="space-y-3">
                     {data.eurodesk_projects.map((project) => (project.partnerships?.length ?? 0) > 0 ? (
@@ -790,10 +790,10 @@ export default function PanelProjectSpecialModulesPage() {
                             <div key={partnership.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm">
                               <div>
                                 <div className="font-semibold text-slate-900">{partnership.organization_name}</div>
-                                <div className="text-xs text-muted-foreground">{[partnership.country, partnership.contact_info].filter(Boolean).join(" - ") || "Detay girilmemis"}</div>
+                                <div className="text-xs text-muted-foreground">{[partnership.country, partnership.contact_info].filter(Boolean).join(" - ") || "Detay girilmemiş"}</div>
                               </div>
                               {access["projects.eurodesk.manage"] ? (
-                                <button type="button" className="panel-button-icon panel-table-action-danger" onClick={() => void destroyPartnership(project.id, partnership.id)} title="Ortakligi sil">
+                                <button type="button" className="panel-button-icon panel-table-action-danger" onClick={() => void destroyPartnership(project.id, partnership.id)} title="Ortaklığı sil">
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                               ) : null}
@@ -817,7 +817,7 @@ export default function PanelProjectSpecialModulesPage() {
                   min_credits: Number(rewardForm.min_credits),
                   description: rewardForm.description || null,
                 }, () => setRewardForm(initialReward))}>
-                  <input value={rewardForm.name} onChange={(event) => setRewardForm((current) => ({ ...current, name: event.target.value }))} placeholder="Kademe adi" className={inputClass} required />
+                  <input value={rewardForm.name} onChange={(event) => setRewardForm((current) => ({ ...current, name: event.target.value }))} placeholder="Kademe adı" className={inputClass} required />
                   <input value={rewardForm.reward_description} onChange={(event) => setRewardForm((current) => ({ ...current, reward_description: event.target.value }))} placeholder="Hediye" className={inputClass} required />
                   <input type="number" value={rewardForm.min_badges} onChange={(event) => setRewardForm((current) => ({ ...current, min_badges: event.target.value }))} placeholder="Min rozet" className={inputClass} />
                   <input type="number" value={rewardForm.min_credits} onChange={(event) => setRewardForm((current) => ({ ...current, min_credits: event.target.value }))} placeholder="Min kredi" className={inputClass} />
@@ -843,12 +843,12 @@ export default function PanelProjectSpecialModulesPage() {
               <div className="panel-card-muted mt-5">
                 <h3 className="mb-3 text-sm font-black uppercase tracking-widest text-muted-foreground">Hediye hakki kazananlar</h3>
                 {(data.reward_eligible_participants ?? []).length === 0 ? (
-                  <div className="text-sm text-muted-foreground">Su an kosullari saglayan katilimci yok.</div>
+                  <div className="text-sm text-muted-foreground">Su an koşulları saglayan katılımcı yok.</div>
                 ) : (
                   <div className="space-y-2">
                     {(data.reward_eligible_participants ?? []).map((participant) => (
                       <div key={participant.participant_id} className="panel-card-muted bg-white text-sm text-slate-900">
-                        <div className="font-bold">{participant.name || participant.email || "Katilimci"}</div>
+                        <div className="font-bold">{participant.name || participant.email || "Katılımcı"}</div>
                         <div className="text-xs text-muted-foreground">
                           {participant.badge_count} rozet / {participant.credit} kredi - {participant.eligible_rewards.map((reward) => reward.reward_description).join(", ")}
                         </div>
@@ -872,31 +872,31 @@ export default function PanelProjectSpecialModulesPage() {
                   }}
                 >
                   <select value={rewardAwardForm.participant_id} onChange={(event) => setRewardAwardForm((current) => ({ ...current, participant_id: event.target.value }))} className={inputClass} required>
-                    <option value="">Katilimci sec</option>
+                    <option value="">Katılımcı seç</option>
                     {data.participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}</option>)}
                   </select>
                   <select value={rewardAwardForm.reward_tier_id} onChange={(event) => {
                     const tier = data.reward_tiers.find((item) => String(item.id) === event.target.value);
                     setRewardAwardForm((current) => ({ ...current, reward_tier_id: event.target.value, reward_name: tier?.reward_description || current.reward_name }));
                   }} className={inputClass}>
-                    <option value="">Kademe secmeden</option>
+                    <option value="">Kademe seçmeden</option>
                     {data.reward_tiers.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}
                   </select>
                   <input value={rewardAwardForm.reward_name} onChange={(event) => setRewardAwardForm((current) => ({ ...current, reward_name: event.target.value }))} placeholder="Verilen hediye" className={inputClass} required />
                   <select value={rewardAwardForm.status} onChange={(event) => setRewardAwardForm((current) => ({ ...current, status: event.target.value }))} className={inputClass}>
                     <option value="given">Verildi</option>
-                    <option value="planned">Planlandi</option>
+                    <option value="planned">Planlandı</option>
                     <option value="cancelled">Iptal</option>
                   </select>
                   <input value={rewardAwardForm.note} onChange={(event) => setRewardAwardForm((current) => ({ ...current, note: event.target.value }))} placeholder="Not" className="panel-control md:col-span-2" />
-                  <button className={`${buttonClass} md:col-span-2`}><Gift className="h-4 w-4" /> Hediye kaydi ekle</button>
+                  <button className={`${buttonClass} md:col-span-2`}><Gift className="h-4 w-4" /> Hediye kaydı ekle</button>
                 </form>
               ) : null}
               <div className="panel-card-muted mt-5">
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Verilen hediyeler</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">Teslim bekleyen ve tamamlanan hediye kayitlari donem filtresine gore listelenir.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Teslim bekleyen ve tamamlanan hediye kayıtları dönem filtresine göre listelenir.</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                     <RewardStat label="Toplam" value={rewardAwardStats.total} />
@@ -906,12 +906,12 @@ export default function PanelProjectSpecialModulesPage() {
                   </div>
                 </div>
                 {(data.reward_awards ?? []).length === 0 ? (
-                  <div className="text-sm text-muted-foreground">Hediye kaydi yok.</div>
+                  <div className="text-sm text-muted-foreground">Hediye kaydı yok.</div>
                 ) : (
                   <div className="space-y-3">
                     {(data.reward_awards ?? []).map((item) => {
                       const status = rewardStatusMeta[item.status] ?? rewardStatusMeta.given;
-                      const participantName = item.name || item.email || "Katilimci";
+                      const participantName = item.name || item.email || "Katılımcı";
                       const canMarkDelivered = access["projects.rewards.manage"] && item.status !== "delivered" && item.status !== "cancelled";
 
                       return (
@@ -925,7 +925,7 @@ export default function PanelProjectSpecialModulesPage() {
                             <span className={`panel-chip ${status.className}`}>{status.label}</span>
                           </div>
                           <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-muted-foreground sm:grid-cols-2">
-                            <RewardDetail label="Kayit" value={formatPanelDateTime(item.awarded_at)} />
+                            <RewardDetail label="Kayıt" value={formatPanelDateTime(item.awarded_at)} />
                             <RewardDetail label="Kaydeden" value={item.awarder || "-"} />
                             <RewardDetail label="Teslim" value={formatPanelDateTime(item.delivered_at)} />
                             <RewardDetail label="Teslim eden" value={item.deliverer || "-"} />
@@ -974,42 +974,42 @@ export default function PanelProjectSpecialModulesPage() {
                         setKademeModuleForm(initialKademeModule);
                         setEditing(null);
                         await loadData();
-                        setFeedback(isEditing ? "Modul guncellendi." : "Modul eklendi.");
+                        setFeedback(isEditing ? "Modül güncellendi." : "Modül eklendi.");
                       } catch (err) {
-                        console.error("KADEME+ modulu kaydedilemedi", err);
-                        setFeedback(err instanceof Error && err.message.includes("JSON") ? err.message : "Modul kaydedilemedi. JSON alanlarini ve yetkileri kontrol edin.");
+                        console.error("KADEME+ modülü kaydedilemedi", err);
+                        setFeedback(err instanceof Error && err.message.includes("JSON") ? err.message : "Modül kaydedilemedi. JSON alanlarını ve yetkileri kontrol edin.");
                       }
                     })();
                   }}
                 >
-                  <input value={kademeModuleForm.title} onChange={(event) => setKademeModuleForm((current) => ({ ...current, title: event.target.value }))} placeholder="Modul basligi" className={inputClass} required />
-                  <input type="number" value={kademeModuleForm.sort_order} onChange={(event) => setKademeModuleForm((current) => ({ ...current, sort_order: event.target.value }))} placeholder="Sira" className={inputClass} />
-                  <textarea value={kademeModuleForm.description} onChange={(event) => setKademeModuleForm((current) => ({ ...current, description: event.target.value }))} placeholder="Aciklama" className="panel-textarea md:col-span-2 min-h-[72px]" />
+                  <input value={kademeModuleForm.title} onChange={(event) => setKademeModuleForm((current) => ({ ...current, title: event.target.value }))} placeholder="Modül başlığı" className={inputClass} required />
+                  <input type="number" value={kademeModuleForm.sort_order} onChange={(event) => setKademeModuleForm((current) => ({ ...current, sort_order: event.target.value }))} placeholder="Sıra" className={inputClass} />
+                  <textarea value={kademeModuleForm.description} onChange={(event) => setKademeModuleForm((current) => ({ ...current, description: event.target.value }))} placeholder="Açıklama" className="panel-textarea md:col-span-2 min-h-[72px]" />
                   <textarea value={kademeModuleForm.outcomesText} onChange={(event) => setKademeModuleForm((current) => ({ ...current, outcomesText: event.target.value }))} placeholder="Kazanumlar (her satira bir madde)" className="panel-textarea md:col-span-2 min-h-[80px]" />
-                  <textarea value={kademeModuleForm.warning_text} onChange={(event) => setKademeModuleForm((current) => ({ ...current, warning_text: event.target.value }))} placeholder="Uyari / yaptirim metni" className="panel-textarea md:col-span-2 min-h-[64px]" />
+                  <textarea value={kademeModuleForm.warning_text} onChange={(event) => setKademeModuleForm((current) => ({ ...current, warning_text: event.target.value }))} placeholder="Uyarı / yaptirim metni" className="panel-textarea md:col-span-2 min-h-[64px]" />
                   <input value={kademeModuleForm.consent_checkbox_label} onChange={(event) => setKademeModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} placeholder="Onay kutusu metni" className="panel-control md:col-span-2" />
                   <textarea value={kademeModuleForm.instructorsJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, instructorsJson: event.target.value }))} placeholder='Egitmenler JSON ornek: [{"name":"Ad Soyad","bio":"..."}]' className="panel-textarea md:col-span-2 min-h-[64px] font-mono text-xs" />
                   <textarea value={kademeModuleForm.faqJson} onChange={(event) => setKademeModuleForm((current) => ({ ...current, faqJson: event.target.value }))} placeholder='SSS JSON ornek: [{"question":"?","answer":"..."}]' className="panel-textarea md:col-span-2 min-h-[64px] font-mono text-xs" />
                   <label className="flex items-center gap-2 text-sm text-slate-900">
                     <input type="checkbox" checked={kademeModuleForm.requires_consent} onChange={(event) => setKademeModuleForm((current) => ({ ...current, requires_consent: event.target.checked }))} />
-                    Katilimci onayi zorunlu
+                    Katılımcı onayı zorunlu
                   </label>
                   <label className="flex items-center gap-2 text-sm text-slate-900">
                     <input type="checkbox" checked={kademeModuleForm.requires_coordinator_approval} onChange={(event) => setKademeModuleForm((current) => ({ ...current, requires_coordinator_approval: event.target.checked }))} />
-                    Koordinator onayi gerekli
+                    Koordinatör onayı gerekli
                   </label>
                   <label className="flex items-center gap-2 text-sm text-slate-900">
                     <input type="checkbox" checked={kademeModuleForm.application_open} onChange={(event) => setKademeModuleForm((current) => ({ ...current, application_open: event.target.checked }))} />
-                    Basvuru acik
+                    Başvuru açık
                   </label>
                   <label className="flex items-center gap-2 text-sm text-slate-900">
                     <input type="checkbox" checked={kademeModuleForm.is_active} onChange={(event) => setKademeModuleForm((current) => ({ ...current, is_active: event.target.checked }))} />
-                    Modul aktif
+                    Modül aktif
                   </label>
                   <div className="flex flex-wrap gap-2 md:col-span-2">
                     <button className={buttonClass} type="submit">
                       {editing?.endpoint === "kademe-modules" ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                      {editing?.endpoint === "kademe-modules" ? "Modulu guncelle" : "Modul ekle"}
+                      {editing?.endpoint === "kademe-modules" ? "Modülü güncelle" : "Modül ekle"}
                     </button>
                     {editing?.endpoint === "kademe-modules" ? (
                       <button
@@ -1021,7 +1021,7 @@ export default function PanelProjectSpecialModulesPage() {
                         }}
                       >
                         <X className="h-4 w-4" />
-                        Vazgec
+                        Vazgeç
                       </button>
                     ) : null}
                   </div>
@@ -1029,7 +1029,7 @@ export default function PanelProjectSpecialModulesPage() {
               ) : null}
               <div className="space-y-4">
                 {(data.kademe_modules ?? []).length === 0 ? (
-                  <div className="text-sm text-muted-foreground">Tanimli KADEME+ modulu yok.</div>
+                  <div className="text-sm text-muted-foreground">Tanımlı KADEME+ modülü yok.</div>
                 ) : (
                   (data.kademe_modules ?? []).map((mod) => (
                     <div key={mod.id} className="panel-card-muted">
@@ -1047,7 +1047,7 @@ export default function PanelProjectSpecialModulesPage() {
                               <button
                                 type="button"
                                 className="panel-button-icon"
-                                title="Duzenle"
+                                title="Düzenle"
                                 onClick={() => {
                                   setEditing({ endpoint: "kademe-modules", id: mod.id });
                                   setKademeModuleForm({
@@ -1082,10 +1082,10 @@ export default function PanelProjectSpecialModulesPage() {
                       </div>
                       {access["projects.rewards.manage"] && (mod.enrollments?.length ?? 0) > 0 ? (
                         <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
-                          <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Kayitlar</div>
+                          <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Kayıtlar</div>
                           {(mod.enrollments ?? []).map((en) => (
                             <div key={en.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2 text-sm">
-                              <span className="text-slate-900">{en.user?.name || en.user?.email || `Kullanici #${en.user_id}`}</span>
+                              <span className="text-slate-900">{en.user?.name || en.user?.email || `Kullanıcı #${en.user_id}`}</span>
                               <span className="text-xs text-muted-foreground">{en.status}</span>
                               {en.status === "pending" ? (
                                 <div className="flex gap-1">
@@ -1110,7 +1110,7 @@ export default function PanelProjectSpecialModulesPage() {
         </div>
         </fieldset>
 
-        {!canManageAny ? <div className="text-sm text-muted-foreground">Bu ekranda goruntuleme yetkiniz var; yeni kayit eklemek icin ilgili manage action&apos;i gerekir.</div> : null}
+        {!canManageAny ? <div className="text-sm text-muted-foreground">Bu ekranda görüntüleme yetkiniz var; yeni kayıt eklemek için ilgili manage action&apos;i gerekir.</div> : null}
       </div>
     </PermissionGate>
   );
@@ -1141,12 +1141,12 @@ function SimpleForm({ children, isEditing, label, onCancel, onSubmit }: { childr
       <div className="flex flex-wrap gap-2 md:col-span-2">
         <button className={buttonClass}>
           {isEditing ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {isEditing ? `${label ?? "Kayit"} guncelle` : "Kaydet"}
+          {isEditing ? `${label ?? "Kayıt"} güncelle` : "Kaydet"}
         </button>
         {isEditing && onCancel ? (
           <button type="button" onClick={onCancel} className="panel-button panel-button-secondary">
             <X className="h-4 w-4" />
-            Vazgec
+            Vazgeç
           </button>
         ) : null}
       </div>
@@ -1160,23 +1160,23 @@ function EurodeskSummaryPanel({ summary }: { summary?: EurodeskSummary | null })
   return (
     <div className="panel-card-muted mb-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Eurodesk ozeti</h3>
+        <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Eurodesk özeti</h3>
         {summary.countries.length > 0 ? <span className="text-xs font-semibold text-slate-600">Ulkeler: {summary.countries.join(", ")}</span> : null}
       </div>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <RewardStat label="Proje" value={summary.total_projects} />
-        <RewardStat label="Onayli" value={summary.approved_projects} />
+        <RewardStat label="Onaylı" value={summary.approved_projects} />
         <RewardStat label="Ortak" value={summary.partnership_count} />
         <RewardStat label="Ulke" value={summary.country_count} />
       </div>
       <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
         <EurodeskMetric label="Toplam hibe" value={formatCurrency(summary.total_grant_amount)} />
-        <EurodeskMetric label="Onayli hibe" value={formatCurrency(summary.approved_grant_amount)} />
+        <EurodeskMetric label="Onaylı hibe" value={formatCurrency(summary.approved_grant_amount)} />
       </div>
       <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
-        <span className="rounded-full bg-sky-100 px-3 py-1 text-sky-700">Basvuruldu {summary.applied_projects}</span>
-        <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">Onaylandi {summary.approved_projects}</span>
-        <span className="rounded-full bg-violet-100 px-3 py-1 text-violet-700">Tamamlandi {summary.completed_projects}</span>
+        <span className="rounded-full bg-sky-100 px-3 py-1 text-sky-700">Başvuruldu {summary.applied_projects}</span>
+        <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">Onaylandı {summary.approved_projects}</span>
+        <span className="rounded-full bg-violet-100 px-3 py-1 text-violet-700">Tamamlandı {summary.completed_projects}</span>
         <span className="rounded-full bg-red-100 px-3 py-1 text-red-700">Reddedildi {summary.rejected_projects}</span>
       </div>
     </div>
@@ -1215,12 +1215,12 @@ function FormActions({ isEditing, label, onCancel }: { isEditing?: boolean; labe
     <div className="flex flex-wrap gap-2 md:col-span-2">
       <button className={buttonClass}>
         {isEditing ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-        {isEditing ? `${label} guncelle` : `${label} ekle`}
+        {isEditing ? `${label} güncelle` : `${label} ekle`}
       </button>
       {isEditing ? (
         <button type="button" onClick={onCancel} className="panel-button panel-button-secondary">
           <X className="h-4 w-4" />
-          Vazgec
+          Vazgeç
         </button>
       ) : null}
     </div>
@@ -1242,7 +1242,7 @@ function RecordList<T extends { id: number }>({
   onEdit?: (item: T) => void;
   onDelete?: (id: number) => void;
 }) {
-  if (items.length === 0) return <div className="panel-empty-card py-5">Kayit yok.</div>;
+  if (items.length === 0) return <div className="panel-empty-card py-5">Kayıt yok.</div>;
 
   return (
     <div className="space-y-2">
@@ -1251,7 +1251,7 @@ function RecordList<T extends { id: number }>({
           <div className="text-sm font-semibold text-slate-900">{render(item)}</div>
           <div className="flex shrink-0 items-center gap-2">
             {onEdit && (canEdit ? canEdit(item) : true) ? (
-              <button type="button" onClick={() => onEdit(item)} className="panel-button-icon" title="Duzenle">
+              <button type="button" onClick={() => onEdit(item)} className="panel-button-icon" title="Düzenle">
                 <Edit2 className="h-4 w-4" />
               </button>
             ) : null}

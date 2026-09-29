@@ -123,20 +123,20 @@ type ActionStatus =
   | "interview_failed";
 
 const statusOptions = [
-  { value: "all", label: "Tum durumlar" },
+  { value: "all", label: "Tüm durumlar" },
   { value: "pending", label: "Bekleyen" },
   { value: "accepted", label: "Kabul Edilen" },
   { value: "waitlisted", label: "Yedek" },
-  { value: "interview_planned", label: "Mulakat Planlandi" },
-  { value: "interview_passed", label: "Mulakat Gecti" },
-  { value: "interview_failed", label: "Mulakat Olumsuz" },
+  { value: "interview_planned", label: "Mülakat Planlandı" },
+  { value: "interview_passed", label: "Mülakat Gecti" },
+  { value: "interview_failed", label: "Mülakat Olumsuz" },
   { value: "rejected", label: "Reddedilen" },
 ];
 
 const quickActions: Array<{ label: string; status: ActionStatus; tone: string }> = [
   { label: "Kabul Et", status: "accepted", tone: "panel-card-action-success" },
   { label: "Yedege Al", status: "waitlisted", tone: "panel-card-action-info" },
-  { label: "Mulakat Planla", status: "interview_planned", tone: "panel-card-action-info" },
+  { label: "Mülakat Planla", status: "interview_planned", tone: "panel-card-action-info" },
   { label: "Reddet", status: "rejected", tone: "panel-card-action-danger" },
 ];
 
@@ -259,7 +259,7 @@ export default function AdminApplicationsPage() {
           setPeriodFilter(defaultPeriodIdForProject(project) || "all");
         }
       } catch (error) {
-        console.error("Yetkili proje listesi yuklenemedi", error);
+        console.error("Yetkili proje listesi yüklenemedi", error);
       }
     };
 
@@ -289,13 +289,13 @@ export default function AdminApplicationsPage() {
       setRangeStart(pagination?.from ?? null);
       setRangeEnd(pagination?.to ?? null);
     } catch (error) {
-      console.error("Basvurular yuklenemedi", error);
+      console.error("Başvurular yüklenemedi", error);
       setApplications([]);
       setLastPage(1);
       setTotal(0);
       setRangeStart(null);
       setRangeEnd(null);
-      setErrorMessage("Basvuru listesi yuklenemedi. Sistemsel bir hata olustu.");
+      setErrorMessage("Başvuru listesi yüklenemedi. Sistemsel bir hata oluştu.");
     } finally {
       setLoading(false);
     }
@@ -332,7 +332,7 @@ export default function AdminApplicationsPage() {
         await api.put(`/panel/applications/${id}/status`, {
           status,
           evaluation_note: note || null,
-          rejection_reason: status === "rejected" ? note || "Yonetim degerlendirmesi sonucunda reddedildi." : null,
+          rejection_reason: status === "rejected" ? note || "Yönetim degerlendirmesi sonucunda reddedildi." : null,
         });
       }
 
@@ -345,7 +345,7 @@ export default function AdminApplicationsPage() {
             interview_at: status === "interview_planned" && interviewAt ? withIstanbulOffset(interviewAt) : application.interview_at,
             evaluation_note: note || application.evaluation_note,
             rejection_reason:
-              status === "rejected" ? note || application.rejection_reason || "Yonetim degerlendirmesi sonucunda reddedildi." : application.rejection_reason,
+              status === "rejected" ? note || application.rejection_reason || "Yönetim degerlendirmesi sonucunda reddedildi." : application.rejection_reason,
             workflow: {
               has_interview: application.hasInterview,
               next_step: computeWorkflowNextStep({
@@ -358,16 +358,16 @@ export default function AdminApplicationsPage() {
         })
       );
 
-      setMessage("Basvuru durumu basariyla guncellendi.");
+      setMessage("Başvuru durumu başarıyla güncellendi.");
     } catch (error) {
-      console.error("Basvuru durumu guncellenemedi", error);
+      console.error("Başvuru durumu güncellenemedi", error);
       const responseMessage = isAxiosError(error)
         ? error.response?.data?.message ||
           Object.values(error.response?.data?.errors ?? {})
             .flat()
             .join(" ")
         : null;
-      setErrorMessage(responseMessage || "Basvuru durumu guncellenirken hata olustu.");
+      setErrorMessage(responseMessage || "Başvuru durumu güncellenirken hata oluştu.");
     } finally {
       setActionLoading(null);
     }
@@ -386,7 +386,7 @@ export default function AdminApplicationsPage() {
           window.open(payload.download_url, "_blank", "noopener,noreferrer");
           return;
         }
-        throw new Error(payload.message ?? "Basvuru dosyasi indirilemedi.");
+        throw new Error(payload.message ?? "Başvuru dosyası indirilemedi.");
       }
 
       const blobUrl = URL.createObjectURL(response.data);
@@ -398,8 +398,8 @@ export default function AdminApplicationsPage() {
       link.remove();
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error("Basvuru dosyasi indirilemedi", error);
-      setErrorMessage("Basvuru dosyasi indirilemedi.");
+      console.error("Başvuru dosyası indirilemedi", error);
+      setErrorMessage("Başvuru dosyası indirilemedi.");
     }
   };
 
@@ -412,7 +412,7 @@ export default function AdminApplicationsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900">BAŞVURU YÖNETİMİ</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Mulakatli ve mulakatsiz basvuru akislari proje ayarina gore yonetilir</p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Mulakatli ve mulakatsiz başvuru akışları proje ayarina göre yönetilir</p>
           </div>
         </div>
         <PermissionGate permission="applications.export">
@@ -437,7 +437,7 @@ export default function AdminApplicationsPage() {
               <Search className="panel-control-icon" />
               <input
                 type="text"
-                placeholder="Ogrenci, e-posta veya proje ara..."
+                placeholder="Öğrenci, e-posta veya proje ara..."
                 value={searchTerm}
                 onChange={(event) => {
                   setSearchTerm(event.target.value);
@@ -492,7 +492,7 @@ export default function AdminApplicationsPage() {
         </div>
       ) : applications.length === 0 ? (
         <div className="panel-empty-card py-16 font-bold">
-          Secili filtrelerde basvuru bulunmuyor.
+          Seçili filtrelerde başvuru bulunmuyor.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
@@ -526,9 +526,9 @@ export default function AdminApplicationsPage() {
                         )}
                         <span className={`panel-chip ${panelStatusChipClass(application.status)}`}>{statusLabel(application.status)}</span>
                         {application.hasInterview ? (
-                          <span className="panel-chip panel-chip-warning">Akis: Mulakatli</span>
+                          <span className="panel-chip panel-chip-warning">Akış: Mulakatli</span>
                         ) : (
-                          <span className="panel-chip panel-chip-success">Akis: Mulakatsiz / Nihai Karar</span>
+                          <span className="panel-chip panel-chip-success">Akış: Mulakatsiz / Nihai Karar</span>
                         )}
                       </div>
                     </div>
@@ -546,7 +546,7 @@ export default function AdminApplicationsPage() {
                 <div className="grid w-full gap-3 xl:max-w-xl">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     <MessageSquareText className="h-4 w-4" />
-                    Degerlendirme Notu
+                    Değerlendirme Notu
                   </div>
                   <textarea
                     rows={2}
@@ -557,7 +557,7 @@ export default function AdminApplicationsPage() {
                         [application.id]: event.target.value,
                       }))
                     }
-                    placeholder="Mulakat notu, yedek gerekcesi veya ret aciklamasi yazin..."
+                    placeholder="Mülakat notu, yedek gerekcesi veya ret açıklaması yazın..."
                     className="panel-textarea min-h-20"
                   />
 
@@ -575,7 +575,7 @@ export default function AdminApplicationsPage() {
                     />
                   ) : application.interview_at ? (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-amber-700">
-                      Mulakat: {formatIstanbulDateTime(application.interview_at)}
+                      Mülakat: {formatIstanbulDateTime(application.interview_at)}
                     </div>
                   ) : null}
 
@@ -616,7 +616,7 @@ export default function AdminApplicationsPage() {
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <span className="flex items-center gap-1">
-                                <Check className="h-4 w-4" /> BASARILI
+                                <Check className="h-4 w-4" /> BAŞARILI
                               </span>
                             )}
                           </button>
@@ -642,7 +642,7 @@ export default function AdminApplicationsPage() {
                   {application.rejection_reason && (
                     <div className="mt-2 flex items-center gap-2 text-xs font-bold text-amber-500">
                       <Clock className="h-4 w-4" />
-                      Son ret/degerlendirme notu: {application.rejection_reason}
+                      Son ret/değerlendirme notu: {application.rejection_reason}
                     </div>
                   )}
 
@@ -650,9 +650,9 @@ export default function AdminApplicationsPage() {
                     <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-indigo-700">
                       Sonraki adim:{" "}
                       {application.workflow.next_step === "plan_interview"
-                        ? "Mulakat planla"
+                        ? "Mülakat planla"
                         : application.workflow.next_step === "record_interview_result"
-                          ? "Mulakat sonucunu isle"
+                          ? "Mülakat sonucunu isle"
                           : "Nihai karar ver"}
                     </div>
                   ) : null}
@@ -671,7 +671,7 @@ export default function AdminApplicationsPage() {
                         {entry.file ? (
                           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0">
-                              <div className="truncate text-sm font-bold text-slate-900">{entry.file.original_name || "Basvuru dosyasi"}</div>
+                              <div className="truncate text-sm font-bold text-slate-900">{entry.file.original_name || "Başvuru dosyası"}</div>
                               <div className="mt-1 text-xs text-muted-foreground">
                                 {[entry.file.mime_type, formatFileSize(entry.file.size)].filter(Boolean).join(" · ") || "Dosya"}
                               </div>
@@ -702,8 +702,8 @@ export default function AdminApplicationsPage() {
           <div className="panel-pagination">
             <div className="font-bold">
               {total > 0 && rangeStart && rangeEnd
-                ? `${rangeStart}-${rangeEnd} / ${total} basvuru`
-                : `${total} basvuru`}
+                ? `${rangeStart}-${rangeEnd} / ${total} başvuru`
+                : `${total} başvuru`}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -711,7 +711,7 @@ export default function AdminApplicationsPage() {
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
                 disabled={page <= 1 || loading}
                 className="panel-button-icon"
-                aria-label="Onceki sayfa"
+                aria-label="Önceki sayfa"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>

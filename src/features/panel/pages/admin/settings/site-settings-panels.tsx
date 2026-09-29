@@ -37,31 +37,31 @@ export type SettingsModuleDef = {
 export const SETTINGS_MODULES: SettingsModuleDef[] = [
   {
     id: "general",
-    label: "Marka ve iletisim",
-    description: "Site adi, iletisim ve sosyal medya",
+    label: "Marka ve iletişim",
+    description: "Site adı, iletişim ve sosyal medya",
     icon: Globe2,
   },
   {
     id: "navigation",
     label: "Navigasyon",
-    description: "Header ve footer baglantilari",
+    description: "Header ve footer bağlantıları",
     icon: Link2,
   },
   {
     id: "homepage",
     label: "Anasayfa",
-    description: "Bloklar, hero, bolum metinleri, sertifika blogu",
+    description: "Bloklar, hero, bölüm metinleri, sertifika blogu",
     icon: LayoutGrid,
   },
   {
     id: "intro",
-    label: "Tanıtım kartlari",
-    description: "Hero sonrasi kisa kartlar",
+    label: "Tanıtım kartları",
+    description: "Hero sonrası kısa kartlar",
     icon: ImageIcon,
   },
   {
     id: "featured",
-    label: "One cikan icerik",
+    label: "One cikan içerik",
     description: "Proje, blog ve faaliyet secimleri",
     icon: Star,
   },
@@ -163,7 +163,7 @@ export function SettingsModuleNav({
   onSelect: (id: SettingsModuleId) => void;
 }) {
   return (
-    <nav className="flex flex-col gap-2" aria-label="Ayar modulleri">
+    <nav className="flex flex-col gap-2" aria-label="Ayar modülleri">
       {SETTINGS_MODULES.map((mod) => {
         const Icon = mod.icon;
         const active = activeModule === mod.id;
@@ -233,13 +233,13 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
     return (
       <div className={`${panelShell} space-y-6`}>
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Marka ve iletisim</h2>
-          <p className="mt-1 text-sm text-slate-500">Kurumsal kimlik ve ziyaretcilerin sizi bulmasi icin temel bilgiler.</p>
+          <h2 className="text-lg font-bold text-slate-900">Marka ve iletişim</h2>
+          <p className="mt-1 text-sm text-slate-500">Kurumsal kimlik ve ziyaretcilerin sizi bulmasi için temel bilgiler.</p>
         </div>
         <div className={subCard}>
           <h3 className="mb-4 text-sm font-semibold text-slate-800">Genel</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Site adi">
+            <Field label="Site adı">
               <input
                 disabled={disabled}
                 value={settings.general.site_name}
@@ -247,7 +247,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                   setSettings((c) => ({ ...c, general: { ...c.general, site_name: e.target.value } }))
                 }
                 className={fieldBase}
-                placeholder="Ornek: KADEME"
+                placeholder="Örnek: KADEME"
               />
             </Field>
             <Field label="Site slogani">
@@ -258,13 +258,13 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                   setSettings((c) => ({ ...c, general: { ...c.general, site_tagline: e.target.value } }))
                 }
                 className={fieldBase}
-                placeholder="Kisa slogan"
+                placeholder="Kısa slogan"
               />
             </Field>
           </div>
         </div>
         <div className={subCard}>
-          <h3 className="mb-4 text-sm font-semibold text-slate-800">Iletisim</h3>
+          <h3 className="mb-4 text-sm font-semibold text-slate-800">İletişim</h3>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="E-posta">
               <input
@@ -360,8 +360,8 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
           </div>
           <div className="mt-4">
             <Field
-              label="Sosyal paylasim webhook"
-              hint="Duyuru veya etkinlik panelinden paylasim tetiklemek icin (Make, Zapier, Buffer vb.)."
+              label="Sosyal paylaşım webhook"
+              hint="Duyuru veya etkinlik panelinden paylaşım tetiklemek için (Make, Zapier, Buffer vb.)."
             >
               <input
                 disabled={disabled}
@@ -387,12 +387,12 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
       <div className={`${panelShell} space-y-6`}>
         <div>
           <h2 className="text-lg font-bold text-slate-900">Navigasyon</h2>
-          <p className="mt-1 text-sm text-slate-500">Header ve footer baglantilari; public sitede gorunen yollar.</p>
+          <p className="mt-1 text-sm text-slate-500">Header ve footer bağlantıları; public sitede gorunen yollar.</p>
         </div>
         <div className={subCard}>
-          <h3 className="mb-4 text-sm font-semibold text-slate-800">Giris / basvuru etiketleri</h3>
+          <h3 className="mb-4 text-sm font-semibold text-slate-800">Giriş / başvuru etiketleri</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Giris butonu metni">
+            <Field label="Giriş butonu metni">
               <input
                 disabled={disabled}
                 value={settings.navigation.header_login_label}
@@ -405,7 +405,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Basvuru butonu metni">
+            <Field label="Başvuru butonu metni">
               <input
                 disabled={disabled}
                 value={settings.navigation.header_register_label}
@@ -561,11 +561,11 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
       <div className={`${panelShell} space-y-8`}>
         <div>
           <h2 className="text-lg font-bold text-slate-900">Anasayfa</h2>
-          <p className="mt-1 text-sm text-slate-500">Blok sirasi, hero ve blok basliklari / aciklamalari.</p>
+          <p className="mt-1 text-sm text-slate-500">Blok sırası, hero ve blok basliklari / açıklamaları.</p>
         </div>
         <div className={subCard}>
-          <h3 className="mb-3 text-sm font-semibold text-slate-800">Blok sirasi ve gorunurluk</h3>
-          <p className="mb-4 text-xs text-slate-500">Ziyaretci anasayfasinda bolumlerin sirasi ve acik/kapali durumu.</p>
+          <h3 className="mb-3 text-sm font-semibold text-slate-800">Blok sırası ve görünürlük</h3>
+          <p className="mb-4 text-xs text-slate-500">Ziyaretci anasayfasinda bolumlerin sırası ve açık/kapalı durumu.</p>
           <div className="space-y-2">
             {settings.homepage.block_order.map((block, index) => (
               <div
@@ -575,7 +575,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 <div>
                   <div className="font-medium text-slate-900">{homepageBlockLabels[block]}</div>
                   <div className="text-xs text-slate-500">
-                    {settings.homepage.block_visibility[block] ? "Gorunur" : "Gizli"}
+                    {settings.homepage.block_visibility[block] ? "Görünür" : "Gizli"}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -585,7 +585,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                     onClick={() => toggleBlockVisibility(block)}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50"
                   >
-                    {settings.homepage.block_visibility[block] ? "Gizle" : "Goster"}
+                    {settings.homepage.block_visibility[block] ? "Gizle" : "Göster"}
                   </button>
                   <button
                     type="button"
@@ -601,7 +601,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                     onClick={() => moveBlock(index, 1)}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                   >
-                    Asagi
+                    Aşağı
                   </button>
                 </div>
               </div>
@@ -609,9 +609,9 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
           </div>
         </div>
         <div className={subCard}>
-          <h3 className="mb-4 text-sm font-semibold text-slate-800">Kayan yazilar</h3>
+          <h3 className="mb-4 text-sm font-semibold text-slate-800">Kayan yazılar</h3>
           <div className="grid gap-4 md:grid-cols-[1fr_180px]">
-            <Field label="Metinler" hint="Her satir bir kayan yazi ogesi olarak gosterilir.">
+            <Field label="Metinler" hint="Her satir bir kayan yazi ogesi olarak gösterilir.">
               <textarea
                 disabled={disabled}
                 value={settings.homepage.marquee_items.join("\n")}
@@ -631,7 +631,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Sure (sn)" hint="8-90 saniye arasi.">
+            <Field label="Süre (sn)" hint="8-90 saniye arasi.">
               <input
                 disabled={disabled}
                 type="number"
@@ -681,7 +681,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 ),
               )}
             </div>
-            <Field label="Hero aciklama">
+            <Field label="Hero açıklama">
               <textarea
                 disabled={disabled}
                 value={settings.homepage.hero_description}
@@ -714,7 +714,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
               }`}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              {uploadingField === "hero_background_image_url" ? "Yukleniyor..." : "Gorsel yukle"}
+              {uploadingField === "hero_background_image_url" ? "Yükleniyor..." : "Görsel yükle"}
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
@@ -791,9 +791,9 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
           </div>
         </div>
         <div className={subCard}>
-          <h3 className="mb-4 text-sm font-semibold text-slate-800">Bolum basliklari ve aciklamalari</h3>
+          <h3 className="mb-4 text-sm font-semibold text-slate-800">Bölüm basliklari ve açıklamaları</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Projeler basligi">
+            <Field label="Projeler başlığı">
               <input
                 disabled={disabled}
                 value={settings.homepage.projects_title}
@@ -806,7 +806,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Faaliyetler basligi">
+            <Field label="Faaliyetler başlığı">
               <input
                 disabled={disabled}
                 value={settings.homepage.activities_title}
@@ -832,7 +832,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Blog basligi">
+            <Field label="Blog başlığı">
               <input
                 disabled={disabled}
                 value={settings.homepage.blog_title}
@@ -845,7 +845,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="E-bulten basligi">
+            <Field label="E-bulten başlığı">
               <input
                 disabled={disabled}
                 value={settings.homepage.newsletter_title}
@@ -860,7 +860,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             </Field>
           </div>
           <div className="mt-4 space-y-4">
-            <Field label="Projeler aciklamasi">
+            <Field label="Projeler açıklaması">
               <textarea
                 disabled={disabled}
                 value={settings.homepage.projects_description}
@@ -874,7 +874,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Faaliyetler aciklamasi">
+            <Field label="Faaliyetler açıklaması">
               <textarea
                 disabled={disabled}
                 value={settings.homepage.activities_description}
@@ -902,7 +902,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="About teaser gorsel URL">
+            <Field label="About teaser görsel URL">
               <input
                 disabled={disabled}
                 value={settings.homepage.about_teaser_image_url}
@@ -921,7 +921,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
               }`}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              {uploadingField === "about_teaser_image_url" ? "Yukleniyor..." : "About gorseli yukle"}
+              {uploadingField === "about_teaser_image_url" ? "Yükleniyor..." : "About görseli yükle"}
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
@@ -941,7 +941,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 }}
               />
             </label>
-            <Field label="Blog aciklamasi">
+            <Field label="Blog açıklaması">
               <textarea
                 disabled={disabled}
                 value={settings.homepage.blog_description}
@@ -955,7 +955,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="E-bulten aciklamasi">
+            <Field label="E-bulten açıklaması">
               <textarea
                 disabled={disabled}
                 value={settings.homepage.newsletter_description}
@@ -969,7 +969,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Footer aciklamasi">
+            <Field label="Footer açıklaması">
               <textarea
                 disabled={disabled}
                 value={settings.homepage.footer_description}
@@ -998,7 +998,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
               />
             </Field>
             <Field
-              label="Aylik motivasyon (ogrenci / mezun paneli)"
+              label="Aylık motivasyon (öğrenci / mezun paneli)"
               hint="Dashboard kartlarinda gosterilebilir."
             >
               <textarea
@@ -1017,13 +1017,13 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
           </div>
         </div>
         <div className={subCard}>
-          <h3 className="mb-4 text-sm font-semibold text-slate-800">Sertifika dogrulama blogu</h3>
+          <h3 className="mb-4 text-sm font-semibold text-slate-800">Sertifika doğrulama blogu</h3>
           <p className="mb-4 text-xs text-slate-500">
             Anasayfadaki sertifika blogu gorunurken kullanilan metinler (<code className="text-[11px]">certificate_verify</code>{" "}
             blogu).
           </p>
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Baslik">
+            <Field label="Başlık">
               <input
                 disabled={disabled}
                 value={settings.homepage.certificate_verify_title}
@@ -1064,7 +1064,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             </Field>
           </div>
           <div className="mt-4">
-            <Field label="Aciklama">
+            <Field label="Açıklama">
               <textarea
                 disabled={disabled}
                 value={settings.homepage.certificate_verify_description}
@@ -1088,15 +1088,15 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
     return (
       <div className={`${panelShell} space-y-6`}>
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Tanıtım kartlari</h2>
-          <p className="mt-1 text-sm text-slate-500">Hero sonrasi kisa kartlar; baslik, metin, gorsel ve CTA.</p>
+          <h2 className="text-lg font-bold text-slate-900">Tanıtım kartları</h2>
+          <p className="mt-1 text-sm text-slate-500">Hero sonrası kısa kartlar; başlık, metin, görsel ve CTA.</p>
         </div>
         <div className="space-y-4">
           {settings.homepage.intro_cards.map((card, index) => (
             <div key={`intro-card-${index}`} className={subCard}>
               <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-indigo-600">Kart {index + 1}</div>
               <div className="grid gap-4">
-                <Field label="Baslik">
+                <Field label="Başlık">
                   <input
                     disabled={disabled}
                     value={card.title}
@@ -1104,7 +1104,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                     className={fieldBase}
                   />
                 </Field>
-                <Field label="Aciklama">
+                <Field label="Açıklama">
                   <textarea
                     disabled={disabled}
                     value={card.description}
@@ -1113,7 +1113,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                     className={fieldBase}
                   />
                 </Field>
-                <Field label="Gorsel URL">
+                <Field label="Görsel URL">
                   <input
                     disabled={disabled}
                     value={card.image_url}
@@ -1127,7 +1127,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                   }`}
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  {uploadingField === `intro-${index}` ? "Yukleniyor..." : "Kart gorseli yukle"}
+                  {uploadingField === `intro-${index}` ? "Yükleniyor..." : "Kart görseli yükle"}
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
@@ -1175,7 +1175,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
     return (
       <div className={`${panelShell} space-y-6`}>
         <div>
-          <h2 className="text-lg font-bold text-slate-900">One cikan icerikler</h2>
+          <h2 className="text-lg font-bold text-slate-900">One cikan içerikler</h2>
           <p className="mt-1 text-sm text-slate-500">
             Anasayfada one cikarilacak proje, blog ve faaliyetler. Faaliyet listesi public{" "}
             <code className="rounded bg-slate-100 px-1 text-[11px]">GET /activities</code> cevabindan gelir (sayfali
@@ -1187,7 +1187,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             <h3 className="mb-3 text-sm font-semibold text-slate-800">Projeler</h3>
             <div className="max-h-[min(420px,50vh)] space-y-2 overflow-y-auto pr-1">
               {safeProjects.length === 0 ? (
-                <p className="text-xs text-slate-500">Liste bos veya yuklenemedi.</p>
+                <p className="text-xs text-slate-500">Liste bos veya yüklenemedi.</p>
               ) : null}
               {safeProjects.map((project) => {
                 const checked = settings.homepage.featured_project_slugs.includes(project.slug);
@@ -1213,7 +1213,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             <h3 className="mb-3 text-sm font-semibold text-slate-800">Blog</h3>
             <div className="max-h-[min(420px,50vh)] space-y-2 overflow-y-auto pr-1">
               {safeBlogs.length === 0 ? (
-                <p className="text-xs text-slate-500">Liste bos veya yuklenemedi.</p>
+                <p className="text-xs text-slate-500">Liste bos veya yüklenemedi.</p>
               ) : null}
               {safeBlogs.map((blog) => {
                 const checked = settings.homepage.featured_blog_slugs.includes(blog.slug);
@@ -1239,7 +1239,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             <h3 className="mb-3 text-sm font-semibold text-slate-800">Faaliyetler</h3>
             <div className="max-h-[min(420px,50vh)] space-y-2 overflow-y-auto pr-1">
               {safeActivities.length === 0 ? (
-                <p className="text-xs text-slate-500">Liste bos veya yuklenemedi.</p>
+                <p className="text-xs text-slate-500">Liste bos veya yüklenemedi.</p>
               ) : null}
               {safeActivities.map((activity) => {
                 const checked = settings.homepage.featured_activity_ids.includes(activity.id);
@@ -1277,7 +1277,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Sayilarla veriler</h2>
-            <p className="mt-1 text-sm text-slate-500">Otomatik sayim veya manuel degerler.</p>
+            <p className="mt-1 text-sm text-slate-500">Otomatik sayim veya manuel değerler.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -1310,7 +1310,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
         {settings.homepage.stats_mode === "auto" ? (
           <div className="panel-notice panel-notice-success">
             <p className="mb-4 text-sm text-emerald-900">
-              Bu modda sayilar sunucuda hesaplanir. Manuel moda gecerek ozel degerler girebilirsiniz.
+              Bu modda sayilar sunucuda hesaplanir. Manuel moda gecerek özel değerler girebilirsiniz.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {computedStats.map((stat, index) => (
@@ -1334,14 +1334,14 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                   value={stat.label}
                   onChange={(e) => updateStat(index, "label", e.target.value)}
                   className={fieldBase}
-                  placeholder="Baslik"
+                  placeholder="Başlık"
                 />
                 <input
                   disabled={disabled}
                   value={stat.value}
                   onChange={(e) => updateStat(index, "value", e.target.value)}
                   className={fieldBase}
-                  placeholder="Deger"
+                  placeholder="Değer"
                 />
                 <select
                   disabled={disabled}
@@ -1378,9 +1378,9 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
           <p className="mt-1 text-sm text-slate-500">Public /about sayfasindaki kurumsal metinler.</p>
         </div>
         <div className={subCard}>
-          <h3 className="mb-4 text-sm font-semibold text-slate-800">Ust bolum</h3>
+          <h3 className="mb-4 text-sm font-semibold text-slate-800">Üst bölüm</h3>
           <div className="space-y-4">
-            <Field label="Hero baslik">
+            <Field label="Hero başlık">
               <input
                 disabled={disabled}
                 value={settings.about.hero_title}
@@ -1390,7 +1390,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Hero aciklama">
+            <Field label="Hero açıklama">
               <textarea
                 disabled={disabled}
                 value={settings.about.hero_description}
@@ -1409,7 +1409,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
         <div className={subCard}>
           <h3 className="mb-4 text-sm font-semibold text-slate-800">Misyon ve vizyon</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Misyon basligi">
+            <Field label="Misyon başlığı">
               <input
                 disabled={disabled}
                 value={settings.about.mission_title}
@@ -1422,7 +1422,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Vizyon basligi">
+            <Field label="Vizyon başlığı">
               <input
                 disabled={disabled}
                 value={settings.about.vision_title}
@@ -1469,7 +1469,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
         </div>
         <div className={subCard}>
           <h3 className="mb-4 text-sm font-semibold text-slate-800">Ekosistem ve teaserlar</h3>
-          <Field label="Ekosistem basligi">
+          <Field label="Ekosistem başlığı">
             <input
               disabled={disabled}
               value={settings.about.ecosystem_title}
@@ -1483,7 +1483,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             />
           </Field>
           <div className="mt-4">
-            <Field label="Ekosistem aciklamasi">
+            <Field label="Ekosistem açıklaması">
               <textarea
                 disabled={disabled}
                 value={settings.about.ecosystem_description}
@@ -1499,7 +1499,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             </Field>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <Field label="SSS teaser baslik">
+            <Field label="SSS teaser başlık">
               <input
                 disabled={disabled}
                 value={settings.about.faq_teaser_title}
@@ -1512,7 +1512,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Blog teaser baslik">
+            <Field label="Blog teaser başlık">
               <input
                 disabled={disabled}
                 value={settings.about.blog_teaser_title}
@@ -1525,7 +1525,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Faaliyet teaser baslik">
+            <Field label="Faaliyet teaser başlık">
               <input
                 disabled={disabled}
                 value={settings.about.activities_teaser_title}
@@ -1586,7 +1586,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
         </div>
         <div className={subCard}>
           <h3 className="mb-4 text-sm font-semibold text-slate-800">Yolculuk</h3>
-          <Field label="Baslik">
+          <Field label="Başlık">
             <input
               disabled={disabled}
               value={settings.about.journey_title}
@@ -1625,7 +1625,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
       <div className={`${panelShell} space-y-6`}>
         <div>
           <h2 className="text-lg font-bold text-slate-900">Public sayfa metinleri</h2>
-          <p className="mt-1 text-sm text-slate-500">Blog ve SSS sayfalarindaki baslik, aciklama ve CTA metinleri.</p>
+          <p className="mt-1 text-sm text-slate-500">Blog ve SSS sayfalarindaki başlık, açıklama ve CTA metinleri.</p>
         </div>
         <div className={subCard}>
           <h3 className="mb-4 text-sm font-semibold text-slate-800">Blog liste ve detay</h3>
@@ -1640,7 +1640,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Sayfa basligi">
+            <Field label="Sayfa başlığı">
               <input
                 disabled={disabled}
                 value={settings.blog_page.title}
@@ -1652,7 +1652,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             </Field>
           </div>
           <div className="mt-4">
-            <Field label="Sayfa aciklamasi">
+            <Field label="Sayfa açıklaması">
               <textarea
                 disabled={disabled}
                 value={settings.blog_page.description}
@@ -1718,7 +1718,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Detay bos icerik metni">
+            <Field label="Detay bos içerik metni">
               <textarea
                 disabled={disabled}
                 value={settings.blog_page.detail_empty_content}
@@ -1734,7 +1734,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
         <div className={subCard}>
           <h3 className="mb-4 text-sm font-semibold text-slate-800">SSS sayfasi</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Sayfa basligi">
+            <Field label="Sayfa başlığı">
               <input
                 disabled={disabled}
                 value={settings.faq_page.title}
@@ -1744,7 +1744,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Iletisim CTA metni">
+            <Field label="İletişim CTA metni">
               <input
                 disabled={disabled}
                 value={settings.faq_page.contact_cta_label}
@@ -1756,7 +1756,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             </Field>
           </div>
           <div className="mt-4">
-            <Field label="Sayfa aciklamasi">
+            <Field label="Sayfa açıklaması">
               <textarea
                 disabled={disabled}
                 value={settings.faq_page.description}
@@ -1780,7 +1780,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Iletisim kutusu basligi">
+            <Field label="İletişim kutusu başlığı">
               <input
                 disabled={disabled}
                 value={settings.faq_page.contact_title}
@@ -1792,7 +1792,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
             </Field>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <Field label="Iletisim kutusu aciklamasi">
+            <Field label="İletişim kutusu açıklaması">
               <textarea
                 disabled={disabled}
                 value={settings.faq_page.contact_description}
@@ -1803,7 +1803,7 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
                 className={fieldBase}
               />
             </Field>
-            <Field label="Iletisim CTA linki">
+            <Field label="İletişim CTA linki">
               <input
                 disabled={disabled}
                 value={settings.faq_page.contact_cta_href}

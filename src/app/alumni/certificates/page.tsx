@@ -23,9 +23,9 @@ interface CertificateItem {
 }
 
 const typeLabels: Record<string, string> = {
-  participation: "Katilim Belgesi",
-  graduation: "Mezuniyet Sertifikasi",
-  achievement: "Basari Sertifikasi",
+  participation: "Katılım Belgesi",
+  graduation: "Mezuniyet Sertifikası",
+  achievement: "Başarı Sertifikası",
 };
 
 function formatDate(value?: string | null): string {
@@ -46,8 +46,8 @@ export default function AlumniCertificatesPage() {
         const response = await api.get<{ certificates: CertificateItem[] }>("/certificates");
         setCertificates(response.data.certificates ?? []);
       } catch (error) {
-        console.error("Mezun sertifikalari yuklenemedi", error);
-        setErrorMessage("Sertifikalar yuklenemedi.");
+        console.error("Mezun sertifikalari yüklenemedi", error);
+        setErrorMessage("Sertifikalar yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -123,7 +123,7 @@ export default function AlumniCertificatesPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <SummaryCard label="Toplam Belge" value={certificates.length} />
         <SummaryCard label="Mezuniyet" value={certificates.filter((item) => item.type === "graduation").length} />
-        <SummaryCard label="Dogrulanabilir" value={certificates.filter((item) => item.verification_code).length} />
+        <SummaryCard label="Doğrulanabilir" value={certificates.filter((item) => item.verification_code).length} />
       </div>
 
       {errorMessage ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500">{errorMessage}</div> : null}
@@ -134,7 +134,7 @@ export default function AlumniCertificatesPage() {
         </div>
       ) : filteredCertificates.length === 0 ? (
         <div className="glass-panel rounded-3xl p-12 text-center text-muted-foreground">
-          {certificates.length === 0 ? "Hesabina tanimli sertifika bulunmuyor." : "Aramana uygun sertifika bulunamadi."}
+          {certificates.length === 0 ? "Hesabına tanımlı sertifika bulunmuyor." : "Aramana uygun sertifika bulunamadı."}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
@@ -154,7 +154,7 @@ export default function AlumniCertificatesPage() {
                     </div>
                     <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground md:grid-cols-3">
                       <span>Kod: {certificate.verification_code}</span>
-                      <span>Donem: {certificate.period?.name || "-"}</span>
+                      <span>Dönem: {certificate.period?.name || "-"}</span>
                       <span>Tarih: {formatDate(certificate.issued_at)}</span>
                     </div>
                   </div>
@@ -176,7 +176,7 @@ export default function AlumniCertificatesPage() {
                     href={`/certificates/verify?code=${encodeURIComponent(certificate.verification_code)}`}
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-white/70"
                   >
-                    Dogrula
+                    Doğrula
                     <ExternalLink className="h-4 w-4" />
                   </Link>
                 </div>

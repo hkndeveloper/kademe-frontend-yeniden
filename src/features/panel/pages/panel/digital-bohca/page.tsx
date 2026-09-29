@@ -21,10 +21,10 @@ type Project = {
 const BOHCA_CATEGORIES: Record<string, string> = {
   general: "Genel",
   internship_documents: "Staj Belgeleri",
-  assignment: "Odev",
+  assignment: "Ödev",
   certificate: "Sertifika",
   kpd_report: "KPD Raporu",
-  other: "Diger",
+  other: "Diğer",
 };
 
 type Material = {
@@ -234,9 +234,9 @@ export default function PanelDigitalBohcaPage() {
             <Database className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900">Dijital Bohca</h1>
+            <h1 className="text-3xl font-black text-slate-900">Dijital Bohça</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Proje ve ogrenci materyallerini scope bazli yonet
+              Proje ve öğrenci materyallerini scope bazlı yonet
             </p>
           </div>
         </div>
@@ -248,7 +248,7 @@ export default function PanelDigitalBohcaPage() {
               project_id: projectFilter !== "all" ? projectFilter : undefined,
               period_id: periodFilter !== "all" ? periodFilter : undefined,
             }}
-            buttonLabel="Materyalleri Disa Aktar"
+            buttonLabel="Materyalleri Dışa Aktar"
           />
         </PermissionGate>
       </div>
@@ -289,7 +289,7 @@ export default function PanelDigitalBohcaPage() {
               disabled={!form.project_id}
               className="panel-control"
             >
-              <option value="">Tum donemler / genel</option>
+              <option value="">Tüm dönemler / genel</option>
               {(uploadProjects.find((project) => String(project.id) === form.project_id)?.periods ?? []).map((period) => (
                 <option key={period.id} value={period.id}>{period.name}</option>
               ))}
@@ -309,7 +309,7 @@ export default function PanelDigitalBohcaPage() {
               value={form.title}
               onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
               required
-              placeholder="Baslik"
+              placeholder="Başlık"
               className="panel-control"
             />
             <label className="panel-file-drop flex cursor-pointer items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-slate-700">
@@ -366,7 +366,7 @@ export default function PanelDigitalBohcaPage() {
             value={form.description}
             onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
             rows={3}
-            placeholder="Aciklama"
+            placeholder="Açıklama"
             className="panel-textarea mt-4"
           />
           <div className="panel-modal-footer mt-4">
@@ -375,7 +375,7 @@ export default function PanelDigitalBohcaPage() {
               title={!canUploadToSelectedPeriod ? "Bu döneme yeni materyal yüklenemez." : undefined}
               className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? "Yukleniyor..." : "Materyali Yukle"}
+              {saving ? "Yükleniyor..." : "Materyali Yükle"}
             </button>
           </div>
         </form>
@@ -450,7 +450,7 @@ export default function PanelDigitalBohcaPage() {
                 </div>
                 );
               })}
-              {materials.length === 0 ? <div className="panel-empty-card">Materyal bulunamadi.</div> : null}
+              {materials.length === 0 ? <div className="panel-empty-card">Materyal bulunamadı.</div> : null}
             </div>
           )}
         </div>

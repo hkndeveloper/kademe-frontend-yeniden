@@ -24,38 +24,38 @@ export function LogFiltersBar({ filters, options, loading, onChange, onApply }: 
                 if (event.key === "Enter") onApply();
               }}
               className="panel-control pl-10"
-              placeholder="Aciklama, yol, permission veya request id ara"
+              placeholder="Açıklama, yol, permission veya request id ara"
             />
           </div>
         </label>
         <label className="panel-field">
           <span className="panel-label">Kaynak</span>
           <select value={filters.log_name} onChange={(event) => onChange({ log_name: event.target.value })} className="panel-control">
-            <option value="">Tum kaynaklar</option>
+            <option value="">Tüm kaynaklar</option>
             {options.log_names.map((name) => <option key={name} value={name}>{name}</option>)}
           </select>
         </label>
         <label className="panel-field">
           <span className="panel-label">Aksiyon</span>
           <select value={filters.event} onChange={(event) => onChange({ event: event.target.value })} className="panel-control">
-            <option value="">Tum aksiyonlar</option>
+            <option value="">Tüm aksiyonlar</option>
             {options.events.map((event) => <option key={event} value={event}>{event}</option>)}
           </select>
         </label>
         <label className="panel-field">
-          <span className="panel-label">Sonuc</span>
+          <span className="panel-label">Sonuç</span>
           <select value={filters.outcome} onChange={(event) => onChange({ outcome: event.target.value })} className="panel-control">
-            <option value="">Tum sonuclar</option>
-            <option value="success">Basarili</option>
+            <option value="">Tüm sonuçlar</option>
+            <option value="success">Başarılı</option>
             <option value="denied_or_failed">Hata / red</option>
           </select>
         </label>
         <label className="panel-field">
-          <span className="panel-label">Baslangic</span>
+          <span className="panel-label">Başlangıç</span>
           <input type="date" value={filters.date_from} onChange={(event) => onChange({ date_from: event.target.value })} className="panel-control" />
         </label>
         <label className="panel-field">
-          <span className="panel-label">Bitis</span>
+          <span className="panel-label">Bitiş</span>
           <input type="date" value={filters.date_to} onChange={(event) => onChange({ date_to: event.target.value })} className="panel-control" />
         </label>
         <button type="button" onClick={onApply} disabled={loading} className="panel-button panel-button-primary">

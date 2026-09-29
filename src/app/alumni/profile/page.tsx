@@ -74,12 +74,12 @@ const emptyPassword: PasswordForm = {
 };
 
 const quickLinks: ProfileQuickLink[] = [
-  { href: "/alumni/dashboard", label: "Mezun paneli", description: "Ozet ve duyurular", icon: LayoutDashboard },
-  { href: "/alumni/programs", label: "Program gecmisim", description: "Sartname 15.3 gecmis programlar", icon: CalendarDays },
-  { href: "/alumni/opportunities", label: "Kariyer firsatlari", description: "Mezuna ozel ilanlar", icon: Handshake },
+  { href: "/alumni/dashboard", label: "Mezun paneli", description: "Özet ve duyurular", icon: LayoutDashboard },
+  { href: "/alumni/programs", label: "Program geçmişim", description: "Sartname 15.3 geçmiş programlar", icon: CalendarDays },
+  { href: "/alumni/opportunities", label: "Kariyer fırsatları", description: "Mezuna özel ilanlar", icon: Handshake },
   { href: "/alumni/certificates", label: "Sertifikalarim", description: "Dijital belgeler", icon: Award },
-  { href: "/alumni/bohca", label: "Dijital bohca", description: "Icerikler", icon: BookOpen },
-  { href: "/alumni/inbox", label: "Mesaj kutusu", description: "Sistem iletisim", icon: Megaphone },
+  { href: "/alumni/bohca", label: "Dijital bohça", description: "İçerikler", icon: BookOpen },
+  { href: "/alumni/inbox", label: "Mesaj kutusu", description: "Sistem iletişim", icon: Megaphone },
 ];
 
 export default function AlumniProfilePage() {
@@ -117,8 +117,8 @@ export default function AlumniProfilePage() {
           motivation_message: nextUser.profile?.motivation_message ?? "",
         });
       } catch (error) {
-        console.error("Alumni profile yuklenemedi", error);
-        setMessage("Profil bilgileri yuklenemedi.");
+        console.error("Alumni profile yüklenemedi", error);
+        setMessage("Profil bilgileri yüklenemedi.");
         setMessageTone("error");
       } finally {
         setLoading(false);
@@ -137,7 +137,7 @@ export default function AlumniProfilePage() {
     try {
       await api.put("/user/profile", form);
       await fetchProfile();
-      setMessage("Profil bilgileri guncellendi.");
+      setMessage("Profil bilgileri güncellendi.");
       setMessageTone("success");
     } catch (error) {
       console.error("Alumni profile kaydedilemedi", error);
@@ -157,11 +157,11 @@ export default function AlumniProfilePage() {
     try {
       await api.post("/user/change-password", passwordForm);
       setPasswordForm(emptyPassword);
-      setPasswordMessage("Sifre guncellendi.");
+      setPasswordMessage("Şifre güncellendi.");
       setPasswordTone("success");
     } catch (error) {
-      console.error("Alumni sifre guncellenemedi", error);
-      setPasswordMessage("Sifre guncellenemedi.");
+      console.error("Alumni şifre güncellenemedi", error);
+      setPasswordMessage("Şifre güncellenemedi.");
       setPasswordTone("error");
     } finally {
       setSavingPassword(false);
@@ -180,25 +180,25 @@ export default function AlumniProfilePage() {
     <div className="mx-auto max-w-6xl space-y-8 pb-10">
       <ProfileHero
         title="Profilim"
-        subtitle="Mezun iletisim ve kariyer bilgileri; sifre yonetimi. Gecmis programlar ve portal ozellikleri ayri menulerdedir (Madde 15)."
+        subtitle="Mezun iletişim ve kariyer bilgileri; şifre yönetimi. Geçmiş programlar ve portal ozellikleri ayri menulerdedir (Madde 15)."
         icon={UserCircle}
         accent="orange"
       />
 
-      <ProfileQuickLinks items={quickLinks} title="Mezun portal modulleri" />
+      <ProfileQuickLinks items={quickLinks} title="Mezun portal modülleri" />
 
       {message ? <ProfileMessageBanner type={messageTone}>{message}</ProfileMessageBanner> : null}
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
         <form onSubmit={handleProfileSubmit} className="space-y-8 xl:col-span-2">
           <ProfileCard
-            title="Iletisim ve kariyer"
+            title="İletişim ve kariyer"
             description={`${user?.name ?? ""} ${user?.surname ?? ""} · ${user?.email ?? ""}`}
           >
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
               <p className="text-sm text-slate-500">
-                Ayni ogrenci profili API&apos;si (<code className="rounded bg-slate-100 px-1 text-xs">/user/profile</code>
-                ); mezun statusu kullanici rolunde yonetilir.
+                Ayni öğrenci profili API&apos;si (<code className="rounded bg-slate-100 px-1 text-xs">/user/profile</code>
+                ); mezun statusu kullanıcı rolunde yönetilir.
               </p>
               <ProfileVerificationPills tc={verification.tc} yok={verification.yok} yokLabel="YOK (mezun)" />
             </div>
@@ -232,21 +232,21 @@ export default function AlumniProfilePage() {
                 />
               </div>
               <div>
-                <ProfileFieldLabel label="Universite" />
+                <ProfileFieldLabel label="Üniversite" />
                 <input
                   value={form.university}
                   onChange={(e) => setForm((prev) => ({ ...prev, university: e.target.value }))}
                   className={profileInputClass}
-                  placeholder="Universite"
+                  placeholder="Üniversite"
                 />
               </div>
               <div className="md:col-span-2">
-                <ProfileFieldLabel label="Bolum" />
+                <ProfileFieldLabel label="Bölüm" />
                 <input
                   value={form.department}
                   onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
                   className={profileInputClass}
-                  placeholder="Bolum"
+                  placeholder="Bölüm"
                 />
               </div>
             </div>
@@ -254,12 +254,12 @@ export default function AlumniProfilePage() {
             <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
               <ProfileLockedField
                 label="T.C. Kimlik No"
-                value={verification.tc ? "Sistemde dogrulandi" : "Dogrulama bekliyor"}
+                value={verification.tc ? "Sistemde doğrulandı" : "Doğrulama bekliyor"}
                 verified={verification.tc}
               />
               <ProfileLockedField
                 label="YOK mezun bilgisi"
-                value={verification.yok ? "Sistemde dogrulandi" : "Dogrulama bekliyor"}
+                value={verification.yok ? "Sistemde doğrulandı" : "Doğrulama bekliyor"}
                 verified={verification.yok}
               />
             </div>
@@ -270,17 +270,17 @@ export default function AlumniProfilePage() {
                 value={form.address}
                 onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
                 className={`${profileInputClass} min-h-[96px]`}
-                placeholder="Acik adres"
+                placeholder="Açık adres"
               />
             </div>
 
             <div className="mt-5">
-              <ProfileFieldLabel label="Kariyer ozeti" hint="Kisa profesyonel tanitim metni." />
+              <ProfileFieldLabel label="Kariyer özeti" hint="Kısa profesyonel tanıtım metni." />
               <textarea
                 value={form.motivation_message}
                 onChange={(e) => setForm((prev) => ({ ...prev, motivation_message: e.target.value }))}
                 className={`${profileInputClass} min-h-[120px]`}
-                placeholder="Kariyer ozeti..."
+                placeholder="Kariyer özeti..."
               />
             </div>
 
@@ -327,10 +327,10 @@ export default function AlumniProfilePage() {
 
         <div className="space-y-8">
           <form onSubmit={handlePasswordSubmit}>
-            <ProfileCard title="Sifre guncelle" description="Hesap guvenligi icin periyodik guncelleme onerilir.">
+            <ProfileCard title="Şifre güncelle" description="Hesap guvenligi için periyodik güncelleme onerilir.">
               <div className="space-y-4">
                 <div>
-                  <ProfileFieldLabel label="Mevcut sifre" />
+                  <ProfileFieldLabel label="Mevcut şifre" />
                   <input
                     type="password"
                     value={passwordForm.current_password}
@@ -340,7 +340,7 @@ export default function AlumniProfilePage() {
                   />
                 </div>
                 <div>
-                  <ProfileFieldLabel label="Yeni sifre" />
+                  <ProfileFieldLabel label="Yeni şifre" />
                   <input
                     type="password"
                     value={passwordForm.password}
@@ -350,7 +350,7 @@ export default function AlumniProfilePage() {
                   />
                 </div>
                 <div>
-                  <ProfileFieldLabel label="Yeni sifre tekrar" />
+                  <ProfileFieldLabel label="Yeni şifre tekrar" />
                   <input
                     type="password"
                     value={passwordForm.password_confirmation}
@@ -371,24 +371,24 @@ export default function AlumniProfilePage() {
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-60"
               >
                 {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                Sifreyi guncelle
+                Şifreyi güncelle
               </button>
             </ProfileCard>
           </form>
 
-          <ProfileCard title="Kisilik analizi" description="Mezun panelinde de test verilerinize erisebilirsiniz.">
+          <ProfileCard title="Kişilik analizi" description="Mezun panelinde de test verilerinize erisebilirsiniz.">
             <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-6 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 text-purple-700">
                 <BrainCircuit className="h-8 w-8" aria-hidden />
               </div>
               <p className="mb-6 text-xs text-slate-600">
-                Sonuclar <code className="rounded bg-white px-1 text-[11px]">user_profiles</code> uzerinde tutulur.
+                Sonuçlar <code className="rounded bg-white px-1 text-[11px]">user_profiles</code> uzerinde tutulur.
               </p>
               <Link
                 href="/alumni/personality"
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-3 text-sm font-semibold text-white transition hover:bg-purple-700"
               >
-                Kisilik sayfasina git <ArrowRight className="h-4 w-4" aria-hidden />
+                Kişilik sayfasina git <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>
           </ProfileCard>

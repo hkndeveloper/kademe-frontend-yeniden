@@ -20,10 +20,10 @@ export type OpportunityItem = {
 
 const KIND_LABEL: Record<string, string> = {
   internship: "Staj",
-  job: "Is Firsati",
+  job: "İş Fırsatı",
   network: "Ag / Network",
   event: "Etkinlik",
-  other: "Diger",
+  other: "Diğer",
 };
 
 export function OpportunitiesPortalPage() {
@@ -36,7 +36,7 @@ export function OpportunitiesPortalPage() {
         const res = await api.get<{ opportunities: OpportunityItem[] }>("/alumni-opportunities");
         setItems(res.data.opportunities ?? []);
       } catch (e) {
-        console.error("Firsatlar yuklenemedi", e);
+        console.error("Fırsatlar yüklenemedi", e);
       } finally {
         setLoading(false);
       }
@@ -59,9 +59,9 @@ export function OpportunitiesPortalPage() {
           <Handshake className="h-7 w-7" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Kariyer ve ag firsatlari</h1>
+          <h1 className="text-2xl font-bold">Kariyer ve ag fırsatları</h1>
           <p className="text-sm text-muted-foreground">
-            KADEME ve proje kapsaminda paylasilan staj, etkinlik ve network duyurulari.
+            KADEME ve proje kapsamında paylaşılan staj, etkinlik ve network duyuruları.
           </p>
         </div>
       </div>
@@ -70,7 +70,7 @@ export function OpportunitiesPortalPage() {
         {items.length === 0 ? (
           <div className="glass-panel rounded-3xl p-20 text-center text-muted-foreground">
             <Handshake className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
-            Su an goruntulenebilir bir firsat kaydi bulunmuyor.
+            Su an goruntulenebilir bir fırsat kaydı bulunmuyor.
           </div>
         ) : (
           items.map((item, index) => (
@@ -99,7 +99,7 @@ export function OpportunitiesPortalPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    Detay / Baglanti
+                    Detay / Bağlantı
                   </a>
                 ) : null}
               </div>

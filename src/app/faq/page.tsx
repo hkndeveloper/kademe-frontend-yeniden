@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, HelpCircle, MessageCircle, Search } from "lucide-react";
-import { PublicBadge, PublicButton, PublicCard, PublicCounter, PublicHeroSection, PublicIconBadge } from "@/components/public";
+import { ChevronDown, HelpCircle, Search } from "lucide-react";
+import { PublicBadge, PublicCard, PublicCounter, PublicHeroSection } from "@/components/public";
+import { SupportBanner } from "@/components/public/SupportBanner";
 import api from "@/lib/api/axios";
 import { defaultSiteSettings, type SiteSettingsResponse } from "@/lib/site-config";
-import { cn } from "@/lib/utils";
 
 interface Faq {
   id: number;
@@ -179,19 +179,10 @@ export default function FaqPage() {
         </div>
 
         <div className="mx-auto mt-12 max-w-5xl">
-          <PublicCard tone="dark" className="overflow-hidden p-7 text-center sm:p-9">
-            <PublicIconBadge className="mx-auto mb-5 bg-orange-600">
-              <MessageCircle className="h-6 w-6" />
-            </PublicIconBadge>
-            <h3 className="text-2xl font-black text-white">{copy.contact_title}</h3>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-300">{copy.contact_description}</p>
-            <PublicButton href={copy.contact_cta_href || "/contact"} variant="primary" className="mt-7" icon={<MessageCircle className="h-5 w-5" />} iconPosition="left">
-              {copy.contact_cta_label}
-            </PublicButton>
-          </PublicCard>
+          <SupportBanner title={copy.contact_title} description={copy.contact_description}
+            label={copy.contact_cta_label} href={copy.contact_cta_href} />
         </div>
       </section>
     </main>
   );
 }
-

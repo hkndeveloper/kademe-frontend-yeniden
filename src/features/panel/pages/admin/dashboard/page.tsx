@@ -105,9 +105,9 @@ interface AnnouncementProject {
 
 const quickAnnouncementRoleLabels: Record<string, string> = {
   super_admin: "Admin",
-  coordinator: "Koordinator",
+  coordinator: "Koordinatör",
   staff: "Personel",
-  student: "Ogrenci",
+  student: "Öğrenci",
   alumni: "Mezun",
 };
 
@@ -222,7 +222,7 @@ export default function AdminDashboardPage() {
   const [dashboardProjectId, setDashboardProjectId] = useState(() => activeProjectId ? String(activeProjectId) : "");
   const [dashboardPeriodId, setDashboardPeriodId] = useState("all");
 
-  const [quickAnnTitle, setQuickAnnTitle] = useState("Hizli Duyuru");
+  const [quickAnnTitle, setQuickAnnTitle] = useState("Hızlı Duyuru");
   const [quickAnnCategory, setQuickAnnCategory] = useState("Duyuru");
   const [quickAnnProject, setQuickAnnProject] = useState("all");
   const [quickAnnMessage, setQuickAnnMessage] = useState("");
@@ -299,7 +299,7 @@ export default function AdminDashboardPage() {
             : projects
         );
       } catch (error) {
-        console.error("Admin dashboard verileri cekilemedi", error);
+        console.error("Admin dashboard verileri çekilemedi", error);
       } finally {
         setLoading(false);
       }
@@ -311,7 +311,7 @@ export default function AdminDashboardPage() {
         setNotifications(response.data.notifications ?? []);
         setUnreadNotifications(response.data.unread_count ?? 0);
       } catch (error) {
-        console.error("Dashboard bildirimleri cekilemedi", error);
+        console.error("Dashboard bildirimleri çekilemedi", error);
         setNotifications([]);
         setUnreadNotifications(0);
       } finally {
@@ -396,7 +396,7 @@ export default function AdminDashboardPage() {
       return;
     }
     if (!canCreateQuickAnnouncement) {
-      setQuickAnnError("Duyuru olusturma yetkiniz yok.");
+      setQuickAnnError("Duyuru oluşturma yetkiniz yok.");
       return;
     }
 
@@ -405,11 +405,11 @@ export default function AdminDashboardPage() {
     const privilegedRoles = quickAnnTargetRoles.some((targetRole) => ["super_admin", "coordinator", "staff"].includes(targetRole));
     const projectIdForAnn = quickAnnProject === "all" ? null : parseInt(quickAnnProject, 10);
     if (projectIdForAnn != null && !canAccessProject("announcements.create", projectIdForAnn)) {
-      setQuickAnnError("Secilen proje icin duyuru olusturma yetkiniz yok.");
+      setQuickAnnError("Seçilen proje için duyuru oluşturma yetkiniz yok.");
       return;
     }
     if (!hasGlobalScope("announcements.create") && privilegedRoles && projectIdForAnn == null && scopedTargetUnits.length === 0) {
-      setQuickAnnError("Personel/koordinator/admin hedefi icin proje veya birim secilmelidir.");
+      setQuickAnnError("Personel/koordinatör/admin hedefi için proje veya birim seçilmelidir.");
       return;
     }
 
@@ -418,7 +418,7 @@ export default function AdminDashboardPage() {
 
     try {
       const formData = new FormData();
-      formData.append("title", quickAnnTitle.trim() || "Hizli Duyuru");
+      formData.append("title", quickAnnTitle.trim() || "Hızlı Duyuru");
       formData.append("content", quickAnnMessage.trim());
       formData.append("category", quickAnnCategory.trim() || "Duyuru");
       if (projectIdForAnn != null) formData.append("project_id", String(projectIdForAnn));
@@ -439,12 +439,12 @@ export default function AdminDashboardPage() {
       setQuickAnnTargetUnits([]);
       setQuickAnnSuccess(true);
       setQuickAnnResult(
-        `${response.data.message ?? "Duyuru olusturuldu."} Hedef: ${response.data.target_count ?? 0}, e-posta: ${response.data.email_sent_to ?? 0}.`
+        `${response.data.message ?? "Duyuru oluşturuldu."} Hedef: ${response.data.target_count ?? 0}, e-posta: ${response.data.email_sent_to ?? 0}.`
       );
       setTimeout(() => setQuickAnnSuccess(false), 3000);
     } catch (error) {
-      console.error("Duyuru gonderilemedi", error);
-      setQuickAnnError("Duyuru gonderilemedi. Hedef/scope secimini kontrol edin.");
+      console.error("Duyuru gönderilemedi", error);
+      setQuickAnnError("Duyuru gönderilemedi. Hedef/scope secimini kontrol edin.");
     } finally {
       setSendingQuickAnn(false);
     }
@@ -478,14 +478,14 @@ export default function AdminDashboardPage() {
   const canViewCertificates = hasScopedPermission("certificates.view");
   const scopeLabel =
     stats.stats_scope === "global"
-      ? "Tum sistem"
+      ? "Tüm sistem"
       : isCoordinator
         ? "Koordine edilen projeler"
         : isStaff
           ? "Yetkili proje ve birimler"
-          : "Yetki kapsami";
+          : "Yetki kapsamı";
   const reportLink = canViewFinancial
-    ? { href: "/panel/financials", label: "Detayli Rapor" }
+    ? { href: "/panel/financials", label: "Detaylı Rapor" }
     : canViewPrograms
       ? { href: "/panel/calendar", label: "Takvime Git" }
       : canViewApplications
@@ -497,7 +497,7 @@ export default function AdminDashboardPage() {
   const kpi = [
     {
       visible: canViewParticipants,
-      label: isStaff ? "Kapsamdaki Katilimci" : "Aktif Katilimci",
+      label: isStaff ? "Kapsamdaki Katılımcı" : "Aktif Katılımcı",
       value: stats.students.active.toLocaleString("tr-TR"),
       icon: Users,
     },
@@ -533,7 +533,7 @@ export default function AdminDashboardPage() {
         <div>
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Merhaba, {user?.name || "Kullanici"}{" "}
+              Merhaba, {user?.name || "Kullanıcı"}{" "}
               {user?.surname ? <span className="font-bold">{user.surname}</span> : null}
             </h1>
             <span className="inline-flex items-center rounded-md border border-sky-200/80 bg-sky-50 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-sky-800">
@@ -542,12 +542,12 @@ export default function AdminDashboardPage() {
           </div>
           <p className="text-sm text-slate-500">
             {isSuperAdmin
-              ? "Tum sistem operasyonel ozeti asagidadir."
+              ? "Tüm sistem operasyonel özeti asagidadir."
               : isCoordinator
-                ? "Koordinator yetki kapsamindaki proje ozeti asagidadir."
-                : "Action + scope yetkilerinize gore gorunur operasyonel ozet asagidadir."}
+                ? "Koordinatör yetki kapsamindaki proje özeti asagidadir."
+                : "Action + scope yetkilerinize göre görünür operasyonel özet asagidadir."}
           </p>
-          <p className="mt-1 text-xs font-semibold text-slate-400">Veri kapsami: {scopeLabel}</p>
+          <p className="mt-1 text-xs font-semibold text-slate-400">Veri kapsamı: {scopeLabel}</p>
         </div>
         <div className="flex gap-2">
           {reportLink ? (
@@ -576,7 +576,7 @@ export default function AdminDashboardPage() {
               }}
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#FF6B00] focus:ring-2 focus:ring-orange-100"
             >
-              <option value="">Tum projeler</option>
+              <option value="">Tüm projeler</option>
               {dashboardProjects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -585,24 +585,24 @@ export default function AdminDashboardPage() {
             </select>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-slate-500">Donem</span>
+            <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-slate-500">Dönem</span>
             <select
               value={dashboardPeriodId}
               onChange={(event) => setDashboardPeriodId(event.target.value)}
               disabled={!dashboardProjectId || dashboardPeriods.length === 0}
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#FF6B00] focus:ring-2 focus:ring-orange-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <option value="all">{dashboardProjectId ? "Tum donemler" : "Proje secince donem"}</option>
+              <option value="all">{dashboardProjectId ? "Tüm dönemler" : "Proje seçince dönem"}</option>
               {dashboardPeriods.map((period) => (
                 <option key={period.id} value={period.id}>
                   {period.name}
-                  {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                  {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
                 </option>
               ))}
             </select>
           </label>
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-600">
-            {stats.dashboard_context?.archive_mode ? "Arsiv modu" : dashboardPeriodId !== "all" ? "Secili donem" : "Operasyon modu"}
+            {stats.dashboard_context?.archive_mode ? "Arsiv modu" : dashboardPeriodId !== "all" ? "Seçili dönem" : "Operasyon modu"}
           </div>
         </div>
         <div className="mt-3"><PeriodArchiveModeNotice period={periodOptionById(dashboardProjects, dashboardPeriodId)} /></div>
@@ -622,7 +622,7 @@ export default function AdminDashboardPage() {
         <div className="panel-surface p-5">
           <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Donem Analitigi</h2>
+              <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Dönem Analitigi</h2>
               <p className="text-sm font-semibold text-slate-900">{stats.period_analytics.period.name}</p>
             </div>
             <span className="w-max rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-700">
@@ -630,7 +630,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
-            {canViewParticipants ? <MiniMetric label="Katilimci" value={stats.period_analytics.participants_total} /> : null}
+            {canViewParticipants ? <MiniMetric label="Katılımcı" value={stats.period_analytics.participants_total} /> : null}
             {canViewPrograms ? <MiniMetric label="Program" value={stats.period_analytics.programs_total} /> : null}
             {canViewPrograms ? <MiniMetric label="Yoklama" value={stats.period_analytics.attendance_present} /> : null}
             {canViewApplications ? <MiniMetric label="Başvuru" value={stats.period_analytics.applications_total} /> : null}
@@ -655,7 +655,7 @@ export default function AdminDashboardPage() {
 
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Katilim ve Buyume Analitigi</h2>
+          <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Katılım ve Buyume Analitigi</h2>
           {reportLink ? (
             <Link href={reportLink.href} className="text-[10px] font-bold uppercase text-slate-500 hover:text-[#FF6B00]">
               {reportLink.label}
@@ -676,7 +676,7 @@ export default function AdminDashboardPage() {
                       <Users className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Aktif Katilimci</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Aktif Katılımcı</p>
                       <h4 className="text-2xl font-extrabold text-slate-900">{stats.students.active.toLocaleString("tr-TR")}</h4>
                     </div>
                   </div>
@@ -691,7 +691,7 @@ export default function AdminDashboardPage() {
                       <Calendar className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Aylik Faaliyet</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Aylık Faaliyet</p>
                       <h4 className="text-2xl font-extrabold text-slate-900">
                         {stats.programs.monthly_completed} / {stats.programs.monthly_total}
                       </h4>
@@ -722,7 +722,7 @@ export default function AdminDashboardPage() {
                           {stats.financials.expense_change_percent > 0 ? "+" : ""}
                           {stats.financials.expense_change_percent}%
                         </span>
-                        <p className="text-[8px] uppercase text-slate-400">Gecen aya gore</p>
+                        <p className="text-[8px] uppercase text-slate-400">Gecen aya göre</p>
                       </>
                     )}
                   </div>
@@ -730,7 +730,7 @@ export default function AdminDashboardPage() {
                 ) : null}
 
                 <div className="border-t border-slate-200/80 pt-4">
-                  <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Bekleyen Islemler</p>
+                  <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Bekleyen İşlemler</p>
                   <div className="space-y-2">
                     {canViewApplications ? (
                       <div className="flex items-center justify-between rounded-lg border border-slate-200/80 bg-white p-2.5">
@@ -753,7 +753,7 @@ export default function AdminDashboardPage() {
                     {canViewParticipants ? (
                       <div className="flex items-center justify-between rounded-lg border border-red-200/80 bg-red-50 p-2.5">
                       <span className="text-xs font-semibold text-red-800">Kredi Riski</span>
-                      <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">{stats.credit_risk?.count ?? 0} Kisi</span>
+                      <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">{stats.credit_risk?.count ?? 0} Kişi</span>
                       </div>
                     ) : null}
                   </div>
@@ -762,7 +762,7 @@ export default function AdminDashboardPage() {
 
               {isSuperAdmin ? (
                 <div className="panel-surface border-sky-100/80 bg-sky-50/30 p-5">
-                  <h4 className="mb-3 text-xs font-bold uppercase text-slate-800">Kullanici Dagilimi</h4>
+                  <h4 className="mb-3 text-xs font-bold uppercase text-slate-800">Kullanıcı Dagilimi</h4>
                   <div className="space-y-2">
                     {Object.entries(stats.user_stats).map(([role, count]) => (
                       <div key={role} className="flex items-center justify-between text-xs text-slate-600">
@@ -787,7 +787,7 @@ export default function AdminDashboardPage() {
                   <BarChart3 className="h-4 w-4 text-slate-400" />
                 </div>
                 {stats.project_occupancy.length === 0 ? (
-                  <p className="text-sm text-slate-500">Gosterilecek proje verisi yok.</p>
+                  <p className="text-sm text-slate-500">Gösterilecek proje verisi yok.</p>
                 ) : (
                   <div className="space-y-4">
                     {stats.project_occupancy.map((project) => {
@@ -819,29 +819,29 @@ export default function AdminDashboardPage() {
 
               <div className="panel-surface p-5">
                 <div className="mb-4 flex items-center justify-between">
-                  <h4 className="text-[10px] font-bold uppercase text-slate-500">Sistem Ozeti</h4>
+                  <h4 className="text-[10px] font-bold uppercase text-slate-500">Sistem Özeti</h4>
                   <ClipboardList className="h-4 w-4 text-slate-500" />
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between rounded-lg border border-slate-200/80 bg-slate-50 p-2.5">
-                    <span className="text-xs font-semibold text-slate-700">Veri kapsami</span>
+                    <span className="text-xs font-semibold text-slate-700">Veri kapsamı</span>
                     <span className="text-sm font-extrabold text-slate-900">{scopeLabel}</span>
                   </div>
                   {canViewPrograms ? (
                     <>
                       <div className="flex justify-between text-[10px] text-slate-500">
-                        <span>Aylik tamamlanan faaliyet</span>
+                        <span>Aylık tamamlanan faaliyet</span>
                         <span className="font-medium text-slate-800">{stats.programs.monthly_completed}</span>
                       </div>
                       <div className="flex justify-between text-[10px] text-slate-500">
-                        <span>Aylik yaklasan faaliyet</span>
+                        <span>Aylık yaklaşan faaliyet</span>
                         <span className="font-medium text-slate-800">{stats.programs.monthly_upcoming}</span>
                       </div>
                     </>
                   ) : null}
                   {canViewFinancial ? (
                     <div className="flex justify-between text-[10px] text-slate-500">
-                      <span>Bekleyen finans onayi</span>
+                      <span>Bekleyen finans onayı</span>
                       <span className="font-medium text-slate-800">{stats.pending.financials}</span>
                     </div>
                   ) : null}
@@ -868,11 +868,11 @@ export default function AdminDashboardPage() {
                       project_id: dashboardProjectId || undefined,
                       period_id: dashboardPeriodId !== "all" ? dashboardPeriodId : undefined,
                     }}
-                    buttonLabel="Disa Aktar"
+                    buttonLabel="Dışa Aktar"
                   />
                 </div>
                 {(stats.credit_risk?.participants.length ?? 0) === 0 ? (
-                  <p className="text-sm text-slate-500">Esik altinda katilimci bulunmuyor.</p>
+                  <p className="text-sm text-slate-500">Eşik altinda katılımcı bulunmuyor.</p>
                 ) : (
                   <div className="space-y-3">
                     {stats.credit_risk?.participants.map((participant) => (
@@ -884,7 +884,7 @@ export default function AdminDashboardPage() {
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-black text-red-600">{participant.credit}</p>
-                            <p className="text-[9px] uppercase text-slate-400">Esik {participant.threshold}</p>
+                            <p className="text-[9px] uppercase text-slate-400">Eşik {participant.threshold}</p>
                           </div>
                         </div>
                       </div>
@@ -901,13 +901,13 @@ export default function AdminDashboardPage() {
               {canViewPrograms ? (
                 <div className="panel-surface p-5">
                   <div className="mb-4 flex items-center justify-between">
-                    <h4 className="text-[10px] font-bold uppercase text-slate-500">Yaklasan Programlar</h4>
+                    <h4 className="text-[10px] font-bold uppercase text-slate-500">Yaklaşan Programlar</h4>
                     <Link href="/panel/calendar" className="text-[10px] font-bold text-[#FF6B00] hover:underline">
-                      Tumunu Gor
+                      Tümünü Gör
                     </Link>
                   </div>
                   {stats.upcoming_programs.length === 0 ? (
-                    <p className="text-sm text-slate-500">Yaklasan etkinlik yok.</p>
+                    <p className="text-sm text-slate-500">Yaklaşan etkinlik yok.</p>
                   ) : (
                     <div className="space-y-3">
                       {stats.upcoming_programs.map((program) => {
@@ -937,14 +937,14 @@ export default function AdminDashboardPage() {
               {stats.assigned_tasks.length > 0 || !isSuperAdmin ? (
                 <div className="panel-surface p-5">
                   <div className="mb-4 flex items-center justify-between">
-                    <h4 className="text-[10px] font-bold uppercase text-slate-500">Yaklasan Gorevlerim</h4>
+                    <h4 className="text-[10px] font-bold uppercase text-slate-500">Yaklaşan Gorevlerim</h4>
                     <Link href="/panel/calendar" className="text-[10px] font-bold text-[#FF6B00] hover:underline">
                       Takvim
                     </Link>
                   </div>
                   {stats.assigned_tasks.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                      Size atanmis yaklasan etkinlik bulunmuyor.
+                      Size atanmış yaklaşan etkinlik bulunmuyor.
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -1010,7 +1010,7 @@ export default function AdminDashboardPage() {
                   </div>
                 ) : notifications.length === 0 ? (
                   <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                    Kullaniciya ozel yeni bildirim bulunmuyor.
+                    Kullanıcıya özel yeni bildirim bulunmuyor.
                   </p>
                 ) : (
                   <div className="space-y-3">
@@ -1073,7 +1073,7 @@ export default function AdminDashboardPage() {
               {canCreateQuickAnnouncement ? (
                 <div className="panel-surface border-2 border-dashed border-slate-200/90 bg-slate-50/50 p-5">
                   <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-[10px] font-bold uppercase text-slate-500">Hizli Duyuru</h4>
+                    <h4 className="text-[10px] font-bold uppercase text-slate-500">Hızlı Duyuru</h4>
                     <MessageSquare className="h-4 w-4 text-slate-400" />
                   </div>
                   <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -1081,7 +1081,7 @@ export default function AdminDashboardPage() {
                       value={quickAnnTitle}
                       onChange={(event) => setQuickAnnTitle(event.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-800 outline-none"
-                      placeholder="Baslik"
+                      placeholder="Başlık"
                     />
                     <input
                       value={quickAnnCategory}
@@ -1095,7 +1095,7 @@ export default function AdminDashboardPage() {
                     onChange={(event) => setQuickAnnProject(event.target.value)}
                     className="mb-2 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-800 outline-none"
                   >
-                    <option value="all">{canCreateGlobalAnnouncement ? "Tum Kullanicilar" : "Yetki Kapsamim"}</option>
+                    <option value="all">{canCreateGlobalAnnouncement ? "Tüm Kullanıcılar" : "Yetki Kapsamim"}</option>
                     {announcementProjects.map((project) => (
                       <option key={project.id} value={project.id}>
                         {project.name}
@@ -1139,7 +1139,7 @@ export default function AdminDashboardPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-[10px] text-slate-400">Birim hedefi icin global yetki veya tanimli birim gerekir.</p>
+                      <p className="text-[10px] text-slate-400">Birim hedefi için global yetki veya tanımlı birim gerekir.</p>
                     )}
                   </div>
                   <textarea
@@ -1149,7 +1149,7 @@ export default function AdminDashboardPage() {
                     placeholder="Duyuru metni..."
                   />
                   <label className="mb-2 flex items-center justify-between rounded-lg border border-slate-200 bg-white p-2 text-xs font-semibold text-slate-600">
-                    <span>E-posta olarak da gonder</span>
+                    <span>E-posta olarak da gönder</span>
                     <input
                       type="checkbox"
                       checked={quickAnnSendEmail && canQuickSendEmail}
@@ -1171,16 +1171,16 @@ export default function AdminDashboardPage() {
                     className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#FF6B00] py-2.5 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-[#e85f00] disabled:opacity-50"
                   >
                     {sendingQuickAnn ? <Loader2 className="h-4 w-4 animate-spin" /> : quickAnnSuccess ? <CheckCircle2 className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-                    {sendingQuickAnn ? "Gonderiliyor..." : quickAnnSuccess ? "Gonderildi!" : "Gonder"}
+                    {sendingQuickAnn ? "Gönderiliyor..." : quickAnnSuccess ? "Gönderildi!" : "Gönder"}
                   </button>
                   {!quickAnnouncementTargetAvailable ? (
                     <p className="mt-2 text-[10px] font-semibold text-amber-700">
-                      Hizli duyuru icin global, proje veya birim bazli duyuru kapsami gerekiyor.
+                      Hızlı duyuru için global, proje veya birim bazlı duyuru kapsamı gerekiyor.
                     </p>
                   ) : null}
                   {quickPrivilegedTargetNeedsScope ? (
                     <p className="mt-2 text-[10px] font-semibold text-amber-700">
-                      Personel, koordinator veya admin hedefi icin proje ya da birim secin.
+                      Personel, koordinatör veya admin hedefi için proje ya da birim seçin.
                     </p>
                   ) : null}
                   {quickAnnError ? <p className="mt-2 text-[10px] font-semibold text-red-600">{quickAnnError}</p> : null}

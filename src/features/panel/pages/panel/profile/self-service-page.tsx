@@ -83,7 +83,7 @@ export default function ProfileSelfServicePage() {
       const response = await api.get("/my-leave-requests");
       setLeaves(Array.isArray(response.data.leave_requests) ? response.data.leave_requests : []);
     } catch (error) {
-      console.error("Izinler yuklenemedi", error);
+      console.error("Izinler yüklenemedi", error);
     }
   }, []);
 
@@ -101,8 +101,8 @@ export default function ProfileSelfServicePage() {
           department: nextUser.department ?? "",
         });
       } catch (error) {
-        console.error("Profil yuklenemedi", error);
-        setMessage("Profil bilgileri yuklenemedi.");
+        console.error("Profil yüklenemedi", error);
+        setMessage("Profil bilgileri yüklenemedi.");
         setMessageTone("error");
       } finally {
         setLoading(false);
@@ -128,7 +128,7 @@ export default function ProfileSelfServicePage() {
     try {
       await api.put("/user/profile", form);
       await fetchProfile();
-      setMessage("Profil bilgileri guncellendi.");
+      setMessage("Profil bilgileri güncellendi.");
       setMessageTone("success");
     } catch (error) {
       console.error("Profil kaydedilemedi", error);
@@ -148,11 +148,11 @@ export default function ProfileSelfServicePage() {
     try {
       await api.post("/user/change-password", passwordForm);
       setPasswordForm(emptyPassword);
-      setPasswordMessage("Sifre guncellendi.");
+      setPasswordMessage("Şifre güncellendi.");
       setPasswordMessageTone("success");
     } catch (error) {
-      console.error("Sifre guncellenemedi", error);
-      setPasswordMessage("Sifre guncellenemedi.");
+      console.error("Şifre güncellenemedi", error);
+      setPasswordMessage("Şifre güncellenemedi.");
       setPasswordMessageTone("error");
     } finally {
       setSavingPassword(false);
@@ -172,11 +172,11 @@ export default function ProfileSelfServicePage() {
       });
       setLeaves((prev) => [response.data.leave_request, ...prev]);
       setLeaveForm({ start_date: "", end_date: "", reason: "", unit_id: leaveForm.unit_id });
-      setLeaveMessage("Izin talebi olusturuldu.");
+      setLeaveMessage("Izin talebi oluşturuldu.");
       setLeaveTone("success");
     } catch (error) {
-      console.error("Izin talebi olusturulamadi", error);
-      setLeaveMessage("Izin talebi olusturulamadi. Tarihleri kontrol edin.");
+      console.error("Izin talebi oluşturulamadı", error);
+      setLeaveMessage("Izin talebi oluşturulamadı. Tarihleri kontrol edin.");
       setLeaveTone("error");
     } finally {
       setSavingLeave(false);
@@ -195,7 +195,7 @@ export default function ProfileSelfServicePage() {
     <div className="space-y-8 pb-8">
       <ProfileHero
         title="Profilim"
-        subtitle="Kisisel iletisim bilgileri, sifre ve yetkiniz varsa izin talepleri. Panel yetkileri action + scope ile yonetilir; bu sayfa dogrudan kullanici kaydini gunceller."
+        subtitle="Kişisel iletişim bilgileri, şifre ve yetkiniz varsa izin talepleri. Panel yetkileri action + scope ile yönetilir; bu sayfa dogrudan kullanıcı kaydını gunceller."
         icon={UserCircle}
         accent="amber"
         actions={
@@ -206,7 +206,7 @@ export default function ProfileSelfServicePage() {
             className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-900 shadow-sm transition hover:bg-blue-100"
           >
             <Calendar className="h-4 w-4" aria-hidden />
-            Aylik puantaj
+            Aylık puantaj
             <ExternalLink className="h-3.5 w-3.5 opacity-70" aria-hidden />
           </a>
         }
@@ -246,7 +246,7 @@ export default function ProfileSelfServicePage() {
                 />
               </div>
               <div>
-                <ProfileFieldLabel label="Birim / rol alani" hint="Personel kartindaki departman bilgisinden farkli olabilir." />
+                <ProfileFieldLabel label="Birim / rol alanı" hint="Personel kartindaki departman bilgisinden farkli olabilir." />
                 <input
                   value={form.department}
                   onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
@@ -264,12 +264,12 @@ export default function ProfileSelfServicePage() {
                 />
               </div>
               <div>
-                <ProfileFieldLabel label="Universite" />
+                <ProfileFieldLabel label="Üniversite" />
                 <input
                   value={form.university}
                   onChange={(e) => setForm((prev) => ({ ...prev, university: e.target.value }))}
                   className={profileInputClass}
-                  placeholder="Universite"
+                  placeholder="Üniversite"
                 />
               </div>
             </div>
@@ -280,7 +280,7 @@ export default function ProfileSelfServicePage() {
                 value={form.address}
                 onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
                 className={`${profileInputClass} min-h-[120px]`}
-                placeholder="Acik adres"
+                placeholder="Açık adres"
               />
             </div>
 
@@ -296,10 +296,10 @@ export default function ProfileSelfServicePage() {
         </form>
 
         <form onSubmit={handlePasswordSubmitInner}>
-          <ProfileCard title="Sifre guncelle" description="Mevcut sifrenizi dogrulayarak yeni sifre belirleyin.">
+          <ProfileCard title="Şifre güncelle" description="Mevcut şifrenizi doğrulayarak yeni şifre belirleyin.">
             <div className="space-y-4">
               <div>
-                <ProfileFieldLabel label="Mevcut sifre" />
+                <ProfileFieldLabel label="Mevcut şifre" />
                 <input
                   type="password"
                   value={passwordForm.current_password}
@@ -309,7 +309,7 @@ export default function ProfileSelfServicePage() {
                 />
               </div>
               <div>
-                <ProfileFieldLabel label="Yeni sifre" />
+                <ProfileFieldLabel label="Yeni şifre" />
                 <input
                   type="password"
                   value={passwordForm.password}
@@ -319,7 +319,7 @@ export default function ProfileSelfServicePage() {
                 />
               </div>
               <div>
-                <ProfileFieldLabel label="Yeni sifre tekrar" />
+                <ProfileFieldLabel label="Yeni şifre tekrar" />
                 <input
                   type="password"
                   value={passwordForm.password_confirmation}
@@ -342,7 +342,7 @@ export default function ProfileSelfServicePage() {
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-60"
             >
               {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-              Sifreyi guncelle
+              Şifreyi güncelle
             </button>
           </ProfileCard>
         </form>
@@ -352,7 +352,7 @@ export default function ProfileSelfServicePage() {
         permission="staff.leave.request"
         fallback={
           <ProfileMessageBanner type="neutral">
-            Izin talebi olusturma yetkiniz yok (<code className="text-xs">staff.leave.request</code>).
+            Izin talebi oluşturma yetkiniz yok (<code className="text-xs">staff.leave.request</code>).
           </ProfileMessageBanner>
         }
       >
@@ -379,7 +379,7 @@ export default function ProfileSelfServicePage() {
                   </div>
                 ) : null}
                 <div>
-                  <ProfileFieldLabel label="Baslangic" />
+                  <ProfileFieldLabel label="Başlangıç" />
                   <input
                     type="date"
                     required
@@ -389,7 +389,7 @@ export default function ProfileSelfServicePage() {
                   />
                 </div>
                 <div>
-                  <ProfileFieldLabel label="Bitis" />
+                  <ProfileFieldLabel label="Bitiş" />
                   <input
                     type="date"
                     required
@@ -399,7 +399,7 @@ export default function ProfileSelfServicePage() {
                   />
                 </div>
                 <div>
-                  <ProfileFieldLabel label="Gerekce (istege bagli)" />
+                  <ProfileFieldLabel label="Gerekçe (istege bağlı)" />
                   <textarea
                     value={leaveForm.reason}
                     onChange={(e) => setLeaveForm((prev) => ({ ...prev, reason: e.target.value }))}
@@ -419,7 +419,7 @@ export default function ProfileSelfServicePage() {
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-md disabled:opacity-60"
               >
                 {savingLeave ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Talep gonder
+                Talep gönder
               </button>
             </ProfileCard>
           </form>
@@ -428,7 +428,7 @@ export default function ProfileSelfServicePage() {
             <ProfileCard title="Izin taleplerim" description="Son talepler listenin basinda; sonucu buradan takip edebilirsiniz.">
               {leaves.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500">
-                  Gecmis izin talebiniz bulunmuyor.
+                  Geçmiş izin talebiniz bulunmuyor.
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -443,7 +443,7 @@ export default function ProfileSelfServicePage() {
                           {new Date(leave.end_date).toLocaleDateString("tr-TR")}
                         </div>
                         <div className="mt-1 max-w-xl truncate text-xs text-slate-500" title={leave.reason ?? ""}>
-                          {leave.reason || "Gerekce belirtilmemis"}
+                          {leave.reason || "Gerekçe belirtilmemis"}
                         </div>
                         {leave.unit?.name ? <div className="mt-1 text-[10px] font-semibold text-indigo-700">{leave.unit.name}</div> : null}
                       </div>
@@ -457,11 +457,11 @@ export default function ProfileSelfServicePage() {
                                 : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {leave.status === "pending" ? "Bekliyor" : leave.status === "approved" ? "Onaylandi" : "Reddedildi"}
+                          {leave.status === "pending" ? "Bekliyor" : leave.status === "approved" ? "Onaylandı" : "Reddedildi"}
                         </span>
                         {leave.approver ? (
                           <span className="text-[10px] text-slate-500">
-                            Islem: {leave.approver.name} {leave.approver.surname}
+                            İşlem: {leave.approver.name} {leave.approver.surname}
                           </span>
                         ) : null}
                       </div>

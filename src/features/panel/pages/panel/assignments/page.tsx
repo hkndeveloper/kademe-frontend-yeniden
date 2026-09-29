@@ -57,7 +57,7 @@ type Paginated<T> = {
 const submissionStatusLabel: Record<Submission["status"], string> = {
   submitted: "Teslim Edildi",
   reviewed: "Incelendi",
-  approved: "Onaylandi",
+  approved: "Onaylandı",
   rejected: "Reddedildi",
 };
 
@@ -213,9 +213,9 @@ export default function PanelAssignmentsPage() {
       setFeedback(response.data.message);
       resetForm();
     } catch (error) {
-      console.error("Odev kaydedilemedi", error);
+      console.error("Ödev kaydedilemedi", error);
       const apiMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
-      setFeedback(apiMessage ?? "Odev kaydedilemedi.");
+      setFeedback(apiMessage ?? "Ödev kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -244,8 +244,8 @@ export default function PanelAssignmentsPage() {
       const response = await api.get(submission.download_url, { responseType: "blob" });
       await downloadBlobResponse(response.data, response.headers, `odev_teslimi_${submission.id}`);
     } catch (error) {
-      console.error("Teslim dosyasi indirilemedi", error);
-      setFeedback("Teslim dosyasi indirilemedi.");
+      console.error("Teslim dosyası indirilemedi", error);
+      setFeedback("Teslim dosyası indirilemedi.");
     }
   }
   async function handleDownloadAttachment(attachment: AssignmentAttachment) {
@@ -255,8 +255,8 @@ export default function PanelAssignmentsPage() {
       const response = await api.get(attachment.download_url, { responseType: "blob" });
       await downloadBlobResponse(response.data, response.headers, attachment.original_name || `odev_eki_${attachment.id}`);
     } catch (error) {
-      console.error("Odev eki indirilemedi", error);
-      setFeedback("Odev eki indirilemedi.");
+      console.error("Ödev eki indirilemedi", error);
+      setFeedback("Ödev eki indirilemedi.");
     }
   }
   return (
@@ -267,9 +267,9 @@ export default function PanelAssignmentsPage() {
             <FileStack className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900">Odevler</h1>
+            <h1 className="text-3xl font-black text-slate-900">Ödevler</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Proje bazli odev ve teslim takibi
+              Proje bazlı ödev ve teslim takibi
             </p>
           </div>
         </div>
@@ -281,7 +281,7 @@ export default function PanelAssignmentsPage() {
               project_id: projectFilter !== "all" ? projectFilter : undefined,
               period_id: periodFilter !== "all" ? periodFilter : undefined,
             }}
-            buttonLabel="Odevleri Disa Aktar"
+            buttonLabel="Ödevleri Dışa Aktar"
           />
         </PermissionGate>
       </div>
@@ -292,9 +292,9 @@ export default function PanelAssignmentsPage() {
         <form onSubmit={handleSubmit} className="panel-section-card">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">{editingAssignment ? "Odevi Duzenle" : "Yeni Odev"}</h2>
+              <h2 className="text-lg font-bold text-slate-900">{editingAssignment ? "Odevi Düzenle" : "Yeni Ödev"}</h2>
               {editingAssignment && editingHasSubmissions ? (
-                <p className="mt-1 text-xs font-semibold text-amber-700">Teslimi olan odevlerde proje ve donem degistirilemez.</p>
+                <p className="mt-1 text-xs font-semibold text-amber-700">Teslimi olan odevlerde proje ve dönem değiştirilemez.</p>
               ) : null}
             </div>
             {editingAssignment ? (
@@ -317,7 +317,7 @@ export default function PanelAssignmentsPage() {
               required
               className="panel-control"
             >
-              <option value="">Proje sec</option>
+              <option value="">Proje seç</option>
               {formProjects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
               ))}
@@ -329,7 +329,7 @@ export default function PanelAssignmentsPage() {
               required
               className="panel-control"
             >
-              <option value="">Donem sec</option>
+              <option value="">Dönem seç</option>
               {(selectedProject?.periods ?? []).map((period) => (
                 <option key={period.id} value={period.id}>{period.name}</option>
               ))}
@@ -338,7 +338,7 @@ export default function PanelAssignmentsPage() {
               value={form.title}
               onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
               required
-              placeholder="Odev basligi"
+              placeholder="Ödev başlığı"
               className="panel-control"
             />
             <input
@@ -352,12 +352,12 @@ export default function PanelAssignmentsPage() {
             value={form.description}
             onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
             rows={3}
-            placeholder="Odev aciklamasi"
+            placeholder="Ödev açıklaması"
             className="panel-textarea mt-4"
           />
           <label className="panel-file-drop mt-4 flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-bold text-slate-700">
             <Upload className="h-4 w-4" />
-            {form.attachments.length ? `${form.attachments.length} dosya secildi` : editingAssignment ? "Yeni odev dosyasi ekle" : "Odev dosyasi ekle"}
+            {form.attachments.length ? `${form.attachments.length} dosya secildi` : editingAssignment ? "Yeni ödev dosyası ekle" : "Ödev dosyası ekle"}
             <input
               key={editingAssignment?.id ?? "new-assignment"}
               type="file"
@@ -376,7 +376,7 @@ export default function PanelAssignmentsPage() {
           <div className="panel-modal-footer mt-4 gap-2">
             {editingAssignment ? (
               <button type="button" onClick={resetForm} className="panel-button panel-button-secondary h-11 px-6">
-                Vazgec
+                Vazgeç
               </button>
             ) : null}
             <button
@@ -384,7 +384,7 @@ export default function PanelAssignmentsPage() {
               title={!canWriteSelectedAssignmentPeriod && selectedPeriodId ? "Bu dönemde ödev ekleme veya düzenleme işlemi kapalıdır." : undefined}
               className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? "Kaydediliyor..." : editingAssignment ? "Odevi Guncelle" : "Odev Olustur"}
+              {saving ? "Kaydediliyor..." : editingAssignment ? "Odevi Güncelle" : "Ödev Oluştur"}
             </button>
           </div>
         </form>
@@ -425,7 +425,7 @@ export default function PanelAssignmentsPage() {
                     <div>
                       <div className="text-base font-bold text-slate-900">{assignment.title}</div>
                       <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                        {assignment.project?.name ?? "-"} / {assignment.period?.name ?? "Donem yok"} / {assignment.submissions_count ?? 0} teslim
+                        {assignment.project?.name ?? "-"} / {assignment.period?.name ?? "Dönem yok"} / {assignment.submissions_count ?? 0} teslim
                       </div>
                       {assignment.description ? <p className="mt-2 text-sm text-muted-foreground">{assignment.description}</p> : null}
                       {assignment.attachments?.length ? (
@@ -438,7 +438,7 @@ export default function PanelAssignmentsPage() {
                               className="panel-card-action panel-card-action-info py-1"
                             >
                               <Download className="h-3.5 w-3.5" />
-                              {attachment.original_name || "Odev ekini indir"}
+                              {attachment.original_name || "Ödev ekini indir"}
                             </button>
                           ))}
                         </div>
@@ -448,7 +448,7 @@ export default function PanelAssignmentsPage() {
                       <PermissionGate permission="assignments.update" requireProjectAccess={{ permission: "assignments.update", projectId: assignment.project_id }}>
                         <button type="button" disabled={!canWriteAssignment} title={!canWriteAssignment ? "Bu dönem normal değişikliklere kapalıdır." : undefined} onClick={() => startEdit(assignment)} className="panel-card-action panel-card-action-info disabled:cursor-not-allowed disabled:opacity-40">
                           <Pencil className="h-4 w-4" />
-                          Duzenle
+                          Düzenle
                         </button>
                       </PermissionGate>
                       <PermissionGate permission="assignments.delete" requireProjectAccess={{ permission: "assignments.delete", projectId: assignment.project_id }}>
@@ -493,7 +493,7 @@ export default function PanelAssignmentsPage() {
                 </div>
                 );
               })}
-              {assignments.length === 0 ? <div className="panel-empty-card">Odev bulunamadi.</div> : null}
+              {assignments.length === 0 ? <div className="panel-empty-card">Ödev bulunamadı.</div> : null}
             </div>
           )}
         </div>

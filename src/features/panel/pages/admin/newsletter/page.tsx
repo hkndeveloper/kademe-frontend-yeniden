@@ -58,7 +58,7 @@ export default function AdminNewsletterPage() {
   if (!canView) {
     return (
       <div className="panel-empty-card">
-        E-bulten listesi icin <span className="font-mono text-slate-900">newsletter.view</span> izni ve tum sistem kapsami gerekir.
+        E-bulten listesi için <span className="font-mono text-slate-900">newsletter.view</span> izni ve tüm sistem kapsamı gerekir.
       </div>
     );
   }
@@ -71,7 +71,7 @@ export default function AdminNewsletterPage() {
         </div>
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">E-Bulten Aboneleri</h1>
-          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Aktif kayitlar</p>
+          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Aktif kayıtlar</p>
         </div>
       </div>
 
@@ -105,7 +105,7 @@ export default function AdminNewsletterPage() {
           endpoint="/panel/newsletter/subscribers/export"
           filename="newsletter_aboneleri"
           params={{ search: search || undefined }}
-          buttonLabel="Aboneleri Disa Aktar"
+          buttonLabel="Aboneleri Dışa Aktar"
         />
       </div>
 
@@ -116,7 +116,7 @@ export default function AdminNewsletterPage() {
               <tr>
                 <th className="px-6 py-4">E-posta</th>
                 <th className="px-6 py-4">Isim</th>
-                <th className="px-6 py-4">Kayit</th>
+                <th className="px-6 py-4">Kayıt</th>
               </tr>
             </thead>
             <tbody>
@@ -129,7 +129,7 @@ export default function AdminNewsletterPage() {
               ) : subscribers.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="px-6 py-12 text-center text-muted-foreground">
-                    Kayit bulunamadi.
+                    Kayıt bulunamadı.
                   </td>
                 </tr>
               ) : (
@@ -154,7 +154,7 @@ export default function AdminNewsletterPage() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               className="panel-button panel-button-secondary text-xs"
             >
-              Onceki
+              Önceki
             </button>
             <span className="panel-pagination-count">
               {page} / {lastPage}

@@ -28,9 +28,9 @@ interface CertificateItem {
 }
 
 const typeLabels: Record<string, string> = {
-  participation: "Katilim Belgesi",
-  graduation: "Mezuniyet Sertifikasi",
-  achievement: "Basari Sertifikasi",
+  participation: "Katılım Belgesi",
+  graduation: "Mezuniyet Sertifikası",
+  achievement: "Başarı Sertifikası",
 };
 
 function formatDate(value?: string | null): string {
@@ -55,8 +55,8 @@ export default function StudentCertificatesPage() {
         const response = await api.get<{ certificates: CertificateItem[] }>("/certificates");
         setCertificates(response.data.certificates ?? []);
       } catch (error) {
-        console.error("Sertifikalar yuklenemedi", error);
-        setErrorMessage("Sertifikalar yuklenemedi.");
+        console.error("Sertifikalar yüklenemedi", error);
+        setErrorMessage("Sertifikalar yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -94,7 +94,7 @@ export default function StudentCertificatesPage() {
     setSuccessMessage(null);
 
     if (!uploadFile) {
-      setErrorMessage("Sertifika dosyasi secmelisiniz.");
+      setErrorMessage("Sertifika dosyası secmelisiniz.");
       return;
     }
 
@@ -112,10 +112,10 @@ export default function StudentCertificatesPage() {
       setCertificates(response.data.certificates ?? []);
       setUploadForm({ title: "", issuer: "", issued_at: "", included_in_cv: true });
       setUploadFile(null);
-      setSuccessMessage("Sertifika yuklendi ve CV secimlerinde kullanilabilir hale geldi.");
+      setSuccessMessage("Sertifika yüklendi ve CV secimlerinde kullanilabilir hale geldi.");
     } catch (error) {
-      console.error("Sertifika yuklenemedi", error);
-      setErrorMessage("Sertifika yuklenemedi. Baslik, kurum ve dosya alanlarini kontrol edin.");
+      console.error("Sertifika yüklenemedi", error);
+      setErrorMessage("Sertifika yüklenemedi. Başlık, kurum ve dosya alanlarını kontrol edin.");
     } finally {
       setUploading(false);
     }
@@ -147,7 +147,7 @@ export default function StudentCertificatesPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900">Sertifikalarim</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">KADEME belgeleri ve dogrulama kodlari</p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">KADEME belgeleri ve doğrulama kodlari</p>
           </div>
         </div>
 
@@ -165,7 +165,7 @@ export default function StudentCertificatesPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <SummaryCard label="Toplam Belge" value={certificates.length} />
         <SummaryCard label="Mezuniyet" value={certificates.filter((item) => item.type === "graduation").length} />
-        <SummaryCard label="Dogrulanabilir" value={certificates.filter((item) => item.verification_code).length} />
+        <SummaryCard label="Doğrulanabilir" value={certificates.filter((item) => item.verification_code).length} />
       </div>
 
       {successMessage ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700">{successMessage}</div> : null}
@@ -173,14 +173,14 @@ export default function StudentCertificatesPage() {
       <form onSubmit={handleUpload} className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-600">
           <Upload className="h-4 w-4 text-primary" />
-          Yeni sertifika yukle
+          Yeni sertifika yükle
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <input
             required
             value={uploadForm.title}
             onChange={(event) => setUploadForm((current) => ({ ...current, title: event.target.value }))}
-            placeholder="Sertifika adi"
+            placeholder="Sertifika adı"
             className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary"
           />
           <input
@@ -215,7 +215,7 @@ export default function StudentCertificatesPage() {
           </label>
           <button type="submit" disabled={uploading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-70">
             {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            Yukle
+            Yükle
           </button>
         </div>
       </form>
@@ -226,7 +226,7 @@ export default function StudentCertificatesPage() {
         </div>
       ) : filteredCertificates.length === 0 ? (
         <div className="glass-panel rounded-3xl p-12 text-center text-muted-foreground">
-          {certificates.length === 0 ? "Hesabina tanimli sertifika bulunmuyor." : "Aramana uygun sertifika bulunamadi."}
+          {certificates.length === 0 ? "Hesabına tanımlı sertifika bulunmuyor." : "Aramana uygun sertifika bulunamadı."}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
@@ -246,7 +246,7 @@ export default function StudentCertificatesPage() {
                     </div>
                     <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground md:grid-cols-3">
                       <span>Kod: {certificate.verification_code}</span>
-                      <span>Donem: {certificate.period?.name || "-"}</span>
+                      <span>Dönem: {certificate.period?.name || "-"}</span>
                       <span>Tarih: {formatDate(certificate.issued_at)}</span>
                     </div>
                   </div>
@@ -268,7 +268,7 @@ export default function StudentCertificatesPage() {
                     href={`/certificates/verify?code=${encodeURIComponent(certificate.verification_code)}`}
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-white/70"
                   >
-                    Dogrula
+                    Doğrula
                     <ExternalLink className="h-4 w-4" />
                   </Link>
                 </div>

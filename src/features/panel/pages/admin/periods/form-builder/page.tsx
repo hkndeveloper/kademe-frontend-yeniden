@@ -61,15 +61,15 @@ interface ApplicationFormResponse {
 }
 
 const defaultConsentText =
-  "Basvuru kosullarini, uyarilari ve yaptirimlari okudum; verdigim bilgilerin dogru oldugunu kabul ediyorum.";
+  "Başvuru koşullarını, uyarıları ve yaptırımları okudum; verdiğim bilgilerin doğru olduğunu kabul ediyorum.";
 
 const questionTypes: Array<{ type: Question["type"]; label: string; icon: typeof Type }> = [
-  { type: "text", label: "Kisa Metin", icon: Type },
+  { type: "text", label: "Kısa Metin", icon: Type },
   { type: "longtext", label: "Uzun Metin", icon: List },
-  { type: "select", label: "Acilir Liste", icon: Settings2 },
-  { type: "radio", label: "Tekli Secim", icon: CheckCircle2 },
-  { type: "checkbox", label: "Coklu Secim", icon: CheckSquare },
-  { type: "file", label: "Dosya Yukleme", icon: Upload },
+  { type: "select", label: "Açılır Liste", icon: Settings2 },
+  { type: "radio", label: "Tekli Seçim", icon: CheckCircle2 },
+  { type: "checkbox", label: "Coklu Seçim", icon: CheckSquare },
+  { type: "file", label: "Dosya Yükleme", icon: Upload },
 ];
 
 const autoRejectOperators: Array<{ value: AutoRejectRule["operator"]; label: string }> = [
@@ -78,8 +78,8 @@ const autoRejectOperators: Array<{ value: AutoRejectRule["operator"]; label: str
   { value: "contains", label: "Iceriyorsa" },
   { value: "gt", label: "Buyukse" },
   { value: "lt", label: "Kucukse" },
-  { value: "gte", label: "Buyuk/esitse" },
-  { value: "lte", label: "Kucuk/esitse" },
+  { value: "gte", label: "Büyük/esitse" },
+  { value: "lte", label: "Küçük/esitse" },
 ];
 
 export default function FormBuilderPage() {
@@ -146,8 +146,8 @@ export default function FormBuilderPage() {
           setProjectId(String(nextProjects[0].id));
         }
       } catch (error) {
-        console.error("Form builder proje listesi yuklenemedi", error);
-        setErrorMessage("Proje listesi yuklenemedi.");
+        console.error("Form builder proje listesi yüklenemedi", error);
+        setErrorMessage("Proje listesi yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -200,14 +200,14 @@ export default function FormBuilderPage() {
           setProgramId("");
         }
       } catch (error) {
-        console.error("Basvuru formu yuklenemedi", error);
+        console.error("Başvuru formu yüklenemedi", error);
         setQuestions([]);
         setPeriods([]);
         setPrograms([]);
         setRequireConsent(false);
         setConsentText(defaultConsentText);
         setAutoRejectRules([]);
-        setErrorMessage("Basvuru formu yuklenemedi.");
+        setErrorMessage("Başvuru formu yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -280,12 +280,12 @@ export default function FormBuilderPage() {
 
   const handleSave = async () => {
     if (!projectId || questions.length === 0) {
-      setErrorMessage("Kaydetmeden once proje secip en az bir soru ekleyin.");
+      setErrorMessage("Kaydetmeden önce proje secip en az bir soru ekleyin.");
       return;
     }
 
     if (!canEditForm) {
-      setErrorMessage("Bu proje icin basvuru formu guncelleme yetkiniz yok.");
+      setErrorMessage("Bu proje için başvuru formu güncelleme yetkiniz yok.");
       return;
     }
 
@@ -320,8 +320,8 @@ export default function FormBuilderPage() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (error) {
-      console.error("Basvuru formu kaydedilemedi", error);
-      setErrorMessage("Basvuru formu kaydedilemedi.");
+      console.error("Başvuru formu kaydedilemedi", error);
+      setErrorMessage("Başvuru formu kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -336,7 +336,7 @@ export default function FormBuilderPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-black text-slate-900">Form Olusturucu</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Proje ve doneme bagli basvuru sorularini gercek backend uzerinden yonetin</p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Proje ve doneme bağlı başvuru sorularini gercek backend üzerinden yonetin</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -366,7 +366,7 @@ export default function FormBuilderPage() {
         <div className="panel-notice panel-notice-error">
           {hasFormPermission && !periodCanConfigure
             ? "Kapanış hazırlığındaki dönemin başvuru formu artık değiştirilemez; form yalnızca görüntülenebilir."
-            : "Bu proje icin basvuru formunu guncelleme yetkiniz yok; formu yalnizca goruntuleyebilirsiniz."}
+            : "Bu proje için başvuru formunu güncelleme yetkiniz yok; formu yalnızca görüntüleyebilirsiniz."}
         </div>
       ) : null}
 
@@ -374,8 +374,8 @@ export default function FormBuilderPage() {
         <div className="panel-section-card">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Form Onizleme</h2>
-              <p className="text-sm text-muted-foreground">{selectedProject?.name ?? "Secili proje"} basvuru formu</p>
+              <h2 className="text-lg font-bold text-slate-900">Form Önizleme</h2>
+              <p className="text-sm text-muted-foreground">{selectedProject?.name ?? "Seçili proje"} başvuru formu</p>
             </div>
             <button
               type="button"
@@ -403,7 +403,7 @@ export default function FormBuilderPage() {
                       <textarea disabled rows={3} className="panel-textarea min-h-24" />
                     ) : question.type === "select" ? (
                       <select disabled className="panel-control">
-                        <option>Secim yapin</option>
+                        <option>Seçim yapin</option>
                         {question.options?.map((option) => <option key={option}>{option}</option>)}
                       </select>
                     ) : question.type === "radio" || question.type === "checkbox" ? (
@@ -445,7 +445,7 @@ export default function FormBuilderPage() {
             }}
             className="panel-control"
           >
-            <option value="">Proje secin</option>
+            <option value="">Proje seçin</option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
@@ -474,7 +474,7 @@ export default function FormBuilderPage() {
             disabled={!canEditForm || filteredPrograms.length === 0}
             className="panel-control"
           >
-            <option value="">Programa ozel form yok</option>
+            <option value="">Programa özel form yok</option>
             {filteredPrograms.map((program) => (
               <option key={program.id} value={program.id}>
                 {program.title}
@@ -484,7 +484,7 @@ export default function FormBuilderPage() {
         </div>
         {selectedProject ? (
           <p className="mt-4 text-sm text-muted-foreground">
-            Aktif duzenleme kapsami: {selectedProject.name}
+            Aktif düzenleme kapsamı: {selectedProject.name}
             {selectedPeriod ? ` / ${selectedPeriod.name}` : ""}
             {selectedProgram ? ` / ${selectedProgram.title}` : ""}
           </p>
@@ -494,8 +494,8 @@ export default function FormBuilderPage() {
       <div className="panel-section-card">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Basvuru Onayi</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Uyari, yaptirim ve kosul metnini public basvuru formunda zorunlu onay olarak gosterir.</p>
+            <h2 className="text-lg font-bold text-slate-900">Başvuru Onayı</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Uyarı, yaptirim ve kosul metnini public başvuru formunda zorunlu onay olarak gosterir.</p>
           </div>
           <label className={`flex items-center gap-2 ${canEditForm ? "cursor-pointer" : "cursor-default opacity-70"}`}>
             <input
@@ -520,8 +520,8 @@ export default function FormBuilderPage() {
       <div className="panel-section-card">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Otomatik Eleme Kurallari</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Basvuru cevabi belirli kosulu sagladiginda basvuru otomatik reddedilir ve gerekce kayda yazilir.</p>
+            <h2 className="text-lg font-bold text-slate-900">Otomatik Eleme Kuralları</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Başvuru cevabi belirli kosulu sagladiginda başvuru otomatik reddedilir ve gerekçe kayda yazilir.</p>
           </div>
           <button
             type="button"
@@ -536,11 +536,11 @@ export default function FormBuilderPage() {
 
         {autoRejectFields.length === 0 ? (
           <div className="panel-empty-card mt-4 p-4">
-            Otomatik eleme icin once dosya disinda en az bir soru ekleyin.
+            Otomatik eleme için önce dosya dışında en az bir soru ekleyin.
           </div>
         ) : autoRejectRules.length === 0 ? (
           <div className="panel-empty-card mt-4 p-4">
-            Henuz otomatik eleme kurali yok.
+            Henüz otomatik eleme kurali yok.
           </div>
         ) : (
           <div className="mt-4 space-y-3">
@@ -553,7 +553,7 @@ export default function FormBuilderPage() {
                     onChange={(event) => updateAutoRejectRule(index, { field_id: event.target.value })}
                     className="panel-control h-10"
                   >
-                    <option value="">Soru secin</option>
+                    <option value="">Soru seçin</option>
                     {autoRejectFields.map((question) => (
                       <option key={question.id} value={question.id}>
                         {question.label}
@@ -592,7 +592,7 @@ export default function FormBuilderPage() {
                   readOnly={!canEditForm}
                   value={rule.reason}
                   onChange={(event) => updateAutoRejectRule(index, { reason: event.target.value })}
-                  placeholder="Adaya/panele yazilacak gerekce"
+                  placeholder="Adaya/panele yazilacak gerekçe"
                   className="panel-control mt-3 h-10"
                 />
               </div>
@@ -658,7 +658,7 @@ export default function FormBuilderPage() {
                       readOnly={!canEditForm}
                       onChange={(event) => updateQuestion(question.id, { label: event.target.value })}
                       className="w-full border-none bg-transparent p-0 text-xl font-bold text-slate-900 outline-none placeholder:opacity-20 focus:ring-0 read-only:cursor-default read-only:opacity-90"
-                      placeholder="Soru basligini buraya yazin..."
+                      placeholder="Soru başlığını buraya yazın..."
                     />
 
                     {(question.type === "select" || question.type === "radio" || question.type === "checkbox") && (

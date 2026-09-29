@@ -98,7 +98,7 @@ function formatDate(value?: string | null) {
 }
 
 function fullName(participant: ParticipantPreview) {
-  return `${participant.user?.name ?? ""} ${participant.user?.surname ?? ""}`.trim() || "Isimsiz kayit";
+  return `${participant.user?.name ?? ""} ${participant.user?.surname ?? ""}`.trim() || "Isimsiz kayıt";
 }
 
 function statValue(value: number | null | undefined) {
@@ -156,23 +156,23 @@ export default function PanelUnifiedProjectDetailPage() {
         if (isAxiosError(err)) {
           const status = err.response?.status;
           if (status === 403) {
-            setError("Bu proje icin modul ozetini goruntuleme yetkiniz yok veya proje kapsaminiz disinda.");
+            setError("Bu proje için modül ozetini görüntüleme yetkiniz yok veya proje kapsaminiz dışında.");
             return;
           }
           if (status === 404) {
-            setError("Proje bulunamadi.");
+            setError("Proje bulunamadı.");
             return;
           }
           if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
-            setError("API yanit vermedi (zaman asimi). Laravel sunucusunun (or. :8000) calistigini kontrol edin.");
+            setError("API yanıt vermedi (zaman asimi). Laravel sunucusunun (or. :8000) calistigini kontrol edin.");
             return;
           }
           if (!err.response) {
-            setError("API'ye baglanilamadi. `php artisan serve` / backend ayarlarini ve NEXT_PUBLIC_API_URL degerini kontrol edin.");
+            setError("API'ye baglanilamadi. `php artisan serve` / backend ayarlarını ve NEXT_PUBLIC_API_URL degerini kontrol edin.");
             return;
           }
         }
-        setError("Proje modul bilgileri alinamadi.");
+        setError("Proje modül bilgileri alınamadı.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -199,7 +199,7 @@ export default function PanelUnifiedProjectDetailPage() {
         visible: access["projects.content.update"] || access["projects.view"],
         href: withPeriod(`/panel/projects/${projectId}/content`),
         icon: PencilLine,
-        label: "Icerik ve galeri",
+        label: "İçerik ve galeri",
         value: "Metin ve gorseller",
         permission: access["projects.view"] ? "projects.view" : "projects.content.update",
       },
@@ -208,8 +208,8 @@ export default function PanelUnifiedProjectDetailPage() {
         visible: access["applications.intake.view"] || access["applications.intake.manage"],
         href: withPeriod(`/panel/projects/${projectId}/applications`),
         icon: CalendarClock,
-        label: "Basvuru yonetimi",
-        value: data?.project.application_open ? "Basvuru acik" : "Basvuru kapali",
+        label: "Başvuru yönetimi",
+        value: data?.project.application_open ? "Başvuru açık" : "Başvuru kapalı",
         permission: access["applications.intake.view"] ? "applications.intake.view" : "applications.intake.manage",
       },
       {
@@ -217,7 +217,7 @@ export default function PanelUnifiedProjectDetailPage() {
         visible: access["projects.application_form.update"],
         href: withPeriod(`/panel/projects/${projectId}/content?tab=form`),
         icon: FormInput,
-        label: "Basvuru formu",
+        label: "Başvuru formu",
         value: "Dinamik alanlar",
         permission: "projects.application_form.update",
       },
@@ -227,7 +227,7 @@ export default function PanelUnifiedProjectDetailPage() {
         href: withPeriod(`/panel/programs?project_id=${projectId}`),
         icon: CalendarDays,
         label: "Programlar",
-        value: `${statValue(data?.summary.programs?.total)} kayit`,
+        value: `${statValue(data?.summary.programs?.total)} kayıt`,
         permission: "programs.view",
       },
       {
@@ -236,7 +236,7 @@ export default function PanelUnifiedProjectDetailPage() {
         href: withPeriod(`/panel/programs?project_id=${projectId}`),
         icon: QrCode,
         label: "Yoklama ve kredi",
-        value: `${statValue(data?.summary.programs?.valid_attendances)} gecerli`,
+        value: `${statValue(data?.summary.programs?.valid_attendances)} geçerli`,
         permission: access["projects.attendance.view"] ? "projects.attendance.view" : "programs.attendance.view",
       },
       {
@@ -244,7 +244,7 @@ export default function PanelUnifiedProjectDetailPage() {
         visible: access["projects.participants.view"],
         href: withPeriod(`/panel/participants?project_id=${projectId}`),
         icon: Users,
-        label: "Katilimcilar",
+        label: "Katılımcılar",
         value: `${statValue(data?.summary.participants?.active)} aktif`,
         permission: "projects.participants.view",
       },
@@ -262,8 +262,8 @@ export default function PanelUnifiedProjectDetailPage() {
         visible: access["projects.student_cv.view"],
         href: withPeriod(`/panel/participants?project_id=${projectId}`),
         icon: FileStack,
-        label: "Ogrenci CV'leri",
-        value: `${data?.previews.student_cvs?.length ?? 0} onizleme`,
+        label: "Öğrenci CV'leri",
+        value: `${data?.previews.student_cvs?.length ?? 0} önizleme`,
         permission: "projects.student_cv.view",
       },
       {
@@ -279,7 +279,7 @@ export default function PanelUnifiedProjectDetailPage() {
           access["projects.rewards.view"],
         href: withPeriod(projectFamilyRouteForType(data?.project.type, projectId)),
         icon: Layers,
-        label: "Projeye ozel moduller",
+        label: "Projeye özel modüller",
         value: "Staj, mentor, hibe",
         permission: access["projects.internships.view"] || access["projects.internships.manage"]
           ? access["projects.internships.view"] ? "projects.internships.view" : "projects.internships.manage"
@@ -294,7 +294,7 @@ export default function PanelUnifiedProjectDetailPage() {
         visible: access["applications.view"],
         href: withPeriod(`/panel/applications?project_id=${projectId}`),
         icon: ClipboardCheck,
-        label: "Basvurular",
+        label: "Başvurular",
         value: `${statValue(data?.summary.applications?.pending)} bekleyen`,
         permission: "applications.view",
       },
@@ -303,7 +303,7 @@ export default function PanelUnifiedProjectDetailPage() {
         visible: access["volunteer.view"],
         href: withPeriod(`/panel/volunteer?project_id=${projectId}`),
         icon: UserCog,
-        label: "Gonullu basvurulari",
+        label: "Gönüllü başvuruları",
         value: "Firsatlar",
         permission: "volunteer.view",
       },
@@ -312,7 +312,7 @@ export default function PanelUnifiedProjectDetailPage() {
         visible: access["digital_bohca.view"],
         href: withPeriod(`/panel/digital-bohca?project_id=${projectId}`),
         icon: Database,
-        label: "Dijital Bohca",
+        label: "Dijital Bohça",
         value: `${statValue(data?.summary.digital_bohca?.total)} dosya`,
         permission: "digital_bohca.view",
       },
@@ -321,7 +321,7 @@ export default function PanelUnifiedProjectDetailPage() {
         visible: access["assignments.view"],
         href: withPeriod(`/panel/assignments?project_id=${projectId}`),
         icon: FileStack,
-        label: "Odevler",
+        label: "Ödevler",
         value: `${statValue(data?.summary.assignments?.submissions)} teslim`,
         permission: "assignments.view",
       },
@@ -349,7 +349,7 @@ export default function PanelUnifiedProjectDetailPage() {
   if (invalidProjectId || error || !data) {
     return (
       <div className="panel-notice panel-notice-error">
-        {invalidProjectId ? "Gecersiz proje." : error ?? "Proje bulunamadi."}
+        {invalidProjectId ? "Geçersiz proje." : error ?? "Proje bulunamadı."}
       </div>
     );
   }
@@ -369,7 +369,7 @@ export default function PanelUnifiedProjectDetailPage() {
           <div className="text-xs font-bold uppercase tracking-widest text-accent">{data.project.type || "Proje"}</div>
           <h1 className="mt-2 text-3xl font-black text-slate-900">{data.project.name}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {data.project.selected_period?.name ? `Secili donem: ${data.project.selected_period.name}` : data.project.active_period?.name ? `Aktif donem: ${data.project.active_period.name}` : "Aktif donem baglantisi yok"}
+            {data.project.selected_period?.name ? `Seçili dönem: ${data.project.selected_period.name}` : data.project.active_period?.name ? `Aktif dönem: ${data.project.active_period.name}` : "Aktif dönem bağlantısı yok"}
             {typeof data.project.quota === "number" ? ` - Kontenjan: ${data.project.quota}` : ""}
           </p>
         </div>
@@ -382,7 +382,7 @@ export default function PanelUnifiedProjectDetailPage() {
             >
               {data.project.periods.map((period) => (
                 <option key={period.id} value={period.id}>
-                  {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (gecmis)" : ""}
+                  {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (geçmiş)" : ""}
                 </option>
               ))}
             </select>
@@ -394,7 +394,7 @@ export default function PanelUnifiedProjectDetailPage() {
             target="_blank"
             rel="noreferrer"
           >
-            Halka acik sayfa
+            Halka açık sayfa
           </Link>
         ) : null}
         </div>
@@ -427,11 +427,11 @@ export default function PanelUnifiedProjectDetailPage() {
       {data.summary.participants ? (
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-4">
           <div className="panel-stat-card">
-            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Toplam katilimci</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Toplam katılımcı</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.total}</div>
           </div>
           <div className="panel-stat-card">
-            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Aktif ogrenci</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Aktif öğrenci</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{data.summary.participants.active}</div>
           </div>
           <div className="panel-stat-card">
@@ -448,11 +448,11 @@ export default function PanelUnifiedProjectDetailPage() {
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {data.previews.participants?.length ? (
           <PreviewList
-            title="Aktif katilimcilar"
+            title="Aktif katılımcılar"
             icon={<Users className="h-5 w-5" />}
             items={data.previews.participants}
             footerHref={withPeriod(`/panel/participants?project_id=${projectId}`)}
-            footerLabel="Tum katilimcilari ac"
+            footerLabel="Tüm katılımcıları aç"
           />
         ) : null}
 
@@ -462,7 +462,7 @@ export default function PanelUnifiedProjectDetailPage() {
             icon={<GraduationCap className="h-5 w-5" />}
             items={data.previews.alumni}
             footerHref={withPeriod(`/panel/participants?project_id=${projectId}&status=graduated`)}
-            footerLabel="Mezun listesini ac"
+            footerLabel="Mezun listesini aç"
           />
         ) : null}
 
@@ -473,7 +473,7 @@ export default function PanelUnifiedProjectDetailPage() {
             items={data.previews.student_cvs}
             showCv
             footerHref={withPeriod(`/panel/participants?project_id=${projectId}`)}
-            footerLabel="CV detaylarini ac"
+            footerLabel="CV detaylarini aç"
           />
         ) : null}
 
@@ -482,10 +482,10 @@ export default function PanelUnifiedProjectDetailPage() {
             <div className="mb-4 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 text-lg font-black text-slate-900">
                 <QrCode className="h-5 w-5 text-accent" />
-                Yoklama ozeti
+                Yoklama özeti
               </div>
               <Link href={withPeriod(`/panel/programs?project_id=${projectId}`)} className="text-xs font-bold uppercase tracking-widest text-accent">
-                Programlari ac
+                Programları aç
               </Link>
             </div>
             <div className="space-y-3">
@@ -497,7 +497,7 @@ export default function PanelUnifiedProjectDetailPage() {
                       <div className="mt-1 text-xs text-muted-foreground">{formatDate(program.start_at)}</div>
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
-                      <div>{statValue(program.valid_attendances_count)} / {statValue(program.attendances_count)} gecerli</div>
+                      <div>{statValue(program.valid_attendances_count)} / {statValue(program.attendances_count)} geçerli</div>
                       <div className="mt-1 inline-flex items-center gap-1 text-amber-600">
                         <Star className="h-3 w-3" />
                         -{statValue(program.credit_deduction)}
@@ -551,8 +551,8 @@ function PreviewList({
                 </div>
                 {showCv ? (
                   <div className="mt-2 text-xs text-muted-foreground">
-                    {participant.user?.cv?.linkedin_url ? "LinkedIn bagli" : "LinkedIn yok"}
-                    {participant.user?.cv?.github_url ? " - GitHub bagli" : ""}
+                    {participant.user?.cv?.linkedin_url ? "LinkedIn bağlı" : "LinkedIn yok"}
+                    {participant.user?.cv?.github_url ? " - GitHub bağlı" : ""}
                   </div>
                 ) : null}
               </div>

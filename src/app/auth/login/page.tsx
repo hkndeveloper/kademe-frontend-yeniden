@@ -124,7 +124,7 @@ export default function LoginPage() {
                     <span className={labelClass}>E-posta Adresi</span>
                     <span className="relative block">
                       <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="isim@ornek.com" />
+                      <input name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="isim@örnek.com" />
                     </span>
                   </label>
 

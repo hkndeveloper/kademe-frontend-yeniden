@@ -94,9 +94,9 @@ const cvFieldLabels: Record<string, string> = {
   email: "E-posta",
   phone: "Telefon",
   location: "Konum",
-  summary: "Profesyonel Ozet",
-  university: "Universite",
-  department: "Bolum",
+  summary: "Profesyonel Özet",
+  university: "Üniversite",
+  department: "Bölüm",
   classYear: "Sinif",
   linkedin: "LinkedIn",
   github: "GitHub",
@@ -107,7 +107,7 @@ const cvFieldLabels: Record<string, string> = {
 
 const cvListLabels: Record<string, string> = {
   experience: "Deneyim",
-  education: "Egitim Ekleri",
+  education: "Eğitim Ekleri",
   projects: "Projeler",
   certificates: "Sertifikalar",
 };
@@ -157,7 +157,7 @@ function cvRecordList(value: unknown): CvRecord[] {
 }
 
 function cvItemTitle(item: CvRecord): string {
-  return cvValueText(item.title ?? item.school ?? item.name ?? item.company ?? item.organization ?? item.position ?? "Kayit");
+  return cvValueText(item.title ?? item.school ?? item.name ?? item.company ?? item.organization ?? item.position ?? "Kayıt");
 }
 
 function cvItemMeta(item: CvRecord): string {
@@ -238,7 +238,7 @@ export default function PanelParticipantsPage() {
         setParticipants(response.data.participants ?? []);
         setSummary(response.data.summary);
       } catch (error) {
-        console.error("Katilimci listesi yuklenemedi", error);
+        console.error("Katılımcı listesi yüklenemedi", error);
       } finally {
         setLoading(false);
       }
@@ -326,8 +326,8 @@ export default function PanelParticipantsPage() {
         },
       });
     } catch (error) {
-      console.error("CV bilgisi yuklenemedi", error);
-      setMessage("CV bilgisi yuklenemedi.");
+      console.error("CV bilgisi yüklenemedi", error);
+      setMessage("CV bilgisi yüklenemedi.");
     } finally {
       setCvLoadingId(null);
     }
@@ -355,11 +355,11 @@ export default function PanelParticipantsPage() {
   ) => {
     const note =
       graduationStatus === "not_completed"
-        ? window.prompt("Tamamlayamama gerekcesini yazin")?.trim()
+        ? window.prompt("Tamamlayamama gerekcesini yazın")?.trim()
         : window.prompt("Not eklemek ister misiniz? Bos birakabilirsiniz.")?.trim();
 
     if (graduationStatus === "not_completed" && !note) {
-      setMessage("Tamamlayamadi durumu icin gerekce zorunludur.");
+      setMessage("Tamamlayamadı durumu için gerekçe zorunludur.");
       return;
     }
 
@@ -370,11 +370,11 @@ export default function PanelParticipantsPage() {
         graduation_status: graduationStatus,
         graduation_note: note || undefined,
       });
-      setMessage(response.data?.message ?? "Katilimci durumu guncellendi.");
+      setMessage(response.data?.message ?? "Katılımcı durumu güncellendi.");
       await refreshParticipants();
     } catch (error) {
-      console.error("Mezuniyet durumu guncellenemedi", error);
-      setMessage("Mezuniyet durumu guncellenemedi.");
+      console.error("Mezuniyet durumu güncellenemedi", error);
+      setMessage("Mezuniyet durumu güncellenemedi.");
     } finally {
       setGraduationLoadingId(null);
     }
@@ -385,7 +385,7 @@ export default function PanelParticipantsPage() {
     patch: Partial<Pick<ParticipantItem["user"], "public_profile_visible" | "public_photo_visible" | "public_alumni_visible">>
   ) => {
     if (!canManageVisibility(participant)) {
-      setMessage("Bu kaydin kamusal gorunurlugunu yonetme yetkiniz yok.");
+      setMessage("Bu kaydın kamusal gorunurlugunu yonetme yetkiniz yok.");
       return;
     }
 
@@ -408,10 +408,10 @@ export default function PanelParticipantsPage() {
           item.id === participant.id ? { ...item, user: { ...item.user, ...nextVisibility } } : item
         )
       );
-      setMessage("Public gorunurluk ayarlari guncellendi.");
+      setMessage("Public görünürlük ayarları güncellendi.");
     } catch (error) {
-      console.error("Public gorunurluk guncellenemedi", error);
-      setMessage("Public gorunurluk guncellenemedi.");
+      console.error("Public görünürlük güncellenemedi", error);
+      setMessage("Public görünürlük güncellenemedi.");
     } finally {
       setVisibilityLoadingId(null);
     }
@@ -419,7 +419,7 @@ export default function PanelParticipantsPage() {
 
   const openCreditModal = (participant: ParticipantItem) => {
     if (!hasPermission("projects.participants.manage") || !canAccessProject("projects.participants.manage", participant.project.id)) {
-      setMessage("Kredi guncellemek icin katilimci yonetim yetkisi gerekir.");
+      setMessage("Kredi guncellemek için katılımcı yönetim yetkisi gerekir.");
       return;
     }
 
@@ -446,18 +446,18 @@ export default function PanelParticipantsPage() {
     if (!creditParticipant) return;
 
     if (!hasPermission("projects.participants.manage") || !canAccessProject("projects.participants.manage", creditParticipant.project.id)) {
-      setMessage("Kredi guncellemek icin katilimci yonetim yetkisi gerekir.");
+      setMessage("Kredi guncellemek için katılımcı yönetim yetkisi gerekir.");
       return;
     }
 
     if (!Number.isInteger(creditAmountNumber) || creditAmountNumber === 0) {
-      setMessage("Kredi miktari sifirdan farkli bir tam sayi olmalidir.");
+      setMessage("Kredi miktari sifirdan farkli bir tam sayı olmalidir.");
       return;
     }
 
     const reason = creditReason.trim();
     if (!reason) {
-      setMessage("Kredi guncelleme aciklamasi zorunludur.");
+      setMessage("Kredi güncelleme açıklaması zorunludur.");
       return;
     }
 
@@ -506,19 +506,19 @@ export default function PanelParticipantsPage() {
       setCreditParticipant((current) => (current ? updateCredit(current) : current));
       setCreditAmount("");
       setCreditReason("");
-      setMessage(response.data.message ?? "Kredi basariyla guncellendi.");
+      setMessage(response.data.message ?? "Kredi başarıyla güncellendi.");
       await refreshParticipants();
     } catch (error) {
-      console.error("Kredi guncellenemedi", error);
+      console.error("Kredi güncellenemedi", error);
       const apiMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
-      setMessage(apiMessage ?? "Kredi guncellenemedi.");
+      setMessage(apiMessage ?? "Kredi güncellenemedi.");
     } finally {
       setCreditSubmitting(false);
     }
   };
   const downloadCvPdf = async (participant: ParticipantItem) => {
     if (!participant.user.cv?.digital_cv_data) {
-      setMessage("Kayitli CV verisi bulunamadi.");
+      setMessage("Kayıtlı CV verisi bulunamadı.");
       return;
     }
 
@@ -539,9 +539,9 @@ export default function PanelParticipantsPage() {
 
     let graduationNote: string | undefined;
     if (graduationStatus === "not_completed") {
-      const note = window.prompt("Secili tum katilimcilar icin tamamlayamama gerekcesini yazin")?.trim();
+      const note = window.prompt("Seçili tüm katılımcılar için tamamlayamama gerekcesini yazın")?.trim();
       if (!note) {
-        setMessage("Tamamlayamadi durumu icin gerekce zorunludur.");
+        setMessage("Tamamlayamadı durumu için gerekçe zorunludur.");
         return;
       }
       graduationNote = note;
@@ -560,17 +560,17 @@ export default function PanelParticipantsPage() {
       });
       const results = response.data?.results ?? [];
       const failed = results.filter((r) => !r.ok);
-      const baseMsg = response.data?.message ?? "Toplu guncelleme tamamlandi.";
+      const baseMsg = response.data?.message ?? "Toplu güncelleme tamamlandı.";
       setMessage(
         failed.length === 0
           ? baseMsg
-          : `${baseMsg} ${failed.length} kayit basarisiz.`,
+          : `${baseMsg} ${failed.length} kayıt başarısız.`,
       );
       clearSelection();
       await refreshParticipants();
     } catch (error) {
-      console.error("Toplu mezuniyet guncellenemedi", error);
-      setMessage("Toplu mezuniyet guncellenemedi.");
+      console.error("Toplu mezuniyet güncellenemedi", error);
+      setMessage("Toplu mezuniyet güncellenemedi.");
     } finally {
       setBulkLoading(false);
     }
@@ -584,7 +584,7 @@ export default function PanelParticipantsPage() {
       require="any"
       fallback={
         <div className="panel-empty-card text-amber-700">
-          Katilimci, mezun veya CV goruntuleme yetkiniz bulunmuyor.
+          Katılımcı, mezun veya CV görüntüleme yetkiniz bulunmuyor.
         </div>
       }
     >
@@ -599,18 +599,18 @@ export default function PanelParticipantsPage() {
               {isCommunityCulture
                 ? hasPermission("projects.alumni.manage") ? "Mezunlar ve Mezuniyet" : "Mezunlar"
                 : hasPermission("projects.participants.view")
-                ? "Katilimcilar"
+                ? "Katılımcılar"
                 : hasPermission("projects.alumni.view")
                   ? "Mezunlar"
-                  : "Ogrenci CV'leri"}
+                  : "Öğrenci CV'leri"}
             </h1>
-            <p className="text-sm text-muted-foreground">{isCommunityCulture ? "Topluluk ve Kültür sorumluluğundaki projelerin mezun, mezuniyet ve CV kayıtları." : "Yetkili oldugunuz projelerdeki katilimci, mezun ve CV kayitlarini scope bazli takip edin."}</p>
+            <p className="text-sm text-muted-foreground">{isCommunityCulture ? "Topluluk ve Kültür sorumluluğundaki projelerin mezun, mezuniyet ve CV kayıtları." : "Yetkili oldugunuz projelerdeki katılımcı, mezun ve CV kayıtlarını scope bazlı takip edin."}</p>
             {selectedProjectName ? <p className="mt-1 text-xs font-bold uppercase tracking-widest text-accent">Filtre: {selectedProjectName}</p> : null}
           </div>
         </div>
         <PermissionGate
           permission="projects.participants.view"
-          fallback={<span className="text-sm text-muted-foreground">Disa aktarma yetkiniz yok.</span>}
+          fallback={<span className="text-sm text-muted-foreground">Dışa aktarma yetkiniz yok.</span>}
         >
         <ExportButtons
           endpoint="/panel/participants/export"
@@ -622,7 +622,7 @@ export default function PanelParticipantsPage() {
             graduation_status: ["graduated", "completed"].includes(statusFilter) ? statusFilter : undefined,
             search: searchTerm || undefined,
           }}
-          buttonLabel="Katilimcilari Disa Aktar"
+          buttonLabel="Katılımcıları Dışa Aktar"
         />
         </PermissionGate>
       </div>
@@ -630,11 +630,11 @@ export default function PanelParticipantsPage() {
       {hasAnyPermission(["projects.participants.view", "projects.alumni.view"]) ? (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
           <div className="panel-stat-card">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Toplam Kayit</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Toplam Kayıt</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{summary.total}</div>
           </div>
           <div className="panel-stat-card">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif Katilimci</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif Katılımcı</div>
             <div className="mt-3 text-3xl font-black text-slate-900">{summary.active}</div>
           </div>
           <div className="panel-stat-card">
@@ -662,7 +662,7 @@ export default function PanelParticipantsPage() {
               <Search className="panel-control-icon" />
               <input
                 type="text"
-                placeholder="Isim, e-posta, universite veya bolum ara"
+                placeholder="Isim, e-posta, üniversite veya bölüm ara"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 className="panel-control pl-10"
@@ -690,7 +690,7 @@ export default function PanelParticipantsPage() {
           <label className="panel-field">
             <span className="panel-label">Durum</span>
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="panel-control">
-              <option value="all">Tum durumlar</option>
+              <option value="all">Tüm durumlar</option>
               <option value="active">Aktif</option>
               <option value="passive">Pasif</option>
               <option value="graduated">Mezun</option>
@@ -702,7 +702,7 @@ export default function PanelParticipantsPage() {
           <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <span className="font-semibold text-slate-900">
-                {selectedIdsInDataset.length > 0 ? `${selectedIdsInDataset.length} katilimci secili` : "Toplu mezuniyet"}
+                {selectedIdsInDataset.length > 0 ? `${selectedIdsInDataset.length} katılımcı seçili` : "Toplu mezuniyet"}
               </span>
               <button
                 type="button"
@@ -710,7 +710,7 @@ export default function PanelParticipantsPage() {
                 onClick={() => selectAllManageableInView()}
                 className="panel-card-action py-1.5"
               >
-                Filtredeki tumunu sec ({manageableIdsInView.length})
+                Filtredeki tümünü seç ({manageableIdsInView.length})
               </button>
               {selectedIdsInDataset.length > 0 ? (
                 <button
@@ -719,7 +719,7 @@ export default function PanelParticipantsPage() {
                   onClick={() => clearSelection()}
                   className="panel-card-action py-1.5"
                 >
-                  Secimi temizle
+                  Seçimi temizle
                 </button>
               ) : null}
             </div>
@@ -750,7 +750,7 @@ export default function PanelParticipantsPage() {
                   className="panel-card-action panel-card-action-danger"
                 >
                   <XCircle className="h-4 w-4" />
-                  Secilenleri tamamlayamadi
+                  Secilenleri tamamlayamadı
                 </button>
               </div>
             ) : null}
@@ -763,7 +763,7 @@ export default function PanelParticipantsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
       ) : filteredParticipants.length === 0 ? (
-        <div className="panel-empty-card py-16">Bu filtreye uygun katilimci bulunamadi.</div>
+        <div className="panel-empty-card py-16">Bu filtreye uygun katılımcı bulunamadı.</div>
       ) : (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {filteredParticipants.map((participant) => {
@@ -808,7 +808,7 @@ export default function PanelParticipantsPage() {
                       ) : null}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">{participant.project.name}</p>
-                    <p className="text-xs text-muted-foreground">{participant.period?.name || "Donem baglantisi yok"}</p>
+                    <p className="text-xs text-muted-foreground">{participant.period?.name || "Dönem bağlantısı yok"}</p>
                   </div>
                 </div>
 
@@ -827,7 +827,7 @@ export default function PanelParticipantsPage() {
                       className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-amber-800 transition hover:border-amber-400 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {creditSubmitting && creditParticipant?.id === participant.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Coins className="h-3.5 w-3.5" />}
-                      Guncelle
+                      Güncelle
                     </button>
                   ) : null}
                 </div>
@@ -842,7 +842,7 @@ export default function PanelParticipantsPage() {
                     className="panel-card-action"
                   >
                     {cvLoadingId === participant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                    {cvLoadingId === participant.id ? "CV Yukleniyor" : "CV Bilgilerini Gor"}
+                    {cvLoadingId === participant.id ? "CV Yükleniyor" : "CV Bilgilerini Gör"}
                   </button>
                 </div>
               ) : null}
@@ -874,7 +874,7 @@ export default function PanelParticipantsPage() {
                     className="panel-card-action panel-card-action-danger"
                   >
                     <XCircle className="h-4 w-4" />
-                    Tamamlayamadi
+                    Tamamlayamadı
                   </button>
                 </div>
               ) : null}
@@ -882,7 +882,7 @@ export default function PanelParticipantsPage() {
               {canManageVisibility(participant) ? (
                 <div className="panel-card-muted mt-4">
                   <div className="mb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                    Public gorunurluk
+                    Public görünürlük
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -899,7 +899,7 @@ export default function PanelParticipantsPage() {
                           : "border-slate-200 bg-slate-50 text-slate-500"
                       }`}
                     >
-                      Profil {participant.user.public_profile_visible ? "Acik" : "Kapali"}
+                      Profil {participant.user.public_profile_visible ? "Açık" : "Kapalı"}
                     </button>
                     <button
                       type="button"
@@ -915,7 +915,7 @@ export default function PanelParticipantsPage() {
                           : "border-slate-200 bg-slate-50 text-slate-500"
                       }`}
                     >
-                      Fotograf {participant.user.public_photo_visible ? "Acik" : "Kapali"}
+                      Fotoğraf {participant.user.public_photo_visible ? "Açık" : "Kapalı"}
                     </button>
                     <button
                       type="button"
@@ -931,7 +931,7 @@ export default function PanelParticipantsPage() {
                           : "border-slate-200 bg-slate-50 text-slate-500"
                       }`}
                     >
-                      Mezun vitrini {participant.user.public_alumni_visible ? "Acik" : "Kapali"}
+                      Mezun vitrini {participant.user.public_alumni_visible ? "Açık" : "Kapalı"}
                     </button>
                     {visibilityLoadingId === participant.id ? <Loader2 className="h-5 w-5 animate-spin text-accent" /> : null}
                   </div>
@@ -940,8 +940,8 @@ export default function PanelParticipantsPage() {
 
               <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div className="panel-card-muted">
-                  <div className="font-bold text-slate-900">{participant.user.university || "Universite yok"}</div>
-                  <div>{participant.user.department || "Bolum yok"}</div>
+                  <div className="font-bold text-slate-900">{participant.user.university || "Üniversite yok"}</div>
+                  <div>{participant.user.department || "Bölüm yok"}</div>
                   <div>{participant.user.class_year || "Sinif bilgisi yok"}</div>
                 </div>
                 <div className="panel-card-muted">
@@ -981,7 +981,7 @@ export default function PanelParticipantsPage() {
                   <Coins className="h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">Kredi Guncelle</h2>
+                  <h2 className="text-xl font-black text-slate-900">Kredi Güncelle</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {creditParticipant.user.name} {creditParticipant.user.surname} / {creditParticipant.project.name}
                   </p>
@@ -1004,7 +1004,7 @@ export default function PanelParticipantsPage() {
                 <div className="mt-2 text-3xl font-black text-slate-900">{creditParticipant.credit ?? 0}</div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Islem Sonrasi</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">İşlem Sonrası</div>
                 <div className="mt-2 text-3xl font-black text-slate-900">{creditPreview ?? "-"}</div>
               </div>
             </div>
@@ -1023,13 +1023,13 @@ export default function PanelParticipantsPage() {
                 />
               </label>
               <label className="panel-field">
-                <span className="panel-label">Aciklama</span>
+                <span className="panel-label">Açıklama</span>
                 <input
                   value={creditReason}
                   onChange={(event) => setCreditReason(event.target.value)}
                   className="panel-control"
                   maxLength={255}
-                  placeholder="Aylik manuel kredi guncelleme nedeni"
+                  placeholder="Aylık manuel kredi güncelleme nedeni"
                   required
                 />
               </label>
@@ -1045,7 +1045,7 @@ export default function PanelParticipantsPage() {
                   {creditParticipant.credit_logs.map((log) => (
                     <div key={log.id} className="flex flex-col gap-1 rounded-xl bg-muted px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <div className="font-bold text-slate-900">{log.reason || "Manuel guncelleme"}</div>
+                        <div className="font-bold text-slate-900">{log.reason || "Manuel güncelleme"}</div>
                         <div className="text-xs text-muted-foreground">
                           {log.created_at ? new Date(log.created_at).toLocaleString("tr-TR") : "-"}
                           {log.created_by ? ` / ${log.created_by}` : ""}
@@ -1059,14 +1059,14 @@ export default function PanelParticipantsPage() {
                 </div>
               ) : (
                 <div className="rounded-xl bg-muted px-3 py-3 text-sm text-muted-foreground">
-                  Bu katilimci icin gosterilecek son manuel kredi hareketi yok.
+                  Bu katılımcı için gösterilecek son manuel kredi hareketi yok.
                 </div>
               )}
             </div>
 
             <div className="panel-modal-footer mt-6">
               <button type="button" onClick={closeCreditModal} disabled={creditSubmitting} className="panel-button panel-button-secondary">
-                Vazgec
+                Vazgeç
               </button>
               <button
                 type="submit"
@@ -1094,7 +1094,7 @@ export default function PanelParticipantsPage() {
                 <h2 className="text-xl font-black text-slate-900">
                   {cvParticipant.user.name} {cvParticipant.user.surname}
                 </h2>
-                <p className="mt-1 text-sm text-muted-foreground">Dijital CV ve profil baglantilari</p>
+                <p className="mt-1 text-sm text-muted-foreground">Dijital CV ve profil bağlantıları</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -1130,7 +1130,7 @@ export default function PanelParticipantsPage() {
 
             <div className="mt-4 max-h-[56vh] overflow-y-auto rounded-2xl border border-border bg-white">
               {!hasCvContent ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">Kayitli CV verisi bulunamadi.</div>
+                <div className="p-6 text-center text-sm text-muted-foreground">Kayıtlı CV verisi bulunamadı.</div>
               ) : (
                 <div className="divide-y divide-border">
                   {cvTextFields.length > 0 ? (
@@ -1175,8 +1175,6 @@ export default function PanelParticipantsPage() {
     </PermissionGate>
   );
 }
-
-
 
 
 

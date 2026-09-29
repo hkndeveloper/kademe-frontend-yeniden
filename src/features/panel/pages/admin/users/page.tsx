@@ -54,7 +54,7 @@ interface UserDetail extends User {
 }
 
 const roleLabels: Record<string, string> = {
-  student: "Ogrenci",
+  student: "Öğrenci",
   alumni: "Mezun",
 };
 
@@ -104,8 +104,8 @@ export default function AdminUsersPage() {
       setUsers(res.data?.users?.data || []);
       setTotalPages(res.data?.users?.last_page || 1);
     } catch (error) {
-      console.error("Kullanicilar yuklenemedi", error);
-      setErrorMessage("Kullanici listesi yuklenirken bir hata olustu.");
+      console.error("Kullanıcılar yüklenemedi", error);
+      setErrorMessage("Kullanıcı listesi yüklenirken bir hata oluştu.");
     } finally {
       setLoading(false);
     }
@@ -131,20 +131,20 @@ export default function AdminUsersPage() {
       const newStatus: User["status"] = currentStatus === "active" ? "passive" : "active";
       await api.put(`/panel/users/${id}`, { status: newStatus });
       setUsers((prev) => prev.map((user) => (user.id === id ? { ...user, status: newStatus } : user)));
-      setSuccessMessage("Kullanici durumu guncellendi.");
+      setSuccessMessage("Kullanıcı durumu güncellendi.");
       if (selectedUser?.id === id) {
         setSelectedUser({ ...selectedUser, status: newStatus });
       }
     } catch (error) {
-      console.error("Durum guncellenemedi", error);
-      setErrorMessage("Kullanici durumu guncellenemedi.");
+      console.error("Durum güncellenemedi", error);
+      setErrorMessage("Kullanıcı durumu güncellenemedi.");
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleUpdateRole = async (id: number, newRole: string) => {
-    if (!confirm(`Kullanici rolunu ${roleLabels[newRole] || newRole} olarak guncellemek istiyor musunuz?`)) {
+    if (!confirm(`Kullanıcı rolunu ${roleLabels[newRole] || newRole} olarak guncellemek istiyor musunuz?`)) {
       return;
     }
 
@@ -154,13 +154,13 @@ export default function AdminUsersPage() {
     try {
       await api.put(`/panel/users/${id}`, { role: newRole });
       setUsers((prev) => prev.map((user) => (user.id === id ? { ...user, role: newRole } : user)));
-      setSuccessMessage("Kullanici rolu guncellendi.");
+      setSuccessMessage("Kullanıcı rolu güncellendi.");
       if (selectedUser?.id === id) {
         setSelectedUser({ ...selectedUser, role: newRole });
       }
     } catch (error) {
-      console.error("Rol guncellenemedi", error);
-      setErrorMessage("Kullanici rolu guncellenemedi.");
+      console.error("Rol güncellenemedi", error);
+      setErrorMessage("Kullanıcı rolu güncellenemedi.");
     } finally {
       setActionLoading(null);
     }
@@ -179,8 +179,8 @@ export default function AdminUsersPage() {
         absent_count: res.data.absent_count || 0,
       });
     } catch (error) {
-      console.error("Kullanici detaylari yuklenemedi", error);
-      setErrorMessage("Kullanici detaylari yuklenemedi.");
+      console.error("Kullanıcı detayları yüklenemedi", error);
+      setErrorMessage("Kullanıcı detayları yüklenemedi.");
       setSelectedUser(null);
     } finally {
       setModalLoading(false);
@@ -208,7 +208,7 @@ export default function AdminUsersPage() {
         }));
       })
       .catch(() => {
-        setCreateError("Rol listesi yuklenemedi. Yetkinizi kontrol edin.");
+        setCreateError("Rol listesi yüklenemedi. Yetkinizi kontrol edin.");
         setCreateRoles([]);
       })
       .finally(() => setCreateRolesLoading(false));
@@ -233,7 +233,7 @@ export default function AdminUsersPage() {
         payload.phone = createForm.phone.trim();
       }
       const res = await api.post<{ message?: string }>("/panel/users", payload);
-      setSuccessMessage(res.data?.message ?? "Kullanici olusturuldu.");
+      setSuccessMessage(res.data?.message ?? "Kullanıcı oluşturuldu.");
       void loadUsers();
     } catch (err) {
       if (isAxiosError(err)) {
@@ -246,9 +246,9 @@ export default function AdminUsersPage() {
               .join(" ")
           : "";
         const msg = fromMessage || fromErrors;
-        setCreateError(msg ? String(msg) : "Kayit basarisiz.");
+        setCreateError(msg ? String(msg) : "Kayıt başarısız.");
       } else {
-        setCreateError("Kayit basarisiz.");
+        setCreateError("Kayıt başarısız.");
       }
     } finally {
       setCreateSubmitting(false);
@@ -263,9 +263,9 @@ export default function AdminUsersPage() {
             <Users className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Ogrenci ve Mezun Yonetimi</h1>
+            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Öğrenci ve Mezun Yönetimi</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Ogrenci ve mezun hesaplari
+              Öğrenci ve mezun hesaplari
             </p>
           </div>
         </div>
@@ -277,7 +277,7 @@ export default function AdminUsersPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white"
             >
               <UserPlus className="h-4 w-4" />
-              Yeni Ogrenci / Mezun
+              Yeni Öğrenci / Mezun
             </button>
           ) : null}
           <PermissionGate permission="users.export">
@@ -289,7 +289,7 @@ export default function AdminUsersPage() {
                 status: statusFilter || undefined,
                 search: search || undefined,
               }}
-              buttonLabel="Listeyi Disa Aktar"
+              buttonLabel="Listeyi Dışa Aktar"
             />
           </PermissionGate>
         </div>
@@ -315,7 +315,7 @@ export default function AdminUsersPage() {
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && applyFilters()}
             className="panel-control pl-10"
-            placeholder="Ogrenci veya mezun ara..."
+            placeholder="Öğrenci veya mezun ara..."
           />
         </div>
         <select
@@ -323,7 +323,7 @@ export default function AdminUsersPage() {
           onChange={(e) => setRoleFilter(e.target.value)}
           className="panel-control md:max-w-[180px]"
         >
-          <option value="">Ogrenci ve Mezun</option>
+          <option value="">Öğrenci ve Mezun</option>
           {Object.entries(roleLabels).map(([key, value]) => (
             <option key={key} value={key}>
               {value}
@@ -335,7 +335,7 @@ export default function AdminUsersPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="panel-control md:max-w-[180px]"
         >
-          <option value="">Tum Durumlar</option>
+          <option value="">Tüm Durumlar</option>
           <option value="active">Aktif</option>
           <option value="passive">Pasif</option>
           <option value="blacklisted">Kara Liste</option>
@@ -355,12 +355,12 @@ export default function AdminUsersPage() {
           <table className="panel-table">
             <thead>
               <tr>
-                <th className="px-6 py-4">Kullanici</th>
-                <th className="px-6 py-4">Iletisim</th>
-                <th className="px-6 py-4">Kayit Tarihi</th>
+                <th className="px-6 py-4">Kullanıcı</th>
+                <th className="px-6 py-4">İletişim</th>
+                <th className="px-6 py-4">Kayıt Tarihi</th>
                 <th className="px-6 py-4">Rol / Yetki</th>
                 <th className="px-6 py-4">Durum</th>
-                <th className="px-6 py-4 text-right">Islem</th>
+                <th className="px-6 py-4 text-right">İşlem</th>
               </tr>
             </thead>
             <tbody>
@@ -373,7 +373,7 @@ export default function AdminUsersPage() {
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                    Kullanici bulunamadi.
+                    Kullanıcı bulunamadı.
                   </td>
                 </tr>
               ) : (
@@ -468,7 +468,7 @@ export default function AdminUsersPage() {
               onClick={() => setPage((prev) => prev - 1)}
               className="panel-button panel-button-secondary text-xs"
             >
-              Onceki
+              Önceki
             </button>
             <span className="panel-pagination-count">
               {page} / {totalPages}
@@ -490,7 +490,7 @@ export default function AdminUsersPage() {
             <div className="panel-modal-header">
               <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
                 <UserPlus className="h-5 w-5 text-indigo-600" />
-                Yeni ogrenci / mezun olustur
+                Yeni öğrenci / mezun oluştur
               </h2>
               <button
                 type="button"
@@ -505,8 +505,8 @@ export default function AdminUsersPage() {
                 <div className="panel-notice panel-notice-error">{createError}</div>
               ) : null}
               <div className="panel-form-note">
-                Hesaba <strong>sifre belirleme baglantisi</strong> e-posta ile gider. Baglantiyi kullanmadan ogrenci/mezun
-                alanina <strong>giris yapamaz</strong>. E-posta gelmezse &quot;Sifremi unuttum&quot; ile yeni baglanti
+                Hesaba <strong>şifre belirleme bağlantısı</strong> e-posta ile gider. Bağlantıyı kullanmadan öğrenci/mezun
+                alanına <strong>giriş yapamaz</strong>. E-posta gelmezse &quot;Sifremi unuttum&quot; ile yeni bağlantı
                 talep edebilir.
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -540,7 +540,7 @@ export default function AdminUsersPage() {
                 />
               </div>
               <div>
-                <label className="panel-label">Telefon (istege bagli)</label>
+                <label className="panel-label">Telefon (istege bağlı)</label>
                 <input
                   value={createForm.phone}
                   onChange={(e) => setCreateForm((p) => ({ ...p, phone: e.target.value }))}
@@ -586,7 +586,7 @@ export default function AdminUsersPage() {
                   className="panel-button panel-button-primary"
                 >
                   {createSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Olustur
+                  Oluştur
                 </button>
               </div>
             </form>
@@ -600,7 +600,7 @@ export default function AdminUsersPage() {
             <div className="panel-modal-header">
               <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
                 <Users className="h-5 w-5 text-indigo-600" />
-                Kullanici / Ogrenci Profil Bilgisi
+                Kullanıcı / Öğrenci Profil Bilgisi
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -627,12 +627,12 @@ export default function AdminUsersPage() {
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-slate-500">Iletisim</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">İletişim</div>
                       <div className="text-sm font-bold text-slate-900">{selectedUser.email}</div>
                       <div className="text-sm text-slate-500">{selectedUser.phone || "Telefon yok"}</div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-slate-500">Kayit Tarihi</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">Kayıt Tarihi</div>
                       <div className="text-sm font-bold text-slate-900">
                         {new Date(selectedUser.created_at).toLocaleDateString("tr-TR")}
                       </div>
@@ -658,16 +658,16 @@ export default function AdminUsersPage() {
                     </h3>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
                       <div>
-                        <div className="text-xs text-slate-500">Universite</div>
-                        <div className="font-bold text-slate-900">{selectedUser.university || "Girilmemis"}</div>
+                        <div className="text-xs text-slate-500">Üniversite</div>
+                        <div className="font-bold text-slate-900">{selectedUser.university || "Girilmemiş"}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-slate-500">Bolum</div>
-                        <div className="font-bold text-slate-900">{selectedUser.department || "Girilmemis"}</div>
+                        <div className="text-xs text-slate-500">Bölüm</div>
+                        <div className="font-bold text-slate-900">{selectedUser.department || "Girilmemiş"}</div>
                       </div>
                       <div>
                         <div className="text-xs text-slate-500">Sinif / Yil</div>
-                        <div className="font-bold text-slate-900">{selectedUser.class_year || "Girilmemis"}</div>
+                        <div className="font-bold text-slate-900">{selectedUser.class_year || "Girilmemiş"}</div>
                       </div>
                     </div>
                   </div>
@@ -695,7 +695,7 @@ export default function AdminUsersPage() {
                           <div>
                             <div className="font-bold text-red-500">Kara Liste Uyarisi</div>
                             <div className="text-xs text-red-400">
-                              Bu kullanici {selectedUser.blacklist_count} kez ceza / blacklist kaydi almis.
+                              Bu kullanıcı {selectedUser.blacklist_count} kez ceza / blacklist kaydı almis.
                             </div>
                           </div>
                         </div>
@@ -709,7 +709,7 @@ export default function AdminUsersPage() {
                       </h3>
                       {!selectedUser.certificates?.length ? (
                         <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-                          Sertifika bulunamadi.
+                          Sertifika bulunamadı.
                         </div>
                       ) : (
                         <div className="space-y-2">
@@ -719,7 +719,7 @@ export default function AdminUsersPage() {
                               className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3"
                             >
                               <div className="text-sm font-bold text-slate-900">
-                                {certificate.project?.name || "Bilinmeyen Proje"} Sertifikasi
+                                {certificate.project?.name || "Bilinmeyen Proje"} Sertifikası
                               </div>
                               <div className="text-xs text-slate-500">
                                 {new Date(certificate.issued_at || certificate.created_at || "").toLocaleDateString(

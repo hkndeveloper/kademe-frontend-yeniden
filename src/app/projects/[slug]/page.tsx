@@ -273,7 +273,7 @@ export default function ProjectDetailPage() {
         setFormValues(nextFormValues);
         setConsentAccepted(false);
       } catch (error) {
-        console.error("Proje bulunamadi", error);
+        console.error("Proje bulunamadı", error);
         router.push("/projects");
       } finally {
         setLoading(false);
@@ -1301,7 +1301,7 @@ export default function ProjectDetailPage() {
                         <input
                           value={guestApplicant.email}
                           onChange={(event) => setGuestApplicant((current) => ({ ...current, email: event.target.value }))}
-                          placeholder="ornek@e-posta.com"
+                          placeholder="örnek@e-posta.com"
                           type="email"
                           autoComplete="email"
                           className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
@@ -1416,8 +1416,6 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
-
-
 
 
 

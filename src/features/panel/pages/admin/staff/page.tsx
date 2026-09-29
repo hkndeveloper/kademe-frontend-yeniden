@@ -135,7 +135,7 @@ export default function AdminStaffPage() {
       const res = await api.get<ActiveStats>("/panel/staff/active");
       setActiveStats(res.data);
     } catch (error) {
-      console.error("Aktif personel istatistikleri yuklenemedi", error);
+      console.error("Aktif personel istatistikleri yüklenemedi", error);
     }
   }, []);
 
@@ -148,8 +148,8 @@ export default function AdminStaffPage() {
       });
       setStaff(res.data?.staff?.data || []);
     } catch (error) {
-      console.error("Personel listesi yuklenemedi", error);
-      setErrorMessage("Personel listesi yuklenirken bir hata olustu.");
+      console.error("Personel listesi yüklenemedi", error);
+      setErrorMessage("Personel listesi yüklenirken bir hata oluştu.");
     } finally {
       setStaffLoading(false);
     }
@@ -166,7 +166,7 @@ export default function AdminStaffPage() {
       });
       setProjectOptions((res.data?.projects ?? []).map((p) => ({ id: p.id, name: p.name })));
     } catch (error) {
-      console.error("Proje listesi yuklenemedi", error);
+      console.error("Proje listesi yüklenemedi", error);
       setProjectOptions([]);
     } finally {
       setProjectsLoading(false);
@@ -182,8 +182,8 @@ export default function AdminStaffPage() {
       });
       setLeaves(res.data?.leave_requests?.data || []);
     } catch (error) {
-      console.error("Izin talepleri yuklenemedi", error);
-      setErrorMessage("Izin talepleri yuklenirken bir hata olustu.");
+      console.error("Izin talepleri yüklenemedi", error);
+      setErrorMessage("Izin talepleri yüklenirken bir hata oluştu.");
     } finally {
       setLeavesLoading(false);
     }
@@ -227,8 +227,8 @@ export default function AdminStaffPage() {
       setCoordinatedProjectIds((res.data.staff?.coordinated_projects ?? []).map((p: ProjectAssignment) => p.id));
       setAssignedProjectIds((res.data.staff?.assigned_projects ?? []).map((p: ProjectAssignment) => p.id));
     } catch (error) {
-      console.error("Personel detaylari yuklenemedi", error);
-      setErrorMessage("Personel detaylari yuklenemedi.");
+      console.error("Personel detayları yüklenemedi", error);
+      setErrorMessage("Personel detayları yüklenemedi.");
       setSelectedStaff(null);
     } finally {
       setModalLoading(false);
@@ -253,11 +253,11 @@ export default function AdminStaffPage() {
       setSelectedStaff(res.data.staff);
       setCoordinatedProjectIds((res.data.staff.coordinated_projects ?? []).map((p) => p.id));
       setAssignedProjectIds((res.data.staff.assigned_projects ?? []).map((p) => p.id));
-      setSuccessMessage(res.data.message ?? "Proje atamalari guncellendi.");
+      setSuccessMessage(res.data.message ?? "Proje atamaları güncellendi.");
       await loadStaff();
     } catch (error) {
-      console.error("Proje atamalari kaydedilemedi", error);
-      setErrorMessage("Proje atamalari kaydedilemedi.");
+      console.error("Proje atamaları kaydedilemedi", error);
+      setErrorMessage("Proje atamaları kaydedilemedi.");
     } finally {
       setSavingProjects(false);
     }
@@ -279,7 +279,7 @@ export default function AdminStaffPage() {
         setCreateForm((prev) => ({ ...prev, role: roles[0]?.name ?? "" }));
       })
       .catch(() => {
-        setCreateError("Rol listesi yuklenemedi. Yetkinizi kontrol edin.");
+        setCreateError("Rol listesi yüklenemedi. Yetkinizi kontrol edin.");
         setCreateRoles([]);
       })
       .finally(() => setCreateRolesLoading(false));
@@ -308,7 +308,7 @@ export default function AdminStaffPage() {
         project_ids: createProjectIds,
       };
       const res = await api.post<{ message?: string }>("/panel/staff", payload);
-      setSuccessMessage(res.data?.message ?? "Calisan olusturuldu.");
+      setSuccessMessage(res.data?.message ?? "Çalışan oluşturuldu.");
       setCreateOpen(false);
       await loadStaff();
       await loadActiveStats();
@@ -316,9 +316,9 @@ export default function AdminStaffPage() {
       if (isAxiosError(err)) {
         const data = err.response?.data as { message?: string; errors?: Record<string, string[]> } | undefined;
         const fromErrors = data?.errors ? Object.values(data.errors).flat().filter(Boolean).join(" ") : "";
-        setCreateError(data?.message || fromErrors || "Calisan olusturulamadi.");
+        setCreateError(data?.message || fromErrors || "Çalışan oluşturulamadı.");
       } else {
-        setCreateError("Calisan olusturulamadi.");
+        setCreateError("Çalışan oluşturulamadı.");
       }
     } finally {
       setCreateSubmitting(false);
@@ -356,10 +356,10 @@ export default function AdminStaffPage() {
             }
           : prev,
       );
-      setSuccessMessage("Belge basariyla yuklendi.");
+      setSuccessMessage("Belge başarıyla yüklendi.");
     } catch (error) {
-      console.error("Belge yuklenemedi", error);
-      setErrorMessage("Belge yuklenemedi.");
+      console.error("Belge yüklenemedi", error);
+      setErrorMessage("Belge yüklenemedi.");
     } finally {
       setUploadingDoc(false);
       e.target.value = "";
@@ -371,12 +371,12 @@ export default function AdminStaffPage() {
     setSuccessMessage("");
     try {
       await api.put(`/panel/leave-requests/${id}/${action}`);
-      setSuccessMessage(action === "approve" ? "Izin talebi onaylandi." : "Izin talebi reddedildi.");
+      setSuccessMessage(action === "approve" ? "Izin talebi onaylandı." : "Izin talebi reddedildi.");
       await loadLeaves();
       await loadActiveStats();
     } catch (error) {
-      console.error("Izin islemi basarisiz", error);
-      setErrorMessage("Izin islemi tamamlanamadi.");
+      console.error("Izin işlemi başarısız", error);
+      setErrorMessage("Izin işlemi tamamlanamadı.");
     }
   };
 
@@ -388,9 +388,9 @@ export default function AdminStaffPage() {
             <UserCog className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Personel Yonetimi</h1>
+            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Personel Yönetimi</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Panel rolleri, proje atamalari, ozluk ve izin surecleri
+              Panel rolleri, proje atamaları, özlük ve izin süreçleri
             </p>
           </div>
         </div>
@@ -403,7 +403,7 @@ export default function AdminStaffPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white"
             >
               <UserPlus className="h-4 w-4" />
-              Yeni Panel Hesabi
+              Yeni Panel Hesabı
             </button>
           ) : null}
           <a
@@ -413,7 +413,7 @@ export default function AdminStaffPage() {
             className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700"
           >
             <Calendar className="h-5 w-5" />
-            Aylik Puantaj
+            Aylık Puantaj
           </a>
           {activeTab === "staff" ? (
             <PermissionGate permission="staff.export">
@@ -425,7 +425,7 @@ export default function AdminStaffPage() {
                   search: staffSearch || undefined,
                   project_id: projectFilter || undefined,
                 }}
-                buttonLabel="Personeli Disa Aktar"
+                buttonLabel="Personeli Dışa Aktar"
               />
             </PermissionGate>
           ) : (
@@ -436,7 +436,7 @@ export default function AdminStaffPage() {
                 params={{
                   status: leaveStatus || undefined,
                 }}
-                buttonLabel="Izinleri Disa Aktar"
+                buttonLabel="Izinleri Dışa Aktar"
               />
             </PermissionGate>
           )}
@@ -521,8 +521,8 @@ export default function AdminStaffPage() {
               onChange={(e) => setStaffRole(e.target.value)}
               className="panel-control md:max-w-[180px]"
             >
-              <option value="">Tum Roller</option>
-              <option value="coordinator">Koordinator</option>
+              <option value="">Tüm Roller</option>
+              <option value="coordinator">Koordinatör</option>
               <option value="staff">Personel</option>
               {roleOptions
                 .filter((role) => !["coordinator", "staff"].includes(role))
@@ -538,7 +538,7 @@ export default function AdminStaffPage() {
               className="panel-control md:max-w-[220px]"
               disabled={projectsLoading}
             >
-              <option value="">Tum Projeler</option>
+              <option value="">Tüm Projeler</option>
               {projectOptions.map((project) => (
                 <option key={project.id} value={String(project.id)}>
                   {project.name}
@@ -560,11 +560,11 @@ export default function AdminStaffPage() {
                 <thead>
                   <tr>
                     <th className="px-6 py-4">Personel</th>
-                    <th className="px-6 py-4">Iletisim</th>
+                    <th className="px-6 py-4">İletişim</th>
                     <th className="px-6 py-4">Birim / Unvan</th>
                     <th className="px-6 py-4">Projeler</th>
                     <th className="px-6 py-4">Sozlesme</th>
-                    <th className="px-6 py-4 text-right">Islem</th>
+                    <th className="px-6 py-4 text-right">İşlem</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -577,7 +577,7 @@ export default function AdminStaffPage() {
                   ) : staff.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                        Personel bulunamadi.
+                        Personel bulunamadı.
                       </td>
                     </tr>
                   ) : (
@@ -606,7 +606,7 @@ export default function AdminStaffPage() {
                                 <span
                                   key={`${project.assignment_type}-${project.id}`}
                                   className="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-1 text-[10px] font-bold text-indigo-500"
-                                  title={project.assignment_type === "coordinator" ? "Koordinator" : "Gorevli"}
+                                  title={project.assignment_type === "coordinator" ? "Koordinatör" : "Gorevli"}
                                 >
                                   {project.name}
                                 </span>
@@ -626,7 +626,7 @@ export default function AdminStaffPage() {
                             className="panel-table-action panel-table-action-info"
                           >
                             <UserCog className="h-4 w-4" />
-                            Ozluk Dosyasi
+                            Özlük Dosyası
                           </button>
                         </td>
                       </tr>
@@ -647,7 +647,7 @@ export default function AdminStaffPage() {
               onChange={(e) => setLeaveStatus(e.target.value)}
               className="panel-control md:max-w-[220px]"
             >
-              <option value="">Tum Durumlar</option>
+              <option value="">Tüm Durumlar</option>
               <option value="pending">Bekleyenler</option>
               <option value="approved">Onaylananlar</option>
               <option value="rejected">Reddedilenler</option>
@@ -667,10 +667,10 @@ export default function AdminStaffPage() {
                 <thead>
                   <tr>
                     <th className="px-6 py-4">Personel</th>
-                    <th className="px-6 py-4">Tarih Araligi</th>
+                    <th className="px-6 py-4">Tarih Aralığı</th>
                     <th className="px-6 py-4">Sebep</th>
                     <th className="px-6 py-4">Durum</th>
-                    <th className="px-6 py-4 text-right">Islemler</th>
+                    <th className="px-6 py-4 text-right">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -683,7 +683,7 @@ export default function AdminStaffPage() {
                   ) : visibleLeaves.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                        Izin talebi bulunamadi.
+                        Izin talebi bulunamadı.
                       </td>
                     </tr>
                   ) : (
@@ -718,11 +718,11 @@ export default function AdminStaffPage() {
                             {leave.status === "pending"
                               ? "Bekliyor"
                               : leave.status === "approved"
-                                ? "Onaylandi"
+                                ? "Onaylandı"
                                 : "Reddedildi"}
                           </span>
                           {leave.approver && (
-                            <div className="mt-1 text-[10px]">Islem: {leave.approver.name}</div>
+                            <div className="mt-1 text-[10px]">İşlem: {leave.approver.name}</div>
                           )}
                         </td>
                         <td className="space-x-2 px-6 py-4 text-right">
@@ -767,7 +767,7 @@ export default function AdminStaffPage() {
             <div className="panel-modal-header">
               <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
                 <UserPlus className="h-5 w-5 text-indigo-600" />
-                Yeni panel hesabi olustur
+                Yeni panel hesabı oluştur
               </h2>
               <button
                 type="button"
@@ -782,7 +782,7 @@ export default function AdminStaffPage() {
                 <div className="panel-notice panel-notice-error">{createError}</div>
               ) : null}
               <div className="panel-form-note">
-                Koordinator, personel veya yetki matrisinde olusturulan ozel panel rolleri buradan acilir. Sifre belirleme baglantisi e-posta ile gider; proje atamalari panel gorunurlugunu belirler.
+                Koordinatör, personel veya yetki matrisinde oluşturulan özel panel rolleri buradan açılır. Şifre belirleme bağlantısı e-posta ile gider; proje atamaları panel gorunurlugunu belirler.
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
@@ -863,7 +863,7 @@ export default function AdminStaffPage() {
                 <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Panelde erisecegi projeler</div>
                 <div className="max-h-44 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
                   {projectOptions.length === 0 ? (
-                    <div className="text-sm text-slate-500">Proje listesi yuklenemedi veya proje yok.</div>
+                    <div className="text-sm text-slate-500">Proje listesi yüklenemedi veya proje yok.</div>
                   ) : (
                     projectOptions.map((project) => (
                       <label key={project.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-white">
@@ -879,8 +879,8 @@ export default function AdminStaffPage() {
                   )}
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                  Rol koordinator ise secilen projeler koordine ettigi projeler olarak, diger panel rolleri icin gorevli
-                  oldugu projeler olarak kaydedilir.
+                  Rol koordinatör ise seçilen projeler koordine ettigi projeler olarak, diğer panel rolleri için gorevli
+                  olduğu projeler olarak kaydedilir.
                 </p>
               </div>
               <div className="panel-modal-footer">
@@ -897,7 +897,7 @@ export default function AdminStaffPage() {
                   className="panel-button panel-button-primary"
                 >
                   {createSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Olustur
+                  Oluştur
                 </button>
               </div>
             </form>
@@ -911,7 +911,7 @@ export default function AdminStaffPage() {
             <div className="panel-modal-header">
               <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
                 <UserCog className="h-5 w-5 text-indigo-600" />
-                Ozluk Dosyasi ve Detaylar
+                Özlük Dosyası ve Detaylar
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -937,24 +937,24 @@ export default function AdminStaffPage() {
                       <div className="text-sm uppercase tracking-widest text-indigo-600">{selectedStaff.role}</div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-widest text-slate-500">Iletisim</div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500">İletişim</div>
                       <div className="text-sm font-bold text-slate-900">{selectedStaff.email}</div>
                       <div className="text-sm text-slate-500">
-                        {selectedStaff.phone || "Telefon kayitli degil"}
+                        {selectedStaff.phone || "Telefon kayıtlı değil"}
                       </div>
                     </div>
                     <div className="space-y-1">
                       <div className="text-xs uppercase tracking-widest text-slate-500">Birim ve Unvan</div>
                       <div className="text-sm font-bold text-slate-900">
-                        {selectedStaff.staff_profile?.unit || "Birim girilmemis"}
+                        {selectedStaff.staff_profile?.unit || "Birim girilmemiş"}
                       </div>
                       <div className="text-sm text-slate-500">
-                        {selectedStaff.staff_profile?.title || "Unvan girilmemis"}
+                        {selectedStaff.staff_profile?.title || "Unvan girilmemiş"}
                       </div>
                     </div>
                     <div className="space-y-1">
                       <div className="text-xs uppercase tracking-widest text-slate-500">
-                        Sozlesme ve Baslangic
+                        Sozlesme ve Başlangıç
                       </div>
                       <div className="text-sm font-bold text-slate-900">{selectedStaff.staff_profile?.contract_type || "-"}</div>
                       <div className="text-sm text-slate-500">
@@ -971,7 +971,7 @@ export default function AdminStaffPage() {
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-indigo-600">
                         <FolderKanban className="h-4 w-4" />
-                        Proje Atamalari
+                        Proje Atamaları
                       </h3>
                       {canManageProjectAssignments ? (
                         <button
@@ -992,7 +992,7 @@ export default function AdminStaffPage() {
                       </div>
                     ) : projectOptions.length === 0 ? (
                       <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                        Proje listesi yuklenemedi veya erisilebilir proje bulunamadi.
+                        Proje listesi yüklenemedi veya erisilebilir proje bulunamadı.
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-4">
@@ -1024,7 +1024,7 @@ export default function AdminStaffPage() {
                         {selectedStaff.role !== "coordinator" ? (
                           <div>
                             <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-900">
-                              Gorevli oldugu projeler
+                              Gorevli olduğu projeler
                             </div>
                             <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
                               {projectOptions.map((project) => (
@@ -1051,7 +1051,7 @@ export default function AdminStaffPage() {
 
                   <div>
                     <h3 className="mb-4 flex items-center justify-between text-sm font-bold uppercase tracking-widest text-slate-900">
-                      Ozluk Belgeleri
+                      Özlük Belgeleri
                       <PermissionGate
                         permission="staff.documents.upload"
                         requireUnitAccess={{
@@ -1061,7 +1061,7 @@ export default function AdminStaffPage() {
                       >
                         <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white">
                           {uploadingDoc ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                          Yeni Belge Yukle
+                          Yeni Belge Yükle
                           <input
                             type="file"
                             className="hidden"
@@ -1075,7 +1075,7 @@ export default function AdminStaffPage() {
 
                     {!selectedStaff.staff_profile?.personal_documents?.length ? (
                       <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-                        Henuz belge yuklenmemis.
+                        Henüz belge yuklenmemis.
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

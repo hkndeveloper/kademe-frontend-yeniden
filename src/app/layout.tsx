@@ -10,21 +10,20 @@ const urbanist = Urbanist({ subsets: ["latin", "latin-ext"], variable: "--font-u
 const roboto = Roboto({ subsets: ["latin", "latin-ext"], variable: "--font-roboto", weight: ["300", "400", "500", "700", "900"] });
 
 export const metadata: Metadata = {
-  title: "KADEME Yönetim Sistemi",
+  title: {
+    default: "KADEME | Keşfet, Öğren, Geliş",
+    template: "%s | KADEME",
+  },
   description: "Öğrenci, mezun ve koordinatörler için yeni nesil kariyer gelişim portalı.",
   applicationName: "KADEME",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "KADEME Yönetim Sistemi",
+    title: "KADEME",
   },
   formatDetection: {
     telephone: false,
-  },
-  icons: {
-    icon: "/branding/kademe-logo-turuncu.svg",
-    apple: "/branding/kademe-logo-turuncu.svg",
   },
 };
 
@@ -32,7 +31,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0f172a",
+  themeColor: "#f7f3ea",
 };
 
 export default function RootLayout({

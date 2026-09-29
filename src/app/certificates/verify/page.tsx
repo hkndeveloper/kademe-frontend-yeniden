@@ -4,8 +4,9 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, ArrowRight, Award, ExternalLink, Loader2, Search, ShieldCheck } from "lucide-react";
-import { PublicBadge, PublicButton, PublicCard, PublicGradientTitle, PublicIconBadge } from "@/components/public";
+import { AlertCircle, ArrowRight, ExternalLink, Loader2, Search, ShieldCheck } from "lucide-react";
+import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
+import styles from "@/components/public/CertificateDesign.module.css";
 import api from "@/lib/api/axios";
 import { downloadBlobResponse } from "@/lib/download";
 
@@ -45,6 +46,7 @@ function CertificateVerifyContent() {
     if (!verificationCode.trim()) return;
 
     setLoading(true);
+    setResult(null);
     setErrorMessage(null);
     try {
       const response = await api.get<VerifyResponse>(`/certificates/verify/${encodeURIComponent(verificationCode.trim())}`);
@@ -88,96 +90,63 @@ function CertificateVerifyContent() {
   };
 
   return (
-    <main className="kdm-public-shell relative min-h-screen overflow-hidden bg-[#edecec] pb-24">
-      <section className="relative isolate overflow-hidden px-4 pb-12 pt-36 sm:px-6 sm:pt-40 lg:pt-44">
-        <div className="absolute inset-x-4 bottom-0 top-4 -z-10 overflow-hidden rounded-[2rem] bg-[#e7e7e4] sm:inset-x-6 lg:inset-x-10">
-          <Image src="/aigocy/images/section/hero-1.jpg" alt="" fill priority className="object-cover opacity-55" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.92),transparent_20rem),radial-gradient(circle_at_82%_18%,rgba(253,58,37,0.15),transparent_17rem),linear-gradient(180deg,rgba(255,255,255,0.4),rgba(231,231,228,0.9))]" />
-          <div className="absolute -left-24 top-28 h-96 w-96 rounded-full border border-white/80 opacity-70" />
-          <div className="absolute -right-16 top-16 h-80 w-80 rounded-full border border-white/80 opacity-70" />
+    <main className={styles.page}>
+      <section className={styles.hero}>
+        <div>
+          <span className={styles.eyebrow}><ShieldCheck size={16} /> KADEME BELGE DOĞRULAMA</span>
+          <h1>Emekle kazanıldı.<em>Güvenle doğrula.</em></h1>
+          <p>KADEME tarafından verilen sertifika ve katılım belgelerini doğrulama koduyla kontrol edebilirsiniz.</p>
         </div>
-
-        <div className="container relative z-10 mx-auto">
-          <div className="mx-auto max-w-5xl text-center">
-            <PublicIconBadge className="mx-auto mb-6 h-16 w-16 bg-orange-600">
-              <Award className="h-8 w-8" />
-            </PublicIconBadge>
-            <PublicBadge className="mb-6 border-white/80 bg-white/90 text-[#fd3a25] shadow-[0_4px_12px_rgba(9,9,11,0.10)]">Belge Kontrolü</PublicBadge>
-            <h1 className="text-balance text-5xl font-semibold leading-[0.95] tracking-normal text-[#2f3437] sm:text-6xl lg:text-8xl">
-              <PublicGradientTitle>Sertifika Doğrulama</PublicGradientTitle>
-            </h1>
-            <p className="mx-auto mt-7 max-w-2xl text-base leading-8 text-[#3f4653] sm:text-lg">
-              KADEME tarafından verilen sertifika ve katılım belgelerini doğrulama koduyla kontrol edebilirsiniz.
-            </p>
-          </div>
-        </div>
+        <Image src="/images/certificate-illustration.svg" alt="" width={520} height={420} priority />
       </section>
-
-      <section className="container mx-auto px-4 py-14 sm:px-6 lg:py-20">
-        <div className="mx-auto max-w-5xl">
-          <PublicCard className="p-5 sm:p-8 lg:p-10">
-
-            <form onSubmit={(event) => void handleSubmit(event)} className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto]">
-              <label className="relative block">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                <input
-                  name="verification_code"
-                  value={code}
-                  onChange={(event) => setCode(event.target.value)}
-                  type="text"
-                  placeholder="Sertifika ID veya doğrulama kodu girin"
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-                />
-              </label>
-              <PublicButton type="submit" disabled={loading || !code.trim()} variant="dark" size="lg" icon={loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />} iconPosition="left">
-                Doğrula
-              </PublicButton>
-            </form>
-
-            {errorMessage ? (
-              <div className="mt-8 flex items-start gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-800">
-                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                <p className="text-sm font-semibold leading-7">{errorMessage}</p>
+      <section className={styles.content} aria-label="Sertifika doğrulama">
+        <div className={styles.formCard}>
+          <div className={styles.formHeading}>
+            <ShieldCheck size={24} />
+            <div><h2>Sertifikanı doğrula</h2><p>Belgenin doğrulama kodunu girerek başlayabilirsin.</p></div>
+          </div>
+          <form onSubmit={(event) => void handleSubmit(event)} className={styles.form} aria-busy={loading}>
+            <div className={styles.field}>
+              <label htmlFor="verification-code">Doğrulama kodu</label>
+              <input id="verification-code" name="verification_code" value={code}
+                onChange={(event) => setCode(event.target.value)} type="text" required
+                autoComplete="off" spellCheck={false} placeholder="Belgenizdeki doğrulama kodu"
+                aria-describedby="verification-hint" />
+            </div>
+            <button type="submit" disabled={loading || !code.trim()} className={styles.action}>
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
+              {loading ? "Doğrulanıyor…" : "Sertifikayı doğrula"}
+            </button>
+          </form>
+          <p className={styles.hint} id="verification-hint">Kod, sertifikanızın üzerinde yer alır. QR kod bağlantısı ile bu alan otomatik doldurulur.</p>
+          {errorMessage ? <div className={styles.message} role="alert"><AlertCircle size={20} /><p>{errorMessage}</p></div> : null}
+          {result ? (
+            <div className={styles.results} aria-live="polite">
+              <div className={styles.resultCard}>
+                <h2><ShieldCheck size={21} /> Doğrulama sonucu</h2>
+                <dl>
+                  <div><dt>Durum</dt><dd className={result.valid ? styles.valid : styles.invalid}>{result.valid ? "Geçerli belge" : "Geçersiz belge"}</dd></div>
+                  <div><dt>Belge tipi</dt><dd>{result.certificate.type}</dd></div>
+                  <div><dt>Kod</dt><dd>{result.certificate.verification_code}</dd></div>
+                  <div><dt>Katılımcı</dt><dd>{result.recipient?.name || "—"} {result.recipient?.surname || ""}</dd></div>
+                  <div><dt>Proje</dt><dd>{result.certificate.project?.name || "Belirtilmemiş"}</dd></div>
+                  <div><dt>Dönem</dt><dd>{result.certificate.period?.name || "Belirtilmemiş"}</dd></div>
+                  <div><dt>Tarih</dt><dd>{result.certificate.issued_at ? new Date(result.certificate.issued_at).toLocaleDateString("tr-TR") : "Belirtilmemiş"}</dd></div>
+                </dl>
               </div>
-            ) : null}
-
-            {result ? (
-              <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="kdm-public-info-tile rounded-3xl border border-slate-200 bg-slate-50 p-6">
-                  <div className="mb-5 flex items-center gap-3 text-orange-700">
-                    <ShieldCheck className="h-5 w-5" />
-                    <h2 className="text-lg font-black text-slate-950">Doğrulama Sonucu</h2>
-                  </div>
-                  <dl className="space-y-3 text-sm">
-                    <div className="flex justify-between gap-4"><dt className="font-bold text-slate-500">Durum</dt><dd className="font-black text-slate-950">{result.valid ? "Geçerli" : "Geçersiz"}</dd></div>
-                    <div className="flex justify-between gap-4"><dt className="font-bold text-slate-500">Belge Tipi</dt><dd className="font-black text-slate-950">{result.certificate.type}</dd></div>
-                    <div className="flex justify-between gap-4"><dt className="font-bold text-slate-500">Kod</dt><dd className="font-black text-slate-950">{result.certificate.verification_code}</dd></div>
-                    <div className="flex justify-between gap-4"><dt className="font-bold text-slate-500">Katılımcı</dt><dd className="font-black text-slate-950">{result.recipient?.name || "-"} {result.recipient?.surname || ""}</dd></div>
-                    <div className="flex justify-between gap-4"><dt className="font-bold text-slate-500">Proje</dt><dd className="font-black text-slate-950">{result.certificate.project?.name || "Belirtilmemiş"}</dd></div>
-                    <div className="flex justify-between gap-4"><dt className="font-bold text-slate-500">Dönem</dt><dd className="font-black text-slate-950">{result.certificate.period?.name || "Belirtilmemiş"}</dd></div>
-                    <div className="flex justify-between gap-4"><dt className="font-bold text-slate-500">Tarih</dt><dd className="font-black text-slate-950">{result.certificate.issued_at ? new Date(result.certificate.issued_at).toLocaleDateString("tr-TR") : "Belirtilmemiş"}</dd></div>
-                  </dl>
-                </div>
-
-                <div className="kdm-public-info-tile rounded-3xl border border-slate-200 bg-white p-6">
-                  <h2 className="mb-5 text-lg font-black text-slate-950">Belge İşlemleri</h2>
-                  <div className="space-y-3 text-sm font-bold text-slate-600">
-                    <Link href="/student/certificates" className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700">
-                      Öğrenci sertifika paneli <ArrowRight className="h-4 w-4" />
-                    </Link>
-                    <Link href="/alumni/certificates" className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700">
-                      Mezun sertifika paneli <ArrowRight className="h-4 w-4" />
-                    </Link>
-                    {result.certificate.download_url ? (
-                      <button type="button" onClick={() => void handleDownload(result.certificate)} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 py-4 font-black text-white transition hover:bg-orange-700">
-                        Belgeyi Aç <ExternalLink className="h-4 w-4" />
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
+              <div className={styles.resultCard}>
+                <h2>Belge işlemleri</h2>
+                <Link href="/student/certificates">Öğrenci sertifika paneli <ArrowRight size={17} /></Link>
+                <Link href="/alumni/certificates">Mezun sertifika paneli <ArrowRight size={17} /></Link>
+                {result.certificate.download_url ? <button type="button" onClick={() => void handleDownload(result.certificate)} className={styles.action}>Belgeyi aç <ExternalLink size={17} /></button> : null}
               </div>
-            ) : null}
-          </PublicCard>
+            </div>
+          ) : null}
+        </div>
+        <div className={styles.steps}>
+          <div><span>01</span><div><h3>Kodunu bul</h3><p>Sertifikanın üzerindeki doğrulama kodunu kullan.</p></div></div>
+          <div><span>02</span><div><h3>Belgeni sorgula</h3><p>Kodu gir, KADEME kayıtlarıyla kontrol edilsin.</p></div></div>
+          <div><span>03</span><div><h3>Bilgileri karşılaştır</h3><p>Belge, katılımcı ve proje bilgilerini incele.</p></div></div>
         </div>
       </section>
     </main>
@@ -188,17 +157,13 @@ export default function CertificateVerifyPage() {
   return (
     <Suspense
       fallback={
-        <main className="kdm-public-shell flex min-h-[50vh] items-center justify-center bg-[#edecec]">
-          <Loader2 className="h-10 w-10 animate-spin text-orange-600" />
-        </main>
+        <PublicBrandLoader fullPage label="Sertifika doğrulama hazırlanıyor" />
       }
     >
       <CertificateVerifyContent />
     </Suspense>
   );
 }
-
-
 
 
 

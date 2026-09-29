@@ -126,7 +126,7 @@ export default function RegisterPage() {
                     <span className={labelClass}>E-posta Adresi</span>
                     <span className="relative block">
                       <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input type="email" name="email" required value={formData.email} onChange={handleChange} className={inputClass} placeholder="isim@ornek.com" />
+                      <input type="email" name="email" required value={formData.email} onChange={handleChange} className={inputClass} placeholder="isim@örnek.com" />
                     </span>
                   </label>
 

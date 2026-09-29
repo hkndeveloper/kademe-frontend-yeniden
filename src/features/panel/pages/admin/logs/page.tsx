@@ -89,8 +89,8 @@ export default function AdminLogsPage() {
       setFilterOptions(response.data.filters ?? { log_names: [], events: [] });
       if (typeof response.data.warning === "string") setWarningMessage(response.data.warning);
     } catch (error) {
-      console.error("Loglar yuklenemedi", error);
-      setErrorMessage("Loglar yuklenirken bir hata olustu.");
+      console.error("Loglar yüklenemedi", error);
+      setErrorMessage("Loglar yüklenirken bir hata oluştu.");
     } finally {
       setLoading(false);
     }
@@ -117,26 +117,26 @@ export default function AdminLogsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Sistem Loglari</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-slate-500">Kritik kullanici ve sistem hareketleri</p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-slate-500">Kritik kullanıcı ve sistem hareketleri</p>
           </div>
         </div>
-        <PermissionGate permission="logs.export" fallback={<span className="text-sm text-slate-500">Disa aktarma yetkiniz yok.</span>}>
-          <ExportButtons endpoint="/panel/dashboard/activity-logs/export" filename="islem_loglari" buttonLabel="Loglari Disa Aktar" params={exportableFilterParams(filters)} />
+        <PermissionGate permission="logs.export" fallback={<span className="text-sm text-slate-500">Dışa aktarma yetkiniz yok.</span>}>
+          <ExportButtons endpoint="/panel/dashboard/activity-logs/export" filename="islem_loglari" buttonLabel="Loglari Dışa Aktar" params={exportableFilterParams(filters)} />
         </PermissionGate>
       </div>
 
       {errorMessage ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{errorMessage}</div> : null}
       {warningMessage && !errorMessage ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">{warningMessage}</div> : null}
 
-      <PermissionGate permission="logs.view" fallback={<div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-8 text-center text-sm font-bold text-amber-800">Islem loglarini goruntuleme yetkiniz bulunmuyor.</div>}>
+      <PermissionGate permission="logs.view" fallback={<div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-8 text-center text-sm font-bold text-amber-800">İşlem loglarini görüntüleme yetkiniz bulunmuyor.</div>}>
         <LogSummaryCards summary={summary} />
         <LogFiltersBar filters={filters} options={filterOptions} loading={loading} onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} onApply={applyFilters} />
         <LogTable logs={logs} loading={loading} />
 
         <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-500 shadow-sm md:flex-row md:items-center md:justify-between">
-          <span>Toplam {total} kayit | Sayfa {page} / {lastPage}</span>
+          <span>Toplam {total} kayıt | Sayfa {page} / {lastPage}</span>
           <div className="flex gap-2">
-            <button type="button" disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black text-slate-700 disabled:opacity-50">Onceki</button>
+            <button type="button" disabled={page <= 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black text-slate-700 disabled:opacity-50">Önceki</button>
             <button type="button" disabled={page >= lastPage || loading} onClick={() => setPage((current) => current + 1)} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black text-slate-700 disabled:opacity-50">Sonraki</button>
           </div>
         </div>

@@ -103,7 +103,7 @@ export function ForumPortalPage() {
         setPosts(postsRes.data.posts?.data ?? []);
         setProjects(normalizeProjects(projectsRes.data.projects ?? []));
       } catch (error) {
-        console.error("Forum yuklenemedi", error);
+        console.error("Forum yüklenemedi", error);
       } finally {
         setLoading(false);
       }
@@ -140,11 +140,11 @@ export function ForumPortalPage() {
       });
       setTitle("");
       setContent("");
-      setMessage(response.data.message ?? "Forum konusu olusturuldu.");
+      setMessage(response.data.message ?? "Forum konusu oluşturuldu.");
       await fetchPosts(projectFilter, periodFilter);
     } catch (error) {
-      console.error("Forum konusu olusturulamadi", error);
-      setMessage("Forum konusu olusturulamadi.");
+      console.error("Forum konusu oluşturulamadı", error);
+      setMessage("Forum konusu oluşturulamadı.");
     } finally {
       setSaving(false);
     }
@@ -160,8 +160,8 @@ export function ForumPortalPage() {
       setReplyDrafts((prev) => ({ ...prev, [postId]: "" }));
       await fetchPosts(projectFilter, periodFilter);
     } catch (error) {
-      console.error("Yanit gonderilemedi", error);
-      setMessage("Yanit gonderilemedi.");
+      console.error("Yanıt gönderilemedi", error);
+      setMessage("Yanıt gönderilemedi.");
     } finally {
       setReplyingId(null);
     }
@@ -184,14 +184,14 @@ export function ForumPortalPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900">Proje Forumu</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Uye oldugun projeler icin kapali tartisma alani</p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Uye olduğun projeler için kapalı tartisma alanı</p>
           </div>
         </div>
 
         <div className="grid w-full grid-cols-3 gap-3 lg:max-w-lg">
           <SummaryCard label="Proje" value={projects.length} />
           <SummaryCard label="Konu" value={posts.length} />
-          <SummaryCard label="Yanit" value={replyCount} />
+          <SummaryCard label="Yanıt" value={replyCount} />
         </div>
       </div>
 
@@ -204,7 +204,7 @@ export function ForumPortalPage() {
               </div>
               <div>
                 <h2 className="font-black text-slate-900">Yeni Konu</h2>
-                <p className="text-xs text-muted-foreground">Konu proje bazli acilir.</p>
+                <p className="text-xs text-muted-foreground">Konu proje bazlı açılır.</p>
               </div>
             </div>
 
@@ -221,7 +221,7 @@ export function ForumPortalPage() {
                 }}
                 className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
               >
-                <option value="all">Proje secin</option>
+                <option value="all">Proje seçin</option>
                 {projects.map((project) => (
                   <option key={project.id} value={String(project.id)}>
                     {project.name}
@@ -239,30 +239,30 @@ export function ForumPortalPage() {
                 disabled={projectFilter === "all" || selectedPeriods.length === 0}
                 className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <option value="all">{projectFilter === "all" ? "Proje secince donem" : "Proje geneli / tum donemler"}</option>
+                <option value="all">{projectFilter === "all" ? "Proje seçince dönem" : "Proje geneli / tüm dönemler"}</option>
                 {selectedPeriods.map((period) => (
                   <option key={period.id} value={String(period.id)}>
                     {period.name}
-                    {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                    {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
                   </option>
                 ))}
               </select>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Konu basligi"
+                placeholder="Konu başlığı"
                 className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
               />
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Mesaj icerigi"
+                placeholder="Mesaj içeriği"
                 className="min-h-[130px] w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
               />
             </div>
 
             <div className="mt-4 flex flex-col gap-3">
-              <p className="text-xs leading-relaxed text-muted-foreground">Sadece dahil oldugun proje forumlarinda konu acabilir ve yanit yazabilirsin.</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">Sadece dahil olduğun proje forumlarinda konu acabilir ve yanıt yazabilirsin.</p>
               <button
                 type="submit"
                 disabled={!canSubmit || saving || !canCreateInSelectedPeriod}
@@ -270,7 +270,7 @@ export function ForumPortalPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />}
-                Konu Ac
+                Konu Aç
               </button>
             </div>
           </form>
@@ -281,7 +281,7 @@ export function ForumPortalPage() {
               Proje Filtreleri
             </h2>
             <div className="space-y-2">
-              <ProjectButton active={projectFilter === "all"} label="Tum Projeler" count={posts.length} onClick={() => { setProjectFilter("all"); setPeriodFilter("all"); void fetchPosts("all", "all"); }} />
+              <ProjectButton active={projectFilter === "all"} label="Tüm Projeler" count={posts.length} onClick={() => { setProjectFilter("all"); setPeriodFilter("all"); void fetchPosts("all", "all"); }} />
               {projects.map((project) => (
                 <ProjectButton
                   key={project.id}
@@ -307,7 +307,7 @@ export function ForumPortalPage() {
               <input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Baslik, icerik, proje veya yanit ara"
+                placeholder="Başlık, içerik, proje veya yanıt ara"
                 className="w-full rounded-2xl border border-border bg-background py-3 pl-10 pr-4 text-sm outline-none focus:border-primary"
               />
             </div>
@@ -318,7 +318,7 @@ export function ForumPortalPage() {
           {filteredPosts.length === 0 ? (
             <div className="glass-panel rounded-3xl border border-dashed border-border p-12 text-center text-muted-foreground">
               <MessagesSquare className="mx-auto mb-4 h-12 w-12 text-primary/30" />
-              {posts.length === 0 ? "Henuz forum konusu yok." : "Aramana uygun konu bulunamadi."}
+              {posts.length === 0 ? "Henüz forum konusu yok." : "Aramana uygun konu bulunamadı."}
             </div>
           ) : (
             filteredPosts.map((post) => {
@@ -340,7 +340,7 @@ export function ForumPortalPage() {
                 <div className="space-y-3 p-5">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     <MessageCircle className="h-4 w-4 text-primary" />
-                    {(post.replies?.length ?? 0).toLocaleString("tr-TR")} yanit
+                    {(post.replies?.length ?? 0).toLocaleString("tr-TR")} yanıt
                   </div>
 
                   {(post.replies ?? []).map((reply) => (
@@ -354,7 +354,7 @@ export function ForumPortalPage() {
                     <input
                       value={replyDrafts[post.id] ?? ""}
                       onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                      placeholder="Yanit yaz..."
+                      placeholder="Yanıt yaz..."
                       disabled={!canReplyToPost}
                       className="flex-1 rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary"
                     />
@@ -366,7 +366,7 @@ export function ForumPortalPage() {
                       className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {replyingId === post.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                      Gonder
+                      Gönder
                     </button>
                   </div>
                 </div>

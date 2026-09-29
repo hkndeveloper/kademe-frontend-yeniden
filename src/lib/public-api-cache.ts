@@ -1,5 +1,6 @@
 import api from "@/lib/api/axios";
 import type { SiteSettingsResponse } from "@/lib/site-config";
+import { normalizeKnownPublicCopy } from "@/lib/public-copy";
 
 interface PublicProject {
   id: number;
@@ -41,22 +42,27 @@ export async function getCachedHomepage(): Promise<PublicHomepagePayload> {
     homepagePromise = api
       .get<PublicHomepagePayload>("/homepage")
       .then((response) => {
+        const data = {
+          ...response.data,
+          settings: normalizeKnownPublicCopy(response.data.settings),
+          computed_homepage_stats: normalizeKnownPublicCopy(response.data.computed_homepage_stats),
+        };
         homepageCache = {
           expiresAt: Date.now() + CACHE_TTL_MS,
-          data: response.data,
+          data,
         };
         siteConfigCache = {
           expiresAt: Date.now() + CACHE_TTL_MS,
           data: {
-            settings: response.data.settings,
-            computed_homepage_stats: response.data.computed_homepage_stats,
+            settings: data.settings,
+            computed_homepage_stats: data.computed_homepage_stats,
           },
         };
         projectsCache = {
           expiresAt: Date.now() + CACHE_TTL_MS,
           data: Array.isArray(response.data.projects) ? response.data.projects : [],
         };
-        return response.data;
+        return data;
       })
       .finally(() => {
         homepagePromise = null;
@@ -76,11 +82,16 @@ export async function getCachedSiteConfig(): Promise<SiteSettingsResponse> {
     siteConfigPromise = api
       .get<SiteSettingsResponse>("/site-config")
       .then((response) => {
+        const data = {
+          ...response.data,
+          settings: normalizeKnownPublicCopy(response.data.settings),
+          computed_homepage_stats: normalizeKnownPublicCopy(response.data.computed_homepage_stats),
+        };
         siteConfigCache = {
           expiresAt: Date.now() + CACHE_TTL_MS,
-          data: response.data,
+          data,
         };
-        return response.data;
+        return data;
       })
       .finally(() => {
         siteConfigPromise = null;

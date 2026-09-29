@@ -50,7 +50,7 @@ export function ParticipantInboxPage() {
       });
       setMessages(response.data.messages ?? []);
     } catch (error) {
-      console.error("Inbox yuklenemedi", error);
+      console.error("Inbox yüklenemedi", error);
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ export function ParticipantInboxPage() {
 
   const typeFallbackLabels: Record<string, string> = {
     announcement: "Duyuru",
-    opportunity: "Kariyer Firsati",
+    opportunity: "Kariyer Fırsatı",
     forum_post: "Forum",
   };
 
@@ -90,7 +90,7 @@ export function ParticipantInboxPage() {
       });
       await fetchInbox();
     } catch (error) {
-      console.error("Inbox state guncellenemedi", error);
+      console.error("Inbox state güncellenemedi", error);
     }
   };
 
@@ -110,14 +110,14 @@ export function ParticipantInboxPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Mesaj / Duyuru Kutusu</h1>
-          <p className="text-sm text-muted-foreground">Sana acik duyurular tek kutuda listelenir.</p>
+          <p className="text-sm text-muted-foreground">Sana açık duyurular tek kutuda listelenir.</p>
         </div>
       </div>
 
       <div className="glass-panel rounded-3xl p-5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="rounded-xl border border-border bg-input px-3 py-2 text-sm">
-            <option value="all">Tum projeler</option>
+            <option value="all">Tüm projeler</option>
             {projects.map((project) => (
               <option key={project.id} value={String(project.id)}>
                 {project.name}
@@ -125,7 +125,7 @@ export function ParticipantInboxPage() {
             ))}
           </select>
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-xl border border-border bg-input px-3 py-2 text-sm">
-            <option value="all">Tum kategoriler</option>
+            <option value="all">Tüm kategoriler</option>
             {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
@@ -138,7 +138,7 @@ export function ParticipantInboxPage() {
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-5 text-xs text-muted-foreground">
-          <label className="inline-flex items-center gap-2"><input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} /> Sadece okunmamis</label>
+          <label className="inline-flex items-center gap-2"><input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} /> Sadece okunmamış</label>
           <label className="inline-flex items-center gap-2"><input type="checkbox" checked={starredOnly} onChange={(e) => setStarredOnly(e.target.checked)} /> Sadece yildizli</label>
           <label className="inline-flex items-center gap-2"><input type="checkbox" checked={pinnedOnly} onChange={(e) => setPinnedOnly(e.target.checked)} /> Sadece sabit</label>
         </div>
@@ -148,7 +148,7 @@ export function ParticipantInboxPage() {
         {messages.length === 0 ? (
           <div className="glass-panel rounded-3xl p-20 text-center text-muted-foreground">
             <Bell className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
-            Kutunda henuz duyuru yok.
+            Kutunda henüz duyuru yok.
           </div>
         ) : (
           messages.map((item, index) => (
@@ -176,13 +176,13 @@ export function ParticipantInboxPage() {
               <LinkifiedText text={item.content ?? "-"} className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground" />
               <div className="mt-4 flex flex-wrap gap-2">
                 <button type="button" onClick={() => void updateState(item, { is_read: !item.state.is_read })} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
-                  {item.state.is_read ? "Okunmamis yap" : "Okundu yap"}
+                  {item.state.is_read ? "Okunmamış yap" : "Okundu yap"}
                 </button>
                 <button type="button" onClick={() => void updateState(item, { is_starred: !item.state.is_starred })} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
-                  <Star className={`h-3.5 w-3.5 ${item.state.is_starred ? "fill-current" : ""}`} /> {item.state.is_starred ? "Yildizi kaldir" : "Yildizla"}
+                  <Star className={`h-3.5 w-3.5 ${item.state.is_starred ? "fill-current" : ""}`} /> {item.state.is_starred ? "Yildizi kaldır" : "Yildizla"}
                 </button>
                 <button type="button" onClick={() => void updateState(item, { is_pinned: !item.state.is_pinned })} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
-                  <Pin className={`h-3.5 w-3.5 ${item.state.is_pinned ? "fill-current" : ""}`} /> {item.state.is_pinned ? "Sabiti kaldir" : "Sabitle"}
+                  <Pin className={`h-3.5 w-3.5 ${item.state.is_pinned ? "fill-current" : ""}`} /> {item.state.is_pinned ? "Sabiti kaldır" : "Sabitle"}
                 </button>
               </div>
             </motion.div>
@@ -192,4 +192,3 @@ export function ParticipantInboxPage() {
     </div>
   );
 }
-

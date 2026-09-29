@@ -41,23 +41,23 @@ type StudentMenuItem = {
 };
 
 const menuItems: StudentMenuItem[] = [
-  { icon: LayoutDashboard, label: "Panel Ozet", href: "/student/dashboard" },
+  { icon: LayoutDashboard, label: "Panel Özet", href: "/student/dashboard" },
   { icon: Briefcase, label: "Projem", href: "/student/my-project" },
   { icon: Calendar, label: "Programlarim", href: "/student/programs" },
   { icon: QrCode, label: "QR Yoklama", href: "/student/qr-scan" },
-  { icon: FileText, label: "Basvurularim", href: "/student/applications" },
+  { icon: FileText, label: "Başvurularım", href: "/student/applications" },
   { icon: Bell, label: "Duyurular", href: "/student/announcements" },
-  { icon: FileUser, label: "Ozgecmis Hazirla", href: "/student/cv-builder" },
-  { icon: FileCheck, label: "Odevlerim", href: "/student/assignments" },
-  { icon: Star, label: "Degerlendirme", href: "/student/evaluate" },
-  { icon: BookOpen, label: "Dijital Bohca", href: "/student/bohca" },
+  { icon: FileUser, label: "Özgeçmiş Hazirla", href: "/student/cv-builder" },
+  { icon: FileCheck, label: "Ödevlerim", href: "/student/assignments" },
+  { icon: Star, label: "Değerlendirme", href: "/student/evaluate" },
+  { icon: BookOpen, label: "Dijital Bohça", href: "/student/bohca" },
   { icon: HeartPulse, label: "KPD", href: "/student/kpd", requiredModule: "kpd_appointments" },
   { icon: Award, label: "Sertifikalarim", href: "/student/certificates" },
-  { icon: HeartHandshake, label: "Gonullu Basvurusu", href: "/student/volunteer" },
-  { icon: Handshake, label: "Kariyer Firsatlari", href: "/student/opportunities" },
+  { icon: HeartHandshake, label: "Gönüllü Başvurusu", href: "/student/volunteer" },
+  { icon: Handshake, label: "Kariyer Fırsatları", href: "/student/opportunities" },
   { icon: Megaphone, label: "Mesaj Kutusu", href: "/student/inbox" },
   { icon: MessagesSquare, label: "Forum", href: "/student/forum" },
-  { icon: BrainCircuit, label: "Kisilik Analizi", href: "/student/personality" },
+  { icon: BrainCircuit, label: "Kişilik Analizi", href: "/student/personality" },
   { icon: LifeBuoy, label: "Destek Taleplerim", href: "/student/tickets" },
   { icon: UserCircle, label: "Profilim", href: "/student/profile" },
 ];
@@ -79,7 +79,7 @@ export function StudentSidebar() {
 
   return (
     <aside className="peer group/sidebar fixed left-0 top-0 z-40 hidden h-screen w-20 flex-col border-r border-white/[0.06] bg-[#0a0b14] transition-[width] duration-300 hover:w-72 focus-within:w-72 lg:flex">
-      <PanelBrandBlock roleLabel="OGRENCI PANELI" />
+      <PanelBrandBlock roleLabel="ÖĞRENCİ PANELI" />
 
       <nav className="mt-1 flex-1 space-y-1 overflow-y-auto px-3 py-2">
         {items.map((item) => {
@@ -128,7 +128,7 @@ export function StudentSidebar() {
         >
           <LogOut className="h-4 w-4" />
           <span className="w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 group-focus-within/sidebar:w-auto group-focus-within/sidebar:opacity-100">
-            Cikis Yap
+            Çıkış Yap
           </span>
         </button>
       </div>
@@ -152,7 +152,7 @@ export function StudentMobileNav() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/branding/kademe-logo-turuncu.svg" alt="KADEME" className="h-8 w-auto" width={96} height={30} />
             <div className="min-w-0">
-              <p className="truncate text-sm font-black text-slate-900">Ogrenci Paneli</p>
+              <p className="truncate text-sm font-black text-slate-900">Öğrenci Paneli</p>
               <p className="truncate text-xs text-slate-500">{activeItem?.label ?? user?.name ?? "Panel"}</p>
             </div>
           </Link>
@@ -160,7 +160,7 @@ export function StudentMobileNav() {
             type="button"
             onClick={() => setMenuOpen(true)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600"
-            aria-label="Ogrenci menusu"
+            aria-label="Öğrenci menüsü"
             aria-expanded={menuOpen}
           >
             <Menu className="h-5 w-5" />
@@ -184,7 +184,7 @@ export function StudentMobileNav() {
             className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold text-slate-500 transition hover:bg-slate-100"
           >
             <Menu className="h-4 w-4" />
-            <span className="max-w-full truncate">Menu</span>
+            <span className="max-w-full truncate">Menü</span>
           </button>
         </div>
       </nav>
@@ -200,7 +200,7 @@ export function StudentMobileNav() {
           <section className="absolute inset-x-3 bottom-3 top-3 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-black text-slate-900">Ogrenci menusu</p>
+                <p className="truncate text-sm font-black text-slate-900">Öğrenci menüsü</p>
                 <p className="truncate text-xs text-slate-500">{user?.name} {user?.surname}</p>
               </div>
               <button
@@ -251,7 +251,7 @@ export function StudentMobileNav() {
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-3 text-sm font-bold text-red-700"
               >
                 <LogOut className="h-4 w-4" />
-                Cikis yap
+                Çıkış yap
               </button>
             </div>
           </section>

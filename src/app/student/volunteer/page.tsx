@@ -93,8 +93,8 @@ export default function StudentVolunteerPage() {
         setOpportunities(response.data.opportunities ?? []);
         setApplications(response.data.my_applications ?? []);
       } catch (error) {
-        console.error("Gonulluluk kapsami yuklenemedi", error);
-        setErrorMessage("Gonulluluk ilanlari yuklenemedi.");
+        console.error("Gönüllülük kapsamı yüklenemedi", error);
+        setErrorMessage("Gönüllülük ilanları yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -110,7 +110,7 @@ export default function StudentVolunteerPage() {
     event.preventDefault();
 
     if (!selectedOpportunityId) {
-      setErrorMessage("Lutfen basvuru yapmak istedigin gonullu ilanini sec.");
+      setErrorMessage("Lütfen başvuru yapmak istediğin gönüllü ilanını seç.");
       return;
     }
 
@@ -139,11 +139,11 @@ export default function StudentVolunteerPage() {
       setMotivationText("");
       setNotes("");
     } catch (error) {
-      console.error("Gonullu basvurusu gonderilemedi", error);
+      console.error("Gönüllü başvurusu gönderilemedi", error);
       setErrorMessage(
         isAxiosError(error) && typeof error.response?.data?.message === "string"
           ? error.response.data.message
-          : "Basvuru gonderilemedi. Aciklama alanini kontrol edip tekrar dene.",
+          : "Başvuru gönderilemedi. Açıklama alanini kontrol edip tekrar dene.",
       );
     } finally {
       setSaving(false);
@@ -157,9 +157,9 @@ export default function StudentVolunteerPage() {
           <HeartHandshake className="h-7 w-7" />
         </div>
         <div>
-          <h1 className="text-3xl font-black text-slate-900">Gonullu Basvurusu</h1>
+          <h1 className="text-3xl font-black text-slate-900">Gönüllü Başvurusu</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Acilan ilanlari incele, uygun olana dogrudan basvur
+            Açılan ilanları incele, uygun olana dogrudan basvur
           </p>
         </div>
       </div>
@@ -178,14 +178,14 @@ export default function StudentVolunteerPage() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1fr]">
           <div>
-            <p className="mb-4">Acik gonulluluk ilanlari:</p>
+            <p className="mb-4">Açık gönüllülük ilanları:</p>
             {loading ? (
               <div className="flex min-h-32 items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             ) : opportunities.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-5">
-                Su an acik gonulluluk ilani bulunmuyor.
+                Su an açık gönüllülük ilanı bulunmuyor.
               </div>
             ) : (
               <div className="space-y-4">
@@ -215,8 +215,8 @@ export default function StudentVolunteerPage() {
                     </div>
                     <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{opportunity.description}</p>
                     <div className="mt-4 grid grid-cols-1 gap-2 text-xs text-muted-foreground md:grid-cols-2">
-                      <div>Baslangic: {formatDate(opportunity.start_at)}</div>
-                      <div>Bitis: {formatDate(opportunity.end_at)}</div>
+                      <div>Başlangıç: {formatDate(opportunity.start_at)}</div>
+                      <div>Bitiş: {formatDate(opportunity.end_at)}</div>
                       <div>Konum: {opportunity.location || "Belirtilmedi"}</div>
                       <div>Kontenjan: {opportunity.quota ?? "Sinirsiz"}</div>
                     </div>
@@ -236,7 +236,7 @@ export default function StudentVolunteerPage() {
                 <div>
                   <div className="text-xl font-bold text-slate-900">{selectedOpportunity.title}</div>
                   <div className="mt-1 text-sm text-muted-foreground">
-                    {selectedOpportunity.project?.name || "Genel gonulluluk"} - {selectedOpportunity.location || "Konum belirtilecek"}
+                    {selectedOpportunity.project?.name || "Genel gönüllülük"} - {selectedOpportunity.location || "Konum belirtilecek"}
                   </div>
                 </div>
 
@@ -253,7 +253,7 @@ export default function StudentVolunteerPage() {
                     </div>
                     {selectedOpportunity.my_application.evaluation_note ? (
                       <div className="mt-2 text-sm text-muted-foreground">
-                        Degerlendirme notu: {selectedOpportunity.my_application.evaluation_note}
+                        Değerlendirme notu: {selectedOpportunity.my_application.evaluation_note}
                       </div>
                     ) : null}
                   </div>
@@ -288,7 +288,7 @@ export default function StudentVolunteerPage() {
                       className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                      Basvuruyu Gonder
+                      Başvuruyu Gönder
                     </button>
                   </form>
                 )}
@@ -297,11 +297,11 @@ export default function StudentVolunteerPage() {
               <div className="space-y-4">
                 <div className="rounded-2xl border border-white/5 bg-white/5 p-5">
                   <div className="text-3xl font-black text-slate-900">{opportunities.length}</div>
-                  <div className="mt-2 text-sm text-muted-foreground">Acik gonulluluk ilani sayisi</div>
+                  <div className="mt-2 text-sm text-muted-foreground">Açık gönüllülük ilanı sayısı</div>
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-white/5 p-5">
                   <div className="text-3xl font-black text-slate-900">{applications.length}</div>
-                  <div className="mt-2 text-sm text-muted-foreground">Gonderdigin gonullu basvuru sayisi</div>
+                  <div className="mt-2 text-sm text-muted-foreground">Gönderdiğin gönüllü başvuru sayısı</div>
                 </div>
               </div>
             )}

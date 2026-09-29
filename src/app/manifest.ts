@@ -2,28 +2,34 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "KADEME Yonetim Sistemi",
+    name: "KADEME — Keşfet, Öğren, Geliş",
     short_name: "KADEME",
-    description: "KADEME ogrenci, mezun ve panel yonetim platformu.",
+    description: "KADEME ile projeleri keşfet, öğren ve geleceğini şekillendir.",
     start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#ffffff",
-    theme_color: "#0f172a",
+    background_color: "#f7f3ea",
+    theme_color: "#f7f3ea",
     lang: "tr",
     categories: ["education", "productivity"],
     icons: [
       {
-        src: "/branding/kademe-logo-turuncu.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/branding/kademe-icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
         purpose: "any",
       },
       {
-        src: "/branding/kademe-logo-turuncu.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/branding/kademe-icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/branding/kademe-icon-maskable.png",
+        sizes: "512x512",
+        type: "image/png",
         purpose: "maskable",
       },
     ],
@@ -37,7 +43,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: "Faaliyetler",
         short_name: "Faaliyetler",
-        description: "Yaklasan faaliyetleri gor",
+        description: "Yaklaşan faaliyetleri gör",
         url: "/activities",
       },
     ],

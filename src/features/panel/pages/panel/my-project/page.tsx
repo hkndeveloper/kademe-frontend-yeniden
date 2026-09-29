@@ -62,8 +62,8 @@ export default function PanelMyProjectPage() {
         setScope(response.data.scope ?? "assignment");
         setInfoMessage(response.data.message ?? null);
       } catch (error) {
-        console.error("Panel proje kapsami yuklenemedi", error);
-        setErrorMessage("Proje kapsami yuklenemedi.");
+        console.error("Panel proje kapsamı yüklenemedi", error);
+        setErrorMessage("Proje kapsamı yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -90,12 +90,12 @@ export default function PanelMyProjectPage() {
           <div>
             <h1 className="text-3xl font-black text-slate-900">Projem</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Yetkili proje kapsami backend verisinden geliyor
+              Yetkili proje kapsamı backend verisinden geliyor
             </p>
           </div>
         </div>
         <PermissionGate permission="projects.export">
-          <ExportButtons endpoint="/panel/my-projects/export" filename="personel_projeleri" buttonLabel="Projeleri Disa Aktar" />
+          <ExportButtons endpoint="/panel/my-projects/export" filename="personel_projeleri" buttonLabel="Projeleri Dışa Aktar" />
         </PermissionGate>
       </div>
 
@@ -103,7 +103,7 @@ export default function PanelMyProjectPage() {
         permission="projects.view"
         fallback={
         <div className="panel-empty-card">
-          Bu modulu goruntulemek icin yetkiniz bulunmuyor.
+          Bu modülü görüntülemek için yetkiniz bulunmuyor.
         </div>
         }
       >
@@ -112,8 +112,8 @@ export default function PanelMyProjectPage() {
 
       <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
         {scope === "all_active_for_media_unit"
-          ? "Medya birimi oldugunuz icin sistem aktif projelerin tam kapsam listesini gosteriyor."
-          : "Bu ekran personelin atandigi talep ve destek kayitlarindaki proje baglarini kullanarak gorev kapsamini olusturuyor."}
+          ? "Medya birimi oldugunuz için sistem aktif projelerin tam kapsam listesini gosteriyor."
+          : "Bu ekran personelin atandigi talep ve destek kayitlarindaki proje baglarini kullanarak görev kapsamini oluşturuyor."}
       </div>
 
       {infoMessage && (
@@ -127,7 +127,7 @@ export default function PanelMyProjectPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {projects.length === 0 ? (
           <div className="panel-empty-card col-span-full">
-            Henuz size bagli proje kapsami bulunmuyor.
+            Henüz size bağlı proje kapsamı bulunmuyor.
           </div>
         ) : (
           projects.map((project) => (
@@ -143,23 +143,23 @@ export default function PanelMyProjectPage() {
                     )}
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {project.short_description || project.description || "Bu proje icin ozet aciklama girilmemis."}
+                    {project.short_description || project.description || "Bu proje için özet açıklama girilmemiş."}
                   </p>
                 </div>
                 <span
                   className={`panel-chip ${project.application_open ? "panel-chip-success" : ""}`}
                 >
-                  {project.application_open ? "Basvuru acik" : "Basvuru kapali"}
+                  {project.application_open ? "Başvuru açık" : "Başvuru kapalı"}
                 </span>
               </div>
 
               <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="panel-card-muted">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif donem</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif dönem</p>
                   <p className="mt-2 text-sm font-bold text-slate-900">{project.active_period?.name || "-"}</p>
                 </div>
                 <div className="panel-card-muted">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif ogrenci</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Aktif öğrenci</p>
                   <p className="mt-2 text-sm font-bold text-slate-900">{project.participant_summary?.active ?? 0}</p>
                 </div>
                 <div className="panel-card-muted">
@@ -177,13 +177,13 @@ export default function PanelMyProjectPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-amber-600" />
-                  <span>Toplam katilimci: {project.participant_summary?.total ?? 0}</span>
+                  <span>Toplam katılımcı: {project.participant_summary?.total ?? 0}</span>
                 </div>
               </div>
 
               <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5">
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Sonraki basvuru tarihi: {project.next_application_date || "Belirtilmedi"}
+                  Sonraki başvuru tarihi: {project.next_application_date || "Belirtilmedi"}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   {(hasPermission("applications.intake.view") && canAccessProject("applications.intake.view", project.id)) ||
@@ -193,7 +193,7 @@ export default function PanelMyProjectPage() {
                       className="panel-card-action panel-card-action-primary"
                     >
                       <CalendarClock className="h-4 w-4" />
-                      Basvuru Yonetimi
+                      Başvuru Yönetimi
                     </Link>
                   ) : null}
                   {hasPermission("projects.content.update") && canAccessProject("projects.content.update", project.id) ? (
@@ -202,7 +202,7 @@ export default function PanelMyProjectPage() {
                       className="panel-card-action panel-card-action-primary"
                     >
                       <FilePenLine className="h-4 w-4" />
-                      Icerigi Duzenle
+                      İçeriği Düzenle
                     </Link>
                   ) : null}
                   {hasPermission("projects.application_form.update") && canAccessProject("projects.application_form.update", project.id) ? (
@@ -211,7 +211,7 @@ export default function PanelMyProjectPage() {
                       className="panel-card-action"
                     >
                       <Settings2 className="h-4 w-4" />
-                      Basvuru Formu
+                      Başvuru Formu
                     </Link>
                   ) : null}
                   {hasPermission("programs.view") && canAccessProject("programs.view", project.id) ? (
@@ -229,7 +229,7 @@ export default function PanelMyProjectPage() {
                       className="panel-card-action"
                     >
                       <Users className="h-4 w-4" />
-                      Katilimcilar
+                      Katılımcılar
                     </Link>
                   ) : null}
                   {hasPermission("applications.view") && canAccessProject("applications.view", project.id) ? (
@@ -238,7 +238,7 @@ export default function PanelMyProjectPage() {
                       className="panel-card-action"
                     >
                       <ClipboardCheck className="h-4 w-4" />
-                      Basvurular
+                      Başvurular
                     </Link>
                   ) : null}
                   {hasPermission("volunteer.view") && canAccessProject("volunteer.view", project.id) ? (
@@ -247,7 +247,7 @@ export default function PanelMyProjectPage() {
                       className="panel-card-action"
                     >
                       <UserCog className="h-4 w-4" />
-                      Gonullu
+                      Gönüllü
                     </Link>
                   ) : null}
                   {hasPermission("digital_bohca.view") && canAccessProject("digital_bohca.view", project.id) ? (
@@ -256,7 +256,7 @@ export default function PanelMyProjectPage() {
                       className="panel-card-action"
                     >
                       <Database className="h-4 w-4" />
-                      Bohca
+                      Bohça
                     </Link>
                   ) : null}
                   {hasPermission("assignments.view") && canAccessProject("assignments.view", project.id) ? (
@@ -265,7 +265,7 @@ export default function PanelMyProjectPage() {
                       className="panel-card-action"
                     >
                       <FileStack className="h-4 w-4" />
-                      Odevler
+                      Ödevler
                     </Link>
                   ) : null}
                   {hasPermission("certificates.view") && canAccessProject("certificates.view", project.id) ? (

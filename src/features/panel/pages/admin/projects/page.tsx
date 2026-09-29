@@ -105,7 +105,7 @@ export default function AdminProjectsPage() {
         });
         setProjects(response.data.projects ?? []);
       } catch (error) {
-        console.error("Admin projeleri yuklenemedi", error);
+        console.error("Admin projeleri yüklenemedi", error);
       } finally {
         setLoading(false);
       }
@@ -157,7 +157,7 @@ export default function AdminProjectsPage() {
             </div>
           </div>
           <PermissionGate permission="projects.export">
-            <ExportButtons endpoint="/panel/projects/export" filename="projeler" buttonLabel="Projeleri Disa Aktar" />
+            <ExportButtons endpoint="/panel/projects/export" filename="projeler" buttonLabel="Projeleri Dışa Aktar" />
           </PermissionGate>
         </div>
         <div className={`grid border-t border-slate-200 bg-slate-50/70 sm:grid-cols-2 ${hasStructuralProjectView ? "xl:grid-cols-5" : "xl:grid-cols-2"}`}>
@@ -165,8 +165,8 @@ export default function AdminProjectsPage() {
             { label: "Yetkili proje", value: projects.length, icon: Layers },
             { label: "Aktif proje", value: activeProjects, icon: CheckCircle2 },
             ...(hasStructuralProjectView ? [
-              { label: "Basvurusu acik", value: openApplications, icon: ClipboardList },
-              { label: "Aktif ogrenci", value: totalActiveStudents, icon: Users },
+              { label: "Başvurusu açık", value: openApplications, icon: ClipboardList },
+              { label: "Aktif öğrenci", value: totalActiveStudents, icon: Users },
               { label: "Mezun", value: totalAlumni, icon: Users },
             ] : []),
           ].map((item) => {
@@ -191,7 +191,7 @@ export default function AdminProjectsPage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder={hasStructuralProjectView ? "Proje adi, turu veya slug ile ara" : "Proje adi ile ara"}
+              placeholder={hasStructuralProjectView ? "Proje adı, türü veya slug ile ara" : "Proje adı ile ara"}
               className="panel-control h-12 pl-11"
             />
           </label>
@@ -207,7 +207,7 @@ export default function AdminProjectsPage() {
                     : ""
                 }`}
               >
-                {filter === "all" ? "Tum durumlar" : filter === "active" ? "Aktif" : "Pasif"}
+                {filter === "all" ? "Tüm durumlar" : filter === "active" ? "Aktif" : "Pasif"}
               </button>
             ))}
           </div>
@@ -220,7 +220,7 @@ export default function AdminProjectsPage() {
         </div>
       ) : filteredProjects.length === 0 ? (
         <div className="panel-empty-card p-16">
-          Bu filtreye uygun proje bulunamadi.
+          Bu filtreye uygun proje bulunamadı.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -253,16 +253,16 @@ export default function AdminProjectsPage() {
                 <div className="panel-card-muted p-4">
                   <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                     <Calendar className="h-3 w-3" />
-                    Aktif Donem
+                    Aktif Dönem
                   </div>
-                  <span className="text-sm font-bold text-slate-900">{project.active_period?.name || "Aktif donem yok"}</span>
+                  <span className="text-sm font-bold text-slate-900">{project.active_period?.name || "Aktif dönem yok"}</span>
                 </div>
 
                 {hasStructuralProjectView ? <div className="grid grid-cols-2 gap-3">
                   <div className="panel-card-muted bg-white p-4">
                     <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                       <Users className="h-3 w-3" />
-                      Aktif Ogrenci
+                      Aktif Öğrenci
                     </div>
                     <span className="text-xl font-black text-slate-900">{activeStudentCount(project)}</span>
                   </div>
@@ -279,12 +279,12 @@ export default function AdminProjectsPage() {
                     {project.is_application_open ? (
                       <>
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        Basvuru acik
+                        Başvuru açık
                       </>
                     ) : (
                       <>
                         <XCircle className="h-4 w-4 text-red-500" />
-                        Basvuru kapali
+                        Başvuru kapalı
                       </>
                     )}
                   </div>
@@ -293,7 +293,7 @@ export default function AdminProjectsPage() {
                   ) : null}
                 </div> : (
                   <div className="panel-card-muted bg-white px-4 py-3 text-sm text-slate-600">
-                    Kamusal proje metni, kapak ve galeri alanlari bu ekrandan yonetilir.
+                    Kamusal proje metni, kapak ve galeri alanları bu ekrandan yönetilir.
                   </div>
                 )}
               </div>
@@ -324,7 +324,7 @@ export default function AdminProjectsPage() {
                     className="panel-card-action panel-card-action-info"
                   >
                     <CalendarClock className="h-4 w-4" />
-                    Basvuru
+                    Başvuru
                   </Link>
                 ) : null}
                 <PermissionGate permission="projects.application_form.update" requireProjectAccess={{ permission: "projects.application_form.update", projectId: project.id }}>
@@ -347,7 +347,7 @@ export default function AdminProjectsPage() {
                     className="panel-card-action panel-card-action-info"
                   >
                     <PencilLine className="h-4 w-4" />
-                    Icerik
+                    İçerik
                   </Link>
                 ) : null}
               </div>

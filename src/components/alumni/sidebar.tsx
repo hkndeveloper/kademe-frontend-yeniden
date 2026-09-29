@@ -33,23 +33,23 @@ import { useAuth } from "@/store/useAuth";
 import { PanelBrandBlock } from "@/components/shared/PanelBrandBlock";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Panel Ozet", href: "/alumni/dashboard" },
+  { icon: LayoutDashboard, label: "Panel Özet", href: "/alumni/dashboard" },
   { icon: Briefcase, label: "Mezun Projem", href: "/alumni/my-project" },
-  { icon: CalendarDays, label: "Program Gecmisim", href: "/alumni/programs" },
+  { icon: CalendarDays, label: "Program Geçmişim", href: "/alumni/programs" },
   { icon: QrCode, label: "QR Yoklama", href: "/alumni/qr-scan" },
-  { icon: ClipboardList, label: "Basvurularim", href: "/alumni/applications" },
+  { icon: ClipboardList, label: "Başvurularım", href: "/alumni/applications" },
   { icon: Megaphone, label: "Mesaj Kutusu", href: "/alumni/inbox" },
   { icon: Bell, label: "Duyurular", href: "/alumni/announcements" },
-  { icon: Handshake, label: "Kariyer Firsatlari", href: "/alumni/opportunities" },
+  { icon: Handshake, label: "Kariyer Fırsatları", href: "/alumni/opportunities" },
   { icon: MessagesSquare, label: "Forum", href: "/alumni/forum" },
-  { icon: FileSpreadsheet, label: "Ozgecmis Havuzu", href: "/alumni/resume" },
-  { icon: BookOpen, label: "Dijital Bohca", href: "/alumni/bohca" },
-  { icon: FileCheck, label: "Odevlerim", href: "/alumni/assignments" },
-  { icon: Star, label: "Degerlendirme", href: "/alumni/evaluate" },
+  { icon: FileSpreadsheet, label: "Özgeçmiş Havuzu", href: "/alumni/resume" },
+  { icon: BookOpen, label: "Dijital Bohça", href: "/alumni/bohca" },
+  { icon: FileCheck, label: "Ödevlerim", href: "/alumni/assignments" },
+  { icon: Star, label: "Değerlendirme", href: "/alumni/evaluate" },
   { icon: Award, label: "Sertifikalarim", href: "/alumni/certificates" },
-  { icon: HeartHandshake, label: "Gonullu Basvurusu", href: "/alumni/volunteer" },
+  { icon: HeartHandshake, label: "Gönüllü Başvurusu", href: "/alumni/volunteer" },
   { icon: LifeBuoy, label: "Destek Talebi", href: "/alumni/support" },
-  { icon: BrainCircuit, label: "Kisilik Analizi", href: "/alumni/personality" },
+  { icon: BrainCircuit, label: "Kişilik Analizi", href: "/alumni/personality" },
   { icon: UserCircle, label: "Profilim", href: "/alumni/profile" },
 ];
 
@@ -112,7 +112,7 @@ export function AlumniSidebar() {
         >
           <LogOut className="h-4 w-4" />
           <span className="w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 group-focus-within/sidebar:w-auto group-focus-within/sidebar:opacity-100">
-            Cikis Yap
+            Çıkış Yap
           </span>
         </button>
       </div>
@@ -143,7 +143,7 @@ export function AlumniMobileNav() {
             type="button"
             onClick={() => setMenuOpen(true)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600"
-            aria-label="Mezun menusu"
+            aria-label="Mezun menüsü"
             aria-expanded={menuOpen}
           >
             <Menu className="h-5 w-5" />
@@ -167,7 +167,7 @@ export function AlumniMobileNav() {
             className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold text-slate-500 transition hover:bg-slate-100"
           >
             <Menu className="h-4 w-4" />
-            <span className="max-w-full truncate">Menu</span>
+            <span className="max-w-full truncate">Menü</span>
           </button>
         </div>
       </nav>
@@ -183,7 +183,7 @@ export function AlumniMobileNav() {
           <section className="absolute inset-x-3 bottom-3 top-3 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-black text-slate-900">Mezun menusu</p>
+                <p className="truncate text-sm font-black text-slate-900">Mezun menüsü</p>
                 <p className="truncate text-xs text-slate-500">{user?.name} {user?.surname}</p>
               </div>
               <button
@@ -234,7 +234,7 @@ export function AlumniMobileNav() {
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-3 text-sm font-bold text-red-700"
               >
                 <LogOut className="h-4 w-4" />
-                Cikis yap
+                Çıkış yap
               </button>
             </div>
           </section>

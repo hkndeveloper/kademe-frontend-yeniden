@@ -77,8 +77,8 @@ export default function PanelForumPage() {
         setProjects(projectsResponse.data.projects ?? []);
       })
       .catch((error) => {
-        console.error("Panel forum yuklenemedi", error);
-        if (active) setErrorMessage("Forum konulari yuklenemedi.");
+        console.error("Panel forum yüklenemedi", error);
+        if (active) setErrorMessage("Forum konulari yüklenemedi.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -130,14 +130,14 @@ export default function PanelForumPage() {
           <div>
             <h1 className="text-3xl font-black text-slate-900">Forum</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Proje forum konulari ve kronolojik yanit akislari
+              Proje forum konulari ve kronolojik yanıt akışları
             </p>
           </div>
         </div>
         <div className="grid w-full grid-cols-3 gap-3 lg:max-w-md">
           <SummaryCard label="Proje" value={projects.length} />
           <SummaryCard label="Konu" value={posts.length} />
-          <SummaryCard label="Yanit" value={replyCount} />
+          <SummaryCard label="Yanıt" value={replyCount} />
         </div>
       </div>
 
@@ -163,7 +163,7 @@ export default function PanelForumPage() {
           <input
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Baslik, icerik, proje veya yanit ara"
+            placeholder="Başlık, içerik, proje veya yanıt ara"
             className="panel-control w-full pl-10"
           />
         </div>
@@ -171,7 +171,7 @@ export default function PanelForumPage() {
 
       <div className="space-y-4">
         {filteredPosts.length === 0 ? (
-          <div className="panel-empty-card">Forum konusu bulunamadi.</div>
+          <div className="panel-empty-card">Forum konusu bulunamadı.</div>
         ) : (
           filteredPosts.map((post) => {
             const replies = sortReplies(post.replies ?? []);
@@ -194,11 +194,11 @@ export default function PanelForumPage() {
                 <div className="space-y-3 p-5 md:p-6">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     <MessageCircle className="h-4 w-4 text-indigo-600" />
-                    {replies.length.toLocaleString("tr-TR")} yanit
+                    {replies.length.toLocaleString("tr-TR")} yanıt
                   </div>
 
                   {replies.length === 0 ? (
-                    <div className="panel-card-muted">Bu konuda henuz yanit yok.</div>
+                    <div className="panel-card-muted">Bu konuda henüz yanıt yok.</div>
                   ) : (
                     replies.map((reply) => (
                       <div key={reply.id} className="rounded-2xl border border-slate-200 bg-white p-4">

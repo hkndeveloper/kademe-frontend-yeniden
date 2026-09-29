@@ -90,8 +90,8 @@ export default function AlumniVolunteerPage() {
       setOpportunities(response.data.opportunities ?? []);
       setApplications(response.data.my_applications ?? []);
     } catch (error) {
-      console.error("Gonulluluk ilanlari yuklenemedi", error);
-      setErrorMessage("Gonulluluk ilanlari yuklenemedi.");
+      console.error("Gönüllülük ilanları yüklenemedi", error);
+      setErrorMessage("Gönüllülük ilanları yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export default function AlumniVolunteerPage() {
     event.preventDefault();
 
     if (!selectedOpportunity) {
-      setErrorMessage("Basvuru yapmak icin once bir ilan secin.");
+      setErrorMessage("Başvuru yapmak için önce bir ilan seçin.");
       return;
     }
 
@@ -125,16 +125,16 @@ export default function AlumniVolunteerPage() {
         notes: notes || null,
       });
 
-      setMessage("Gonulluluk basvurunuz alindi.");
+      setMessage("Gönüllülük başvurunuz alındı.");
       setMotivationText("");
       setNotes("");
       await loadData();
     } catch (error) {
-      console.error("Gonulluluk basvurusu gonderilemedi", error);
+      console.error("Gönüllülük başvurusu gönderilemedi", error);
       setErrorMessage(
         isAxiosError(error) && typeof error.response?.data?.message === "string"
           ? error.response.data.message
-          : "Gonulluluk basvurusu gonderilemedi.",
+          : "Gönüllülük başvurusu gönderilemedi.",
       );
     } finally {
       setSubmitting(false);
@@ -148,9 +148,9 @@ export default function AlumniVolunteerPage() {
           <HeartHandshake className="h-7 w-7" />
         </div>
         <div>
-          <h1 className="text-3xl font-black text-slate-900">Gonulluluk Havuzu</h1>
+          <h1 className="text-3xl font-black text-slate-900">Gönüllülük Havuzu</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Mezunlara acik gonulluluk firsatlarini incele ve basvurularini takip et.
+            Mezunlara açık gönüllülük firsatlarini incele ve basvurularini takip et.
           </p>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function AlumniVolunteerPage() {
             </div>
           ) : opportunities.length === 0 ? (
             <div className="glass-panel rounded-3xl p-16 text-center text-muted-foreground">
-              Su anda acik gonulluluk ilani bulunmuyor.
+              Su anda açık gönüllülük ilanı bulunmuyor.
             </div>
           ) : (
             opportunities.map((opportunity) => {
@@ -190,7 +190,7 @@ export default function AlumniVolunteerPage() {
                     </span>
                     {opportunity.my_application ? (
                       <span className="rounded-full bg-green-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-green-400">
-                        Basvuru var
+                        Başvuru var
                       </span>
                     ) : null}
                   </div>
@@ -219,13 +219,13 @@ export default function AlumniVolunteerPage() {
 
         <div className="space-y-6">
           <div className="glass-panel rounded-3xl p-8">
-            <h2 className="mb-4 text-xl font-bold text-slate-900">Basvuru Formu</h2>
+            <h2 className="mb-4 text-xl font-bold text-slate-900">Başvuru Formu</h2>
             {selectedOpportunity ? (
               selectedOpportunity.my_application ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
                   <div className="mb-3 flex items-center gap-2 font-bold">
                     <CheckCircle2 className="h-4 w-4" />
-                    Bu ilan icin daha once basvuru yaptiniz.
+                    Bu ilan için daha önce başvuru yaptiniz.
                   </div>
                   <p className="flex flex-wrap items-center gap-2">
                     <span>Durum:</span>
@@ -234,7 +234,7 @@ export default function AlumniVolunteerPage() {
                     </span>
                   </p>
                   <p className="mt-2 text-slate-500">
-                    Basvuru tarihi: {new Date(selectedOpportunity.my_application.created_at).toLocaleString("tr-TR")}
+                    Başvuru tarihi: {new Date(selectedOpportunity.my_application.created_at).toLocaleString("tr-TR")}
                   </p>
                 </div>
               ) : (
@@ -266,13 +266,13 @@ export default function AlumniVolunteerPage() {
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-bold text-slate-900 transition hover:opacity-90 disabled:opacity-50"
                   >
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                    Basvuruyu Gonder
+                    Başvuruyu Gönder
                   </button>
                 </form>
               )
             ) : (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-muted-foreground">
-                Basvuru yapmak icin soldan bir gonulluluk ilani secin.
+                Başvuru yapmak için soldan bir gönüllülük ilanı seçin.
               </div>
             )}
           </div>
@@ -280,16 +280,16 @@ export default function AlumniVolunteerPage() {
           <div className="glass-panel rounded-3xl p-6">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-muted-foreground">
               <Users className="h-4 w-4" />
-              Son Basvurularim
+              Son Başvurularım
             </h3>
             <div className="space-y-4">
               {applications.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Henuz gonulluluk basvurunuz bulunmuyor.</p>
+                <p className="text-sm text-muted-foreground">Henüz gönüllülük başvurunuz bulunmuyor.</p>
               ) : (
                 applications.slice(0, 4).map((application) => (
                   <div key={application.id} className="rounded-2xl bg-white/5 p-4">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-900">{application.opportunity?.title || "Gonulluluk ilani"}</h4>
+                      <h4 className="text-sm font-bold text-slate-900">{application.opportunity?.title || "Gönüllülük ilanı"}</h4>
                       <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${applicationStatus(application.status).className}`}>
                         {applicationStatus(application.status).label}
                       </span>

@@ -192,8 +192,8 @@ export default function AdminSettingsPage() {
         const rawPrograms = activitiesResponse.data.programs;
         setActivityOptions(Array.isArray(rawPrograms) ? rawPrograms : rawPrograms?.data ?? []);
       } catch (error) {
-        console.error("Site ayarlari yuklenemedi", error);
-        setErrorMessage("Site ayarlari yuklenemedi.");
+        console.error("Site ayarları yüklenemedi", error);
+        setErrorMessage("Site ayarları yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -204,7 +204,7 @@ export default function AdminSettingsPage() {
 
   const handleSave = async () => {
     if (!canUpdateSettings) {
-      setErrorMessage("Site ayarlarini guncelleme yetkiniz yok.");
+      setErrorMessage("Site ayarlarını güncelleme yetkiniz yok.");
       return;
     }
 
@@ -224,8 +224,8 @@ export default function AdminSettingsPage() {
       setComputedStats(response.data.computed_homepage_stats ?? []);
       setFeedback(response.data.message);
     } catch (error) {
-      console.error("Site ayarlari kaydedilemedi", error);
-      setErrorMessage("Site ayarlari kaydedilemedi.");
+      console.error("Site ayarları kaydedilemedi", error);
+      setErrorMessage("Site ayarları kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -410,15 +410,15 @@ export default function AdminSettingsPage() {
   const homepageBlockLabels: SiteSettingsPanelsProps["homepageBlockLabels"] = useMemo(
     () => ({
       hero: "Hero",
-      intro: "Kisa tanitim kartlari",
+      intro: "Kısa tanıtım kartları",
       stats: "Sayilarla veriler",
       projects: "Projelerimiz",
       activities: "Faaliyetlerimiz",
       about: "Hakkımızda",
       blog: "Blog",
       newsletter: "E-Bulten",
-      certificate_verify: "Sertifika dogrulama",
-      marquee: "Kayan yazilar",
+      certificate_verify: "Sertifika doğrulama",
+      marquee: "Kayan yazılar",
     }),
     [],
   );
@@ -426,7 +426,7 @@ export default function AdminSettingsPage() {
   const uploadImage = useCallback(
     async (file: File, folder: string, onSuccess: (url: string) => void, fieldKey: string) => {
       if (!canUpdateSettings) {
-        setErrorMessage("Gorsel yuklemek icin global site ayari guncelleme yetkisi gerekir.");
+        setErrorMessage("Görsel yuklemek için global site ayari güncelleme yetkisi gerekir.");
         return;
       }
 
@@ -446,8 +446,8 @@ export default function AdminSettingsPage() {
 
         onSuccess(response.data.url);
       } catch (error) {
-        console.error("Gorsel yuklenemedi", error);
-        setErrorMessage("Gorsel yuklenemedi.");
+        console.error("Görsel yüklenemedi", error);
+        setErrorMessage("Görsel yüklenemedi.");
       } finally {
         setUploadingField(null);
       }
@@ -519,10 +519,10 @@ export default function AdminSettingsPage() {
   if (!canViewSettings) {
     return (
       <div className="panel-empty-card">
-        Site ayarlarini goruntulemek icin{" "}
+        Site ayarlarını görüntülemek için{" "}
         <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">settings.view</code> veya{" "}
         <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">content.site_settings.update</code> izninin{" "}
-        <strong>tum sistem (all)</strong> kapsaminda verilmesi gerekir.
+        <strong>tüm sistem (all)</strong> kapsamında verilmesi gerekir.
       </div>
     );
   }
@@ -544,10 +544,10 @@ export default function AdminSettingsPage() {
               <Settings className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Site ayarlari</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Site ayarları</h1>
               <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                Public site metinleri, anasayfa duzeni ve navigasyon tek panel icinden action + scope izinleriyle
-                yonetilir.
+                Public site metinleri, anasayfa düzeni ve navigasyon tek panel icinden action + scope izinleriyle
+                yönetilir.
               </p>
             </div>
           </div>
@@ -555,7 +555,7 @@ export default function AdminSettingsPage() {
             <div className="panel-card-muted px-3 py-2.5">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <ActiveModuleIcon className="h-4 w-4" />
-                Modul
+                Modül
               </div>
               <div className="mt-1 truncate text-sm font-bold text-slate-900">{activeModuleLabel}</div>
             </div>
@@ -565,7 +565,7 @@ export default function AdminSettingsPage() {
                 Yetki
               </div>
               <div className={`mt-1 text-sm font-bold ${canUpdateSettings ? "text-emerald-700" : "text-amber-700"}`}>
-                {canUpdateSettings ? "Duzenlenebilir" : "Salt okunur"}
+                {canUpdateSettings ? "Düzenlenebilir" : "Salt okunur"}
               </div>
             </div>
             <div className="panel-card-muted px-3 py-2.5">
@@ -574,7 +574,7 @@ export default function AdminSettingsPage() {
                 Anasayfa
               </div>
               <div className="mt-1 text-sm font-bold text-slate-900">
-                {visibleBlockCount} blok / {selectedContentCount} secim
+                {visibleBlockCount} blok / {selectedContentCount} seçim
               </div>
             </div>
           </div>
@@ -582,7 +582,7 @@ export default function AdminSettingsPage() {
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-slate-50/80 px-5 py-3 text-xs text-slate-600 lg:px-6">
           <span className="panel-chip panel-chip-success">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-            Ayar verisi yuklendi
+            Ayar verisi yüklendi
           </span>
           <span className="panel-chip">
             {settings.homepage.stats_mode === "manual" ? "Manuel istatistik" : "Otomatik istatistik"}
@@ -606,7 +606,7 @@ export default function AdminSettingsPage() {
           onClick={() => setMobileNavOpen((o) => !o)}
           className="panel-button panel-button-secondary flex h-auto w-full justify-between px-4 py-3 text-left"
         >
-          <span>Modul: {activeModuleLabel}</span>
+          <span>Modül: {activeModuleLabel}</span>
           <ChevronDown className={`h-5 w-5 text-slate-500 transition ${mobileNavOpen ? "rotate-180" : ""}`} />
         </button>
         {mobileNavOpen ? (
@@ -636,9 +636,9 @@ export default function AdminSettingsPage() {
 
       <div className="panel-section-card sticky bottom-4 z-10 mt-8 flex flex-col gap-3 bg-white/95 p-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
         {!canUpdateSettings ? (
-          <p className="text-xs text-amber-800 sm:text-sm">Salt okunur: kaydetmek icin duzenleme yetkisi gerekir.</p>
+          <p className="text-xs text-amber-800 sm:text-sm">Salt okunur: kaydetmek için düzenleme yetkisi gerekir.</p>
         ) : (
-          <p className="text-xs text-slate-500 sm:text-sm">Degisiklikleri kaydetmeyi unutmayin.</p>
+          <p className="text-xs text-slate-500 sm:text-sm">Değişiklikleri kaydetmeyi unutmayin.</p>
         )}
         <button
           type="button"
@@ -647,7 +647,7 @@ export default function AdminSettingsPage() {
           className="panel-button panel-button-primary shrink-0"
         >
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-          Ayarlari kaydet
+          Ayarları kaydet
         </button>
       </div>
     </div>

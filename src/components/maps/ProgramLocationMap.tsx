@@ -121,9 +121,9 @@ function externalMapLinks(coordinates: MapCoordinates, place: PlaceMetadata) {
 }
 
 function geolocationMessage(status: LocationStatus): string | null {
-  if (status === "loading") return "Konum aliniyor...";
+  if (status === "loading") return "Konum alınıyor...";
   if (status === "success") return "Konum secime islendi.";
-  if (status === "error") return "Konum alinamadi. Tarayici iznini kontrol edin.";
+  if (status === "error") return "Konum alınamadı. Tarayici iznini kontrol edin.";
   return null;
 }
 
@@ -222,7 +222,7 @@ export function ProgramLocationMap({
         setSearchResults(data.filter((item) => Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lon))));
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
-          setSearchError("Mekan aramasi su an tamamlanamadi.");
+          setSearchError("Mekan aramasi su an tamamlanamadı.");
           setSearchResults([]);
         }
       } finally {
@@ -450,14 +450,14 @@ export function ProgramLocationMap({
         {!leafletReady && !mapLoadError ? (
           <div className="absolute inset-0 z-[450] flex items-center justify-center bg-slate-100/80 text-sm font-semibold text-slate-600 backdrop-blur-[1px]">
             <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#f36d26]" />
-            Harita yukleniyor...
+            Harita yükleniyor...
           </div>
         ) : null}
 
         {mapLoadError ? (
           <div className="absolute inset-0 z-[450] flex items-center justify-center bg-slate-100/90 p-4 text-center">
             <div className="max-w-sm rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm font-semibold text-amber-800 shadow-sm">
-              Harita yuklenemedi. Koordinat alanlarini manuel kullanabilirsiniz.
+              Harita yüklenemedi. Koordinat alanlarını manuel kullanabilirsiniz.
             </div>
           </div>
         ) : null}
@@ -512,7 +512,7 @@ export function ProgramLocationMap({
 
                 {searchError ? <p className="mt-2 px-1 text-xs font-semibold text-amber-700">{searchError}</p> : null}
                 {searchQuery.trim().length > 0 && searchQuery.trim().length < 3 ? (
-                  <p className="mt-2 px-1 text-xs font-semibold text-slate-500">Arama icin en az 3 karakter yazin.</p>
+                  <p className="mt-2 px-1 text-xs font-semibold text-slate-500">Arama için en az 3 karakter yazın.</p>
                 ) : null}
               </div>
             </div>
@@ -561,7 +561,7 @@ export function ProgramLocationMap({
               </div>
             </div>
           ) : (
-            <span>{isPicker ? "Mekan arayin veya haritaya tiklayarak konum secin." : "Konum koordinati bulunmuyor."}</span>
+            <span>{isPicker ? "Mekan arayin veya haritaya tiklayarak konum seçin." : "Konum koordinati bulunmuyor."}</span>
           )}
         </div>
 

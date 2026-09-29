@@ -84,12 +84,12 @@ const typeLabels: Record<string, string> = {
   accommodation: "Konaklama",
   ticket: "Bilet",
   official_doc: "Resmi Evrak",
-  media_design: "Medya ve Tasarim",
-  other: "Diger",
+  media_design: "Medya ve Tasarım",
+  other: "Diğer",
 };
 
 const targetUnitLabels: Record<string, string> = {
-  media: "Medya / Tasarim",
+  media: "Medya / Tasarım",
   operations: "Operasyon",
   program: "Program / Proje",
   finance: "Finans",
@@ -170,8 +170,8 @@ export default function PanelSharedRequestsPage() {
         setRequestTypes(response.data.request_types ?? []);
         setCoordinationUnits(response.data.coordination_units ?? []);
       } catch (error) {
-        console.error("Talep verileri yuklenemedi", error);
-        setErrorMessage("Talep verileri yuklenemedi.");
+        console.error("Talep verileri yüklenemedi", error);
+        setErrorMessage("Talep verileri yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -208,8 +208,8 @@ export default function PanelSharedRequestsPage() {
       setFeedback(response.data.message);
       setForm({ type: "", target_unit_id: "", target_user_id: "", project_id: "", period_id: "", description: "" });
     } catch (error) {
-      console.error("Talep olusturulamadi", error);
-      setErrorMessage("Talep olusturulamadi.");
+      console.error("Talep oluşturulamadı", error);
+      setErrorMessage("Talep oluşturulamadı.");
     } finally {
       setSaving(false);
     }
@@ -224,8 +224,8 @@ export default function PanelSharedRequestsPage() {
       setRequests((current) => current.map((req) => (req.id === requestId ? response.data.request_item : req)));
       setFeedback(response.data.message);
     } catch (error) {
-      console.error("Talep durumu guncellenemedi", error);
-      setErrorMessage("Talep durumu guncellenemedi.");
+      console.error("Talep durumu güncellenemedi", error);
+      setErrorMessage("Talep durumu güncellenemedi.");
     } finally {
       setUpdatingId(null);
     }
@@ -247,8 +247,8 @@ export default function PanelSharedRequestsPage() {
       setRequests((current) => current.map((req) => (req.id === requestId ? response.data.request_item : req)));
       setFeedback(response.data.message);
     } catch (error) {
-      console.error("Dosya yuklenemedi", error);
-      setErrorMessage("Dosya yuklenemedi.");
+      console.error("Dosya yüklenemedi", error);
+      setErrorMessage("Dosya yüklenemedi.");
     } finally {
       setUpdatingId(null);
     }
@@ -268,7 +268,7 @@ export default function PanelSharedRequestsPage() {
           window.open(payload.download_url, "_blank", "noopener,noreferrer");
           return;
         }
-        throw new Error(payload.message ?? "Yanit belgesi indirilemedi.");
+        throw new Error(payload.message ?? "Yanıt belgesi indirilemedi.");
       }
 
       const blobUrl = URL.createObjectURL(response.data);
@@ -282,16 +282,16 @@ export default function PanelSharedRequestsPage() {
     } catch (error) {
       if (isAxiosError(error)) {
         if (error.response?.status === 403) {
-          setErrorMessage("Bu talep yanit belgesini indirme yetkiniz bulunmuyor.");
+          setErrorMessage("Bu talep yanıt belgesini indirme yetkiniz bulunmuyor.");
           return;
         }
         if (error.response?.status === 404) {
-          setErrorMessage("Yanit belgesi bulunamadi veya silinmis olabilir.");
+          setErrorMessage("Yanıt belgesi bulunamadı veya silinmiş olabilir.");
           return;
         }
       }
-      console.error("Yanit belgesi indirilemedi", error);
-      setErrorMessage("Yanit belgesi indirilemedi.");
+      console.error("Yanıt belgesi indirilemedi", error);
+      setErrorMessage("Yanıt belgesi indirilemedi.");
     }
   };
   const accentSoft = "bg-accent/20 text-accent-foreground";
@@ -306,7 +306,7 @@ export default function PanelSharedRequestsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900">Talepler</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Gercek talep olusturma ve durum takibi</p>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Gercek talep oluşturma ve durum takibi</p>
           </div>
         </div>
         <PermissionGate permission="requests.export">
@@ -318,15 +318,15 @@ export default function PanelSharedRequestsPage() {
               project_id: projectFilter || undefined,
               period_id: periodFilter !== "all" ? periodFilter : undefined,
             }}
-            buttonLabel="Talepleri Disa Aktar"
+            buttonLabel="Talepleri Dışa Aktar"
           />
         </PermissionGate>
       </div>
 
       {isProjectUnitUser ? (
         <div className="panel-notice panel-notice-info text-left">
-          Projenin satin alma, odeme veya butce ihtiyacini Mali Islemler ekranindan degil, yeni talep olusturup hedef olarak
-          <strong> Satin Alma ve Organizasyon Koordinatorlugunu</strong> secerek iletin. Talebin durumunu hedef birimdeki secili kisi gunceller.
+          Projenin satin alma, ödeme veya butce ihtiyacini Mali İşlemler ekranindan değil, yeni talep olusturup hedef olarak
+          <strong> Satin Alma ve Organizasyon Koordinatorlugunu</strong> secerek iletin. Talebin durumunu hedef birimdeki seçili kişi gunceller.
         </div>
       ) : null}
 
@@ -336,15 +336,15 @@ export default function PanelSharedRequestsPage() {
       <PermissionGate
         permissions={["requests.view", "requests.create"]}
         require="any"
-        fallback={<div className="panel-empty-card">Bu modulu goruntulemek icin yetkiniz bulunmuyor.</div>}
+        fallback={<div className="panel-empty-card">Bu modülü görüntülemek için yetkiniz bulunmuyor.</div>}
       >
         <div className={`grid grid-cols-1 gap-8 ${isResponder ? "lg:grid-cols-[1fr_1fr]" : "lg:grid-cols-[1.05fr_0.95fr]"}`}>
-          <PermissionGate permission="requests.create" fallback={<div className="panel-empty-card text-left">Yeni talep olusturma yetkiniz bulunmuyor.</div>}>
+          <PermissionGate permission="requests.create" fallback={<div className="panel-empty-card text-left">Yeni talep oluşturma yetkiniz bulunmuyor.</div>}>
             <form className="panel-section-card" onSubmit={handleSubmit}>
-              <h2 className="mb-4 text-lg font-bold text-slate-900">Yeni Talep Olustur</h2>
+              <h2 className="mb-4 text-lg font-bold text-slate-900">Yeni Talep Oluştur</h2>
               <div className="panel-form-grid">
                 <select value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))} required className="panel-control">
-                  <option value="">Talep tipi sec</option>
+                  <option value="">Talep tipi seç</option>
                   {requestTypes.map((type) => <option key={type} value={type}>{typeLabels[type] || type}</option>)}
                 </select>
                 <select
@@ -360,7 +360,7 @@ export default function PanelSharedRequestsPage() {
                   }}
                   className="panel-control"
                 >
-                  <option value="">Proje sec</option>
+                  <option value="">Proje seç</option>
                   {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
                 </select>
                 <select
@@ -369,11 +369,11 @@ export default function PanelSharedRequestsPage() {
                   disabled={!form.project_id || formPeriods.length === 0}
                   className="panel-control"
                 >
-                  <option value="">{form.project_id ? "Donem secmeden gonder" : "Proje secince donem"}</option>
+                  <option value="">{form.project_id ? "Dönem seçmeden gönder" : "Proje seçince dönem"}</option>
                   {formPeriods.map((period) => (
                     <option key={period.id} value={period.id}>
                       {period.name}
-                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
                     </option>
                   ))}
                 </select>
@@ -383,7 +383,7 @@ export default function PanelSharedRequestsPage() {
                   required
                   className="panel-control"
                 >
-                  <option value="">Hedef koordinatörlük sec</option>
+                  <option value="">Hedef koordinatörlük seç</option>
                   {coordinationUnits.map((unit) => (
                     <option key={unit.id} value={unit.id}>
                       {unit.name}{unit.project_name ? ` / ${unit.project_name}` : ""}
@@ -397,7 +397,7 @@ export default function PanelSharedRequestsPage() {
                   required
                   className="panel-control"
                 >
-                  <option value="">{selectedTargetUnit ? "Hedef kisi sec" : "Once koordinatörlük sec"}</option>
+                  <option value="">{selectedTargetUnit ? "Hedef kişi seç" : "Önce koordinatörlük seç"}</option>
                   {(selectedTargetUnit?.members ?? []).map((targetUser) => (
                     <option key={targetUser.membership_id} value={targetUser.user_id}>
                       {targetUser.name} {targetUser.surname} ({targetUser.position === "coordinator" ? "Koordinatör" : "Personel"})
@@ -412,13 +412,13 @@ export default function PanelSharedRequestsPage() {
                 rows={6}
                 required
                 minLength={10}
-                placeholder="Ihtiyacini ve gerekli ayrintilari yaz."
+                placeholder="Ihtiyacini ve gerekli ayrıntıları yaz."
                 className="panel-textarea mt-4"
               />
 
               <button type="submit" disabled={saving || !canCreateRequest} title={!canCreateRequest ? "Seçili dönemde yeni talep oluşturulamaz." : undefined} className="panel-button panel-button-primary mt-6 h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50">
                 {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                Talebi Gonder
+                Talebi Gönder
               </button>
             </form>
           </PermissionGate>
@@ -434,10 +434,10 @@ export default function PanelSharedRequestsPage() {
                   onChange={(event) => setStatusFilter(event.target.value)}
                   className="panel-control"
                 >
-                  <option value="">Tum durumlar</option>
+                  <option value="">Tüm durumlar</option>
                   <option value="pending">Beklemede</option>
                   <option value="in_progress">Isleniyor</option>
-                  <option value="completed">Tamamlandi</option>
+                  <option value="completed">Tamamlandı</option>
                   <option value="rejected">Reddedildi</option>
                 </select>
                 <select
@@ -450,7 +450,7 @@ export default function PanelSharedRequestsPage() {
                   }}
                   className="panel-control"
                 >
-                  <option value="">Tum projeler</option>
+                  <option value="">Tüm projeler</option>
                   {projects.map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}
@@ -463,11 +463,11 @@ export default function PanelSharedRequestsPage() {
                   disabled={!projectFilter || filterPeriods.length === 0}
                   className="panel-control"
                 >
-                  <option value="all">{projectFilter ? "Tum donemler" : "Proje secince donem"}</option>
+                  <option value="all">{projectFilter ? "Tüm dönemler" : "Proje seçince dönem"}</option>
                   {filterPeriods.map((period) => (
                     <option key={period.id} value={period.id}>
                       {period.name}
-                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+                      {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
                     </option>
                   ))}
                 </select>
@@ -479,7 +479,7 @@ export default function PanelSharedRequestsPage() {
                 </div>
               ) : visibleRequests.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
-                  Secili filtrelerle talep bulunmuyor.
+                  Seçili filtrelerle talep bulunmuyor.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -499,7 +499,7 @@ export default function PanelSharedRequestsPage() {
                           >
                             <option value="pending">Beklemede</option>
                             <option value="in_progress">Isleniyor</option>
-                            <option value="completed">Tamamlandi</option>
+                            <option value="completed">Tamamlandı</option>
                             <option value="rejected">Reddedildi</option>
                           </select>
                         ) : (
@@ -529,12 +529,12 @@ export default function PanelSharedRequestsPage() {
                             className="panel-card-action panel-card-action-primary w-full"
                           >
                             <Download className="h-3 w-3" />
-                            Yanit belgesini indir
+                            Yanıt belgesini indir
                           </button>
                         ) : canUploadRequestResponse && request.can_upload_response ? (
                           <label className={`panel-file-drop flex w-full items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 ${canResolveRequest ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
                             <Upload className="h-3 w-3" />
-                            {updatingId === request.id ? "Yukleniyor..." : "Belge yukle"}
+                            {updatingId === request.id ? "Yükleniyor..." : "Belge yükle"}
                             <input
                               type="file"
                               className="hidden"

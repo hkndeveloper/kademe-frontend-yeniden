@@ -31,7 +31,7 @@ export default function AlumniBohcaPage() {
         const response = await api.get<{ materials: BohcaItem[] }>("/digital-bohca");
         setItems(response.data.materials || []);
       } catch (error) {
-        console.error("Mezun bohca verileri cekilemedi", error);
+        console.error("Mezun bohça verileri çekilemedi", error);
       } finally {
         setLoading(false);
       }
@@ -76,7 +76,7 @@ export default function AlumniBohcaPage() {
             <BookOpen className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900">Dijital Bohca</h1>
+            <h1 className="text-3xl font-black text-slate-900">Dijital Bohça</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Mezun olarak erisebildigin materyaller</p>
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function AlumniBohcaPage() {
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Dosya, tur veya yukleyen ara"
+            placeholder="Dosya, tür veya yükleyen ara"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-2xl border border-border bg-background py-3 pl-10 pr-4 text-sm outline-none focus:border-primary"
@@ -106,8 +106,8 @@ export default function AlumniBohcaPage() {
       ) : filteredItems.length === 0 ? (
         <div className="glass-panel col-span-full rounded-3xl border border-dashed border-border p-20 text-center">
           <BookOpen className="mx-auto mb-4 h-12 w-12 text-primary/30" />
-          <p className="font-bold text-slate-900">Materyal bulunamadi</p>
-          <p className="mt-1 text-sm text-muted-foreground">Aramana uygun veya paylasilmis bir dosya gorunmuyor.</p>
+          <p className="font-bold text-slate-900">Materyal bulunamadı</p>
+          <p className="mt-1 text-sm text-muted-foreground">Aramana uygun veya paylaşılmış bir dosya görünmüyor.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -133,7 +133,7 @@ export default function AlumniBohcaPage() {
                 <div className="flex flex-1 flex-col p-5">
                   <h3 className="line-clamp-2 text-lg font-black text-slate-900">{item.title}</h3>
                   <div className="mt-4 space-y-2 text-xs text-muted-foreground">
-                    <p>Yukleyen: {item.uploader ? `${item.uploader.name} ${item.uploader.surname}` : "Sistem"}</p>
+                    <p>Yükleyen: {item.uploader ? `${item.uploader.name} ${item.uploader.surname}` : "Sistem"}</p>
                     <p>Tarih: {new Date(item.created_at).toLocaleDateString("tr-TR")}</p>
                   </div>
 
@@ -147,7 +147,7 @@ export default function AlumniBohcaPage() {
                         Indir
                       </button>
                     ) : (
-                      <div className="rounded-xl border border-dashed border-border py-3 text-center text-sm text-muted-foreground">Dosya baglantisi yok</div>
+                      <div className="rounded-xl border border-dashed border-border py-3 text-center text-sm text-muted-foreground">Dosya bağlantısı yok</div>
                     )}
                   </div>
                 </div>

@@ -66,17 +66,17 @@ interface Program {
 type Filter = "all" | "completed" | "attended" | "missed" | "restored";
 
 const filters: Array<{ value: Filter; label: string }> = [
-  { value: "all", label: "Tum Gecmis" },
+  { value: "all", label: "Tüm Geçmiş" },
   { value: "completed", label: "Tamamlananlar" },
   { value: "attended", label: "Katildiklarim" },
   { value: "missed", label: "Puan Kesilenler" },
-  { value: "restored", label: "Puani Korunanlar" },
+  { value: "restored", label: "Puanı Korunanlar" },
 ];
 
 const attendanceLabels: Record<Program["attendance_status"], string> = {
   present: "Katildin",
-  invalid: "Gecersiz yoklama",
-  absent: "Katilim yok",
+  invalid: "Geçersiz yoklama",
+  absent: "Katılım yok",
   pending: "Yoklama bekleniyor",
 };
 
@@ -139,7 +139,7 @@ export default function AlumniProgramsPage() {
         const response = await api.get<{ programs: Program[] }>("/programs");
         setPrograms(response.data.programs ?? []);
       } catch (error) {
-        console.error("Mezun program gecmisi cekilemedi", error);
+        console.error("Mezun program geçmişi çekilemedi", error);
       } finally {
         setLoading(false);
       }
@@ -179,9 +179,9 @@ export default function AlumniProgramsPage() {
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Program Gecmisim</h1>
+          <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Program Geçmişim</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Mezun oldugun projelerdeki program, yoklama ve kredi gecmisin
+            Mezun olduğun projelerdeki program, yoklama ve kredi gecmisin
           </p>
         </div>
 
@@ -211,9 +211,9 @@ export default function AlumniProgramsPage() {
       </div>
 
       {programs.length === 0 ? (
-        <EmptyState text="Mezun program gecmisi bulunamadi." />
+        <EmptyState text="Mezun program geçmişi bulunamadı." />
       ) : filteredPrograms.length === 0 ? (
-        <EmptyState text="Bu filtrede program bulunamadi." />
+        <EmptyState text="Bu filtrede program bulunamadı." />
       ) : (
         <div className="grid grid-cols-1 gap-5">
           {filteredPrograms.map((program) => (
@@ -282,7 +282,7 @@ export default function AlumniProgramsPage() {
                     <div className="mt-1 text-xs opacity-80">
                       {program.attendance?.recorded_at
                         ? `${formatDate(program.attendance.recorded_at)} ${formatTime(program.attendance.recorded_at)}`
-                        : "Bu oturum icin gecerli yoklama kaydin bulunmuyor."}
+                        : "Bu oturum için geçerli yoklama kaydın bulunmuyor."}
                     </div>
                   </div>
 
@@ -295,9 +295,9 @@ export default function AlumniProgramsPage() {
                     />
                     <InfoCard
                       icon={program.credit?.restored ? <ShieldCheck className="h-4 w-4" /> : <MessageSquareText className="h-4 w-4" />}
-                      label="Degerlendirme"
-                      value={program.feedback_submitted ? "Gonderildi" : "Kayit yok"}
-                      detail={program.credit?.restored ? "Puanin korunmus gorunuyor." : "Iade kaydi yok."}
+                      label="Değerlendirme"
+                      value={program.feedback_submitted ? "Gönderildi" : "Kayıt yok"}
+                      detail={program.credit?.restored ? "Puanin korunmus görünüyor." : "Iade kaydı yok."}
                     />
                   </div>
                 </div>
@@ -346,4 +346,3 @@ function EmptyState({ text }: { text: string }) {
     </div>
   );
 }
-

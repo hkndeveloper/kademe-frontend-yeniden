@@ -75,7 +75,7 @@ export default function PanelMotivationPage() {
       setLists((prev) => [response.data.list, ...prev]);
       setSelectedId(response.data.list.id);
       setListForm({ name: "", description: "", rotation_period: "monthly", is_active: false });
-      setFeedback("Motivasyon listesi olusturuldu.");
+      setFeedback("Motivasyon listesi oluşturuldu.");
     } finally {
       setSaving(false);
     }
@@ -84,7 +84,7 @@ export default function PanelMotivationPage() {
   const updateList = async (list: MotivationList, patch: Partial<MotivationList>) => {
     const response = await api.put<{ list: MotivationList }>(`/panel/motivation/lists/${list.id}`, patch);
     setLists((prev) => prev.map((item) => (item.id === list.id ? response.data.list : patch.is_active ? { ...item, is_active: false } : item)));
-    setFeedback("Liste guncellendi.");
+    setFeedback("Liste güncellendi.");
   };
 
   const deleteList = async (list: MotivationList) => {
@@ -134,9 +134,9 @@ export default function PanelMotivationPage() {
     <div className="space-y-6">
       <header className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <p className="text-xs font-black uppercase tracking-widest text-primary">Icerik ve iletisim</p>
-          <h1 className="mt-2 text-2xl font-black text-slate-950 md:text-3xl">Motivasyon Yonetimi</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">Ogrenci ve mezun panellerindeki motivasyon karti aktif listeden gunluk, haftalik veya aylik olarak otomatik degisir.</p>
+          <p className="text-xs font-black uppercase tracking-widest text-primary">İçerik ve iletişim</p>
+          <h1 className="mt-2 text-2xl font-black text-slate-950 md:text-3xl">Motivasyon Yönetimi</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">Öğrenci ve mezun panellerindeki motivasyon karti aktif listeden günlük, haftalik veya aylık olarak otomatik degisir.</p>
         </div>
         {selected ? (
           <button disabled={!canManage} onClick={() => updateList(selected, { is_active: true })} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50">
@@ -164,19 +164,19 @@ export default function PanelMotivationPage() {
 
           {canManage ? (
             <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
-              <input value={listForm.name} onChange={(e) => setListForm((p) => ({ ...p, name: e.target.value }))} placeholder="Liste adi" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
-              <textarea value={listForm.description} onChange={(e) => setListForm((p) => ({ ...p, description: e.target.value }))} placeholder="Kisa aciklama" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
+              <input value={listForm.name} onChange={(e) => setListForm((p) => ({ ...p, name: e.target.value }))} placeholder="Liste adı" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
+              <textarea value={listForm.description} onChange={(e) => setListForm((p) => ({ ...p, description: e.target.value }))} placeholder="Kısa açıklama" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
               <select value={listForm.rotation_period} onChange={(e) => setListForm((p) => ({ ...p, rotation_period: e.target.value as RotationPeriod }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                <option value="daily">Gunluk degissin</option>
+                <option value="daily">Günlük degissin</option>
                 <option value="weekly">Haftalik degissin</option>
-                <option value="monthly">Aylik degissin</option>
+                <option value="monthly">Aylık degissin</option>
               </select>
               <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
                 <input type="checkbox" checked={listForm.is_active} onChange={(e) => setListForm((p) => ({ ...p, is_active: e.target.checked }))} />
                 Olusturunca aktif yap
               </label>
               <button disabled={saving || !listForm.name.trim()} onClick={createList} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">
-                <Plus className="h-4 w-4" /> Liste olustur
+                <Plus className="h-4 w-4" /> Liste oluştur
               </button>
             </div>
           ) : null}
@@ -184,20 +184,20 @@ export default function PanelMotivationPage() {
 
         <main className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
           {!selected ? (
-            <div className="flex min-h-80 items-center justify-center rounded-2xl border border-dashed border-slate-200 text-sm text-slate-500">Once bir motivasyon listesi olusturun.</div>
+            <div className="flex min-h-80 items-center justify-center rounded-2xl border border-dashed border-slate-200 text-sm text-slate-500">Önce bir motivasyon listesi oluşturun.</div>
           ) : (
             <div className="space-y-5">
               <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
                 <div>
                   <h2 className="text-xl font-black text-slate-950">{selected.name}</h2>
-                  <p className="text-sm text-slate-500">{selected.description || "Aciklama yok."}</p>
+                  <p className="text-sm text-slate-500">{selected.description || "Açıklama yok."}</p>
                 </div>
                 {canManage ? (
                   <div className="flex flex-wrap gap-2">
                     <select value={selected.rotation_period} onChange={(e) => updateList(selected, { rotation_period: e.target.value as RotationPeriod })} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                      <option value="daily">Gunluk</option>
+                      <option value="daily">Günlük</option>
                       <option value="weekly">Haftalik</option>
-                      <option value="monthly">Aylik</option>
+                      <option value="monthly">Aylık</option>
                     </select>
                     <button onClick={() => deleteList(selected)} className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-bold text-red-600"><Trash2 className="h-4 w-4" /> Sil</button>
                   </div>
@@ -207,11 +207,11 @@ export default function PanelMotivationPage() {
               {canManage ? (
                 <div className="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 md:grid-cols-2">
                   <textarea value={quoteForm.quote} onChange={(e) => setQuoteForm((p) => ({ ...p, quote: e.target.value }))} placeholder="Motivasyon cumlesi" className="min-h-28 rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-2" />
-                  <input value={quoteForm.speaker} onChange={(e) => setQuoteForm((p) => ({ ...p, speaker: e.target.value }))} placeholder="Soyleleyen kisi" className="rounded-xl border border-slate-200 px-3 py-2 text-sm" />
+                  <input value={quoteForm.speaker} onChange={(e) => setQuoteForm((p) => ({ ...p, speaker: e.target.value }))} placeholder="Soyleleyen kişi" className="rounded-xl border border-slate-200 px-3 py-2 text-sm" />
                   <input type="number" value={quoteForm.sort_order} onChange={(e) => setQuoteForm((p) => ({ ...p, sort_order: Number(e.target.value) }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" />
                   <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600">
                     <ImagePlus className="h-4 w-4" />
-                    {imageFile ? imageFile.name : "Gorsel sec"}
+                    {imageFile ? imageFile.name : "Görsel seç"}
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
                   </label>
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
@@ -234,7 +234,7 @@ export default function PanelMotivationPage() {
                     <div className="p-4">
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <Sparkles className="h-4 w-4 text-primary" />
-                        <span className="text-[10px] font-black uppercase text-slate-400">Sira {quote.sort_order}</span>
+                        <span className="text-[10px] font-black uppercase text-slate-400">Sıra {quote.sort_order}</span>
                       </div>
                       <p className="text-sm font-semibold leading-6 text-slate-900">&quot;{quote.quote}&quot;</p>
                       <p className="mt-2 text-xs font-bold text-slate-500">{quote.speaker || "KADEME"}</p>

@@ -51,10 +51,10 @@ const initialForm: TicketFormState = {
 };
 
 const ticketStatusLabel: Record<string, string> = {
-  open: "Acik",
+  open: "Açık",
   in_progress: "Islemde",
   resolved: "Cozuldu",
-  closed: "Kapali",
+  closed: "Kapalı",
 };
 
 const ticketStatusClass: Record<string, string> = {
@@ -94,8 +94,8 @@ export default function StudentTicketsPage() {
       setTickets(ticketResponse.data.tickets ?? []);
       setProjects(projectResponse.data.projects ?? []);
     } catch (error) {
-      console.error("Destek talepleri yuklenemedi", error);
-      setErrorMessage("Destek talepleri yuklenemedi.");
+      console.error("Destek talepleri yüklenemedi", error);
+      setErrorMessage("Destek talepleri yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -129,11 +129,11 @@ export default function StudentTicketsPage() {
 
       setForm(initialForm);
       setTicketAttachment(null);
-      setMessage("Destek talebiniz basariyla olusturuldu.");
+      setMessage("Destek talebiniz başarıyla oluşturuldu.");
       await loadData();
     } catch (error) {
-      console.error("Destek talebi olusturulamadi", error);
-      setErrorMessage("Destek talebi olusturulamadi. Lutfen zorunlu alanlari kontrol edin.");
+      console.error("Destek talebi oluşturulamadı", error);
+      setErrorMessage("Destek talebi oluşturulamadı. Lütfen zorunlu alanları kontrol edin.");
     } finally {
       setSubmitting(false);
     }
@@ -158,11 +158,11 @@ export default function StudentTicketsPage() {
       });
       setReplyMessage("");
       setReplyAttachment(null);
-      setMessage("Takip mesaji eklendi.");
+      setMessage("Takip mesajı eklendi.");
       await loadData();
     } catch (error) {
-      console.error("Takip mesaji gonderilemedi", error);
-      setErrorMessage("Takip mesaji gonderilemedi.");
+      console.error("Takip mesajı gönderilemedi", error);
+      setErrorMessage("Takip mesajı gönderilemedi.");
     } finally {
       setReplyingTo(null);
     }
@@ -236,7 +236,7 @@ export default function StudentTicketsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Destek Taleplerim</h1>
-          <p className="text-sm text-muted-foreground">Koordinatorlugunuze yardim, belge veya destek talebi iletebilir; mevcut taleplerinizi takip edebilirsiniz.</p>
+          <p className="text-sm text-muted-foreground">Koordinatorlugunuze yardım, belge veya destek talebi iletebilir; mevcut taleplerinizi takip edebilirsiniz.</p>
         </div>
       </div>
 
@@ -246,8 +246,8 @@ export default function StudentTicketsPage() {
             <Plus className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold">Yeni Talep Olustur</h2>
-            <p className="text-sm text-muted-foreground">Bu form dogrudan `/tickets` endpointine baglidir.</p>
+            <h2 className="text-lg font-bold">Yeni Talep Oluştur</h2>
+            <p className="text-sm text-muted-foreground">Bu form dogrudan `/tickets` endpointine bağlıdır.</p>
           </div>
         </div>
 
@@ -270,14 +270,14 @@ export default function StudentTicketsPage() {
             <option value="resmi_evrak">Resmi Evrak</option>
             <option value="program">Program</option>
             <option value="teknik">Teknik</option>
-            <option value="diger">Diger</option>
+            <option value="diger">Diğer</option>
           </select>
           <select
             value={form.project_id}
             onChange={(event) => setForm((prev) => ({ ...prev, project_id: event.target.value }))}
             className="rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value="">Ilgili proje secin (opsiyonel)</option>
+            <option value="">Ilgili proje seçin (opsiyonel)</option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
@@ -286,7 +286,7 @@ export default function StudentTicketsPage() {
           </select>
           <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-input px-4 py-3 text-sm text-muted-foreground">
             <Upload className="h-4 w-4" />
-            <span className="truncate">{ticketAttachment ? ticketAttachment.name : form.category === "resmi_evrak" ? "Resmi evrak icin dosya ekleyin" : "Dosya sec (opsiyonel)"}</span>
+            <span className="truncate">{ticketAttachment ? ticketAttachment.name : form.category === "resmi_evrak" ? "Resmi evrak için dosya ekleyin" : "Dosya seç (opsiyonel)"}</span>
             <input
               type="file"
               className="hidden"
@@ -299,7 +299,7 @@ export default function StudentTicketsPage() {
           rows={5}
           value={form.message}
           onChange={(event) => setForm((prev) => ({ ...prev, message: event.target.value }))}
-          placeholder="Talebinizin detayini yazin"
+          placeholder="Talebinizin detayini yazın"
           className="mt-4 w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
           required
         />
@@ -310,7 +310,7 @@ export default function StudentTicketsPage() {
           className="mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          Talebi Gonder
+          Talebi Gönder
         </button>
       </form>
 
@@ -323,7 +323,7 @@ export default function StudentTicketsPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : tickets.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-16 text-center text-muted-foreground">Henuz olusturulmus destek talebiniz bulunmuyor.</div>
+          <div className="glass-panel rounded-3xl p-16 text-center text-muted-foreground">Henüz olusturulmus destek talebiniz bulunmuyor.</div>
         ) : (
           tickets.map((ticket, index) => (
             <motion.div
@@ -357,7 +357,7 @@ export default function StudentTicketsPage() {
                       {ticket.replies.map((reply) => (
                         <div key={reply.id} className="rounded-xl bg-muted/40 p-3">
                           <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            {reply.user ? `${reply.user.name} ${reply.user.surname}` : "Kullanici"} / {new Date(reply.created_at).toLocaleString("tr-TR")}
+                            {reply.user ? `${reply.user.name} ${reply.user.surname}` : "Kullanıcı"} / {new Date(reply.created_at).toLocaleString("tr-TR")}
                           </div>
                           <div className="text-sm text-muted-foreground">{reply.message}</div>
                           {reply.attachment_download_url ? (
@@ -379,7 +379,7 @@ export default function StudentTicketsPage() {
                 <div className="w-full max-w-md space-y-3">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     <MessageSquare className="h-4 w-4" />
-                    Takip Mesaji
+                    Takip Mesajı
                   </div>
                   <textarea
                     rows={3}
@@ -388,12 +388,12 @@ export default function StudentTicketsPage() {
                       setReplyingTo(ticket.id);
                       setReplyMessage(event.target.value);
                     }}
-                    placeholder="Talebinize ek not yazin"
+                    placeholder="Talebinize ek not yazın"
                     className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary"
                   />
                   <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-input px-4 py-3 text-sm text-muted-foreground">
                     <Upload className="h-4 w-4" />
-                    <span className="truncate">{replyingTo === ticket.id && replyAttachment ? replyAttachment.name : "Ek dosya sec"}</span>
+                    <span className="truncate">{replyingTo === ticket.id && replyAttachment ? replyAttachment.name : "Ek dosya seç"}</span>
                     <input
                       type="file"
                       className="hidden"
@@ -409,7 +409,7 @@ export default function StudentTicketsPage() {
                     className="flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {replyingTo === ticket.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    Takip Mesaji Gonder
+                    Takip Mesajı Gönder
                   </button>
                 </div>
               </div>

@@ -78,24 +78,24 @@ const categoryLabels: Record<string, string> = {
   transport: "Ulasim",
   food: "Yemek",
   print: "Baski",
-  education: "Egitim",
+  education: "Eğitim",
   lodging: "Konaklama",
   ticket: "Bilet",
   official_document: "Resmi Evrak",
-  media_design: "Medya / Tasarim",
-  other: "Diger",
+  media_design: "Medya / Tasarım",
+  other: "Diğer",
 };
 
 const paymentMethodLabels: Record<string, string> = {
   bank_transfer: "Banka Havalesi",
   cash: "Nakit",
   card: "Kart",
-  other: "Diger",
+  other: "Diğer",
 };
 
 const statusLabels: Record<string, string> = {
   pending: "Bekliyor",
-  approved: "Onaylandi",
+  approved: "Onaylandı",
   rejected: "Reddedildi",
   paid: "Odendi",
 };
@@ -109,7 +109,7 @@ const statusClasses: Record<string, string> = {
 
 const typeLabels: Record<string, string> = {
   expense: "Harcama",
-  payment: "Odeme",
+  payment: "Ödeme",
 };
 
 function initialFinancialProjectId(): string {
@@ -276,11 +276,11 @@ export default function AdminFinancialsPage() {
         await api.put(`/panel/financials/${id}/${action}`);
       }
 
-      setSuccessMessage("Finans islemi guncellendi.");
+      setSuccessMessage("Finans işlemi güncellendi.");
       await loadData();
     } catch (error) {
       console.error("Financial action failed", error);
-      setErrorMessage("Finans islemi tamamlanamadi.");
+      setErrorMessage("Finans işlemi tamamlanamadı.");
     } finally {
       setActionLoading(null);
     }
@@ -302,7 +302,7 @@ export default function AdminFinancialsPage() {
           return;
         }
         if (error.response?.status === 404) {
-          setErrorMessage("Fatura dosyasi bulunamadi veya silinmis olabilir.");
+          setErrorMessage("Fatura dosyası bulunamadı veya silinmiş olabilir.");
           return;
         }
       }
@@ -332,13 +332,13 @@ export default function AdminFinancialsPage() {
     event.preventDefault();
 
     if (!scopedFormProjectId || !formPayee.trim() || !formAmount || !formFile || (formCategory === "other" && !formCategoryNote.trim())) {
-      setErrorMessage(formCategory === "other" && !formCategoryNote.trim() ? "Diger kategori secildiginde not alani zorunludur." : "Proje, kategori, alici, tutar ve belge zorunludur.");
+      setErrorMessage(formCategory === "other" && !formCategoryNote.trim() ? "Diğer kategori secildiginde not alanı zorunludur." : "Proje, kategori, alici, tutar ve belge zorunludur.");
       return;
     }
 
     const selectedProject = createProjects.find((project) => String(project.id) === scopedFormProjectId);
     if (!selectedProject || !canAccessProject("financial.create", selectedProject.id)) {
-      setErrorMessage("Bu proje icin fatura olusturma yetkiniz bulunmuyor.");
+      setErrorMessage("Bu proje için fatura oluşturma yetkiniz bulunmuyor.");
       return;
     }
 
@@ -370,11 +370,11 @@ export default function AdminFinancialsPage() {
 
       resetForm();
       setActiveTab("list");
-      setSuccessMessage("Fatura basariyla onaya gonderildi.");
+      setSuccessMessage("Fatura başarıyla onaya gönderildi.");
       await loadData(1);
     } catch (error) {
       console.error("Invoice could not be submitted", error);
-      setErrorMessage("Fatura kaydedilirken bir hata olustu.");
+      setErrorMessage("Fatura kaydedilirken bir hata oluştu.");
     } finally {
       setSubmitting(false);
     }
@@ -384,9 +384,9 @@ export default function AdminFinancialsPage() {
     <div className="space-y-10">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Mali Islemler</h1>
+          <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Mali İşlemler</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            {isProjectUnit ? `${activeMembership.unit_name} · fatura ve harcama kayitlari` : "Harcama, odeme, onay ve fatura yonetimi"}
+            {isProjectUnit ? `${activeMembership.unit_name} · fatura ve harcama kayıtları` : "Harcama, ödeme, onay ve fatura yönetimi"}
           </p>
         </div>
         <PermissionGate permission="financial.export">
@@ -403,7 +403,7 @@ export default function AdminFinancialsPage() {
               date_from: dateFrom || undefined,
               date_to: dateTo || undefined,
             }}
-            buttonLabel="Disa Aktar"
+            buttonLabel="Dışa Aktar"
           />
         </PermissionGate>
       </div>
@@ -447,7 +447,7 @@ export default function AdminFinancialsPage() {
               }`}
             >
               <Upload className="h-4 w-4" />
-              Yeni Fatura Yukle
+              Yeni Fatura Yükle
             </button>
           )}
         </div>
@@ -500,7 +500,7 @@ export default function AdminFinancialsPage() {
                   })}{" "}
                   TL
                 </h4>
-                <p className="mt-1 text-xs text-muted-foreground">{Number(stat?.count ?? 0)} kayit</p>
+                <p className="mt-1 text-xs text-muted-foreground">{Number(stat?.count ?? 0)} kayıt</p>
               </div>
               <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${statusClasses[statusKey]}`}>
                 {statusKey}
@@ -585,11 +585,11 @@ export default function AdminFinancialsPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="panel-section-card">
           <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Kategori Bazli Harcamalar
+            Kategori Bazlı Harcamalar
           </h3>
           <div className="space-y-4">
             {categoryStats.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Veri bulunamadi.</p>
+              <p className="text-sm text-muted-foreground">Veri bulunamadı.</p>
             ) : (
               categoryStats.map((stat, index) => {
                 const total = Number(stat.total);
@@ -616,11 +616,11 @@ export default function AdminFinancialsPage() {
 
         <div className="panel-section-card">
           <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Proje Bazli Harcamalar
+            Proje Bazlı Harcamalar
           </h3>
           <div className="space-y-4">
             {projectStats.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Veri bulunamadi.</p>
+              <p className="text-sm text-muted-foreground">Veri bulunamadı.</p>
             ) : (
               projectStats.map((stat, index) => {
                 const total = Number(stat.total);
@@ -657,7 +657,7 @@ export default function AdminFinancialsPage() {
                 onChange={(event) => setSearch(event.target.value)}
                 onKeyDown={(event) => event.key === "Enter" && applyFilters()}
                 className="panel-control pl-10"
-                placeholder="Firma veya kisi ara"
+                placeholder="Firma veya kişi ara"
               />
             </div>
           </label>
@@ -683,7 +683,7 @@ export default function AdminFinancialsPage() {
               onChange={(event) => setStatus(event.target.value)}
               className="panel-control"
             >
-              <option value="">Tum durumlar</option>
+              <option value="">Tüm durumlar</option>
               {Object.entries(statusLabels).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -699,7 +699,7 @@ export default function AdminFinancialsPage() {
               onChange={(event) => setCategory(event.target.value)}
               className="panel-control"
             >
-              <option value="">Tum kategoriler</option>
+              <option value="">Tüm kategoriler</option>
               {Object.entries(categoryLabels).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -709,13 +709,13 @@ export default function AdminFinancialsPage() {
           </label>
 
           <label className="panel-field">
-            <span className="panel-label">Tur</span>
+            <span className="panel-label">Tür</span>
             <select
               value={transactionType}
               onChange={(event) => setTransactionType(event.target.value)}
               className="panel-control"
             >
-              <option value="">Tum turler</option>
+              <option value="">Tüm turler</option>
               {Object.entries(typeLabels).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -727,7 +727,7 @@ export default function AdminFinancialsPage() {
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[180px_180px_auto] md:items-end">
           <label className="panel-field">
-            <span className="panel-label">Baslangic</span>
+            <span className="panel-label">Başlangıç</span>
             <input
               type="date"
               value={dateFrom}
@@ -736,7 +736,7 @@ export default function AdminFinancialsPage() {
             />
           </label>
           <label className="panel-field">
-            <span className="panel-label">Bitis</span>
+            <span className="panel-label">Bitiş</span>
             <input
               type="date"
               value={dateTo}
@@ -761,11 +761,11 @@ export default function AdminFinancialsPage() {
               <tr>
                 <th className="px-6 py-4">Tarih</th>
                 <th className="px-6 py-4">Proje / Kategori</th>
-                <th className="px-6 py-4">Odeme Yapilacak Kisi/Firma</th>
+                <th className="px-6 py-4">Ödeme Yapilacak Kişi/Firma</th>
                 <th className="px-6 py-4">Tutar</th>
                 <th className="px-6 py-4">Gonderen</th>
                 <th className="px-6 py-4">Durum</th>
-                <th className="px-6 py-4 text-right">Islemler</th>
+                <th className="px-6 py-4 text-right">İşlemler</th>
               </tr>
             </thead>
             <tbody>
@@ -778,7 +778,7 @@ export default function AdminFinancialsPage() {
               ) : transactions.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                    Kayit bulunamadi.
+                    Kayıt bulunamadı.
                   </td>
                 </tr>
               ) : (
@@ -810,7 +810,7 @@ export default function AdminFinancialsPage() {
                         </div>
                       ) : (
                         <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
-                          Legacy proje kapsami
+                          Legacy proje kapsamı
                         </div>
                       )}
                     </td>
@@ -930,7 +930,7 @@ export default function AdminFinancialsPage() {
               onClick={() => setPage((current) => current - 1)}
               className="panel-button panel-button-secondary text-xs"
             >
-              Onceki
+              Önceki
             </button>
             <span className="panel-pagination-count">
               {page} / {totalPages}
@@ -966,7 +966,7 @@ export default function AdminFinancialsPage() {
                 required
                 className="panel-control"
               >
-                <option value="">Proje secin</option>
+                <option value="">Proje seçin</option>
                 {createProjects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
@@ -975,20 +975,20 @@ export default function AdminFinancialsPage() {
               </select>}
               {createProjects.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Fatura yukleyebileceginiz bir proje bulunamadi.
+                  Fatura yukleyebileceginiz bir proje bulunamadı.
                 </p>
               ) : null}
             </div>
 
             <div className="panel-field">
-              <label className="panel-label">Donem</label>
+              <label className="panel-label">Dönem</label>
               <select
                 value={formPeriodId}
                 onChange={(event) => setFormPeriodId(event.target.value)}
                 disabled={!scopedFormProjectId}
                 className="panel-control"
               >
-                <option value="">Aktif donem</option>
+                <option value="">Aktif dönem</option>
                 {(createProjects.find((project) => String(project.id) === scopedFormProjectId)?.periods ?? []).map((period) => (
                   <option key={period.id} value={period.id}>{period.name}</option>
                 ))}
@@ -1013,14 +1013,14 @@ export default function AdminFinancialsPage() {
 
             {formCategory === "other" ? (
               <div className="panel-field">
-                <label className="panel-label">Diger kategori notu</label>
+                <label className="panel-label">Diğer kategori notu</label>
                 <textarea
                   value={formCategoryNote}
                   onChange={(event) => setFormCategoryNote(event.target.value)}
                   required
                   rows={3}
                   className="panel-control min-h-24"
-                  placeholder="Harcamanin kategorisini kisaca aciklayin"
+                  placeholder="Harcamanin kategorisini kısaca aciklayin"
                 />
               </div>
             ) : null}
@@ -1041,7 +1041,7 @@ export default function AdminFinancialsPage() {
           <div className="panel-form-grid">
             <div className="panel-field">
               <label className="panel-label">
-                Alici / Firma Adi
+                Alici / Firma Adı
               </label>
               <input
                 value={formPayee}
@@ -1065,7 +1065,7 @@ export default function AdminFinancialsPage() {
 
           {!isProjectUnit ? <div className="panel-form-grid-3">
             <div className="panel-field">
-              <label className="panel-label">Odeme Tarihi</label>
+              <label className="panel-label">Ödeme Tarihi</label>
               <input
                 type="date"
                 value={formPaymentDate}
@@ -1075,7 +1075,7 @@ export default function AdminFinancialsPage() {
             </div>
 
             <div className="panel-field">
-              <label className="panel-label">Odeme Yontemi</label>
+              <label className="panel-label">Ödeme Yontemi</label>
               <select
                 value={formPaymentMethod}
                 onChange={(event) => setFormPaymentMethod(event.target.value)}
@@ -1139,7 +1139,7 @@ export default function AdminFinancialsPage() {
               className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
-              Faturayi Gonder
+              Faturayi Gönder
             </button>
           </div>
         </form>

@@ -8,7 +8,7 @@ type Props = {
 export function LogSummaryCards({ summary }: Props) {
   const cards = [
     { label: "Filtreli toplam", value: summary?.total ?? 0, icon: ActivitySquare, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Basarili", value: summary?.success ?? 0, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "Başarılı", value: summary?.success ?? 0, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
     { label: "Hata / red", value: summary?.failed ?? 0, icon: XCircle, color: "text-red-600", bg: "bg-red-50" },
     { label: "Kaynak", value: Object.keys(summary?.sources ?? {}).length, icon: Database, color: "text-slate-600", bg: "bg-slate-100" },
   ];

@@ -25,7 +25,7 @@ export default function AlumniAnnouncementsPage() {
         const response = await api.get<{ announcements: Announcement[] }>("/announcements");
         setAnnouncements(response.data.announcements ?? []);
       } catch (error) {
-        console.error("Duyurular yuklenemedi", error);
+        console.error("Duyurular yüklenemedi", error);
       } finally {
         setLoading(false);
       }
@@ -85,14 +85,14 @@ export default function AlumniAnnouncementsPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <SummaryCard label="Toplam Duyuru" value={announcements.length} />
         <SummaryCard label="Listelenen" value={filteredAnnouncements.length} />
-        <SummaryCard label="Son 30 Gun" value={announcements.filter((announcement) => renderedAt - new Date(announcement.created_at).getTime() <= 1000 * 60 * 60 * 24 * 30).length} />
+        <SummaryCard label="Son 30 Gün" value={announcements.filter((announcement) => renderedAt - new Date(announcement.created_at).getTime() <= 1000 * 60 * 60 * 24 * 30).length} />
       </div>
 
       <div className="space-y-5">
         {filteredAnnouncements.length === 0 ? (
           <div className="glass-panel rounded-3xl border border-dashed border-border p-20 text-center text-muted-foreground">
             <Bell className="mx-auto mb-4 h-12 w-12 text-primary/30" />
-            {announcements.length === 0 ? "Sistemde henuz duyuru bulunmuyor." : "Aramana uygun duyuru bulunamadi."}
+            {announcements.length === 0 ? "Sistemde henüz duyuru bulunmuyor." : "Aramana uygun duyuru bulunamadı."}
           </div>
         ) : (
           filteredAnnouncements.map((announcement, index) => (

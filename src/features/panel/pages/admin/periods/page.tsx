@@ -137,8 +137,8 @@ export default function AdminPeriodsPage() {
       setProjects(Array.from(mergedProjects.values()));
       setPeriods(periodResponse.data.periods ?? []);
     } catch (error) {
-      console.error("Donem verileri yuklenemedi", error);
-      setErrorMessage("Donem verileri yuklenemedi.");
+      console.error("Dönem verileri yüklenemedi", error);
+      setErrorMessage("Dönem verileri yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -201,18 +201,18 @@ export default function AdminPeriodsPage() {
           credit_start_amount: payload.credit_start_amount,
           credit_threshold: payload.credit_threshold,
         });
-        setMessage("Donem guncellendi.");
+        setMessage("Dönem güncellendi.");
       } else {
         await api.post("/panel/periods", payload);
-        setMessage("Donem olusturuldu.");
+        setMessage("Dönem oluşturuldu.");
       }
 
       setForm(initialForm);
       setEditingPeriodId(null);
       await loadData();
     } catch (error) {
-      console.error("Donem kaydedilemedi", error);
-      setErrorMessage("Donem kaydedilemedi.");
+      console.error("Dönem kaydedilemedi", error);
+      setErrorMessage("Dönem kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -248,8 +248,8 @@ export default function AdminPeriodsPage() {
       const response = await api.get<ClosureSummary>(`/panel/periods/${periodId}/closure-summary`);
       setClosureSummary(response.data);
     } catch (error) {
-      console.error("Donem kapanis ozeti alinamadi", error);
-      setErrorMessage("Donem kapanis ozeti alinamadi.");
+      console.error("Dönem kapanış özeti alınamadı", error);
+      setErrorMessage("Dönem kapanış özeti alınamadı.");
     } finally {
       setSummaryLoading(false);
     }
@@ -263,8 +263,8 @@ export default function AdminPeriodsPage() {
             <FileStack className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Donem Yonetimi</h1>
-            <p className="text-sm text-muted-foreground">Projelere bagli donemleri, kredi esiklerini ve basvuru formlarini buradan yonetin.</p>
+            <h1 className="text-2xl font-bold text-slate-900">Dönem Yönetimi</h1>
+            <p className="text-sm text-muted-foreground">Projelere bağlı dönemleri, kredi esiklerini ve başvuru formlarini buradan yonetin.</p>
           </div>
         </div>
         <PermissionGate permission="periods.export">
@@ -272,7 +272,7 @@ export default function AdminPeriodsPage() {
             endpoint="/panel/periods/export"
             filename="donemler"
             params={{ project_id: selectedProjectId !== "all" ? selectedProjectId : undefined }}
-            buttonLabel="Donemleri Disa Aktar"
+            buttonLabel="Dönemleri Dışa Aktar"
           />
         </PermissionGate>
       </div>
@@ -284,7 +284,7 @@ export default function AdminPeriodsPage() {
         <form onSubmit={(event) => void handleSubmit(event)} className="panel-section-card">
           <div className="mb-6 flex items-center gap-3">
             {editingPeriodId ? <PencilLine className="h-5 w-5 text-indigo-400" /> : <Plus className="h-5 w-5 text-indigo-400" />}
-            <h2 className="text-lg font-bold text-slate-900">{editingPeriodId ? "Donem Duzenle" : "Yeni Donem Olustur"}</h2>
+            <h2 className="text-lg font-bold text-slate-900">{editingPeriodId ? "Dönem Düzenle" : "Yeni Dönem Oluştur"}</h2>
           </div>
 
           <div className="space-y-4">
@@ -295,21 +295,21 @@ export default function AdminPeriodsPage() {
               className="panel-control"
               required
             >
-              <option value="">Proje secin</option>
+              <option value="">Proje seçin</option>
               {formProjectsInScope.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
                 </option>
               ))}
             </select>
-            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="2026 Bahar Donemi" className="panel-control" required />
+            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="2026 Bahar Dönemi" className="panel-control" required />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <input type="date" value={form.start_date} onChange={(event) => setForm((current) => ({ ...current, start_date: event.target.value }))} className="panel-control" required />
               <input type="date" value={form.end_date} onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))} className="panel-control" required />
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <input type="number" min="0" value={form.credit_start_amount} onChange={(event) => setForm((current) => ({ ...current, credit_start_amount: event.target.value }))} placeholder="Baslangic kredi" className="panel-control" required />
-              <input type="number" min="0" value={form.credit_threshold} onChange={(event) => setForm((current) => ({ ...current, credit_threshold: event.target.value }))} placeholder="Uyari esigi" className="panel-control" required />
+              <input type="number" min="0" value={form.credit_start_amount} onChange={(event) => setForm((current) => ({ ...current, credit_start_amount: event.target.value }))} placeholder="Başlangıç kredi" className="panel-control" required />
+              <input type="number" min="0" value={form.credit_threshold} onChange={(event) => setForm((current) => ({ ...current, credit_threshold: event.target.value }))} placeholder="Uyarı esigi" className="panel-control" required />
             </div>
             {!editingPeriodId ? <p className="text-xs text-muted-foreground">Yeni dönem “Planlandı” durumunda oluşturulur. Aktivasyon, dönem çalışma alanındaki kontrollü geçişten yapılır.</p> : null}
           </div>
@@ -321,7 +321,7 @@ export default function AdminPeriodsPage() {
               className="panel-button panel-button-primary h-11 px-5"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {editingPeriodId ? "Donemi Kaydet" : "Donem Olustur"}
+              {editingPeriodId ? "Dönemi Kaydet" : "Dönem Oluştur"}
             </button>
             {editingPeriodId ? (
               <button
@@ -332,7 +332,7 @@ export default function AdminPeriodsPage() {
                 }}
                 className="panel-button panel-button-secondary h-11 px-5"
               >
-                Vazgec
+                Vazgeç
               </button>
             ) : null}
           </div>
@@ -342,11 +342,11 @@ export default function AdminPeriodsPage() {
           <div className="panel-section-card">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Donem Listesi</h2>
-                <p className="text-sm text-muted-foreground">Projeye bagli tum donemler ve aktif kredi kurallari</p>
+                <h2 className="text-lg font-bold text-slate-900">Dönem Listesi</h2>
+                <p className="text-sm text-muted-foreground">Projeye bağlı tüm dönemler ve aktif kredi kuralları</p>
               </div>
               <select value={selectedProjectId} onChange={(event) => setSelectedProjectId(event.target.value)} className="panel-control md:w-72">
-                <option value="all">Tum projeler</option>
+                <option value="all">Tüm projeler</option>
                 {projectsInScope.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
@@ -361,7 +361,7 @@ export default function AdminPeriodsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
             </div>
           ) : filteredPeriods.length === 0 ? (
-            <div className="panel-empty-card">Bu kapsamda donem bulunamadi.</div>
+            <div className="panel-empty-card">Bu kapsamda dönem bulunamadı.</div>
           ) : (
             <div className="space-y-4">
               {filteredPeriods.map((period) => (
@@ -382,15 +382,15 @@ export default function AdminPeriodsPage() {
                           <Calendar className="h-4 w-4 text-indigo-600" />
                           {new Date(period.start_date).toLocaleDateString("tr-TR")} - {new Date(period.end_date).toLocaleDateString("tr-TR")}
                         </div>
-                        <div>Baslangic kredi: {period.credit_start_amount}</div>
-                        <div>Esik: {period.credit_threshold}</div>
+                        <div>Başlangıç kredi: {period.credit_start_amount}</div>
+                        <div>Eşik: {period.credit_threshold}</div>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
                       <Link href={`/panel/periods/${period.id}`} className="panel-card-action panel-card-action-info">
                         <Eye className="h-3.5 w-3.5" />
-                        Calisma Alani
+                        Çalışma Alanı
                       </Link>
                       <button
                         type="button"
@@ -399,7 +399,7 @@ export default function AdminPeriodsPage() {
                         className="panel-card-action"
                       >
                         {summaryLoading && summaryPeriodId === period.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
-                        Kapanis Ozeti
+                        Kapanış Özeti
                       </button>
                       <button
                         type="button"
@@ -408,18 +408,18 @@ export default function AdminPeriodsPage() {
                         className="panel-card-action"
                         title={period.lifecycle?.is_archive_mode ? "Arşiv modundaki dönem doğrudan düzenlenemez." : undefined}
                       >
-                        Duzenle
+                        Düzenle
                       </button>
                       {canAccessProject("projects.application_form.update", period.project_id) && !period.lifecycle?.is_archive_mode ? (
                         <Link
                           href={`/panel/periods/form-builder?project_id=${period.project_id}&period_id=${period.id}`}
                           className="panel-card-action panel-card-action-info"
                         >
-                          Basvuru Formu
+                          Başvuru Formu
                         </Link>
                       ) : (
                         <span className="panel-card-action cursor-not-allowed opacity-50">
-                          Basvuru Formu
+                          Başvuru Formu
                         </span>
                       )}
                     </div>
@@ -430,30 +430,30 @@ export default function AdminPeriodsPage() {
                       {summaryLoading ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          Kapanis ozeti hazirlaniyor...
+                          Kapanış özeti hazirlaniyor...
                         </div>
                       ) : closureSummary ? (
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                             <div className="panel-card-muted">
-                              <p className="text-xs text-muted-foreground">Katilimci</p>
+                              <p className="text-xs text-muted-foreground">Katılımcı</p>
                               <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.participants.total}</p>
                               <p className="text-xs text-muted-foreground">aktif {closureSummary.summary.participants.active}</p>
                             </div>
                             <div className="panel-card-muted">
                               <p className="text-xs text-muted-foreground">Program</p>
                               <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.programs.total}</p>
-                              <p className="text-xs text-muted-foreground">acik {closureSummary.summary.programs.open}</p>
+                              <p className="text-xs text-muted-foreground">açık {closureSummary.summary.programs.open}</p>
                             </div>
                             <div className="panel-card-muted">
-                              <p className="text-xs text-muted-foreground">Basvuru</p>
+                              <p className="text-xs text-muted-foreground">Başvuru</p>
                               <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.applications.total}</p>
                               <p className="text-xs text-muted-foreground">bekleyen {closureSummary.warnings.pending_applications}</p>
                             </div>
                             <div className="panel-card-muted">
                               <p className="text-xs text-muted-foreground">Sertifika</p>
                               <p className="mt-1 text-2xl font-bold text-slate-900">{closureSummary.summary.certificates.total}</p>
-                              <p className="text-xs text-muted-foreground">arsiv kaydi</p>
+                              <p className="text-xs text-muted-foreground">arsiv kaydı</p>
                             </div>
                           </div>
 
@@ -461,17 +461,17 @@ export default function AdminPeriodsPage() {
                             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                               <div>
                                 <p className="text-xs font-bold uppercase tracking-widest text-indigo-700">Kredi Snapshot</p>
-                                <p className="mt-1 text-sm text-muted-foreground">Kapanis aninda arsize giren kredi fotografi</p>
+                                <p className="mt-1 text-sm text-muted-foreground">Kapanış aninda arsize giren kredi fotografi</p>
                               </div>
                               <div className="panel-chip panel-chip-info">
-                                Esik {closureSummary.summary.credit_snapshot.threshold}
+                                Eşik {closureSummary.summary.credit_snapshot.threshold}
                               </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                               <SnapshotMetric label="Ortalama" value={closureSummary.summary.credit_snapshot.average_credit} />
                               <SnapshotMetric label="Min" value={closureSummary.summary.credit_snapshot.min_credit} />
                               <SnapshotMetric label="Max" value={closureSummary.summary.credit_snapshot.max_credit} />
-                              <SnapshotMetric label="Esik alti" value={closureSummary.summary.credit_snapshot.below_threshold_count} tone="amber" />
+                              <SnapshotMetric label="Eşik alti" value={closureSummary.summary.credit_snapshot.below_threshold_count} tone="amber" />
                               <SnapshotMetric label="Toplam" value={closureSummary.summary.credit_snapshot.total_credit} />
                             </div>
                             {closureSummary.summary.credit_snapshot.participants.filter((participant) => participant.below_threshold).length > 0 ? (
@@ -499,11 +499,11 @@ export default function AdminPeriodsPage() {
 
                           <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground md:grid-cols-2">
                             <div className="panel-card-muted">
-                              Odev: {closureSummary.summary.assignments.total} / acik {closureSummary.summary.assignments.open}
+                              Ödev: {closureSummary.summary.assignments.total} / açık {closureSummary.summary.assignments.open}
                               <br />
-                              Dijital bohca: {closureSummary.summary.materials.digital_bohca}
+                              Dijital bohça: {closureSummary.summary.materials.digital_bohca}
                               <br />
-                              Gonullu firsati: {closureSummary.summary.materials.volunteer_opportunities}
+                              Gönüllü fırsatı: {closureSummary.summary.materials.volunteer_opportunities}
                             </div>
                             <div className="panel-card-muted">
                               KPD randevu: {closureSummary.summary.kpd.appointments}
@@ -516,11 +516,11 @@ export default function AdminPeriodsPage() {
 
                           {closureSummary.warnings.open_programs || closureSummary.warnings.pending_applications || closureSummary.warnings.pending_financials ? (
                             <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
-                              Kapanis oncesi dikkat: {closureSummary.warnings.open_programs} acik program, {closureSummary.warnings.pending_applications} bekleyen basvuru, {closureSummary.warnings.pending_financials} bekleyen finans kaydi var. Kapanis calisma alanindaki engeller cozulmeden donem tamamlanamaz.
+                              Kapanış oncesi dikkat: {closureSummary.warnings.open_programs} açık program, {closureSummary.warnings.pending_applications} bekleyen başvuru, {closureSummary.warnings.pending_financials} bekleyen finans kaydı var. Kapanış çalışma alanindaki engeller cozulmeden dönem tamamlanamaz.
                             </div>
                           ) : (
                             <div className="panel-notice panel-notice-success">
-                              Bu donemde kapanis icin kritik bekleyen is gorunmuyor.
+                              Bu dönemde kapanış için kritik bekleyen iş görünmüyor.
                             </div>
                           )}
                         </div>

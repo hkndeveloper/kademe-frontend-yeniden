@@ -56,10 +56,10 @@ const emptyForm: OpportunityForm = {
 
 const KIND_LABEL: Record<string, string> = {
   internship: "Staj",
-  job: "Is Firsati",
+  job: "İş Fırsatı",
   network: "Ag / Network",
   event: "Etkinlik",
-  other: "Diger",
+  other: "Diğer",
 };
 
 
@@ -206,7 +206,7 @@ export default function PanelAlumniOpportunitiesPage() {
       closeForm();
     } catch (error) {
       console.error(error);
-      setFeedback(editingId ? "Kayit guncellenemedi." : "Kayit olusturulamadi.");
+      setFeedback(editingId ? "Kayıt güncellenemedi." : "Kayıt oluşturulamadı.");
     } finally {
       setSaving(false);
     }
@@ -215,11 +215,11 @@ export default function PanelAlumniOpportunitiesPage() {
   async function removeRow(row: Opportunity) {
     const projectId = row.project_id;
     if (projectId != null && !canAccessProject("alumni_opportunities.manage", projectId)) {
-      setFeedback("Bu kaydi silmek icin yetkiniz yok.");
+      setFeedback("Bu kaydı silmek için yetkiniz yok.");
       return;
     }
     if (projectId == null && !hasPermission("alumni_opportunities.manage")) {
-      setFeedback("Bu kaydi silmek icin yetkiniz yok.");
+      setFeedback("Bu kaydı silmek için yetkiniz yok.");
       return;
     }
     try {
@@ -242,7 +242,7 @@ export default function PanelAlumniOpportunitiesPage() {
   return (
     <PermissionGate
       permission="alumni_opportunities.view"
-      fallback={<div className="panel-empty-card text-amber-700">Firsat kayitlarini goruntuleme yetkiniz bulunmuyor.</div>}
+      fallback={<div className="panel-empty-card text-amber-700">Fırsat kayıtlarını görüntüleme yetkiniz bulunmuyor.</div>}
     >
       <div className="space-y-8">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -251,16 +251,16 @@ export default function PanelAlumniOpportunitiesPage() {
               <Handshake className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-slate-900">Kariyer / Alumni firsatlari</h1>
+              <h1 className="text-3xl font-black text-slate-900">Kariyer / Alumni fırsatları</h1>
               <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                Mezun ve ogrenci portalinda listelenen duyurular
+                Mezun ve öğrenci portalinda listelenen duyurular
               </p>
             </div>
           </div>
           <PermissionGate permission="alumni_opportunities.manage">
             <button type="button" onClick={openCreateForm} className="panel-button panel-button-primary h-11">
               <Plus className="h-4 w-4" />
-              Yeni kayit
+              Yeni kayıt
             </button>
           </PermissionGate>
         </div>
@@ -271,14 +271,14 @@ export default function PanelAlumniOpportunitiesPage() {
           <PermissionGate permission="alumni_opportunities.manage">
             <form onSubmit={handleSubmit} className="panel-section-card">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-lg font-bold text-slate-900">{editingId ? "Firsati Duzenle" : "Yeni Firsat"}</h2>
+                <h2 className="text-lg font-bold text-slate-900">{editingId ? "Fırsatı Düzenle" : "Yeni Fırsat"}</h2>
                 <button type="button" onClick={closeForm} className="rounded-full p-2 text-slate-500 hover:bg-slate-100">
                   <X className="h-4 w-4" />
                 </button>
               </div>
               <div className="panel-form-grid">
                 <div className="lg:col-span-2">
-                  <label className="panel-label">Baslik</label>
+                  <label className="panel-label">Başlık</label>
                   <input
                     required
                     className="panel-control"
@@ -287,7 +287,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   />
                 </div>
                 <div>
-                  <label className="panel-label">Tur</label>
+                  <label className="panel-label">Tür</label>
                   <select
                     className="panel-control"
                     value={form.kind}
@@ -308,7 +308,7 @@ export default function PanelAlumniOpportunitiesPage() {
                     required={requireProject}
                     onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))}
                   >
-                    <option value="">{requireProject ? "Proje secin" : "Genel (tum uygun katilimcilar)"}</option>
+                    <option value="">{requireProject ? "Proje seçin" : "Genel (tüm uygun katılımcılar)"}</option>
                     {manageableForForm.map((project) => (
                       <option key={project.id} value={String(project.id)}>
                         {project.name}
@@ -317,7 +317,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   </select>
                 </div>
                 <div className="lg:col-span-2">
-                  <label className="panel-label">Ozet</label>
+                  <label className="panel-label">Özet</label>
                   <textarea
                     className="panel-textarea min-h-20"
                     value={form.summary}
@@ -333,7 +333,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   />
                 </div>
                 <div className="lg:col-span-2">
-                  <label className="panel-label">Baglanti URL</label>
+                  <label className="panel-label">Bağlantı URL</label>
                   <input
                     className="panel-control"
                     value={form.link_url}
@@ -341,7 +341,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   />
                 </div>
                 <div>
-                  <label className="panel-label">Yayin zamani (bos = simdi)</label>
+                  <label className="panel-label">Yayin zamanı (bos = şimdi)</label>
                   <input
                     type="datetime-local"
                     className="panel-control"
@@ -350,7 +350,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   />
                 </div>
                 <div>
-                  <label className="panel-label">Bitis (opsiyonel)</label>
+                  <label className="panel-label">Bitiş (opsiyonel)</label>
                   <input
                     type="datetime-local"
                     className="panel-control"
@@ -365,7 +365,7 @@ export default function PanelAlumniOpportunitiesPage() {
                       checked={form.target_student}
                       onChange={(event) => setForm((current) => ({ ...current, target_student: event.target.checked }))}
                     />
-                    Ogrenciler
+                    Öğrenciler
                   </label>
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <input
@@ -386,7 +386,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   disabled={saving || (!form.target_student && !form.target_alumni)}
                   className="panel-button panel-button-primary h-11 px-6"
                 >
-                  {saving ? "Kaydediliyor..." : editingId ? "Guncelle" : "Kaydet"}
+                  {saving ? "Kaydediliyor..." : editingId ? "Güncelle" : "Kaydet"}
                 </button>
               </div>
             </form>
@@ -395,7 +395,7 @@ export default function PanelAlumniOpportunitiesPage() {
 
         <div className="space-y-4">
           {rows.length === 0 ? (
-            <div className="panel-empty-card">Kayit yok.</div>
+            <div className="panel-empty-card">Kayıt yok.</div>
           ) : (
             rows.map((row) => (
               <div key={row.id} className="panel-list-card flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -404,7 +404,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   <h3 className="text-lg font-bold text-slate-900">{row.title}</h3>
                   <p className="text-xs text-muted-foreground">
                     {row.project?.name ?? "Genel"}
-                    {row.target_audience?.length ? ` - Hedef: ${row.target_audience.join(", ")}` : " - Hedef: tum"}
+                    {row.target_audience?.length ? ` - Hedef: ${row.target_audience.join(", ")}` : " - Hedef: tüm"}
                   </p>
                   {row.summary ? <p className="mt-2 text-sm text-muted-foreground">{row.summary}</p> : null}
                 </div>
@@ -412,7 +412,7 @@ export default function PanelAlumniOpportunitiesPage() {
                   {canEditRow(row) ? (
                     <button type="button" onClick={() => startEdit(row)} className="panel-card-action">
                       <Pencil className="h-4 w-4" />
-                      Duzenle
+                      Düzenle
                     </button>
                   ) : null}
                   <PermissionGate permission="alumni_opportunities.manage">

@@ -55,14 +55,14 @@ export type PanelMenuItem = {
 };
 
 export const PANEL_MENU_SECTIONS: PanelMenuSectionDef[] = [
-  { id: "overview", label: "Ozet", order: 0 },
+  { id: "overview", label: "Özet", order: 0 },
   { id: "projects", label: "Projeler ve programlar", order: 1 },
-  { id: "project_special_modules", label: "Projeye Ozgu Moduller", order: 2 },
+  { id: "project_special_modules", label: "Projeye Ozgu Modüller", order: 2 },
   { id: "operations", label: "Operasyon", order: 3 },
-  { id: "people", label: "Yonetim ve kisiler", order: 4 },
-  { id: "organization", label: "Yonetim ve kisiler", order: 4 },
-  { id: "communication", label: "Icerik ve iletisim", order: 5 },
-  { id: "content", label: "Icerik ve iletisim", order: 5 },
+  { id: "people", label: "Yönetim ve kişiler", order: 4 },
+  { id: "organization", label: "Yönetim ve kişiler", order: 4 },
+  { id: "communication", label: "İçerik ve iletişim", order: 5 },
+  { id: "content", label: "İçerik ve iletişim", order: 5 },
   { id: "system", label: "Sistem", order: 6 },
   { id: "account", label: "Hesap", order: 7 },
 ];
@@ -88,7 +88,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "applications",
-    label: "Basvurular",
+    label: "Başvurular",
     href: "/panel/applications",
     icon: FileStack,
     permission: "applications.view",
@@ -97,7 +97,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "volunteer",
-    label: "Gonullu Basvurulari",
+    label: "Gönüllü Başvuruları",
     href: "/panel/volunteer",
     icon: UserCog,
     permission: "volunteer.view",
@@ -129,7 +129,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "participants",
-    label: "Katilimci Ozet",
+    label: "Katılımcı Özet",
     href: "/panel/participants",
     icon: Users,
     permission: "projects.participants.view",
@@ -138,7 +138,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "digital-bohca",
-    label: "Dijital Bohca",
+    label: "Dijital Bohça",
     href: "/panel/digital-bohca",
     icon: Database,
     permission: "digital_bohca.view",
@@ -147,7 +147,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "assignments",
-    label: "Odevler",
+    label: "Ödevler",
     href: "/panel/assignments",
     icon: FileStack,
     permission: "assignments.view",
@@ -189,7 +189,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "financials",
-    label: "Mali Islemler",
+    label: "Mali İşlemler",
     href: "/panel/financials",
     icon: CreditCard,
     permission: "financial.view",
@@ -225,7 +225,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "users",
-    label: "Kullanicilar",
+    label: "Kullanıcılar",
     href: "/panel/users",
     icon: Users,
     permission: "users.view",
@@ -270,7 +270,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "periods",
-    label: "Donemler",
+    label: "Dönemler",
     href: "/panel/periods",
     icon: Database,
     permission: "periods.view",
@@ -297,7 +297,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "alumni-opportunities",
-    label: "Kariyer firsatlari",
+    label: "Kariyer fırsatları",
     href: "/panel/alumni-opportunities",
     icon: Handshake,
     permission: "alumni_opportunities.view",
@@ -315,7 +315,7 @@ export const unifiedPanelMenu: PanelMenuItem[] = [
   },
   {
     id: "content",
-    label: "Icerik",
+    label: "İçerik",
     href: "/panel/content",
     icon: Database,
     permission: "content.view",

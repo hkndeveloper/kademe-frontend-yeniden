@@ -100,10 +100,10 @@ interface AssignmentUnit {
 }
 
 const statusLabels: Record<Ticket["status"], string> = {
-  open: "Acik",
+  open: "Açık",
   in_progress: "Islemde",
   resolved: "Cozuldu",
-  closed: "Kapali",
+  closed: "Kapalı",
 };
 
 const statusClasses: Record<Ticket["status"], string> = {
@@ -296,11 +296,11 @@ export default function AdminSupportPage() {
       });
       setMessageByTicket((current) => ({ ...current, [ticketId]: "" }));
       setAttachmentByTicket((current) => ({ ...current, [ticketId]: null }));
-      setSuccessMessage("Yanit basariyla gonderildi.");
+      setSuccessMessage("Yanıt başarıyla gönderildi.");
       await loadData();
     } catch (error) {
       console.error("Reply could not be sent", error);
-      setErrorMessage("Yanit gonderilemedi.");
+      setErrorMessage("Yanıt gönderilemedi.");
     } finally {
       setActionLoading(null);
     }
@@ -395,11 +395,11 @@ export default function AdminSupportPage() {
     setSuccessMessage("");
     try {
       await api.put(`/panel/support/tickets/${ticketId}/reopen`);
-      setSuccessMessage("Destek kaydi yeniden acildi.");
+      setSuccessMessage("Destek kaydı yeniden acildi.");
       await loadData();
     } catch (error) {
       console.error("Ticket could not be reopened", error);
-      setErrorMessage("Destek kaydi yeniden acilamadi.");
+      setErrorMessage("Destek kaydı yeniden acilamadi.");
     } finally {
       setActionLoading(null);
     }
@@ -417,11 +417,11 @@ export default function AdminSupportPage() {
     try {
       await api.patch(`/panel/support/tickets/${ticketId}`, editForm);
       setEditingTicketId(null);
-      setSuccessMessage("Destek kaydi guncellendi.");
+      setSuccessMessage("Destek kaydı güncellendi.");
       await loadData();
     } catch (error) {
       console.error("Ticket could not be updated", error);
-      setErrorMessage("Destek kaydi guncellenemedi.");
+      setErrorMessage("Destek kaydı güncellenemedi.");
     } finally {
       setActionLoading(null);
     }
@@ -454,7 +454,7 @@ export default function AdminSupportPage() {
           <div>
             <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Destek Merkezi</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Kullanici ve ziyaretci taleplerinin merkezi yonetimi
+              Kullanıcı ve ziyaretci taleplerinin merkezi yönetimi
             </p>
           </div>
         </div>
@@ -476,7 +476,7 @@ export default function AdminSupportPage() {
                 period_id: filterPeriodId !== "all" ? filterPeriodId : undefined,
                 search: search || undefined,
               }}
-              buttonLabel="Kayitlari Disa Aktar"
+              buttonLabel="Kayıtları Dışa Aktar"
             />
           ) : null}
         </div>
@@ -576,7 +576,7 @@ export default function AdminSupportPage() {
           }}
           className="panel-control"
         >
-          <option value="">Tum projeler</option>
+          <option value="">Tüm projeler</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}
@@ -590,11 +590,11 @@ export default function AdminSupportPage() {
           disabled={!filterProjectId || filterPeriods.length === 0}
           className="panel-control"
         >
-          <option value="all">{filterProjectId ? "Tum donemler" : "Proje secince donem"}</option>
+          <option value="all">{filterProjectId ? "Tüm dönemler" : "Proje seçince dönem"}</option>
           {filterPeriods.map((period) => (
             <option key={period.id} value={period.id}>
               {period.name}
-              {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandi)" : ""}
+              {period.status === "active" ? " (aktif)" : period.status === "completed" ? " (tamamlandı)" : ""}
             </option>
           ))}
         </select>
@@ -604,7 +604,7 @@ export default function AdminSupportPage() {
           onChange={(event) => setCategoryFilter(event.target.value)}
           className="panel-control"
         >
-          <option value="">Tum kategoriler</option>
+          <option value="">Tüm kategoriler</option>
           <option value="general">Genel</option>
           <option value="technical">Teknik</option>
           <option value="project">Proje</option>
@@ -615,11 +615,11 @@ export default function AdminSupportPage() {
           onChange={(event) => setStatusFilter(event.target.value)}
           className="panel-control"
         >
-          <option value="">Tum durumlar</option>
-          <option value="open">Acik</option>
+          <option value="">Tüm durumlar</option>
+          <option value="open">Açık</option>
           <option value="in_progress">Islemde</option>
           <option value="resolved">Cozuldu</option>
-          <option value="closed">Kapali</option>
+          <option value="closed">Kapalı</option>
         </select>
 
         <button
@@ -639,7 +639,7 @@ export default function AdminSupportPage() {
           </div>
         ) : tickets.length === 0 ? (
           <div className="panel-empty-card py-16">
-            Destek talebi bulunamadi.
+            Destek talebi bulunamadı.
           </div>
         ) : (
           tickets.map((ticket) => {
@@ -672,7 +672,7 @@ export default function AdminSupportPage() {
                         className="panel-card-action panel-card-action-primary py-1.5"
                       >
                         {editingTicketId === ticket.id ? <Save className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-                        {editingTicketId === ticket.id ? "Kaydet" : "Duzenle"}
+                        {editingTicketId === ticket.id ? "Kaydet" : "Düzenle"}
                       </button>
                     ) : null}
                   </div>
@@ -743,7 +743,7 @@ export default function AdminSupportPage() {
                         <div key={reply.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                           <div className="mb-1 flex items-center justify-between text-[10px]">
                             <span className="font-bold text-indigo-700">
-                              {reply.user ? `${reply.user.name} ${reply.user.surname}` : "Kullanici"}
+                              {reply.user ? `${reply.user.name} ${reply.user.surname}` : "Kullanıcı"}
                             </span>
                             <span className="text-muted-foreground">
                               {new Date(reply.created_at).toLocaleString("tr-TR")}
@@ -781,7 +781,7 @@ export default function AdminSupportPage() {
                         disabled={!canResolveTicket || ticket.status === "closed" || !canActOnTicket("support.assign", ticket)}
                         className="panel-control h-10 text-xs"
                       >
-                        <option value="">Koordinatörlük sec</option>
+                        <option value="">Koordinatörlük seç</option>
                         {assignmentUnits.map((unit) => (
                           <option key={unit.id} value={unit.id}>{unit.name}</option>
                         ))}
@@ -801,7 +801,7 @@ export default function AdminSupportPage() {
                         <option value="">
                           {ticket.assignee
                             ? `${ticket.assignee.name} ${ticket.assignee.surname}`
-                            : "Personel sec"}
+                            : "Personel seç"}
                         </option>
                         {(assignmentUnits.find((unit) => String(unit.id) === (assignedUnitByTicket[ticket.id] ?? String(ticket.assigned_unit_id ?? "")))?.members ?? staff).map((member) => (
                           <option key={"membership_id" in member ? member.membership_id : member.id} value={"user_id" in member ? member.user_id : member.id}>
@@ -834,7 +834,7 @@ export default function AdminSupportPage() {
 
                   <div>
                     <div className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      Yanitla
+                      Yanıtla
                     </div>
                     <textarea
                       rows={4}
@@ -847,11 +847,11 @@ export default function AdminSupportPage() {
                       }
                       disabled={!canResolveTicket || ticket.status === "closed" || !canActOnTicket("support.reply", ticket)}
                       className="panel-textarea min-h-24 text-xs"
-                      placeholder="Mesajinizi yazin"
+                      placeholder="Mesajınızı yazın"
                     />
                     <label className="panel-file-drop mt-2 flex cursor-pointer items-center justify-center gap-2 p-2.5 text-xs font-bold text-slate-700">
                       <Upload className="h-4 w-4 text-indigo-500" />
-                      <span className="truncate">{attachmentByTicket[ticket.id]?.name ?? "Ek dosya sec"}</span>
+                      <span className="truncate">{attachmentByTicket[ticket.id]?.name ?? "Ek dosya seç"}</span>
                       <input
                         type="file"
                         className="hidden"
@@ -884,7 +884,7 @@ export default function AdminSupportPage() {
                       ) : (
                         <Send className="h-4 w-4" />
                       )}
-                      Gonder
+                      Gönder
                     </button>
 
                     {ticket.status !== "closed" && (
@@ -904,10 +904,10 @@ export default function AdminSupportPage() {
                         onClick={() => void handleReopen(ticket.id)}
                         disabled={actionLoading === ticket.id || !canResolveTicket}
                         className="panel-card-action panel-card-action-primary px-4"
-                        title="Destek kaydini yeniden ac"
+                        title="Destek kaydını yeniden aç"
                       >
                         <RotateCcw className="h-4 w-4" />
-                        Yeniden ac
+                        Yeniden aç
                       </button>
                     ) : null}
                   </div>

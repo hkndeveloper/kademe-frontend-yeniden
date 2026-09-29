@@ -78,10 +78,10 @@ const applicationStatusClass: Record<string, string> = {
 };
 
 const ticketStatusLabel: Record<string, string> = {
-  open: "Acik",
+  open: "Açık",
   in_progress: "Islemde",
   resolved: "Cozuldu",
-  closed: "Kapali",
+  closed: "Kapalı",
 };
 
 const ticketStatusClass: Record<string, string> = {
@@ -131,8 +131,8 @@ export default function AlumniSupportPage() {
       setProjects(projectResponse.data.projects ?? []);
       setApplications(volunteerResponse.data.my_applications ?? []);
     } catch (error) {
-      console.error("Alumni destek verileri yuklenemedi", error);
-      setErrorMessage("Destek ve gonulluluk verileri yuklenemedi.");
+      console.error("Alumni destek verileri yüklenemedi", error);
+      setErrorMessage("Destek ve gönüllülük verileri yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -166,11 +166,11 @@ export default function AlumniSupportPage() {
 
       setForm(initialForm);
       setTicketAttachment(null);
-      setMessage("Destek talebi olusturuldu.");
+      setMessage("Destek talebi oluşturuldu.");
       await loadData();
     } catch (error) {
-      console.error("Alumni destek talebi olusturulamadi", error);
-      setErrorMessage("Destek talebi olusturulamadi.");
+      console.error("Alumni destek talebi oluşturulamadı", error);
+      setErrorMessage("Destek talebi oluşturulamadı.");
     } finally {
       setSubmitting(false);
     }
@@ -195,11 +195,11 @@ export default function AlumniSupportPage() {
       });
       setReplyMessage("");
       setReplyAttachment(null);
-      setMessage("Takip mesaji eklendi.");
+      setMessage("Takip mesajı eklendi.");
       await loadData();
     } catch (error) {
-      console.error("Alumni takip mesaji gonderilemedi", error);
-      setErrorMessage("Takip mesaji gonderilemedi.");
+      console.error("Alumni takip mesajı gönderilemedi", error);
+      setErrorMessage("Takip mesajı gönderilemedi.");
     } finally {
       setReplyingTo(null);
     }
@@ -272,9 +272,9 @@ export default function AlumniSupportPage() {
           <LifeBuoy className="h-7 w-7" />
         </div>
         <div>
-          <h1 className="text-3xl font-black text-slate-900">Destek ve Gonulluluk</h1>
+          <h1 className="text-3xl font-black text-slate-900">Destek ve Gönüllülük</h1>
           <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Mezun destek taleplerini, yanitlari ve gonulluluk basvurularini buradan takip et.
+            Mezun destek taleplerini, yanıtları ve gönüllülük basvurularini buradan takip et.
           </p>
         </div>
       </div>
@@ -283,7 +283,7 @@ export default function AlumniSupportPage() {
         <div className="glass-panel rounded-3xl border-purple-500/20 bg-purple-500/5 p-8">
           <div className="mb-4 flex items-center gap-3">
             <HeartHandshake className="h-5 w-5 text-purple-400" />
-            <h2 className="text-lg font-bold text-slate-900">Gonulluluk Ozeti</h2>
+            <h2 className="text-lg font-bold text-slate-900">Gönüllülük Özeti</h2>
           </div>
           {loading ? (
             <div className="flex items-center justify-center py-10">
@@ -291,20 +291,20 @@ export default function AlumniSupportPage() {
             </div>
           ) : applications.length === 0 ? (
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Henuz acik gonulluluk ilanlarina yaptiginiz bir basvuru bulunmuyor. Gonulluluk ekranindan aktif ilanlara
-              basvuru yapabilirsiniz.
+              Henüz açık gönüllülük ilanlarina yaptiginiz bir başvuru bulunmuyor. Gönüllülük ekranindan aktif ilanlara
+              başvuru yapabilirsiniz.
             </p>
           ) : (
             <div className="space-y-4">
               {applications.slice(0, 3).map((application) => (
                 <div key={application.id} className="rounded-2xl bg-white/5 p-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-sm font-bold text-slate-900">{application.opportunity?.title || "Gonulluluk ilani"}</h3>
+                    <h3 className="text-sm font-bold text-slate-900">{application.opportunity?.title || "Gönüllülük ilanı"}</h3>
                     <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${applicationStatus(application.status).className}`}>
                       {applicationStatus(application.status).label}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{application.opportunity?.project?.name || "Genel gonulluluk kapsami"}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{application.opportunity?.project?.name || "Genel gönüllülük kapsamı"}</p>
                   <p className="mt-2 text-xs uppercase tracking-widest text-muted-foreground">
                     {new Date(application.created_at).toLocaleString("tr-TR")}
                   </p>
@@ -338,15 +338,15 @@ export default function AlumniSupportPage() {
               <option value="general">Genel</option>
               <option value="certificate">Sertifika</option>
               <option value="career">Kariyer</option>
-              <option value="volunteer">Gonulluluk</option>
-              <option value="other">Diger</option>
+              <option value="volunteer">Gönüllülük</option>
+              <option value="other">Diğer</option>
             </select>
             <select
               value={form.project_id}
               onChange={(event) => setForm((prev) => ({ ...prev, project_id: event.target.value }))}
               className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-purple-500"
             >
-              <option value="">Ilgili proje secin (opsiyonel)</option>
+              <option value="">Ilgili proje seçin (opsiyonel)</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -355,7 +355,7 @@ export default function AlumniSupportPage() {
             </select>
             <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-input px-4 py-3 text-sm text-muted-foreground">
               <Upload className="h-4 w-4" />
-              <span className="truncate">{ticketAttachment ? ticketAttachment.name : "Dosya sec (opsiyonel)"}</span>
+              <span className="truncate">{ticketAttachment ? ticketAttachment.name : "Dosya seç (opsiyonel)"}</span>
               <input
                 type="file"
                 className="hidden"
@@ -366,7 +366,7 @@ export default function AlumniSupportPage() {
               rows={5}
               value={form.message}
               onChange={(event) => setForm((prev) => ({ ...prev, message: event.target.value }))}
-              placeholder="Talebinizin detayini yazin"
+              placeholder="Talebinizin detayini yazın"
               className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-purple-500"
               required
             />
@@ -377,7 +377,7 @@ export default function AlumniSupportPage() {
               className="flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Talebi Gonder
+              Talebi Gönder
             </button>
           </div>
         </form>
@@ -392,7 +392,7 @@ export default function AlumniSupportPage() {
             <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
           </div>
         ) : tickets.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-16 text-center text-muted-foreground">Henuz destek kaydi bulunmuyor.</div>
+          <div className="glass-panel rounded-3xl p-16 text-center text-muted-foreground">Henüz destek kaydı bulunmuyor.</div>
         ) : (
           tickets.map((ticket) => (
             <div key={ticket.id} className="glass-panel rounded-3xl p-6">
@@ -424,7 +424,7 @@ export default function AlumniSupportPage() {
                       {ticket.replies.map((reply) => (
                         <div key={reply.id} className="rounded-xl bg-muted/40 p-3">
                           <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            {reply.user ? `${reply.user.name} ${reply.user.surname}` : "Kullanici"} / {new Date(reply.created_at).toLocaleString("tr-TR")}
+                            {reply.user ? `${reply.user.name} ${reply.user.surname}` : "Kullanıcı"} / {new Date(reply.created_at).toLocaleString("tr-TR")}
                           </div>
                           <div className="text-sm text-muted-foreground">{reply.message}</div>
                           {reply.attachment_download_url ? (
@@ -445,7 +445,7 @@ export default function AlumniSupportPage() {
 
                 <div className="space-y-3">
                   <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                    Takip Mesaji
+                    Takip Mesajı
                   </label>
                   <textarea
                     rows={3}
@@ -454,12 +454,12 @@ export default function AlumniSupportPage() {
                       setReplyingTo(ticket.id);
                       setReplyMessage(event.target.value);
                     }}
-                    placeholder="Talebinize ek not yazin"
+                    placeholder="Talebinize ek not yazın"
                     className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-input px-4 py-3 text-sm text-muted-foreground">
                     <Upload className="h-4 w-4" />
-                    <span className="truncate">{replyingTo === ticket.id && replyAttachment ? replyAttachment.name : "Ek dosya sec"}</span>
+                    <span className="truncate">{replyingTo === ticket.id && replyAttachment ? replyAttachment.name : "Ek dosya seç"}</span>
                     <input
                       type="file"
                       className="hidden"
@@ -476,7 +476,7 @@ export default function AlumniSupportPage() {
                     className="flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {replyingTo === ticket.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    Takip Mesaji Gonder
+                    Takip Mesajı Gönder
                   </button>
                 </div>
               </div>

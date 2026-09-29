@@ -171,20 +171,20 @@ function defaultScopeForRole(
 
 function scopeLabel(scopeType: string | null | undefined): string {
   const labels: Record<string, string> = {
-    all: "Tum sistem",
+    all: "Tüm sistem",
     own_projects: "Kendi projeleri",
-    assigned_projects: "Atanmis projeler",
+    assigned_projects: "Atanmış projeler",
     own_unit: "Kendi birimi",
-    selected_projects: "Secili projeler",
-    self: "Kendi kaydi",
-    none: "Kapali",
+    selected_projects: "Seçili projeler",
+    self: "Kendi kaydı",
+    none: "Kapalı",
   };
 
   return scopeType ? labels[scopeType] ?? scopeType : "Scope yok";
 }
 
 function permissionDomainLabel(domain?: "authority" | "participant"): string {
-  return domain === "participant" ? "Ogrenci-Mezun Portali" : "Yetkili Panel";
+  return domain === "participant" ? "Öğrenci-Mezun Portalı" : "Yetkili Panel";
 }
 
 function isParticipantRole(roleName?: string | null): boolean {
@@ -335,7 +335,7 @@ export default function PermissionsPage() {
       const response = await api.get<{ logs: PermissionAuditLog[]; warning?: string }>("/panel/permissions-matrix/audit");
       setAuditLogs(response.data.logs ?? []);
     } catch (error) {
-      console.error("Yetki audit kayitlari yuklenemedi", error);
+      console.error("Yetki audit kayıtları yüklenemedi", error);
     } finally {
       setAuditLoading(false);
     }
@@ -343,7 +343,7 @@ export default function PermissionsPage() {
 
   const loadData = useCallback(async () => {
     if (!canViewMatrix) {
-      setErrorMessage("Yetki matrisini goruntulemek icin tum sistem kapsami gerekir.");
+      setErrorMessage("Yetki matrisini görüntülemek için tüm sistem kapsamı gerekir.");
       setLoading(false);
       return;
     }
@@ -388,14 +388,14 @@ export default function PermissionsPage() {
         }, {});
       });
     } catch (error) {
-      console.error("Yetki matrisi yuklenemedi", error);
+      console.error("Yetki matrisi yüklenemedi", error);
       if (isAxiosError(error) && error.response?.status === 403) {
-        setErrorMessage("Bu ekrani goruntuleme yetkiniz artik yok. Panele yonlendiriliyorsunuz.");
+        setErrorMessage("Bu ekrani görüntüleme yetkiniz artık yok. Panele yonlendiriliyorsunuz.");
         await refreshAuthProfile();
         router.replace(homePathForUser(useAuth.getState().user ?? authUser));
         return;
       }
-      setErrorMessage("Yetki matrisi yuklenemedi.");
+      setErrorMessage("Yetki matrisi yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -525,8 +525,8 @@ export default function PermissionsPage() {
       setRoleAssignments(response.data.user.roles ?? []);
       setSelectedUserAuthorizationManagement(response.data.authorization_management ?? null);
     } catch (error) {
-      console.error("Kullanici override bilgileri yuklenemedi", error);
-      setErrorMessage("Kullaniciya ozel yetki bilgileri yuklenemedi.");
+      console.error("Kullanıcı override bilgileri yüklenemedi", error);
+      setErrorMessage("Kullanıcıya özel yetki bilgileri yüklenemedi.");
       setSelectedUser(null);
       setUserOverrides([]);
       setSelectedUserMemberships([]);
@@ -661,7 +661,7 @@ export default function PermissionsPage() {
         })),
       });
 
-      setSuccessMessage("Granular yetki matrisi guncellendi.");
+      setSuccessMessage("Granular yetki matrisi güncellendi.");
       await loadData();
       await loadAudit();
       await refreshAuthProfile();
@@ -762,15 +762,15 @@ export default function PermissionsPage() {
         overrides: normalizedOverrides,
       });
 
-      setSuccessMessage("Kullaniciya ozel yetkiler guncellendi.");
+      setSuccessMessage("Kullanıcıya özel yetkiler güncellendi.");
       await loadUserOverrides(selectedUserId);
       await loadAudit();
       if (Number(selectedUserId) === authUserId) {
         await refreshAuthProfile();
       }
     } catch (error) {
-      console.error("Kullanici override kaydedilemedi", error);
-      const fallbackMessage = "Kullaniciya ozel yetkiler kaydedilemedi.";
+      console.error("Kullanıcı override kaydedilemedi", error);
+      const fallbackMessage = "Kullanıcıya özel yetkiler kaydedilemedi.";
       if (isAxiosError(error)) {
         const payload = error.response?.data as
           | { message?: string; errors?: Record<string, string[] | string> }
@@ -813,11 +813,11 @@ export default function PermissionsPage() {
     try {
       await api.post("/panel/permissions-matrix/roles", { name, permissions: [] });
       setNewRoleName("");
-      setSuccessMessage("Yeni ozel rol olusturuldu.");
+      setSuccessMessage("Yeni özel rol oluşturuldu.");
       await loadData();
     } catch (error) {
-      console.error("Rol olusturulamadi", error);
-      setErrorMessage("Rol olusturulamadi.");
+      console.error("Rol oluşturulamadı", error);
+      setErrorMessage("Rol oluşturulamadı.");
     } finally {
       setCreatingRole(false);
     }
@@ -855,7 +855,7 @@ export default function PermissionsPage() {
     setSuccessMessage(null);
     try {
       await api.put(`/panel/permissions-matrix/roles/${role.id}`, { permissions, scopes });
-      setSuccessMessage(`${role.label} rol izinleri guncellendi.`);
+      setSuccessMessage(`${role.label} rol izinleri güncellendi.`);
       await loadData();
     } catch (error) {
       console.error("Rol izinleri kaydedilemedi", error);
@@ -876,7 +876,7 @@ export default function PermissionsPage() {
         roles: roleAssignments,
         primary_role: selectedUser?.role,
       });
-      setSuccessMessage("Kullanici rolleri guncellendi.");
+      setSuccessMessage("Kullanıcı rolleri güncellendi.");
       await loadUserOverrides(selectedUserId);
       await loadData();
       await loadAudit();
@@ -884,8 +884,8 @@ export default function PermissionsPage() {
         await refreshAuthProfile();
       }
     } catch (error) {
-      console.error("Kullanici rolleri kaydedilemedi", error);
-      setErrorMessage("Kullanici rolleri kaydedilemedi.");
+      console.error("Kullanıcı rolleri kaydedilemedi", error);
+      setErrorMessage("Kullanıcı rolleri kaydedilemedi.");
     } finally {
       setSavingRoleAssignment(false);
     }
@@ -949,7 +949,7 @@ export default function PermissionsPage() {
             <div>
               <h1 className="text-3xl font-black text-slate-900">Yetki Matrisi</h1>
               <p className="mt-1 text-sm font-bold uppercase tracking-widest text-slate-500">
-                Islem bazli rol izinleri, scope atamalari ve kullanici override yonetimi
+                İşlem bazlı rol izinleri, scope atamaları ve kullanıcı override yönetimi
               </p>
             </div>
           </div>
@@ -959,7 +959,7 @@ export default function PermissionsPage() {
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : successMessage ? <CheckCircle2 className="h-5 w-5" /> : <Save className="h-5 w-5" />}
-            Degisiklikleri Kaydet
+            Değişiklikleri Kaydet
           </button>
         </div>
       </div>
@@ -980,8 +980,8 @@ export default function PermissionsPage() {
               </div>
               <p className="mt-1 max-w-4xl text-xs leading-relaxed text-indigo-800">
                 {authorizationManagement.role_matrix_business_read_only
-                  ? "Proje, program, mali islem, medya, talep, destek ve benzeri birim isleri coordinator/staff genel rol satirindan degil, kullanicinin koordinasyon birimi ve pozisyon kurallarindan hesaplanir. Kilitli hucreler eski kaydi gosterir; bu ekrandan degistirilemez."
-                  : "Bu gecis modunda global rol matrisi halen yetki kararina katilir. Birim kurallarinin tek kaynak olmasi enforce modunda devreye girer."}
+                  ? "Proje, program, mali işlem, medya, talep, destek ve benzeri birim isleri coordinator/staff genel rol satirindan değil, kullanıcının koordinasyon birimi ve pozisyon kurallarindan hesaplanir. Kilitli hucreler eski kaydı gosterir; bu ekrandan değiştirilemez."
+                  : "Bu geçiş modunda global rol matrisi halen yetki kararina katilir. Birim kurallarinin tek kaynak olmasi enforce modunda devreye girer."}
               </p>
             </div>
           </div>
@@ -990,32 +990,32 @@ export default function PermissionsPage() {
             onClick={() => router.push(authorizationManagement.coordination_units_path)}
             className="shrink-0 rounded-xl border border-indigo-300 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-indigo-700 transition hover:bg-indigo-100"
           >
-            Koordinasyon Birimlerini Ac
+            Koordinasyon Birimlerini Aç
           </button>
         </div>
       ) : null}
 
       {!roleScopeStorageReady ? (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
-          Role-scope depolama tablosu hazir degil. Scope secimleri kalici uygulanmayabilir (backend migration gerekli).
+          Role-scope depolama tablosu hazir değil. Scope secimleri kalici uygulanmayabilir (backend migration gerekli).
         </div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Rol sayisi</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Rol sayısı</p>
           <p className="mt-2 text-3xl font-black text-slate-900">{roles.length}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Yetki sayisi</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Yetki sayısı</p>
           <p className="mt-2 text-3xl font-black text-slate-900">{permissionCount}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Kullanicilar</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Kullanıcılar</p>
           <p className="mt-2 text-3xl font-black text-slate-900">{roles.reduce((total, role) => total + role.user_count, 0)}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Detayli izin</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Detaylı izin</p>
           <p className="mt-2 text-3xl font-black text-slate-900">{granularPermissionCount}</p>
         </div>
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
@@ -1029,8 +1029,8 @@ export default function PermissionsPage() {
           {[
             { key: "matrix", label: "Matris", icon: KeyRound },
             { key: "roles", label: "Roller", icon: Shield },
-            { key: "users", label: "Kullanici Override", icon: Users },
-            { key: "audit", label: "Gecmis", icon: History },
+            { key: "users", label: "Kullanıcı Override", icon: Users },
+            { key: "audit", label: "Geçmiş", icon: History },
           ].map((item) => {
             const Icon = item.icon;
             const active = activeSection === item.key;
@@ -1056,16 +1056,16 @@ export default function PermissionsPage() {
       <div className={`${activeSection === "roles" ? "block" : "hidden"} space-y-5 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm`}>
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h2 className="text-xl font-black text-slate-900">Rol Katalogu (Sistem + Ozel)</h2>
+            <h2 className="text-xl font-black text-slate-900">Rol Katalogu (Sistem + Özel)</h2>
             <p className="text-sm text-muted-foreground">
-              Sistem rolleri korunur; ozel roller panelden olusturulup izin matrisi ile senkronlanir.
+              Sistem rolleri korunur; özel roller panelden olusturulup izin matrisi ile senkronlanir.
             </p>
           </div>
           <div className="flex gap-2">
             <input
               value={newRoleName}
               onChange={(event) => setNewRoleName(event.target.value)}
-              placeholder="orn: sosyal_medya_koordinatoru"
+              placeholder="orn: sosyal_medya_koordinatörü"
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400"
             />
             <button
@@ -1087,7 +1087,7 @@ export default function PermissionsPage() {
                   <div className="text-sm font-bold text-slate-900">{role.label}</div>
                   <div className="mt-1 font-mono text-[10px] uppercase text-slate-500">{role.name}</div>
                   <div className="mt-2 text-xs text-slate-500">
-                    {role.user_count} kullanici • {role.permission_count} izin
+                    {role.user_count} kullanıcı • {role.permission_count} izin
                   </div>
                 </div>
                 {!role.is_system ? (
@@ -1131,7 +1131,7 @@ export default function PermissionsPage() {
               {[
                 { key: "all", label: "Tumu", count: domainCounts.all },
                 { key: "authority", label: "Yetkili", count: domainCounts.authority },
-                { key: "participant", label: "Ogrenci-Mezun", count: domainCounts.participant },
+                { key: "participant", label: "Öğrenci-Mezun", count: domainCounts.participant },
               ].map((item) => (
                 <button
                   key={item.key}
@@ -1175,7 +1175,7 @@ export default function PermissionsPage() {
               }}
               className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-100"
             >
-              {allVisibleGroupsExpanded ? "Tumunu Daralt" : "Tumunu Genislet"}
+              {allVisibleGroupsExpanded ? "Tümünü Daralt" : "Tümünü Genislet"}
             </button>
           </div>
         </div>
@@ -1191,13 +1191,13 @@ export default function PermissionsPage() {
                 {expandedGroups[group] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 {group} ({permissions.length})
                 <span className="rounded-full bg-white px-2 py-0.5 text-[10px] text-slate-500 ring-1 ring-slate-200">
-                  {permissionDomains?.[group]?.domain === "participant" ? "Ogrenci-Mezun Portali" : "Yetkili Panel"}
+                  {permissionDomains?.[group]?.domain === "participant" ? "Öğrenci-Mezun Portalı" : "Yetkili Panel"}
                 </span>
               </span>
               <span className="text-xs text-slate-500">
                 {permissions.reduce((total, permission) => {
                   return total + visibleRoles.filter((role) => role.name === "super_admin" || granularMatrix[role.name]?.has(permission.name)).length;
-                }, 0)} aktif secim
+                }, 0)} aktif seçim
               </span>
             </button>
 
@@ -1246,7 +1246,7 @@ export default function PermissionsPage() {
                                 <div className={`rounded-xl border p-3 ${checked ? "border-indigo-200 bg-indigo-50" : "border-slate-200 bg-white"} ${changed ? "ring-2 ring-amber-300" : ""} ${compatible ? "" : "bg-slate-100 opacity-70"} ${managedByUnit ? "border-violet-200 bg-violet-50" : ""}`}>
                                   <label className="flex items-center justify-between gap-2">
                                     <span className={`text-xs font-black uppercase tracking-widest ${checked ? "text-indigo-700" : "text-slate-500"}`}>
-                                      {!compatible ? "Alan disi" : managedByUnit ? "Birimden yonetilir" : checked ? "Acik" : "Kapali"}
+                                      {!compatible ? "Alan disi" : managedByUnit ? "Birimden yönetilir" : checked ? "Açık" : "Kapalı"}
                                     </span>
                                     <input
                                       type="checkbox"
@@ -1274,11 +1274,11 @@ export default function PermissionsPage() {
                                     </div>
                                   ) : !compatible ? (
                                     <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                                      Bu izin bu rol alanina atanamaz
+                                      Bu izin bu rol alanına atanamaz
                                     </div>
                                   ) : checked ? (
                                     <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                                      {hasStoredScope ? "Kayitli scope" : "Varsayilan scope"}
+                                      {hasStoredScope ? "Kayıtlı scope" : "Varsayılan scope"}
                                     </div>
                                   ) : null}
                                   {displayedScopeType === "selected_projects" ? (
@@ -1320,7 +1320,7 @@ export default function PermissionsPage() {
         ))}
         {Object.keys(filteredGroups).length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-            Arama veya filtreye uygun yetki bulunamadi.
+            Arama veya filtreye uygun yetki bulunamadı.
           </div>
         ) : null}
       </div>
@@ -1330,8 +1330,8 @@ export default function PermissionsPage() {
           <div className="flex items-center gap-3">
             <UserCog className="h-6 w-6 text-indigo-400" />
             <div>
-              <h2 className="text-xl font-black text-slate-900">Kullaniciya Ozel Yetki Override</h2>
-              <p className="text-sm text-muted-foreground">Rol izinlerinin ustune tek tek kisi bazli allow / deny ve scope tanimla.</p>
+              <h2 className="text-xl font-black text-slate-900">Kullanıcıya Özel Yetki Override</h2>
+              <p className="text-sm text-muted-foreground">Rol izinlerinin ustune tek tek kişi bazlı allow / deny ve scope tanımla.</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -1351,7 +1351,7 @@ export default function PermissionsPage() {
               className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Kullanici Yetkilerini Kaydet
+              Kullanıcı Yetkilerini Kaydet
             </button>
           </div>
         </div>
@@ -1359,14 +1359,14 @@ export default function PermissionsPage() {
         {selectedUser && selectedUserAuthorizationManagement?.selected_user_business_source === "coordination_units" ? (
           <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
             <div className="text-sm font-black text-indigo-950">
-              Bu kullanicinin birim isi yetkileri Koordinasyon Birimleri&apos;nden gelir.
+              Bu kullanıcının birim isi yetkileri Koordinasyon Birimleri&apos;nden gelir.
             </div>
             <p className="mt-1 text-xs leading-relaxed text-indigo-800">
-              Birim isi allow/deny override kaydi mutlaka tek bir aktif uyelige baglanir. Kullanici baska birime gectiginde bu kayit tasinmaz; global sistem izinleri ise birim secilmeden yonetilmeye devam eder.
+              Birim isi allow/deny override kaydı mutlaka tek bir aktif uyelige baglanir. Kullanıcı baska birime gectiginde bu kayıt tasinmaz; global sistem izinleri ise birim secilmeden yonetilmeye devam eder.
             </p>
             {legacyGlobalBusinessOverrides.length > 0 ? (
               <p className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
-                {legacyGlobalBusinessOverrides.length} eski global birim-isi override kaydi bulundu. Allow kayitlari enforce modunda etkisizdir; hedef uyelige yeniden tanimlanmalidir. Kayitlar gecis denetimi icin silinmedi.
+                {legacyGlobalBusinessOverrides.length} eski global birim-isi override kaydı bulundu. Allow kayıtları enforce modunda etkisizdir; hedef uyelige yeniden tanimlanmalidir. Kayıtlar geçiş denetimi için silinmedi.
               </p>
             ) : null}
           </div>
@@ -1374,13 +1374,13 @@ export default function PermissionsPage() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[320px_1fr]">
           <div className="space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground">Kullanici sec</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground">Kullanıcı seç</label>
             <select
               value={selectedUserId}
               onChange={(event) => setSelectedUserId(event.target.value)}
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
             >
-              <option value="">Kullanici secin</option>
+              <option value="">Kullanıcı seçin</option>
               {managedUsers.map((user) => (
                 <option key={user.id} value={String(user.id)}>
                   {user.name} {user.surname} - {user.role}
@@ -1399,7 +1399,7 @@ export default function PermissionsPage() {
 
             {selectedUser ? (
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Kullanici rolleri</div>
+                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Kullanıcı rolleri</div>
                 <div className="space-y-2">
                   {roleCatalog.map((role) => {
                     const checked = roleAssignments.includes(role.name);
@@ -1436,10 +1436,10 @@ export default function PermissionsPage() {
 
             {selectedUser ? (
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Efektif izin ozet</div>
+                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Efektif izin özet</div>
                 <div className="max-h-64 space-y-2 overflow-y-auto">
                   {resolvedPermissions.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">Henuz efektif izin bulunmuyor.</div>
+                    <div className="text-sm text-muted-foreground">Henüz efektif izin bulunmuyor.</div>
                   ) : (
                     resolvedPermissions.map((permission) => (
                       <div key={permission} className="rounded-xl bg-white px-3 py-2 text-xs text-slate-900">
@@ -1460,7 +1460,7 @@ export default function PermissionsPage() {
           <div className="space-y-4">
             {!selectedUserId ? (
               <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
-                Override duzenlemek icin bir kullanici secin.
+                Override duzenlemek için bir kullanıcı seçin.
               </div>
             ) : loadingUserOverrides ? (
               <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-slate-200 bg-slate-50">
@@ -1470,7 +1470,7 @@ export default function PermissionsPage() {
               <div className="space-y-4">
                 {userOverrides.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-sm text-slate-500">
-                    Bu kullanici icin henuz ozel override tanimli degil.
+                    Bu kullanıcı için henüz özel override tanımlı değil.
                   </div>
                 ) : null}
 
@@ -1525,10 +1525,10 @@ export default function PermissionsPage() {
                         disabled={!canUpdateUserOverrides || selectedUserMemberships.length === 0}
                         className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-900 outline-none focus:border-indigo-400 disabled:opacity-60"
                       >
-                        <option value="">Birim uyeligi secin</option>
+                        <option value="">Birim uyeligi seçin</option>
                         {selectedUserMemberships.map((membership) => (
                           <option key={membership.membership_id} value={membership.membership_id}>
-                            {membership.unit_name} — {membership.position === "coordinator" ? "Koordinator" : "Personel"}{membership.is_primary ? " (Ana)" : ""}
+                            {membership.unit_name} — {membership.position === "coordinator" ? "Koordinatör" : "Personel"}{membership.is_primary ? " (Ana)" : ""}
                           </option>
                         ))}
                       </select>
@@ -1593,8 +1593,8 @@ export default function PermissionsPage() {
                         override.scope_type === "selected_projects"
                           ? "Proje ID'leri: 1,2,3"
                           : override.scope_type === "own_unit"
-                            ? "Birim adi"
-                            : "Scope alani"
+                            ? "Birim adı"
+                            : "Scope alanı"
                       }
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-400"
                     />
@@ -1621,9 +1621,9 @@ export default function PermissionsPage() {
           <div className="flex items-center gap-3">
             <History className="h-6 w-6 text-indigo-400" />
             <div>
-              <h2 className="text-xl font-black text-slate-900">Yetki Degisiklik Gecmisi</h2>
+              <h2 className="text-xl font-black text-slate-900">Yetki Değişiklik Geçmişi</h2>
               <p className="text-sm text-slate-500">
-                Rol matrisi ve kullanici override kayitlari (son 50 islem, activity log).
+                Rol matrisi ve kullanıcı override kayıtları (son 50 işlem, activity log).
               </p>
             </div>
           </div>
@@ -1641,14 +1641,14 @@ export default function PermissionsPage() {
             <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
           </div>
         ) : auditLogs.length === 0 ? (
-          <p className="text-sm text-slate-500">Henuz kayit yok veya log tablosu kullanilamiyor.</p>
+          <p className="text-sm text-slate-500">Henüz kayıt yok veya log tablosu kullanilamiyor.</p>
         ) : (
           <div className="max-h-80 overflow-auto rounded-2xl border border-slate-200">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="sticky top-0 bg-slate-100">
                 <tr className="border-b border-slate-200">
                   <th className="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">Tarih</th>
-                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">Islem</th>
+                  <th className="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">İşlem</th>
                   <th className="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">Yapan</th>
                   <th className="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">Hedef</th>
                 </tr>
@@ -1677,11 +1677,11 @@ export default function PermissionsPage() {
       <div className="flex items-start gap-4 rounded-3xl border border-indigo-600/20 bg-indigo-600/5 p-6">
         <ShieldAlert className="mt-1 h-6 w-6 shrink-0 text-indigo-400" />
         <div>
-          <h4 className="mb-1 text-sm font-bold text-slate-900">Dikkat: Yetki Degisiklikleri</h4>
+          <h4 className="mb-1 text-sm font-bold text-slate-900">Dikkat: Yetki Değişiklikleri</h4>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Kayit islem bazli (granular) izin adlarini rollere yazar; legacy paket isimleri yerine noktali izinler
-            kullanilir. Enforce modunda coordinator/staff birim isi hucreleri korunur ve bu kayit sirasinda
-            degistirilmez. Super admin her zaman tum izinlere sahiptir; diger kullanicilar yeni oturumda guncel
+            Kayıt işlem bazlı (granular) izin adlarini rollere yazar; legacy paket isimleri yerine noktali izinler
+            kullanilir. Enforce modunda coordinator/staff birim isi hucreleri korunur ve bu kayıt sirasinda
+            degistirilmez. Super admin her zaman tüm izinlere sahiptir; diğer kullanıcılar yeni oturumda güncel
             listeyi alir.
           </p>
         </div>

@@ -38,7 +38,7 @@ export default function PanelInboxPage() {
 
   const typeFallbackLabels: Record<string, string> = {
     announcement: "Duyuru",
-    opportunity: "Kariyer Firsati",
+    opportunity: "Kariyer Fırsatı",
     forum_post: "Forum",
   };
 
@@ -63,7 +63,7 @@ export default function PanelInboxPage() {
         });
         setItems(response.data.messages ?? []);
       } catch (error) {
-        console.error("Panel inbox yuklenemedi", error);
+        console.error("Panel inbox yüklenemedi", error);
       } finally {
         setLoading(false);
       }
@@ -89,7 +89,7 @@ export default function PanelInboxPage() {
       });
       setItems(refresh.data.messages ?? []);
     } catch (error) {
-      console.error("Panel inbox state guncellenemedi", error);
+      console.error("Panel inbox state güncellenemedi", error);
     }
   };
 
@@ -109,33 +109,33 @@ export default function PanelInboxPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Gelen Kutusu</h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-              Size gorunen duyurular, kariyer firsatlari ve forum bildirimleri burada toplanir. Bu ekran kisiye ozel mesaj yazma alani degildir.
+              Size gorunen duyurular, kariyer fırsatları ve forum bildirimleri burada toplanır. Bu ekran kişiye özel mesaj yazma alanı degildir.
             </p>
           </div>
         </div>
         {hasPermission("announcements.create") ? (
           <Link href="/panel/announcements" className="panel-card-action panel-card-action-primary shrink-0">
-            <Megaphone className="h-4 w-4" /> Yeni duyuru gonder
+            <Megaphone className="h-4 w-4" /> Yeni duyuru gönder
           </Link>
         ) : null}
       </div>
       <div className="panel-filter-card">
         <div className="flex flex-wrap items-center gap-3">
           <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="panel-control w-auto min-w-56">
-            <option value="all">Tum projeler</option>
+            <option value="all">Tüm projeler</option>
             {projects.map((project) => (
               <option key={project.id} value={String(project.id)}>
                 {project.name}
               </option>
             ))}
           </select>
-          <label className="panel-chip cursor-pointer"><input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} /> Okunmamis</label>
+          <label className="panel-chip cursor-pointer"><input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} /> Okunmamış</label>
           <label className="panel-chip cursor-pointer"><input type="checkbox" checked={starredOnly} onChange={(e) => setStarredOnly(e.target.checked)} /> Yildizli</label>
           <label className="panel-chip cursor-pointer"><input type="checkbox" checked={pinnedOnly} onChange={(e) => setPinnedOnly(e.target.checked)} /> Sabit</label>
         </div>
       </div>
       {items.length === 0 ? (
-        <div className="panel-empty-card">Size gosterilecek duyuru, kariyer firsati veya forum bildirimi bulunmuyor.</div>
+        <div className="panel-empty-card">Size gösterilecek duyuru, kariyer fırsatı veya forum bildirimi bulunmuyor.</div>
       ) : (
         items.map((item) => (
           <div key={`${item.source_type}:${item.source_id}`} className="panel-list-card">
@@ -155,13 +155,13 @@ export default function PanelInboxPage() {
             <LinkifiedText text={item.content ?? "-"} className="whitespace-pre-wrap text-sm text-muted-foreground" />
             <div className="mt-4 flex flex-wrap gap-2">
               <button type="button" onClick={() => void updateState(item, { is_read: !item.state.is_read })} className="panel-card-action">
-                {item.state.is_read ? "Okunmamis yap" : "Okundu yap"}
+                {item.state.is_read ? "Okunmamış yap" : "Okundu yap"}
               </button>
               <button type="button" onClick={() => void updateState(item, { is_starred: !item.state.is_starred })} className="panel-card-action">
-                <Star className={`h-3.5 w-3.5 ${item.state.is_starred ? "fill-current" : ""}`} /> {item.state.is_starred ? "Yildizi kaldir" : "Yildizla"}
+                <Star className={`h-3.5 w-3.5 ${item.state.is_starred ? "fill-current" : ""}`} /> {item.state.is_starred ? "Yildizi kaldır" : "Yildizla"}
               </button>
               <button type="button" onClick={() => void updateState(item, { is_pinned: !item.state.is_pinned })} className="panel-card-action">
-                <Pin className={`h-3.5 w-3.5 ${item.state.is_pinned ? "fill-current" : ""}`} /> {item.state.is_pinned ? "Sabiti kaldir" : "Sabitle"}
+                <Pin className={`h-3.5 w-3.5 ${item.state.is_pinned ? "fill-current" : ""}`} /> {item.state.is_pinned ? "Sabiti kaldır" : "Sabitle"}
               </button>
               {item.source_action_url ? (
                 <Link href={item.source_action_url} className="panel-card-action">

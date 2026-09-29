@@ -163,8 +163,8 @@ export default function PanelKpdPage() {
       setRoomSchedule(appointmentsResponse.data.room_schedule ?? []);
       setUsers(optionsResponse.data.counselees ?? []);
     } catch (error) {
-      console.error("KPD verileri yuklenemedi", error);
-      setFeedback("KPD verileri yuklenirken bir sorun olustu.");
+      console.error("KPD verileri yüklenemedi", error);
+      setFeedback("KPD verileri yüklenirken bir sorun oluştu.");
     } finally {
       setLoading(false);
     }
@@ -226,8 +226,8 @@ export default function PanelKpdPage() {
       setFile(null);
     } catch (error) {
       const message = isAxiosError(error)
-        ? String((error.response?.data as { message?: string })?.message ?? "KPD raporu yuklenemedi.")
-        : "KPD raporu yuklenemedi.";
+        ? String((error.response?.data as { message?: string })?.message ?? "KPD raporu yüklenemedi.")
+        : "KPD raporu yüklenemedi.";
       setFeedback(message);
     } finally {
       setSaving(false);
@@ -280,8 +280,8 @@ export default function PanelKpdPage() {
       setFeedback(response.data.message);
     } catch (error) {
       const message = isAxiosError(error)
-        ? String((error.response?.data as { message?: string })?.message ?? "KPD randevusu olusturulamadi.")
-        : "KPD randevusu olusturulamadi.";
+        ? String((error.response?.data as { message?: string })?.message ?? "KPD randevusu oluşturulamadı.")
+        : "KPD randevusu oluşturulamadı.";
       setFeedback(message);
     } finally {
       setSavingAppointment(false);
@@ -301,8 +301,8 @@ export default function PanelKpdPage() {
       setFeedback(response.data.message);
     } catch (error) {
       const message = isAxiosError(error)
-        ? String((error.response?.data as { message?: string })?.message ?? "Randevu durumu guncellenemedi.")
-        : "Randevu durumu guncellenemedi.";
+        ? String((error.response?.data as { message?: string })?.message ?? "Randevu durumu güncellenemedi.")
+        : "Randevu durumu güncellenemedi.";
       setFeedback(message);
     } finally {
       setUpdatingAppointmentId(null);
@@ -317,9 +317,9 @@ export default function PanelKpdPage() {
             <HeartPulse className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900">KPD Yonetimi</h1>
+            <h1 className="text-3xl font-black text-slate-900">KPD Yönetimi</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Randevu ve rapor dosyalarini tek panelden yonet
+              Randevu ve rapor dosyalarını tek panelden yonet
             </p>
           </div>
         </div>
@@ -329,23 +329,23 @@ export default function PanelKpdPage() {
 
       {!canViewReports && !canViewAppointments && !canManageAppointments ? (
         <div className="panel-notice border-amber-200 bg-amber-50 text-amber-800">
-          KPD ekrani icin ilgili randevu veya rapor action yetkisi gerekir. Scope proje kapsamliysa backend yalnizca erisilebilir KPD projesindeki danisanlari getirir.
+          KPD ekrani için ilgili randevu veya rapor action yetkisi gerekir. Scope proje kapsamliysa backend yalnızca erisilebilir KPD projesindeki danisanlari getirir.
         </div>
       ) : null}
 
       {(canViewReports || canViewAppointments) && periodOptions.length > 0 ? (
         <div className="panel-filter-card">
           <label className="block max-w-md">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Liste donemi</span>
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground">Liste dönemi</span>
             <select
               value={periodFilter}
               onChange={(event) => setPeriodFilter(event.target.value)}
               className="panel-control"
             >
-              <option value="all">Tum donemler</option>
+              <option value="all">Tüm dönemler</option>
               {periodOptions.map((period) => (
                 <option key={period.id} value={period.id}>
-                  {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (gecmis)" : ""}
+                  {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (geçmiş)" : ""}
                 </option>
               ))}
             </select>
@@ -360,8 +360,8 @@ export default function PanelKpdPage() {
             <div className="mb-5 flex items-center gap-3">
               <Plus className="h-5 w-5 text-rose-600" />
               <div>
-                <h2 className="text-xl font-black text-slate-900">Randevu Olustur</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Scope kapsamindaki KPD danisanlari icin danisman, oda ve zaman sec.</p>
+                <h2 className="text-xl font-black text-slate-900">Randevu Oluştur</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Scope kapsamindaki KPD danisanlari için danışman, oda ve zaman seç.</p>
               </div>
             </div>
 
@@ -376,7 +376,7 @@ export default function PanelKpdPage() {
                 required
                 className="panel-control"
               >
-                <option value="">Danisan sec</option>
+                <option value="">Danisan seç</option>
                 {counselees.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name} {user.surname} {user.email ? `(${user.email})` : ""}
@@ -390,7 +390,7 @@ export default function PanelKpdPage() {
                 disabled={!appointmentForm.counselee_id}
                 className="panel-control"
               >
-                <option value="">Donem secmeden</option>
+                <option value="">Dönem seçmeden</option>
                 {(counselees.find((user) => String(user.id) === appointmentForm.counselee_id)?.periods ?? []).map((period) => (
                   <option key={period.id} value={period.id}>{period.name}</option>
                 ))}
@@ -402,7 +402,7 @@ export default function PanelKpdPage() {
                 required
                 className="panel-control"
               >
-                <option value="">Danisman sec</option>
+                <option value="">Danışman seç</option>
                 {counselors.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name} {user.surname} {user.role ? `(${user.role})` : ""}
@@ -416,7 +416,7 @@ export default function PanelKpdPage() {
                 required
                 className="panel-control"
               >
-                <option value="">Oda sec</option>
+                <option value="">Oda seç</option>
                 {rooms.map((room) => (
                   <option key={room.id} value={room.id}>
                     {room.name}
@@ -448,7 +448,7 @@ export default function PanelKpdPage() {
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground">
-                {counselees.length} danisan, {counselors.length} danisman ve {rooms.length} oda listeleniyor.
+                {counselees.length} danisan, {counselors.length} danışman ve {rooms.length} oda listeleniyor.
               </p>
               <button
                 disabled={savingAppointment || counselees.length === 0 || counselors.length === 0 || rooms.length === 0 || !canCreateAppointment}
@@ -456,7 +456,7 @@ export default function PanelKpdPage() {
                 className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingAppointment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Randevu Olustur
+                Randevu Oluştur
               </button>
             </div>
           </form>
@@ -468,7 +468,7 @@ export default function PanelKpdPage() {
           <form onSubmit={handleSubmit} className="panel-section-card">
             <div className="mb-5 flex items-center gap-3">
               <Plus className="h-5 w-5 text-rose-600" />
-              <h2 className="text-xl font-black text-slate-900">Rapor Yukle</h2>
+              <h2 className="text-xl font-black text-slate-900">Rapor Yükle</h2>
             </div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_auto]">
               <select
@@ -481,7 +481,7 @@ export default function PanelKpdPage() {
                 required
                 className="panel-control"
               >
-                <option value="">Danisan sec</option>
+                <option value="">Danisan seç</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name} {user.surname} {user.email ? `(${user.email})` : ""}
@@ -494,7 +494,7 @@ export default function PanelKpdPage() {
                 disabled={!form.user_id}
                 className="panel-control"
               >
-                <option value="">Donem secmeden</option>
+                <option value="">Dönem seçmeden</option>
                 {(users.find((user) => String(user.id) === form.user_id)?.periods ?? []).map((period) => (
                   <option key={period.id} value={period.id}>{period.name}</option>
                 ))}
@@ -503,12 +503,12 @@ export default function PanelKpdPage() {
                 value={form.title}
                 onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
                 required
-                placeholder="Rapor basligi"
+                placeholder="Rapor başlığı"
                 className="panel-control"
               />
               <label className="panel-file-drop flex cursor-pointer items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-slate-700">
                 <Upload className="h-4 w-4" />
-                {file ? file.name : "Dosya sec"}
+                {file ? file.name : "Dosya seç"}
                 <input
                   type="file"
                   required
@@ -525,7 +525,7 @@ export default function PanelKpdPage() {
                 className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Raporu Yukle
+                Raporu Yükle
               </button>
             </div>
           </form>
@@ -537,7 +537,7 @@ export default function PanelKpdPage() {
           <div className="panel-section-card p-0">
             <div className="border-b border-slate-200/70 p-6">
               <h2 className="text-xl font-black text-slate-900">KPD Raporlari</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Ogrenciler icin yuklenen raporlar R2 uzerinden indirilir.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Öğrenciler için yüklenen raporlar R2 üzerinden indirilir.</p>
             </div>
             {loading ? (
               <div className="flex min-h-40 items-center justify-center">
@@ -552,7 +552,7 @@ export default function PanelKpdPage() {
                     <div>
                       <div className="text-base font-bold text-slate-900">{report.title}</div>
                       <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                        {report.user ? `${report.user.name} ${report.user.surname}` : `Kullanici #${report.user_id}`}
+                        {report.user ? `${report.user.name} ${report.user.surname}` : `Kullanıcı #${report.user_id}`}
                         {report.period?.name ? ` / ${report.period.name}` : ""}
                         {report.created_at ? ` / ${formatIstanbulDate(report.created_at)}` : ""}
                       </div>
@@ -582,7 +582,7 @@ export default function PanelKpdPage() {
                   </div>
                   );
                 })}
-                {reports.length === 0 ? <div className="panel-empty-card">KPD raporu bulunamadi.</div> : null}
+                {reports.length === 0 ? <div className="panel-empty-card">KPD raporu bulunamadı.</div> : null}
               </div>
             )}
           </div>
@@ -596,7 +596,7 @@ export default function PanelKpdPage() {
                 <CalendarDays className="h-5 w-5 text-rose-600" />
                 <div>
                   <h2 className="text-xl font-black text-slate-900">Oda Takvimi</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">KPD odalarina gore yaklasan ve secili donem randevulari.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">KPD odalarina göre yaklaşan ve seçili dönem randevulari.</p>
                 </div>
               </div>
             </div>
@@ -605,7 +605,7 @@ export default function PanelKpdPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-rose-600" />
               </div>
             ) : roomSchedule.length === 0 ? (
-              <div className="panel-empty-card">Oda takvimi icin veri bulunamadi.</div>
+              <div className="panel-empty-card">Oda takvimi için veri bulunamadı.</div>
             ) : (
               <div className="grid grid-cols-1 gap-4 p-5 xl:grid-cols-2">
                 {roomSchedule.map((room) => (
@@ -615,11 +615,11 @@ export default function PanelKpdPage() {
                         <h3 className="text-base font-black text-slate-900">{room.name}</h3>
                         {room.description ? <p className="mt-1 text-xs text-muted-foreground">{room.description}</p> : null}
                       </div>
-                      <span className="panel-chip panel-chip-danger">{room.appointment_count} kayit</span>
+                      <span className="panel-chip panel-chip-danger">{room.appointment_count} kayıt</span>
                     </div>
                     <div className="space-y-3">
                       {room.appointments.length === 0 ? (
-                        <div className="panel-empty-card p-4">Bu oda icin planli randevu yok.</div>
+                        <div className="panel-empty-card p-4">Bu oda için planli randevu yok.</div>
                       ) : (
                         room.appointments.map((appointment) => (
                           <div key={appointment.id} className="panel-card-muted">
@@ -633,7 +633,7 @@ export default function PanelKpdPage() {
                               {appointment.counselee ? `${appointment.counselee.name} ${appointment.counselee.surname}` : "Danisan"}
                             </div>
                             <div className="mt-1 text-xs text-muted-foreground">
-                              Danisman: {appointment.counselor ? `${appointment.counselor.name} ${appointment.counselor.surname}` : "Atanmadi"}
+                              Danışman: {appointment.counselor ? `${appointment.counselor.name} ${appointment.counselor.surname}` : "Atanmadi"}
                               {appointment.period?.name ? ` / ${appointment.period.name}` : ""}
                             </div>
                           </div>
@@ -653,7 +653,7 @@ export default function PanelKpdPage() {
         {canViewAppointments ? (
           <div className="panel-section-card p-0">
             <div className="border-b border-slate-200/70 p-6">
-              <h2 className="text-xl font-black text-slate-900">Randevu Ozeti</h2>
+              <h2 className="text-xl font-black text-slate-900">Randevu Özeti</h2>
             </div>
             <div className="space-y-3 p-4">
               {appointments.map((appointment) => {
@@ -662,7 +662,7 @@ export default function PanelKpdPage() {
                 <div key={appointment.id} className="panel-list-card flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="font-bold text-slate-900">
-                      {appointment.counselee ? `${appointment.counselee.name} ${appointment.counselee.surname}` : "Ogrenci"}
+                      {appointment.counselee ? `${appointment.counselee.name} ${appointment.counselee.surname}` : "Öğrenci"}
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
                       {formatIstanbulDateTime(appointment.start_at)} - {formatIstanbulDateTime(appointment.end_at)}
@@ -681,17 +681,17 @@ export default function PanelKpdPage() {
                         onChange={(event) => void handleUpdateAppointmentStatus(appointment.id, event.target.value)}
                         className="panel-control h-9 text-xs font-bold"
                       >
-                        <option value="scheduled">Planlandi</option>
-                        <option value="completed">Tamamlandi</option>
+                        <option value="scheduled">Planlandı</option>
+                        <option value="completed">Tamamlandı</option>
                         <option value="cancelled">Iptal</option>
-                        <option value="no_show">Katilim olmadi</option>
+                        <option value="no_show">Katılım olmadi</option>
                       </select>
                     ) : null}
                   </div>
                 </div>
                 );
               })}
-              {!loading && appointments.length === 0 ? <div className="panel-empty-card">Randevu bulunamadi.</div> : null}
+              {!loading && appointments.length === 0 ? <div className="panel-empty-card">Randevu bulunamadı.</div> : null}
             </div>
           </div>
         ) : null}

@@ -164,9 +164,9 @@ const CONTENT_MODULES: Array<{
   description: string;
   icon: typeof FileText;
 }> = [
-  { id: "blog", label: "Blog", description: "Yazilar ve kategoriler", icon: FileText },
+  { id: "blog", label: "Blog", description: "Yazılar ve kategoriler", icon: FileText },
   { id: "faq", label: "SSS", description: "Sık sorulan sorular", icon: HelpCircle },
-  { id: "personality", label: "Kisilik analizi", description: "Ogrenci ve mezun test sablonu", icon: BrainCircuit },
+  { id: "personality", label: "Kişilik analizi", description: "Öğrenci ve mezun test şablonu", icon: BrainCircuit },
 ];
 
 export default function AdminContentPage() {
@@ -248,8 +248,8 @@ export default function AdminContentPage() {
           setPersonalityTemplates(Array.isArray(templateResponse.data.templates) ? templateResponse.data.templates : []);
         }
       } catch (error) {
-        console.error("Icerik verileri yuklenemedi", error);
-        setErrorMessage("Icerik verileri yuklenemedi.");
+        console.error("İçerik verileri yüklenemedi", error);
+        setErrorMessage("İçerik verileri yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -271,8 +271,8 @@ export default function AdminContentPage() {
         setPersonalityTemplates(Array.isArray(templateResponse.data.templates) ? templateResponse.data.templates : []);
       }
     } catch (error) {
-      console.error("Icerik verileri yuklenemedi", error);
-      setErrorMessage("Icerik verileri yuklenemedi.");
+      console.error("İçerik verileri yüklenemedi", error);
+      setErrorMessage("İçerik verileri yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -315,17 +315,17 @@ export default function AdminContentPage() {
   const handleBlogSave = async () => {
     const permission = editingBlogId ? "content.blog.update" : "content.blog.create";
     if (!hasPermission(permission) || !hasScopedPermission(permission)) {
-      setErrorMessage("Blog icerigi icin yetki ve kapsam gerekir.");
+      setErrorMessage("Blog içeriği için yetki ve kapsam gerekir.");
       return;
     }
 
     const canUseGlobal = editingBlogId ? canUpdateGlobalBlog : canCreateGlobalBlog;
     if (!canUseGlobal && !blogForm.project_id) {
-      setErrorMessage("Proje kapsamli blog icin proje secimi zorunludur.");
+      setErrorMessage("Proje kapsamli blog için proje seçimi zorunludur.");
       return;
     }
     if (blogForm.status === "published" && !canPublishSelectedBlog) {
-      setErrorMessage("Blog yazisini yayina almak icin bu projede content.blog.publish yetkisi gerekir.");
+      setErrorMessage("Blog yazisini yayina almak için bu projede content.blog.publish yetkisi gerekir.");
       return;
     }
 
@@ -341,7 +341,7 @@ export default function AdminContentPage() {
           project_id: blogForm.project_id ? Number(blogForm.project_id) : null,
           published_at: blogForm.published_at || null,
         });
-        setMessage("Blog yazisi guncellendi.");
+        setMessage("Blog yazısı güncellendi.");
       } else {
         await api.post("/panel/content/blogs", {
           ...blogForm,
@@ -349,7 +349,7 @@ export default function AdminContentPage() {
           project_id: blogForm.project_id ? Number(blogForm.project_id) : null,
           published_at: blogForm.published_at || null,
         });
-        setMessage("Blog yazisi olusturuldu.");
+        setMessage("Blog yazısı oluşturuldu.");
       }
 
       setBlogForm(emptyBlog);
@@ -380,10 +380,10 @@ export default function AdminContentPage() {
       });
 
       setBlogForm((current) => ({ ...current, cover_image_path: response.data.path }));
-      setMessage("Kapak gorseli yuklendi.");
+      setMessage("Kapak görseli yüklendi.");
     } catch (error) {
-      console.error("Kapak gorseli yuklenemedi", error);
-      setErrorMessage("Kapak gorseli yuklenemedi. Yetki, dosya turu veya R2 ayarlarini kontrol edin.");
+      console.error("Kapak görseli yüklenemedi", error);
+      setErrorMessage("Kapak görseli yüklenemedi. Yetki, dosya türü veya R2 ayarlarını kontrol edin.");
     } finally {
       setUploadingBlogCover(false);
     }
@@ -392,7 +392,7 @@ export default function AdminContentPage() {
   const handleFaqSave = async () => {
     const permission = editingFaqId ? "content.faq.update" : "content.faq.create";
     if (!hasPermission(permission) || !hasGlobalScope(permission)) {
-      setErrorMessage("Bu global icerik islemi icin tum sistem kapsami gerekir.");
+      setErrorMessage("Bu global içerik işlemi için tüm sistem kapsamı gerekir.");
       return;
     }
 
@@ -403,10 +403,10 @@ export default function AdminContentPage() {
     try {
       if (editingFaqId) {
         await api.put(`/panel/content/faqs/${editingFaqId}`, faqForm);
-        setMessage("SSS maddesi guncellendi.");
+        setMessage("SSS maddesi güncellendi.");
       } else {
         await api.post("/panel/content/faqs", faqForm);
-        setMessage("SSS maddesi olusturuldu.");
+        setMessage("SSS maddesi oluşturuldu.");
       }
 
       setFaqForm(emptyFaq);
@@ -449,7 +449,7 @@ export default function AdminContentPage() {
 
   const handlePersonalitySave = async () => {
     if (!canPersonalityManage) {
-      setErrorMessage("Kisilik analizi sablonu icin global content.personality.manage veya ayar guncelleme yetkisi gerekir.");
+      setErrorMessage("Kişilik analizi şablonu için global content.personality.manage veya ayar güncelleme yetkisi gerekir.");
       return;
     }
 
@@ -469,17 +469,17 @@ export default function AdminContentPage() {
     try {
       if (editingPersonalityId) {
         await api.put(`/panel/personality-test-templates/${editingPersonalityId}`, payload);
-        setMessage("Kisilik analizi sablonu guncellendi.");
+        setMessage("Kişilik analizi şablonu güncellendi.");
       } else {
         await api.post("/panel/personality-test-templates", payload);
-        setMessage("Kisilik analizi sablonu olusturuldu.");
+        setMessage("Kişilik analizi şablonu oluşturuldu.");
       }
 
       resetPersonalityForm();
       await loadContent();
     } catch (error) {
-      console.error("Kisilik analizi sablonu kaydedilemedi", error);
-      setErrorMessage("Kisilik analizi sablonu kaydedilemedi. Zorunlu alanlari ve soru anahtarlarini kontrol edin.");
+      console.error("Kişilik analizi şablonu kaydedilemedi", error);
+      setErrorMessage("Kişilik analizi şablonu kaydedilemedi. Zorunlu alanları ve soru anahtarlarini kontrol edin.");
     } finally {
       setSaving(false);
     }
@@ -518,12 +518,12 @@ export default function AdminContentPage() {
 
   const deleteBlog = async (id: number) => {
     if (!canBlogDelete) {
-      setErrorMessage("Blog silmek icin content.blog.delete izni ve kapsam gerekir.");
+      setErrorMessage("Blog silmek için content.blog.delete izni ve kapsam gerekir.");
       return;
     }
     try {
       await api.delete(`/panel/content/blogs/${id}`);
-      setMessage("Blog yazisi silindi.");
+      setMessage("Blog yazısı silindi.");
       await loadContent();
     } catch (error) {
       console.error("Blog silinemedi", error);
@@ -533,7 +533,7 @@ export default function AdminContentPage() {
 
   const shareBlog = async (blog: BlogPost) => {
     if (!canSocialShare) {
-      setErrorMessage("Sosyal paylasim icin global icerik duzenleme veya duyuru olusturma yetkisi gerekir.");
+      setErrorMessage("Sosyal paylaşım için global içerik düzenleme veya duyuru oluşturma yetkisi gerekir.");
       return;
     }
 
@@ -558,8 +558,8 @@ export default function AdminContentPage() {
         setErrorMessage(response.data.message);
       }
     } catch (error) {
-      console.error("Sosyal paylasim gonderilemedi", error);
-      setErrorMessage("Sosyal paylasim gonderilemedi. Webhook ayarini ve ag baglantisini kontrol edin.");
+      console.error("Sosyal paylaşım gönderilemedi", error);
+      setErrorMessage("Sosyal paylaşım gönderilemedi. Webhook ayarini ve ag bağlantısını kontrol edin.");
     } finally {
       setSharingBlogId(null);
     }
@@ -567,7 +567,7 @@ export default function AdminContentPage() {
 
   const deleteFaq = async (id: number) => {
     if (!canFaqDelete) {
-      setErrorMessage("SSS silmek icin content.faq.delete izninin tum sistem kapsaminda olmasi gerekir.");
+      setErrorMessage("SSS silmek için content.faq.delete izninin tüm sistem kapsamında olmasi gerekir.");
       return;
     }
     try {
@@ -582,41 +582,41 @@ export default function AdminContentPage() {
 
   const activatePersonalityTemplate = async (id: number) => {
     if (!canPersonalityManage) {
-      setErrorMessage("Sablon aktif etmek icin global kisilik analizi yonetim yetkisi gerekir.");
+      setErrorMessage("Şablon aktif etmek için global kişilik analizi yönetim yetkisi gerekir.");
       return;
     }
 
     try {
       await api.post(`/panel/personality-test-templates/${id}/activate`);
-      setMessage("Kisilik analizi sablonu aktif edildi.");
+      setMessage("Kişilik analizi şablonu aktif edildi.");
       await loadContent();
     } catch (error) {
-      console.error("Kisilik analizi sablonu aktif edilemedi", error);
-      setErrorMessage("Kisilik analizi sablonu aktif edilemedi.");
+      console.error("Kişilik analizi şablonu aktif edilemedi", error);
+      setErrorMessage("Kişilik analizi şablonu aktif edilemedi.");
     }
   };
 
   const deletePersonalityTemplate = async (template: PersonalityTemplate) => {
     if (!canPersonalityManage) {
-      setErrorMessage("Sablon silmek icin global kisilik analizi yonetim yetkisi gerekir.");
+      setErrorMessage("Şablon silmek için global kişilik analizi yönetim yetkisi gerekir.");
       return;
     }
 
     if (template.is_active) {
-      setErrorMessage("Aktif kisilik analizi sablonu silinemez. Once baska bir sablonu aktif edin.");
+      setErrorMessage("Aktif kişilik analizi şablonu silinemez. Önce baska bir şablonu aktif edin.");
       return;
     }
 
     try {
       await api.delete(`/panel/personality-test-templates/${template.id}`);
-      setMessage("Kisilik analizi sablonu silindi.");
+      setMessage("Kişilik analizi şablonu silindi.");
       if (editingPersonalityId === template.id) {
         resetPersonalityForm();
       }
       await loadContent();
     } catch (error) {
-      console.error("Kisilik analizi sablonu silinemedi", error);
-      setErrorMessage("Kisilik analizi sablonu silinemedi.");
+      console.error("Kişilik analizi şablonu silinemedi", error);
+      setErrorMessage("Kişilik analizi şablonu silinemedi.");
     }
   };
 
@@ -625,7 +625,7 @@ export default function AdminContentPage() {
   if (!canViewContent) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600 shadow-sm">
-        Icerik yonetimi icin{" "}
+        İçerik yönetimi için{" "}
         <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">content.view</code> izni ve kullanilabilir scope gerekir.
       </div>
     );
@@ -647,18 +647,18 @@ export default function AdminContentPage() {
             <LayoutList className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Icerik yonetimi</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">İçerik yönetimi</h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-600">
-              Public blog kayitlari global veya proje sahipligiyle yonetilir. SSS ve site geneli icerikler global scope ister.
+              Public blog kayıtları global veya proje sahipligiyle yönetilir. SSS ve site geneli içerikler global scope ister.
             </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {hasPermission("content.blog.export") && hasScopedPermission("content.blog.export") ? (
-            <ExportButtons endpoint="/panel/content/blogs/export" filename="blog_yazilari" buttonLabel="Bloglari disa aktar" />
+            <ExportButtons endpoint="/panel/content/blogs/export" filename="blog_yazilari" buttonLabel="Bloglari dışa aktar" />
           ) : null}
           {hasPermission("content.faq.export") && hasGlobalScope("content.faq.export") ? (
-            <ExportButtons endpoint="/panel/content/faqs/export" filename="sss_listesi" buttonLabel="SSSleri disa aktar" />
+            <ExportButtons endpoint="/panel/content/faqs/export" filename="sss_listesi" buttonLabel="SSSleri dışa aktar" />
           ) : null}
         </div>
       </header>
@@ -676,12 +676,12 @@ export default function AdminContentPage() {
           onClick={() => setMobileNavOpen((o) => !o)}
           className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-900 shadow-sm"
         >
-          <span>Modul: {activeModuleLabel}</span>
+          <span>Modül: {activeModuleLabel}</span>
           <ChevronDown className={`h-5 w-5 text-slate-500 transition ${mobileNavOpen ? "rotate-180" : ""}`} />
         </button>
         {mobileNavOpen ? (
           <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-            <nav className="flex flex-col gap-1" aria-label="Icerik modulleri">
+            <nav className="flex flex-col gap-1" aria-label="İçerik modülleri">
               {CONTENT_MODULES.map((mod) => {
                 const Icon = mod.icon;
                 const active = activeModule === mod.id;
@@ -723,7 +723,7 @@ export default function AdminContentPage() {
       <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
         <aside className="hidden w-56 shrink-0 lg:block">
           <div className="sticky top-4 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm">
-            <nav className="flex flex-col gap-1" aria-label="Icerik modulleri">
+            <nav className="flex flex-col gap-1" aria-label="İçerik modülleri">
               {CONTENT_MODULES.map((mod) => {
                 const Icon = mod.icon;
                 const active = activeModule === mod.id;
@@ -766,22 +766,22 @@ export default function AdminContentPage() {
                   <FileText className="h-6 w-6 text-indigo-600" />
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">Blog formu</h2>
-                    <p className="text-xs text-slate-500">Yeni yazi veya secili yazinin guncellenmesi.</p>
+                    <p className="text-xs text-slate-500">Yeni yazi veya seçili yazinin guncellenmesi.</p>
                   </div>
                 </div>
                 {blogFieldsDisabled ? (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    Form alanlari kilitli: olusturmak icin <code className="text-[11px]">content.blog.create</code>, duzenlemek icin{" "}
+                    Form alanları kilitli: olusturmak için <code className="text-[11px]">content.blog.create</code>, duzenlemek için{" "}
                     <code className="text-[11px]">content.blog.update</code> izni ve kullanilabilir scope gerekir.
                   </p>
                 ) : null}
-                <Field label="Baslik">
+                <Field label="Başlık">
                   <input
                     disabled={blogFieldsDisabled}
                     value={blogForm.title}
                     onChange={(e) => setBlogForm((c) => ({ ...c, title: e.target.value }))}
                     className={fieldBase}
-                    placeholder="Baslik"
+                    placeholder="Başlık"
                   />
                 </Field>
                 <Field label="Slug" hint="Bos birakilirsa backend genelde otomatik uretir.">
@@ -790,10 +790,10 @@ export default function AdminContentPage() {
                     value={blogForm.slug}
                     onChange={(e) => setBlogForm((c) => ({ ...c, slug: e.target.value }))}
                     className={fieldBase}
-                    placeholder="ornek-yazi"
+                    placeholder="örnek-yazi"
                   />
                 </Field>
-                <Field label="Kapak gorsel URL">
+                <Field label="Kapak görsel URL">
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <input
                       disabled={blogFieldsDisabled}
@@ -803,7 +803,7 @@ export default function AdminContentPage() {
                     />
                     <label className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50">
                       {uploadingBlogCover ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      R2&apos;ye yukle
+                      R2&apos;ye yükle
                       <input
                         type="file"
                         disabled={blogFieldsDisabled || uploadingBlogCover}
@@ -814,7 +814,7 @@ export default function AdminContentPage() {
                     </label>
                   </div>
                 </Field>
-                <Field label="Ozet">
+                <Field label="Özet">
                   <textarea
                     disabled={blogFieldsDisabled}
                     value={blogForm.excerpt}
@@ -823,7 +823,7 @@ export default function AdminContentPage() {
                     className={fieldBase}
                   />
                 </Field>
-                <Field label="Icerik">
+                <Field label="İçerik">
                   <textarea
                     disabled={blogFieldsDisabled}
                     value={blogForm.content}
@@ -855,7 +855,7 @@ export default function AdminContentPage() {
                       onChange={(e) => setBlogForm((c) => ({ ...c, category_id: e.target.value }))}
                       className={fieldBase}
                     >
-                      <option value="">Secin</option>
+                      <option value="">Seçin</option>
                       {categories.map((category) => (
                         <option key={category.id} value={String(category.id)}>
                           {category.name}
@@ -896,7 +896,7 @@ export default function AdminContentPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingBlogId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                    {editingBlogId ? "Guncelle" : "Olustur"}
+                    {editingBlogId ? "Güncelle" : "Oluştur"}
                   </button>
                   {editingBlogId ? (
                     <button
@@ -921,14 +921,14 @@ export default function AdminContentPage() {
                     <input
                       value={blogSearch}
                       onChange={(e) => setBlogSearch(e.target.value)}
-                      placeholder="Baslik, slug veya ozet ara..."
+                      placeholder="Başlık, slug veya özet ara..."
                       className={`${fieldBase} pl-9`}
                     />
                   </div>
                 </div>
                 <div className="space-y-3">
                   {filteredBlogs.length === 0 ? (
-                    <p className="text-sm text-slate-500">Sonuc yok.</p>
+                    <p className="text-sm text-slate-500">Sonuç yok.</p>
                   ) : null}
                   {filteredBlogs.map((blog) => (
                     <div
@@ -959,7 +959,7 @@ export default function AdminContentPage() {
                             onClick={() => void shareBlog(blog)}
                             disabled={sharingBlogId === blog.id}
                             className="rounded-xl border border-indigo-200 bg-indigo-50 p-2 text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            aria-label="Sosyal medyada paylas"
+                            aria-label="Sosyal medyada paylaş"
                           >
                             {sharingBlogId === blog.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
                           </button>
@@ -969,7 +969,7 @@ export default function AdminContentPage() {
                             type="button"
                             onClick={() => editBlog(blog)}
                             className="rounded-xl border border-slate-200 bg-white p-2 text-slate-800 shadow-sm hover:bg-slate-50"
-                            aria-label="Duzenle"
+                            aria-label="Düzenle"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -999,12 +999,12 @@ export default function AdminContentPage() {
                   <HelpCircle className="h-6 w-6 text-indigo-600" />
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">SSS formu</h2>
-                    <p className="text-xs text-slate-500">Kategori ile gruplanir; sira alani listeleme duzenini etkiler.</p>
+                    <p className="text-xs text-slate-500">Kategori ile gruplanir; sıra alanı listeleme duzenini etkiler.</p>
                   </div>
                 </div>
                 {faqFieldsDisabled ? (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    Form alanlari kilitli: <code className="text-[11px]">content.faq.create</code> veya{" "}
+                    Form alanları kilitli: <code className="text-[11px]">content.faq.create</code> veya{" "}
                     <code className="text-[11px]">content.faq.update</code> (all) gerekir.
                   </p>
                 ) : null}
@@ -1014,7 +1014,7 @@ export default function AdminContentPage() {
                     value={faqForm.category}
                     onChange={(e) => setFaqForm((c) => ({ ...c, category: e.target.value }))}
                     className={fieldBase}
-                    placeholder="Ornek: Basvuru"
+                    placeholder="Örnek: Başvuru"
                   />
                 </Field>
                 <Field label="Soru">
@@ -1034,7 +1034,7 @@ export default function AdminContentPage() {
                     className={fieldBase}
                   />
                 </Field>
-                <Field label="Sira">
+                <Field label="Sıra">
                   <input
                     disabled={faqFieldsDisabled}
                     type="number"
@@ -1055,7 +1055,7 @@ export default function AdminContentPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingFaqId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                    {editingFaqId ? "Guncelle" : "Ekle"}
+                    {editingFaqId ? "Güncelle" : "Ekle"}
                   </button>
                   {editingFaqId ? (
                     <button
@@ -1087,7 +1087,7 @@ export default function AdminContentPage() {
                 </div>
                 <div className="space-y-6">
                   {Object.keys(filteredFaqGroups).length === 0 ? (
-                    <p className="text-sm text-slate-500">Sonuc yok.</p>
+                    <p className="text-sm text-slate-500">Sonuç yok.</p>
                   ) : null}
                   {Object.entries(filteredFaqGroups).map(([category, items]) => (
                     <div key={category}>
@@ -1100,7 +1100,7 @@ export default function AdminContentPage() {
                           >
                             <div className="min-w-0">
                               <div className="font-semibold text-slate-900">{faq.question}</div>
-                              <div className="mt-1 text-xs text-slate-500">Sira: {faq.order}</div>
+                              <div className="mt-1 text-xs text-slate-500">Sıra: {faq.order}</div>
                             </div>
                             <div className="flex shrink-0 gap-2">
                               {canFaqUpdate ? (
@@ -1108,7 +1108,7 @@ export default function AdminContentPage() {
                                   type="button"
                                   onClick={() => editFaq(faq)}
                                   className="rounded-xl border border-slate-200 bg-white p-2 text-slate-800 shadow-sm hover:bg-slate-50"
-                                  aria-label="Duzenle"
+                                  aria-label="Düzenle"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </button>
@@ -1140,12 +1140,12 @@ export default function AdminContentPage() {
                 <div className="flex items-center gap-3">
                   <BrainCircuit className="h-6 w-6 text-indigo-600" />
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">Kisilik analizi sablonlari</h2>
-                    <p className="text-xs text-slate-500">Aktif sablon ogrenci ve mezun panelindeki testi besler.</p>
+                    <h2 className="text-lg font-bold text-slate-900">Kişilik analizi şablonları</h2>
+                    <p className="text-xs text-slate-500">Aktif şablon öğrenci ve mezun panelindeki testi besler.</p>
                   </div>
                 </div>
                 {personalityTemplates.length === 0 ? (
-                  <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">Henuz sablon yok.</p>
+                  <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">Henüz şablon yok.</p>
                 ) : null}
                 <div className="space-y-3">
                   {personalityTemplates.map((template) => (
@@ -1161,9 +1161,9 @@ export default function AdminContentPage() {
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{template.description || "Aciklama yok."}</p>
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{template.description || "Açıklama yok."}</p>
                           <div className="mt-2 text-xs text-slate-500">
-                            {template.questions?.length ?? 0} soru / {(template.result_ranges ?? template.resultRanges ?? []).length} sonuc metni
+                            {template.questions?.length ?? 0} soru / {(template.result_ranges ?? template.resultRanges ?? []).length} sonuç metni
                           </div>
                         </div>
                         <div className="flex shrink-0 gap-2">
@@ -1181,7 +1181,7 @@ export default function AdminContentPage() {
                             type="button"
                             onClick={() => editPersonalityTemplate(template)}
                             className="rounded-xl border border-slate-200 bg-white p-2 text-slate-800 shadow-sm hover:bg-slate-50"
-                            aria-label="Duzenle"
+                            aria-label="Düzenle"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -1209,9 +1209,9 @@ export default function AdminContentPage() {
                     <BrainCircuit className="h-6 w-6 text-indigo-600" />
                     <div>
                       <h2 className="text-lg font-bold text-slate-900">
-                        {editingPersonalityId ? "Sablonu duzenle" : "Yeni sablon"}
+                        {editingPersonalityId ? "Şablonu düzenle" : "Yeni şablon"}
                       </h2>
-                      <p className="text-xs text-slate-500">Soru anahtarlari kucuk harf, rakam ve alt cizgi kullanmali.</p>
+                      <p className="text-xs text-slate-500">Soru anahtarlari küçük harf, rakam ve alt cizgi kullanmali.</p>
                     </div>
                   </div>
                   {editingPersonalityId ? (
@@ -1228,20 +1228,20 @@ export default function AdminContentPage() {
 
                 {personalityFieldsDisabled ? (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    Form alanlari kilitli: <code className="text-[11px]">content.personality.manage</code>,{" "}
+                    Form alanları kilitli: <code className="text-[11px]">content.personality.manage</code>,{" "}
                     <code className="text-[11px]">content.site_settings.update</code> veya <code className="text-[11px]">settings.update</code>{" "}
-                    izninin all kapsaminda olmasi gerekir.
+                    izninin all kapsamında olmasi gerekir.
                   </p>
                 ) : null}
 
                 <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                  <Field label="Sablon adi">
+                  <Field label="Şablon adı">
                     <input
                       disabled={personalityFieldsDisabled}
                       value={personalityForm.name}
                       onChange={(e) => setPersonalityForm((c) => ({ ...c, name: e.target.value }))}
                       className={fieldBase}
-                      placeholder="KADEME Kisilik Analizi"
+                      placeholder="KADEME Kişilik Analizi"
                     />
                   </Field>
                   <label className="flex items-center gap-2 self-end rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700">
@@ -1252,10 +1252,10 @@ export default function AdminContentPage() {
                       onChange={(e) => setPersonalityForm((c) => ({ ...c, is_active: e.target.checked }))}
                       className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    Aktif sablon
+                    Aktif şablon
                   </label>
                 </div>
-                <Field label="Aciklama">
+                <Field label="Açıklama">
                   <textarea
                     disabled={personalityFieldsDisabled}
                     value={personalityForm.description}
@@ -1321,7 +1321,7 @@ export default function AdminContentPage() {
                             }))
                           }
                           className={fieldBase}
-                          aria-label="Sira"
+                          aria-label="Sıra"
                         />
                         <button
                           type="button"
@@ -1357,7 +1357,7 @@ export default function AdminContentPage() {
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-bold text-slate-900">Sonuc metinleri</h3>
+                    <h3 className="text-sm font-bold text-slate-900">Sonuç metinleri</h3>
                     <button
                       type="button"
                       disabled={personalityFieldsDisabled}
@@ -1398,7 +1398,7 @@ export default function AdminContentPage() {
                             }))
                           }
                           className="shrink-0 rounded-xl border border-red-200 bg-red-50 p-2 text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Sonuc metnini sil"
+                          aria-label="Sonuç metnini sil"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -1414,7 +1414,7 @@ export default function AdminContentPage() {
                         }
                         rows={3}
                         className={`${fieldBase} mt-3`}
-                        placeholder="Bu kategori one ciktiginda gosterilecek metin"
+                        placeholder="Bu kategori one ciktiginda gösterilecek metin"
                       />
                     </div>
                   ))}
@@ -1428,7 +1428,7 @@ export default function AdminContentPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingPersonalityId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                    {editingPersonalityId ? "Guncelle" : "Olustur"}
+                    {editingPersonalityId ? "Güncelle" : "Oluştur"}
                   </button>
                   <button
                     type="button"

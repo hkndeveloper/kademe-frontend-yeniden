@@ -180,17 +180,17 @@ const sanitizeFileName = (value: string) =>
     .replace(/[^a-z0-9]+/gi, "-")
     .replace(/^-+|-+$/g, "") || "kademe-dijital-cv";
 const UNIVERSITY_OPTIONS = [
-  "Ankara Universitesi",
-  "Istanbul Universitesi",
-  "Marmara Universitesi",
-  "Hacettepe Universitesi",
-  "Gazi Universitesi",
-  "Ege Universitesi",
-  "Dokuz Eylul Universitesi",
-  "Selcuk Universitesi",
-  "Necmettin Erbakan Universitesi",
-  "Karadeniz Teknik Universitesi",
-  "Diger",
+  "Ankara Üniversitesi",
+  "Istanbul Üniversitesi",
+  "Marmara Üniversitesi",
+  "Hacettepe Üniversitesi",
+  "Gazi Üniversitesi",
+  "Ege Üniversitesi",
+  "Dokuz Eylul Üniversitesi",
+  "Selcuk Üniversitesi",
+  "Necmettin Erbakan Üniversitesi",
+  "Karadeniz Teknik Üniversitesi",
+  "Diğer",
 ];
 
 const CLASS_YEAR_OPTIONS = ["Hazirlik", "1", "2", "3", "4", "5", "6", "Mezun"];
@@ -258,8 +258,8 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
         certificateIds: draftForm.certificateIds?.length ? draftForm.certificateIds : (nextPayload.certificates ?? []).filter((certificate) => certificate.included_in_cv !== false).map((certificate) => certificate.id),
       });
     } catch (error) {
-      console.error("Dijital CV verileri yuklenemedi", error);
-      setMessage("Dijital CV verileri yuklenemedi. Formu manuel doldurabilirsiniz.");
+      console.error("Dijital CV verileri yüklenemedi", error);
+      setMessage("Dijital CV verileri yüklenemedi. Formu manuel doldurabilirsiniz.");
     } finally {
       setLoading(false);
     }
@@ -311,7 +311,7 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
     const invalid = rows.find((item) => !manualItemIsComplete(item));
 
     if (invalid) {
-      setMessage("Eklenen manuel bilgi satirlarinda baslik, kurum/rol, sadece rakamdan olusan tarih ve aciklama zorunludur.");
+      setMessage("Eklenen manuel bilgi satirlarinda başlık, kurum/rol, sadece rakamdan olusan tarih ve açıklama zorunludur.");
       return false;
     }
 
@@ -326,12 +326,12 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
       const response = await api.put<{ saved_draft?: DigitalCvPayload["saved_draft"] }>("/dashboard/digital-cv", { form: cvForm });
       setPayload((current) => ({ ...current, saved_draft: response.data.saved_draft ?? current.saved_draft }));
       if (notify) {
-        setMessage("CV taslagi kaydedildi ve profil verilerine baglandi.");
+        setMessage("CV taslağı kaydedildi ve profil verilerine baglandi.");
       }
     } catch (error) {
-      console.error("CV taslagi backend'e kaydedilemedi", error);
+      console.error("CV taslağı backend'e kaydedilemedi", error);
       if (notify) {
-        setMessage("CV taslagi bu cihazda kaydedildi; backend kaydi yapilamadi.");
+        setMessage("CV taslağı bu cihazda kaydedildi; backend kaydı yapilamadi.");
       }
     }
   };
@@ -349,9 +349,9 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
         github_url: form.github || null,
         instagram_url: form.instagram || null,
       });
-      setMessage("Profil alanlari guncellendi, CV verileri senkronize edildi.");
+      setMessage("Profil alanları güncellendi, CV verileri senkronize edildi.");
     } catch (error) {
-      console.error("CV profil senkronizasyonu basarisiz", error);
+      console.error("CV profil senkronizasyonu başarısız", error);
       setMessage("Profil senkronizasyonu yapilamadi.");
     }
   };
@@ -376,8 +376,8 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
       downloadBlob(response.data, `${sanitizeFileName(form.fullName)}-kademe-cv.pdf`);
       setMessage("PDF ciktisi indirildi.");
     } catch (error) {
-      console.error("PDF ciktisi alinamadi", error);
-      setMessage("PDF ciktisi alinamadi. Yazdirma penceresi aciliyor.");
+      console.error("PDF ciktisi alınamadı", error);
+      setMessage("PDF ciktisi alınamadı. Yazdirma penceresi aciliyor.");
       printCvDocument(buildCvHtmlDocument({
         form,
         approved,
@@ -474,9 +474,9 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
             <FileText className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-950">Ozgecmis Hazirla</h1>
+            <h1 className="text-3xl font-black text-slate-950">Özgeçmiş Hazirla</h1>
             <p className="mt-1 text-sm font-bold uppercase tracking-widest text-slate-500">
-              KADEME onayli dijital CV ve ATS uyumlu export
+              KADEME onaylı dijital CV ve ATS uyumlu export
             </p>
           </div>
         </div>
@@ -484,7 +484,7 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
         <div className="flex flex-wrap gap-2">
           <button onClick={() => void saveDraft()} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-slate-50">
             <Save className="h-4 w-4" />
-            Taslagi Kaydet
+            Taslağı Kaydet
           </button>
           <button onClick={() => void syncProfile()} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-slate-50">
             <BadgeCheck className="h-4 w-4" />
@@ -533,7 +533,7 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
             {[
               ["profile", "Profil"],
               ["experience", "Deneyim"],
-              ["education", "Egitim"],
+              ["education", "Eğitim"],
               ["manual", "Ekler"],
             ].map(([key, label]) => (
               <button
@@ -547,12 +547,12 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
           </div>
 
           {activeSection === "profile" && (
-            <FormPanel title="Kisisel Bilgiler" icon={<User className="h-5 w-5" />}>
+            <FormPanel title="Kişisel Bilgiler" icon={<User className="h-5 w-5" />}>
               <Input label="Ad Soyad" value={form.fullName} onChange={(value) => setForm((prev) => ({ ...prev, fullName: value }))} />
               <Input label="E-posta" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} />
               <Input label="Telefon" value={form.phone} onChange={(value) => setForm((prev) => ({ ...prev, phone: value }))} />
               <Input label="Sehir" value={form.location} onChange={(value) => setForm((prev) => ({ ...prev, location: value }))} />
-              <Textarea label="Profesyonel Ozet" value={form.summary} onChange={(value) => setForm((prev) => ({ ...prev, summary: value }))} />
+              <Textarea label="Profesyonel Özet" value={form.summary} onChange={(value) => setForm((prev) => ({ ...prev, summary: value }))} />
               <Input label="Yetkinlikler (virgulle ayirin)" value={form.skills} onChange={(value) => setForm((prev) => ({ ...prev, skills: value }))} />
               <Input label="Diller (virgulle ayirin)" value={form.languages} onChange={(value) => setForm((prev) => ({ ...prev, languages: value }))} />
               <Input label="LinkedIn" value={form.linkedin} onChange={(value) => setForm((prev) => ({ ...prev, linkedin: value }))} />
@@ -569,9 +569,9 @@ export function DigitalCvBuilder({ mode }: { mode: CvMode }) {
           )}
 
           {activeSection === "education" && (
-            <FormPanel title="Egitim" icon={<GraduationCap className="h-5 w-5" />} onAdd={() => addItem("education")}>
-              <Select label="Universite" value={form.university} options={UNIVERSITY_OPTIONS} onChange={(value) => setForm((prev) => ({ ...prev, university: value }))} />
-              <Input label="Bolum" value={form.department} onChange={(value) => setForm((prev) => ({ ...prev, department: value }))} />
+            <FormPanel title="Eğitim" icon={<GraduationCap className="h-5 w-5" />} onAdd={() => addItem("education")}>
+              <Select label="Üniversite" value={form.university} options={UNIVERSITY_OPTIONS} onChange={(value) => setForm((prev) => ({ ...prev, university: value }))} />
+              <Input label="Bölüm" value={form.department} onChange={(value) => setForm((prev) => ({ ...prev, department: value }))} />
               <Select label="Sinif / Mezuniyet" value={form.classYear} options={CLASS_YEAR_OPTIONS} onChange={(value) => setForm((prev) => ({ ...prev, classYear: value }))} />
               {form.education.map((item) => (
                 <ItemEditor key={item.id} item={item} onChange={(field, value) => updateItem("education", item.id, field, value)} onRemove={() => removeItem("education", item.id)} />
@@ -651,7 +651,7 @@ function Select({ label, value, options, onChange }: { label: string; value?: st
     <label className="block">
       <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
       <select value={safeValue} onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-indigo-500">
-        <option value="">Seciniz</option>
+        <option value="">Seçiniz</option>
         {normalizedOptions.map((option) => (
           <option key={option} value={option}>{option}</option>
         ))}
@@ -677,14 +677,14 @@ function ItemEditor({ item, onChange, onRemove }: { item: ManualItem; onChange: 
         </button>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Input label="Baslik *" value={item.title} required onChange={(value) => onChange("title", value)} />
+        <Input label="Başlık *" value={item.title} required onChange={(value) => onChange("title", value)} />
         <Input label="Kurum / Rol *" value={item.subtitle} required onChange={(value) => onChange("subtitle", value)} />
       </div>
       <div className="mt-3">
         <Input label="Tarih *" value={item.date} required inputMode="numeric" pattern="[0-9]*" onChange={(value) => onChange("date", numericOnly(value))} />
       </div>
       <div className="mt-3">
-        <Textarea label="Aciklama *" value={item.description} required onChange={(value) => onChange("description", value)} />
+        <Textarea label="Açıklama *" value={item.description} required onChange={(value) => onChange("description", value)} />
       </div>
     </div>
   );
@@ -727,7 +727,7 @@ function CvPreview({
             </div>
           </div>
           <div className="rounded-md border border-slate-300 px-3 py-2 text-right">
-            <div className="text-xs font-black uppercase tracking-widest text-slate-500">KADEME Onayli</div>
+            <div className="text-xs font-black uppercase tracking-widest text-slate-500">KADEME Onaylı</div>
             <div className="text-sm font-bold text-slate-950">Dijital CV</div>
           </div>
         </div>
@@ -742,12 +742,12 @@ function CvPreview({
       </header>
 
       <div className="mt-5 space-y-5">
-        <CvSection title="Profesyonel Ozet">
-          <p>{form.summary || "KADEME programlari, proje deneyimleri ve manuel eklemelerle olusturulan ATS uyumlu dijital CV."}</p>
+        <CvSection title="Profesyonel Özet">
+          <p>{form.summary || "KADEME programları, proje deneyimleri ve manuel eklemelerle oluşturulan ATS uyumlu dijital CV."}</p>
         </CvSection>
 
-        <CvSection title="Egitim">
-          <Entry title={form.university || "Universite"} subtitle={form.department} date={form.classYear} />
+        <CvSection title="Eğitim">
+          <Entry title={form.university || "Üniversite"} subtitle={form.department} date={form.classYear} />
           {manualEducation.map((item) => (
             <Entry key={item.id} title={item.title} subtitle={item.subtitle} date={item.date} description={item.description} />
           ))}
@@ -771,7 +771,7 @@ function CvPreview({
         {(certificates.length > 0 || manualCertificates.length > 0) && (
           <CvSection title="Sertifikalar">
             {certificates.map((certificate) => (
-              <Entry key={`certificate-${certificate.id}`} title={certificate.title || certificate.type || "Sertifika"} subtitle={[certificate.issuer, certificate.project, certificate.period].filter(Boolean).join(" | ")} date={formatDate(certificate.issued_at)} description={certificate.verification_code ? `Dogrulama kodu: ${certificate.verification_code}` : ""} />
+              <Entry key={`certificate-${certificate.id}`} title={certificate.title || certificate.type || "Sertifika"} subtitle={[certificate.issuer, certificate.project, certificate.period].filter(Boolean).join(" | ")} date={formatDate(certificate.issued_at)} description={certificate.verification_code ? `Doğrulama kodu: ${certificate.verification_code}` : ""} />
             ))}
             {manualCertificates.map((item) => (
               <Entry key={item.id} title={item.title} subtitle={item.subtitle} date={item.date} description={item.description} />
@@ -862,11 +862,11 @@ function buildCvHtmlDocument({
   const links = [form.linkedin, form.github, form.instagram].filter(Boolean).map(escapeHtml).join(" | ");
 
   const sections = [
-    exportSection("Profesyonel Ozet", `<p>${htmlParagraph(form.summary || "")}</p>`),
+    exportSection("Profesyonel Özet", `<p>${htmlParagraph(form.summary || "")}</p>`),
     exportSection(
-      "Egitim",
+      "Eğitim",
       [
-        exportEntry({ title: form.university || "Universite", subtitle: form.department, date: form.classYear }),
+        exportEntry({ title: form.university || "Üniversite", subtitle: form.department, date: form.classYear }),
         ...manualEducation.map((item) => exportEntry(item)),
       ].join(""),
     ),
@@ -886,7 +886,7 @@ function buildCvHtmlDocument({
             title: certificate.title || certificate.type || "Sertifika",
             subtitle: [certificate.issuer, certificate.project, certificate.period].filter(Boolean).join(" | "),
             date: formatDate(certificate.issued_at),
-            description: certificate.verification_code ? `Dogrulama kodu: ${certificate.verification_code}` : "",
+            description: certificate.verification_code ? `Doğrulama kodu: ${certificate.verification_code}` : "",
           }),
         ),
         ...manualCertificates.map((item) => exportEntry(item)),
@@ -1011,8 +1011,8 @@ function buildAtsText({
     [form.email, form.phone, form.location].filter(Boolean).join(" | "),
     [form.linkedin, form.github, form.instagram].filter(Boolean).join(" | "),
   ].filter(Boolean).join("\n"));
-  sections.push(`PROFESYONEL OZET\n${form.summary || ""}`);
-  sections.push(`EGITIM\n${[form.university, form.department, form.classYear].filter(Boolean).join(" | ")}`);
+  sections.push(`PROFESYONEL ÖZET\n${form.summary || ""}`);
+  sections.push(`EĞİTİM\n${[form.university, form.department, form.classYear].filter(Boolean).join(" | ")}`);
   sections.push(`DENEYIM\n${form.experience.filter((item) => item.title || item.description).map((item) => `${item.title}\n${[item.subtitle, item.date].filter(Boolean).join(" | ")}\n${item.description}`).join("\n\n")}`);
   sections.push(`YETKINLIKLER\n${skills.join(", ")}`);
   sections.push(`DILLER\n${languages.join(", ")}`);

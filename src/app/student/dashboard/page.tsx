@@ -131,7 +131,7 @@ export default function StudentDashboardPage() {
         setMotivationImage(motivationResponse?.data?.motivation?.image_url || null);
         setMotivationPeriod(motivationResponse?.data?.motivation?.rotation_period || "monthly");
       } catch (error) {
-        console.error("Ogrenci dashboard verileri cekilemedi", error);
+        console.error("Öğrenci dashboard verileri çekilemedi", error);
       } finally {
         setLoading(false);
       }
@@ -163,7 +163,7 @@ export default function StudentDashboardPage() {
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div>
           <h1 className={`text-3xl font-black text-slate-900 ${profileBadgeFrame ?? ""}`.trim()}>Merhaba, {user?.name?.toUpperCase()}!</h1>
-          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Ogrenci portali gelisim ozeti</p>
+          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Öğrenci portalı gelişim özeti</p>
           {profileBadgeFrame ? <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-primary">KADEME+ rozet cercevesi aktif</p> : null}
         </div>
         <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-2 text-primary">
@@ -176,7 +176,7 @@ export default function StudentDashboardPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-4">
-          <h3 className="mb-4 text-xs font-black uppercase tracking-[0.2em] text-primary">Gelisim Durumu</h3>
+          <h3 className="mb-4 text-xs font-black uppercase tracking-[0.2em] text-primary">Gelişim Durumu</h3>
 
           <div className="glass-panel group relative overflow-hidden rounded-3xl border-primary/20 bg-gradient-to-br from-primary/20 to-transparent p-6">
             <div className="relative z-10 mb-8 flex items-start justify-between">
@@ -191,12 +191,12 @@ export default function StudentDashboardPage() {
 
             <div className="relative z-10 space-y-3">
               {participations.length === 0 ? (
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-3 text-sm text-muted-foreground">Henuz aktif proje kaydin gorunmuyor.</div>
+                <div className="rounded-2xl border border-white/5 bg-white/5 p-3 text-sm text-muted-foreground">Henüz aktif proje kaydın görünmüyor.</div>
               ) : (
                 participations.slice(0, 3).map((participation) => (
                   <div key={participation.id} className="rounded-2xl border border-white/5 bg-white/5 p-3">
                     <p className="text-[8px] font-bold uppercase tracking-tighter text-muted-foreground">{participation.project?.name || "Proje"}</p>
-                    <p className="mt-1 text-[10px] font-semibold text-primary">{participation.period?.name || "Donem belirtilmedi"}</p>
+                    <p className="mt-1 text-[10px] font-semibold text-primary">{participation.period?.name || "Dönem belirtilmedi"}</p>
                     <p className="text-sm font-black text-slate-900">{participation.credit?.toLocaleString("tr-TR") ?? 0}</p>
                   </div>
                 ))
@@ -212,7 +212,7 @@ export default function StudentDashboardPage() {
               <CreditCard className="h-4 w-4 text-primary" />
             </div>
             {recentCreditHistory.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Henuz kredi hareketi gorunmuyor.</div>
+              <div className="text-sm text-muted-foreground">Henüz kredi hareketi görünmüyor.</div>
             ) : (
               <div className="space-y-3">
                 {recentCreditHistory.map((log) => {
@@ -225,7 +225,7 @@ export default function StudentDashboardPage() {
                         {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-black text-slate-900">{log.program?.title || log.project?.name || log.reason || "Kredi islemi"}</p>
+                        <p className="truncate text-xs font-black text-slate-900">{log.program?.title || log.project?.name || log.reason || "Kredi işlemi"}</p>
                         <p className="text-[10px] font-semibold text-muted-foreground">
                           {new Date(log.created_at).toLocaleDateString("tr-TR")} {log.description ? `- ${log.description}` : ""}
                         </p>
@@ -240,7 +240,7 @@ export default function StudentDashboardPage() {
               </div>
             )}
             <Link href="/student/evaluate" className="mt-5 block w-full rounded-xl py-2 text-center text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-primary/5">
-              Degerlendirme ve kredi gecmisim
+              Değerlendirme ve kredi geçmişim
             </Link>
           </div>
 
@@ -248,7 +248,7 @@ export default function StudentDashboardPage() {
             <h4 className="mb-6 text-xs font-bold uppercase tracking-widest text-muted-foreground">Kazanilan Rozetler</h4>
             <div className="flex flex-wrap gap-4">
               {badges.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Henuz rozet gorunmuyor.</div>
+                <div className="text-sm text-muted-foreground">Henüz rozet görünmüyor.</div>
               ) : (
                 badges.slice(0, 6).map((badge) => (
                   <div
@@ -264,9 +264,9 @@ export default function StudentDashboardPage() {
           </div>
 
           <div className="glass-panel rounded-3xl p-6">
-            <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Aylik Unvanlar</h4>
+            <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Aylık Unvanlar</h4>
             {monthlyTitles.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Bu ay icin atanmis bir unvan gorunmuyor.</div>
+              <div className="text-sm text-muted-foreground">Bu ay için atanmış bir unvan görünmüyor.</div>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {monthlyTitles.map((title) => (
@@ -282,24 +282,24 @@ export default function StudentDashboardPage() {
           </div>
 
           <div className="glass-panel rounded-3xl p-6">
-            <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Durum Kartlari</h4>
+            <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">Durum Kartları</h4>
             <div className="space-y-3">
               <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-[10px] font-black text-indigo-400">P</div>
                 <span className="text-xs font-bold uppercase tracking-tighter text-slate-900">
-                  {participations.length > 0 ? "Aktif katilimci" : "Basvuru veya kayit bekleniyor"}
+                  {participations.length > 0 ? "Aktif katılımcı" : "Başvuru veya kayıt bekleniyor"}
                 </span>
               </div>
               <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3 opacity-80">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10 text-[10px] font-black text-orange-400">R</div>
                 <span className="text-xs font-bold uppercase tracking-tighter text-slate-900">
-                  {badges.length > 0 ? "Rozet sahibi" : "Rozet henuz tanimlanmadi"}
+                  {badges.length > 0 ? "Rozet sahibi" : "Rozet henüz tanimlanmadi"}
                 </span>
               </div>
               <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3 opacity-80">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-[10px] font-black text-emerald-500">E</div>
                 <span className="text-xs font-bold uppercase tracking-tighter text-slate-900">
-                  {attendedPrograms.length} katilim, {completedPrograms.length} tamamlanan program
+                  {attendedPrograms.length} katılım, {completedPrograms.length} tamamlanan program
                 </span>
               </div>
             </div>
@@ -311,12 +311,12 @@ export default function StudentDashboardPage() {
 
           <div className="glass-panel rounded-3xl p-6">
             <div className="mb-6 flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Yaklasan Programlar</h4>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Yaklaşan Programlar</h4>
               <Calendar className="h-4 w-4 text-primary" />
             </div>
             <div className="space-y-4">
               {upcomingPrograms.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Yaklasan program bulunmuyor.</div>
+                <div className="text-sm text-muted-foreground">Yaklaşan program bulunmuyor.</div>
               ) : (
                 upcomingPrograms.map((program) => {
                   const date = program.start_at ?? null;
@@ -342,12 +342,12 @@ export default function StudentDashboardPage() {
 
           <div className="glass-panel rounded-3xl p-6">
             <div className="mb-6 flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Guncel Duyurular</h4>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Güncel Duyurular</h4>
               <Bell className="h-4 w-4 text-primary" />
             </div>
             <div className="space-y-3">
               {recentAnnouncements.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Henuz duyuru bulunmuyor.</div>
+                <div className="text-sm text-muted-foreground">Henüz duyuru bulunmuyor.</div>
               ) : (
                 recentAnnouncements.map((announcement) => {
                   const dateValue = announcement.published_at ?? announcement.created_at ?? null;
@@ -368,17 +368,17 @@ export default function StudentDashboardPage() {
               )}
             </div>
             <Link href="/student/announcements" className="mt-6 block w-full rounded-xl py-2 text-center text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-primary/5">
-              Tum duyurulari gor
+              Tüm duyuruları gör
             </Link>
           </div>
           <div className="glass-panel rounded-3xl p-6">
             <div className="mb-6 flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dijital Bohca</h4>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Dijital Bohça</h4>
               <BookOpen className="h-4 w-4 text-primary" />
             </div>
             <div className="space-y-3">
               {materials.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Henuz materyal yuklenmemis.</div>
+                <div className="text-sm text-muted-foreground">Henüz materyal yuklenmemis.</div>
               ) : (
                 materials.map((material) => (
                   <div key={material.id} className="group flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-3 transition-all hover:border-primary/40">
@@ -397,13 +397,13 @@ export default function StudentDashboardPage() {
               )}
             </div>
             <Link href="/student/bohca" className="mt-6 block w-full rounded-xl py-2 text-center text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-primary/5">
-              Tum dosyalarimi gor
+              Tüm dosyalarimi gör
             </Link>
           </div>
 
           <div className="glass-panel rounded-3xl p-6">
             <div className="mb-5 flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Degerlendirme Durumu</h4>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Değerlendirme Durumu</h4>
               <MessageSquareText className="h-4 w-4 text-primary" />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -412,18 +412,18 @@ export default function StudentDashboardPage() {
                 <p className="mt-2 text-2xl font-black text-slate-900">{pendingFeedbackCount}</p>
               </div>
               <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Katilim</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Katılım</p>
                 <p className="mt-2 text-2xl font-black text-slate-900">{attendedPrograms.length}</p>
               </div>
             </div>
             <Link href="/student/evaluate" className="mt-5 block w-full rounded-xl py-2 text-center text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-primary/5">
-              Anketlerimi ac
+              Anketlerimi aç
             </Link>
           </div>
         </div>
 
         <div className="space-y-6 lg:col-span-4">
-          <h3 className="mb-4 text-xs font-black uppercase tracking-[0.2em] text-primary">Aylik Motivasyon</h3>
+          <h3 className="mb-4 text-xs font-black uppercase tracking-[0.2em] text-primary">Aylık Motivasyon</h3>
 
           <div className="glass-panel relative flex h-full flex-col justify-center overflow-hidden rounded-[40px] border-primary/20 bg-gradient-to-br from-primary/10 to-transparent p-8 text-center">
             {motivationImage ? (
@@ -437,7 +437,7 @@ export default function StudentDashboardPage() {
             </p>
             <div className="mx-auto mb-6 h-px w-20 bg-primary/30" />
             <p className="text-sm font-black text-slate-700">{motivationSpeaker}</p>
-            <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary">{motivationPeriod === "daily" ? "Gunluk" : motivationPeriod === "weekly" ? "Haftalik" : "Aylik"} motivasyon notu</p>
+            <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary">{motivationPeriod === "daily" ? "Günlük" : motivationPeriod === "weekly" ? "Haftalik" : "Aylık"} motivasyon notu</p>
             </div>
             <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-primary/10 blur-[80px]" />
           </div>

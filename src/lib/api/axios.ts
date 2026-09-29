@@ -15,7 +15,7 @@ function resolveApiBaseUrl() {
 const API_BASE_URL = resolveApiBaseUrl();
 if (isProduction && !rawApiUrl && typeof window !== 'undefined') {
     // Production'da env unutuldugunda sessiz localhost fallback yerine gozlemlenebilir uyarı.
-    console.warn('NEXT_PUBLIC_API_URL tanimli degil; API cagrilari mevcut origin /api uzerinden yapilacak.');
+    console.warn('NEXT_PUBLIC_API_URL tanımlı değil; API cagrilari mevcut origin /api üzerinden yapilacak.');
 }
 
 /** Dev'de `php artisan serve` tek istek alır; paralel çağrılar sıraya girer. DB yavaşsa 15s yetmeyebilir. */

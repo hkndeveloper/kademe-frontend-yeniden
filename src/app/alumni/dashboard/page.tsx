@@ -125,7 +125,7 @@ export default function AlumniDashboardPage() {
         setMotivationImage(motivationResponse?.data?.motivation?.image_url || null);
         setMotivationPeriod(motivationResponse?.data?.motivation?.rotation_period || "monthly");
       } catch (error) {
-        console.error("Mezun dashboard verileri cekilemedi", error);
+        console.error("Mezun dashboard verileri çekilemedi", error);
       } finally {
         setLoading(false);
       }
@@ -157,32 +157,32 @@ export default function AlumniDashboardPage() {
     <div className="space-y-8">
       <section className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">Mezun Portali</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">Mezun Portalı</p>
           <h1 className="mt-2 text-3xl font-black text-slate-900">Hos geldin, {displayName}</h1>
           <p className="mt-2 max-w-2xl text-sm font-medium text-muted-foreground">
-            Mezun oldugun projeleri, duyurulari, sertifikalarini ve KADEME ile devam eden firsatlarini tek ekrandan takip edebilirsin.
+            Mezun olduğun projeleri, duyuruları, sertifikalarini ve KADEME ile devam eden firsatlarini tek ekrandan takip edebilirsin.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
           <Link href="/alumni/volunteer" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
             <HeartHandshake className="h-4 w-4" />
-            Gonulluluk
+            Gönüllülük
           </Link>
           <Link href="/alumni/assignments" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
             <BookOpen className="h-4 w-4" />
-            Odevlerim
+            Ödevlerim
           </Link>
           <Link href="/alumni/resume" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20">
             <Briefcase className="h-4 w-4" />
-            Ozgecmisim
+            Özgeçmişim
           </Link>
         </div>
       </section>
 
       <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard title="Dijital Bohca Dosyalari" value={materials.length} icon={<BookOpen className="h-6 w-6" />} tone="blue" />
-        <SummaryCard title="Acik Destek Talepleri" value={openTickets} icon={<HeartHandshake className="h-6 w-6" />} tone="rose" />
+        <SummaryCard title="Dijital Bohça Dosyaları" value={materials.length} icon={<BookOpen className="h-6 w-6" />} tone="blue" />
+        <SummaryCard title="Açık Destek Talepleri" value={openTickets} icon={<HeartHandshake className="h-6 w-6" />} tone="rose" />
         <SummaryCard title="Sertifikalarim" value={certificates.length} icon={<Award className="h-6 w-6" />} tone="amber" />
         <SummaryCard title="Mezun Projelerim" value={projects.length} icon={<Briefcase className="h-6 w-6" />} tone="violet" />
       </section>
@@ -191,11 +191,11 @@ export default function AlumniDashboardPage() {
         <div className="glass-panel rounded-3xl p-7">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-black text-slate-900">Program Gecmisim</h2>
+              <h2 className="text-lg font-black text-slate-900">Program Geçmişim</h2>
               <p className="mt-1 text-sm text-muted-foreground">Mezun olarak davet edildigin veya ogrencilikten kalan etkinlik kayitlarin.</p>
             </div>
             <Link href="/alumni/programs" className="rounded-xl border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
-              Tumunu Gor
+              Tümünü Gör
             </Link>
           </div>
 
@@ -206,7 +206,7 @@ export default function AlumniDashboardPage() {
           </div>
 
           {recentPrograms.length === 0 ? (
-            <EmptyState message="Program gecmisi henuz gorunmuyor." />
+            <EmptyState message="Program geçmişi henüz görünmüyor." />
           ) : (
             <div className="space-y-3">
               {recentPrograms.map((program) => (
@@ -221,7 +221,7 @@ export default function AlumniDashboardPage() {
                     </p>
                   </div>
                   <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    {program.attendance_status === "present" ? "Katildi" : program.status || "Kayit"}
+                    {program.attendance_status === "present" ? "Katildi" : program.status || "Kayıt"}
                   </span>
                 </article>
               ))}
@@ -232,15 +232,15 @@ export default function AlumniDashboardPage() {
         <div className="glass-panel rounded-3xl p-7">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-black text-slate-900">Degerlendirme Gecmisim</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Mezun etkinliklerinde kredi islemi uygulanmaz; anket kayitlari ayrica takip edilir.</p>
+              <h2 className="text-lg font-black text-slate-900">Değerlendirme Geçmişim</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Mezun etkinliklerinde kredi işlemi uygulanmaz; anket kayıtları ayrica takip edilir.</p>
             </div>
             <MessageSquareText className="h-5 w-5 text-primary" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <MiniMetric label="Bekleyen" value={pendingFeedbackPrograms.length} />
-            <MiniMetric label="Gonderilen" value={feedbackPrograms.filter((program) => program.feedback_submitted).length} />
+            <MiniMetric label="Gönderilen" value={feedbackPrograms.filter((program) => program.feedback_submitted).length} />
           </div>
 
           <div className="mt-5 space-y-3">
@@ -249,7 +249,7 @@ export default function AlumniDashboardPage() {
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="text-sm font-bold text-slate-900">{program.title}</h3>
                   <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${program.feedback_submitted ? "bg-emerald-500/10 text-emerald-600" : "bg-blue-500/10 text-blue-700"}`}>
-                    {program.feedback_submitted ? "Gonderildi" : "Bekliyor"}
+                    {program.feedback_submitted ? "Gönderildi" : "Bekliyor"}
                   </span>
                 </div>
                 {program.feedback_deadline_at && !program.feedback_submitted ? (
@@ -257,11 +257,11 @@ export default function AlumniDashboardPage() {
                 ) : null}
               </div>
             ))}
-            {feedbackPrograms.length === 0 ? <EmptyState message="Degerlendirme kaydi henuz yok." /> : null}
+            {feedbackPrograms.length === 0 ? <EmptyState message="Değerlendirme kaydı henüz yok." /> : null}
           </div>
 
           <Link href="/alumni/evaluate" className="mt-5 block w-full rounded-xl py-2 text-center text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-primary/5">
-            Degerlendirmelerimi ac
+            Degerlendirmelerimi aç
           </Link>
         </div>
       </section>
@@ -279,7 +279,7 @@ export default function AlumniDashboardPage() {
           </div>
 
           {projects.length === 0 ? (
-            <EmptyState message="Mezuniyet projesi kaydi gorunmuyor." />
+            <EmptyState message="Mezuniyet projesi kaydı görünmüyor." />
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {projects.map((project) => (
@@ -293,10 +293,10 @@ export default function AlumniDashboardPage() {
                   <p className="mt-3 text-sm text-muted-foreground">
                     {project.graduated_at
                       ? `Mezuniyet: ${new Date(project.graduated_at).toLocaleDateString("tr-TR")}`
-                      : project.graduation_status || "Mezuniyet kaydi"}
+                      : project.graduation_status || "Mezuniyet kaydı"}
                   </p>
                   <p className="mt-2 text-xs font-bold text-primary">
-                    {project.period?.name ? `Mezuniyet donemi: ${project.period.name}` : "Mezuniyet donemi belirtilmedi"}
+                    {project.period?.name ? `Mezuniyet dönemi: ${project.period.name}` : "Mezuniyet dönemi belirtilmedi"}
                   </p>
                 </article>
               ))}
@@ -306,12 +306,12 @@ export default function AlumniDashboardPage() {
 
         <div className="glass-panel rounded-3xl p-7">
           <div className="mb-5">
-            <h2 className="text-lg font-black text-slate-900">Aylik Unvanlarim</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Ay icinde kazandigin unvanlar burada gorunur.</p>
+            <h2 className="text-lg font-black text-slate-900">Aylık Unvanlarim</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Ay icinde kazandigin unvanlar burada görünür.</p>
           </div>
 
           {monthlyTitles.length === 0 ? (
-            <EmptyState message="Bu ay atanmis bir unvan gorunmuyor." />
+            <EmptyState message="Bu ay atanmış bir unvan görünmüyor." />
           ) : (
             <div className="flex flex-wrap gap-2">
               {monthlyTitles.map((title) => (
@@ -329,28 +329,28 @@ export default function AlumniDashboardPage() {
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-black text-slate-900">Mezun Aksiyonu</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Sistemde aktif tutman gereken mezun islemleri.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Sistemde aktif tutman gereken mezun işlemleri.</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <ActionCard
-              title="Ozgecmisini guncel tut"
-              description="Kariyer bilgilerini ve sosyal baglantilarini mezun ozgecmis ekranindan duzenleyebilirsin."
+              title="Ozgecmisini güncel tut"
+              description="Kariyer bilgilerini ve sosyal baglantilarini mezun özgeçmiş ekranindan duzenleyebilirsin."
               href="/alumni/resume"
               cta="Ozgecmise git"
             />
             <ActionCard
-              title="Gonulluluk firsatlarini takip et"
-              description="Acik gonulluluk ilanlarina basvurabilir, proje ekipleriyle tekrar bag kurabilirsin."
+              title="Gönüllülük firsatlarini takip et"
+              description="Açık gönüllülük ilanlarina basvurabilir, proje ekipleriyle tekrar bag kurabilirsin."
               href="/alumni/volunteer"
-              cta="Firsatlari gor"
+              cta="Fırsatları gör"
             />
             <ActionCard
-              title="Dijital bohca dosyalarina ulas"
-              description="Mezuniyet sonrasinda seninle paylasilan dosya, belge ve icerikler burada saklanir."
+              title="Dijital bohça dosyalarina ulas"
+              description="Mezuniyet sonrasinda seninle paylaşılan dosya, belge ve içerikler burada saklanir."
               href="/alumni/bohca"
-              cta="Bohcayi ac"
+              cta="Bohcayi aç"
             />
           </div>
         </div>
@@ -365,7 +365,7 @@ export default function AlumniDashboardPage() {
           <p className="mb-6 text-lg font-bold italic leading-relaxed text-slate-900">&quot;{motivationMessage}&quot;</p>
           <div className="mx-auto mb-4 h-px w-16 bg-primary/30" />
           <p className="text-sm font-black text-slate-700">{motivationSpeaker}</p>
-          <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary">{motivationPeriod === "daily" ? "Gunluk" : motivationPeriod === "weekly" ? "Haftalik" : "Aylik"} Motivasyon Notu</p>
+          <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary">{motivationPeriod === "daily" ? "Günlük" : motivationPeriod === "weekly" ? "Haftalik" : "Aylık"} Motivasyon Notu</p>
           </div>
           <div className="absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-[80px]" />
         </div>
@@ -373,11 +373,11 @@ export default function AlumniDashboardPage() {
         <div className="glass-panel rounded-3xl p-7">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-black text-slate-900">Guncel Duyurular</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Mezunlara acik duyurular ve sistem bildirimleri.</p>
+              <h2 className="text-lg font-black text-slate-900">Güncel Duyurular</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Mezunlara açık duyurular ve sistem bildirimleri.</p>
             </div>
             <Link href="/alumni/announcements" className="rounded-xl border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors hover:bg-muted">
-              Tumunu Gor
+              Tümünü Gör
             </Link>
           </div>
 

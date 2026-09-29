@@ -12,7 +12,7 @@ export function formatProjectTypeBadge(type: string | null | undefined): string 
     kademe_plus: "KADEME+",
     zirve_kademe: "Zirve Kademe",
     eurodesk: "Eurodesk",
-    other: "Diger",
+    other: "Diğer",
   };
   return map[type] ?? type.replace(/_/g, " ");
 }
@@ -36,12 +36,12 @@ export function rewardsSectionTitle(type: string | null | undefined): string {
 }
 
 export function kademeModulesSectionTitle(type: string | null | undefined): string {
-  if (type === "zirve_kademe") return "Zirve Kademe — Modul programi (kazanim, egitmen, SSS, uyari, kayit)";
-  if (type === "kademe_plus") return "KADEME+ — Modul programi (kazanim, egitmen, SSS, uyari, kayit)";
-  return "Modul programi (kazanim, egitmen, SSS, uyari, kayit)";
+  if (type === "zirve_kademe") return "Zirve Kademe — Modül programı (kazanim, eğitmen, SSS, uyarı, kayıt)";
+  if (type === "kademe_plus") return "KADEME+ — Modül programı (kazanim, eğitmen, SSS, uyarı, kayıt)";
+  return "Modül programı (kazanim, eğitmen, SSS, uyarı, kayıt)";
 }
 
 export function specialModulesIntroCopy(type: string | null | undefined): string {
   const badge = formatProjectTypeBadge(type);
-  return `${badge} turune gore tanimli ozel modulleri buradan yonetirsiniz. Kartlar yetkiniz ve projeye acilan modul uclarina gore gorunur.`;
+  return `${badge} turune göre tanımlı özel modülleri buradan yonetirsiniz. Kartlar yetkiniz ve projeye açılan modül uclarina göre görünür.`;
 }

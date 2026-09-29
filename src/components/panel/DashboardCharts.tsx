@@ -25,9 +25,9 @@ export interface DashboardChartsData {
 }
 
 const statusLabels: Record<string, string> = {
-  scheduled: "Planlandi",
+  scheduled: "Planlandı",
   active: "Aktif",
-  completed: "Tamamlandi",
+  completed: "Tamamlandı",
   cancelled: "Iptal",
 };
 
@@ -68,9 +68,9 @@ export function DashboardCharts({
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Gorsel Analitik</h2>
+        <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-600">Görsel Analitik</h2>
         {charts.period?.label ? (
-          <span className="text-[10px] font-bold uppercase text-slate-400">Donem: {charts.period.label}</span>
+          <span className="text-[10px] font-bold uppercase text-slate-400">Dönem: {charts.period.label}</span>
         ) : null}
       </div>
 
@@ -81,7 +81,7 @@ export function DashboardCharts({
             Harcama — Kategori (ay)
           </h3>
           {catData.length === 0 ? (
-            <p className="text-sm text-slate-500">Bu donem icin kategori verisi yok.</p>
+            <p className="text-sm text-slate-500">Bu dönem için kategori verisi yok.</p>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
@@ -109,10 +109,10 @@ export function DashboardCharts({
         {showCommunication ? (
           <div className="panel-surface min-h-[280px] p-4 sm:p-6">
           <h3 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            E-posta logu - Tur (ay)
+            E-posta logu - Tür (ay)
           </h3>
           {commData.length === 0 ? (
-            <p className="text-sm text-slate-500">Bu donem icin e-posta kaydi yok.</p>
+            <p className="text-sm text-slate-500">Bu dönem için e-posta kaydı yok.</p>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
@@ -129,7 +129,7 @@ export function DashboardCharts({
                     <Cell key={`comm-${i}`} fill={COLORS[(i + 2) % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number) => `${v} kayit`} />
+                <Tooltip formatter={(v: number) => `${v} kayıt`} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -140,10 +140,10 @@ export function DashboardCharts({
         {showFinancial ? (
           <div className="panel-surface min-h-[280px] p-4 sm:p-6 xl:col-span-2">
           <h3 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            Harcama — Proje (ust 10, ay)
+            Harcama — Proje (üst 10, ay)
           </h3>
           {projSpend.length === 0 ? (
-            <p className="text-sm text-slate-500">Bu donem icin proje bazli harcama yok.</p>
+            <p className="text-sm text-slate-500">Bu dönem için proje bazlı harcama yok.</p>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={projSpend} margin={{ top: 8, right: 8, left: 8, bottom: 56 }}>
@@ -161,10 +161,10 @@ export function DashboardCharts({
         {showPrograms ? (
           <div className="panel-surface min-h-[260px] p-4 sm:p-6 xl:col-span-2">
           <h3 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            Programlar — Durum dagilimi (ay baslangici)
+            Programlar — Durum dagilimi (ay başlangıcı)
           </h3>
           {progStatus.length === 0 ? (
-            <p className="text-sm text-slate-500">Bu donem icin program statu verisi yok.</p>
+            <p className="text-sm text-slate-500">Bu dönem için program statu verisi yok.</p>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={progStatus} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>

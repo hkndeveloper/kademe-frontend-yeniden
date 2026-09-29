@@ -252,11 +252,11 @@ const familyConfigs: Record<FamilyKey, FamilyConfig> = {
   diplomasi360: {
     title: "Diplomasi360",
     eyebrow: "Proje ailesi",
-    description: "Stajlar, belge akislari ve projeye bagli ozel icerikler bu authority panel ekraninda toplanir.",
+    description: "Stajlar, belge akışları ve projeye bağlı özel içerikler bu authority panel ekraninda toplanır.",
     apiKey: "diplomasi360",
     icon: BriefcaseBusiness,
     tabs: [
-      { id: "overview", label: "Ozet", permissions: ["projects.internships.view", "projects.internships.manage"] },
+      { id: "overview", label: "Özet", permissions: ["projects.internships.view", "projects.internships.manage"] },
       { id: "internships", label: "Stajlar", permissions: ["projects.internships.view", "projects.internships.manage"] },
       { id: "files", label: "Dosyalar", permissions: ["projects.internships.manage"] },
     ],
@@ -264,11 +264,11 @@ const familyConfigs: Record<FamilyKey, FamilyConfig> = {
   pergel: {
     title: "Pergel Fellowship",
     eyebrow: "Proje ailesi",
-    description: "Mentorler, mentor-katilimci eslestirmeleri ve Pergel'e bagli proje ozel akislari burada toplanir.",
+    description: "Mentorler, mentor-katılımcı eslestirmeleri ve Pergel'e bağlı proje özel akışları burada toplanır.",
     apiKey: "pergel",
     icon: Users,
     tabs: [
-      { id: "overview", label: "Ozet", permissions: ["projects.mentors.view", "projects.mentors.manage"] },
+      { id: "overview", label: "Özet", permissions: ["projects.mentors.view", "projects.mentors.manage"] },
       { id: "mentors", label: "Mentorler", permissions: ["projects.mentors.view", "projects.mentors.manage"] },
       { id: "assignments", label: "Eslestirmeler", permissions: ["projects.mentors.manage"] },
     ],
@@ -276,11 +276,11 @@ const familyConfigs: Record<FamilyKey, FamilyConfig> = {
   eurodesk: {
     title: "Eurodesk",
     eyebrow: "Proje ailesi",
-    description: "Hibe projeleri, ortakliklar ve grant status ozetleri bu ekranda yonetilir.",
+    description: "Hibe projeleri, ortakliklar ve grant status ozetleri bu ekranda yönetilir.",
     apiKey: "eurodesk",
     icon: Handshake,
     tabs: [
-      { id: "overview", label: "Ozet", permissions: ["projects.eurodesk.view", "projects.eurodesk.manage"] },
+      { id: "overview", label: "Özet", permissions: ["projects.eurodesk.view", "projects.eurodesk.manage"] },
       { id: "projects", label: "Projeler", permissions: ["projects.eurodesk.view", "projects.eurodesk.manage"] },
       { id: "partnerships", label: "Ortakliklar", permissions: ["projects.eurodesk.manage"] },
     ],
@@ -288,27 +288,27 @@ const familyConfigs: Record<FamilyKey, FamilyConfig> = {
   kademe_plus: {
     title: "KADEME+",
     eyebrow: "Proje ailesi",
-    description: "Rozetler, odul kademeleri, hediyeler ve modul programlari bu ekranda toplanir.",
+    description: "Rozetler, ödül kademeleri, hediyeler ve modül programları bu ekranda toplanır.",
     apiKey: "kademe-plus",
     icon: Award,
     tabs: [
-      { id: "overview", label: "Ozet", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
+      { id: "overview", label: "Özet", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
       { id: "badges", label: "Rozetler", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
-      { id: "rewards", label: "Oduller", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
-      { id: "modules", label: "Moduller", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
+      { id: "rewards", label: "Ödüller", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
+      { id: "modules", label: "Modüller", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
     ],
   },
   zirve_kademe: {
     title: "Zirve Kademe",
     eyebrow: "Proje ailesi",
-    description: "Zirve Kademe rozet, hediye ve modul programi akislari KADEME+ modeliyle uyumlu yonetilir.",
+    description: "Zirve Kademe rozet, hediye ve modül programı akışları KADEME+ modeliyle uyumlu yönetilir.",
     apiKey: "zirve-kademe",
     icon: Award,
     tabs: [
-      { id: "overview", label: "Ozet", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
+      { id: "overview", label: "Özet", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
       { id: "badges", label: "Rozetler", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
-      { id: "rewards", label: "Oduller", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
-      { id: "modules", label: "Moduller", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
+      { id: "rewards", label: "Ödüller", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
+      { id: "modules", label: "Modüller", permissions: ["projects.rewards.view", "projects.rewards.manage"] },
     ],
   },
 };
@@ -336,7 +336,7 @@ function latestRows(familyKey: FamilyKey, data: Record<string, unknown> | undefi
       return {
         id: (item.id as number | string | undefined) ?? index,
         title: rowText(item.company_name),
-        meta: [item.position, item.participant_name].map(rowText).filter((value) => value !== "-").join(" / ") || "Staj kaydi",
+        meta: [item.position, item.participant_name].map(rowText).filter((value) => value !== "-").join(" / ") || "Staj kaydı",
       };
     }
 
@@ -344,7 +344,7 @@ function latestRows(familyKey: FamilyKey, data: Record<string, unknown> | undefi
       return {
         id: (item.id as number | string | undefined) ?? index,
         title: rowText(item.name),
-        meta: rowText(item.expertise) !== "-" ? rowText(item.expertise) : `${item.participants_count ?? 0} katilimci`,
+        meta: rowText(item.expertise) !== "-" ? rowText(item.expertise) : `${item.participants_count ?? 0} katılımcı`,
       };
     }
 
@@ -359,7 +359,7 @@ function latestRows(familyKey: FamilyKey, data: Record<string, unknown> | undefi
     return {
       id: (item.id as number | string | undefined) ?? index,
       title: rowText(item.reward_name),
-      meta: [item.status, item.participant_name].map(rowText).filter((value) => value !== "-").join(" / ") || "Hediye kaydi",
+      meta: [item.status, item.participant_name].map(rowText).filter((value) => value !== "-").join(" / ") || "Hediye kaydı",
     };
   });
 }
@@ -404,8 +404,8 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
       .catch((caught) => {
         if (!active) return;
         const message = isAxiosError(caught)
-          ? caught.response?.data?.message ?? "Proje ailesi verisi alinamadi."
-          : "Proje ailesi verisi alinamadi.";
+          ? caught.response?.data?.message ?? "Proje ailesi verisi alınamadı."
+          : "Proje ailesi verisi alınamadı.";
         setLoadState({ key: requestKey, payload: null, error: message });
       });
 
@@ -473,14 +473,14 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
           </select>
         </label>
         <label className="space-y-2 text-sm font-bold text-slate-700">
-          Donem
+          Dönem
           <select
             value={requestedPeriodId ?? ""}
             onChange={(event) => updateFilter("period_id", event.target.value)}
             disabled={isLoading || !payload?.periods.length}
             className="panel-control"
           >
-            <option value="">Tum donemler</option>
+            <option value="">Tüm dönemler</option>
             {payload?.periods.map((period) => (
               <option key={period.id} value={period.id}>{period.name}</option>
             ))}
@@ -512,7 +512,7 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
 
       {isLoading ? (
         <section className="panel-section-card flex min-h-52 items-center justify-center text-sm font-bold text-slate-600">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Yukleniyor
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Yükleniyor
         </section>
       ) : payload ? (
         <div className="space-y-6">
@@ -557,7 +557,7 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
             <section className="panel-section-card">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-black text-slate-900">Son kayitlar</h2>
+                  <h2 className="text-lg font-black text-slate-900">Son kayıtlar</h2>
                   <p className="mt-1 text-sm text-muted-foreground">{payload.selected_project?.name ?? config.title}</p>
                 </div>
               </div>
@@ -568,7 +568,7 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
                     <div className="text-sm text-slate-500">{row.meta}</div>
                   </div>
                 )) : (
-                  <div className="py-8 text-sm font-semibold text-slate-500">Bu filtre icin kayit bulunamadi.</div>
+                  <div className="py-8 text-sm font-semibold text-slate-500">Bu filtre için kayıt bulunamadı.</div>
                 )}
               </div>
             </section>
@@ -609,7 +609,7 @@ const emptyKademeModuleForm: KademeModuleForm = {
 };
 
 const rewardStatusMeta: Record<string, { label: string; className: string }> = {
-  planned: { label: "Planlandi", className: "border-blue-200 bg-blue-50 text-blue-700" },
+  planned: { label: "Planlandı", className: "border-blue-200 bg-blue-50 text-blue-700" },
   given: { label: "Verildi", className: "border-sky-200 bg-sky-50 text-sky-700" },
   delivered: { label: "Teslim edildi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   cancelled: { label: "Iptal", className: "border-red-200 bg-red-50 text-red-700" },
@@ -691,11 +691,11 @@ function KademeRewardsFamilyContent({
       } else {
         await api.post(`/panel/projects/${projectId}/special-modules/reward-tiers`, requestPayload);
       }
-      setFeedback(editingTierId ? "Odul kademesi guncellendi." : "Odul kademesi kaydedildi.");
+      setFeedback(editingTierId ? "Ödül kademesi güncellendi." : "Ödül kademesi kaydedildi.");
       resetTierForm();
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Odul kademesi kaydedilemedi."));
+      setFeedback(apiMessage(error, "Ödül kademesi kaydedilemedi."));
     } finally {
       setBusy(null);
     }
@@ -708,11 +708,11 @@ function KademeRewardsFamilyContent({
 
     try {
       await api.delete(`/panel/projects/${projectId}/special-modules/reward-tiers/${id}`);
-      setFeedback("Odul kademesi silindi.");
+      setFeedback("Ödül kademesi silindi.");
       if (editingTierId === id) resetTierForm();
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Odul kademesi silinemedi."));
+      setFeedback(apiMessage(error, "Ödül kademesi silinemedi."));
     } finally {
       setBusy(null);
     }
@@ -733,10 +733,10 @@ function KademeRewardsFamilyContent({
         note: awardForm.note || null,
       });
       setAwardForm(emptyRewardAwardForm);
-      setFeedback("Hediye kaydi olusturuldu.");
+      setFeedback("Hediye kaydı oluşturuldu.");
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Hediye kaydi olusturulamadi."));
+      setFeedback(apiMessage(error, "Hediye kaydı oluşturulamadı."));
     } finally {
       setBusy(null);
     }
@@ -765,10 +765,10 @@ function KademeRewardsFamilyContent({
 
     try {
       await api.delete(`/panel/projects/${projectId}/special-modules/reward-awards/${id}`);
-      setFeedback("Hediye kaydi silindi.");
+      setFeedback("Hediye kaydı silindi.");
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Hediye kaydi silinemedi."));
+      setFeedback(apiMessage(error, "Hediye kaydı silinemedi."));
     } finally {
       setBusy(null);
     }
@@ -822,11 +822,11 @@ function KademeRewardsFamilyContent({
       } else {
         await api.post(`/panel/projects/${projectId}/special-modules/kademe-modules`, requestPayload);
       }
-      setFeedback(editingModuleId ? "Modul guncellendi." : "Modul kaydedildi.");
+      setFeedback(editingModuleId ? "Modül güncellendi." : "Modül kaydedildi.");
       resetModuleForm();
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Modul kaydedilemedi."));
+      setFeedback(apiMessage(error, "Modül kaydedilemedi."));
     } finally {
       setBusy(null);
     }
@@ -839,11 +839,11 @@ function KademeRewardsFamilyContent({
 
     try {
       await api.delete(`/panel/projects/${projectId}/special-modules/kademe-modules/${id}`);
-      setFeedback("Modul silindi.");
+      setFeedback("Modül silindi.");
       if (editingModuleId === id) resetModuleForm();
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Modul silinemedi."));
+      setFeedback(apiMessage(error, "Modül silinemedi."));
     } finally {
       setBusy(null);
     }
@@ -856,10 +856,10 @@ function KademeRewardsFamilyContent({
 
     try {
       await api.put(`/panel/projects/${projectId}/special-modules/kademe-module-enrollments/${id}`, { status });
-      setFeedback(status === "approved" ? "Kayit onaylandi." : "Kayit reddedildi.");
+      setFeedback(status === "approved" ? "Kayıt onaylandı." : "Kayıt reddedildi.");
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Kayit guncellenemedi."));
+      setFeedback(apiMessage(error, "Kayıt güncellenemedi."));
     } finally {
       setBusy(null);
     }
@@ -869,7 +869,7 @@ function KademeRewardsFamilyContent({
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(390px,0.8fr)]">
       <section className="panel-section-card space-y-5">
         <div>
-          <h2 className="text-lg font-black text-slate-900">{title} odul ve moduller</h2>
+          <h2 className="text-lg font-black text-slate-900">{title} ödül ve modüller</h2>
           <p className="mt-1 text-sm text-muted-foreground">{payload.selected_project?.name ?? title}</p>
         </div>
 
@@ -877,11 +877,11 @@ function KademeRewardsFamilyContent({
           <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Hediye</div><div className="mt-2 text-xl font-black text-slate-900">{awardStats.total}</div></div>
           <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Teslim</div><div className="mt-2 text-xl font-black text-slate-900">{awardStats.delivered}</div></div>
           <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Bekleyen</div><div className="mt-2 text-xl font-black text-slate-900">{awardStats.pending}</div></div>
-          <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Modul</div><div className="mt-2 text-xl font-black text-slate-900">{kademeModules.length}</div></div>
+          <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Modül</div><div className="mt-2 text-xl font-black text-slate-900">{kademeModules.length}</div></div>
         </div>
 
         <div className="panel-card-muted bg-white">
-          <h3 className="font-black text-slate-900">Odul kademeleri</h3>
+          <h3 className="font-black text-slate-900">Ödül kademeleri</h3>
           <div className="mt-3 space-y-2">
             {rewardTiers.length ? rewardTiers.map((tier) => (
               <div key={tier.id} className="panel-card-muted flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -891,12 +891,12 @@ function KademeRewardsFamilyContent({
                 </div>
                 {canManage && tier.project_id === projectId ? (
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => editTier(tier)} className="panel-button-icon" title="Duzenle"><Edit2 className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => editTier(tier)} className="panel-button-icon" title="Düzenle"><Edit2 className="h-4 w-4" /></button>
                     <button type="button" onClick={() => void deleteTier(tier.id)} disabled={busy === `tier-${tier.id}`} className="panel-button-icon panel-table-action-danger disabled:opacity-50" title="Sil"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 ) : null}
               </div>
-            )) : <div className="text-sm font-semibold text-slate-500">Odul kademesi yok.</div>}
+            )) : <div className="text-sm font-semibold text-slate-500">Ödül kademesi yok.</div>}
           </div>
         </div>
 
@@ -911,9 +911,9 @@ function KademeRewardsFamilyContent({
                 <div key={award.id} className="panel-card-muted p-3">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <div className="font-bold text-slate-900">{award.name || award.email || `Katilimci #${award.participant_id}`}</div>
+                      <div className="font-bold text-slate-900">{award.name || award.email || `Katılımcı #${award.participant_id}`}</div>
                       <div className="mt-1 text-sm text-slate-600">{award.reward_name}</div>
-                      <div className="mt-1 text-xs text-slate-500">Kayit: {formatDateTime(award.awarded_at)} / Teslim: {formatDateTime(award.delivered_at)}</div>
+                      <div className="mt-1 text-xs text-slate-500">Kayıt: {formatDateTime(award.awarded_at)} / Teslim: {formatDateTime(award.delivered_at)}</div>
                     </div>
                     <span className={`panel-chip ${status.className}`}>{status.label}</span>
                   </div>
@@ -926,7 +926,7 @@ function KademeRewardsFamilyContent({
                   ) : null}
                 </div>
               );
-            }) : <div className="text-sm font-semibold text-slate-500">Hediye kaydi yok.</div>}
+            }) : <div className="text-sm font-semibold text-slate-500">Hediye kaydı yok.</div>}
           </div>
         </div>
 
@@ -938,24 +938,24 @@ function KademeRewardsFamilyContent({
                 <div className="font-bold text-slate-900">{participant.name || participant.email || `#${participant.participant_id}`}</div>
                 <div className="text-slate-500">{participant.badge_count} rozet / {participant.credit} kredi / {participant.eligible_rewards.map((reward) => reward.reward_description).join(", ")}</div>
               </div>
-            )) : <div className="text-sm font-semibold text-slate-500">Bu filtrede hak kazanan katilimci yok.</div>}
+            )) : <div className="text-sm font-semibold text-slate-500">Bu filtrede hak kazanan katılımcı yok.</div>}
           </div>
         </div>
 
         <div className="panel-card-muted bg-white">
-          <h3 className="font-black text-slate-900">Moduller ve kayitlar</h3>
+          <h3 className="font-black text-slate-900">Modüller ve kayıtlar</h3>
           <div className="mt-3 space-y-3">
             {kademeModules.length ? kademeModules.map((module) => (
               <div key={module.id} className="panel-card-muted p-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="font-bold text-slate-900">{module.title}</div>
-                    <div className="mt-1 text-sm text-slate-500">{module.is_active ? "Aktif" : "Pasif"} / {module.application_open ? "Basvuru acik" : "Basvuru kapali"} / {module.enrollments_count ?? module.enrollments?.length ?? 0} kayit</div>
+                    <div className="mt-1 text-sm text-slate-500">{module.is_active ? "Aktif" : "Pasif"} / {module.application_open ? "Başvuru açık" : "Başvuru kapalı"} / {module.enrollments_count ?? module.enrollments?.length ?? 0} kayıt</div>
                     {module.description ? <p className="mt-2 text-sm text-slate-600">{module.description}</p> : null}
                   </div>
                   {canManage ? (
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => editModule(module)} className="panel-button-icon" title="Duzenle"><Edit2 className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => editModule(module)} className="panel-button-icon" title="Düzenle"><Edit2 className="h-4 w-4" /></button>
                       <button type="button" onClick={() => void deleteModule(module.id)} disabled={busy === `module-${module.id}`} className="panel-button-icon panel-table-action-danger disabled:opacity-50" title="Sil"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   ) : null}
@@ -965,7 +965,7 @@ function KademeRewardsFamilyContent({
                     {module.enrollments.map((enrollment) => (
                       <div key={enrollment.id} className="panel-card-muted flex flex-col gap-2 bg-white p-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <div className="font-bold text-slate-800">{enrollment.user?.name || enrollment.user?.email || `Kullanici #${enrollment.user_id}`}</div>
+                          <div className="font-bold text-slate-800">{enrollment.user?.name || enrollment.user?.email || `Kullanıcı #${enrollment.user_id}`}</div>
                           <div className="text-xs text-slate-500">{enrollment.status}</div>
                         </div>
                         {enrollment.status === "pending" ? (
@@ -979,7 +979,7 @@ function KademeRewardsFamilyContent({
                   </div>
                 ) : null}
               </div>
-            )) : <div className="text-sm font-semibold text-slate-500">Modul kaydi yok.</div>}
+            )) : <div className="text-sm font-semibold text-slate-500">Modül kaydı yok.</div>}
           </div>
         </div>
       </section>
@@ -989,50 +989,50 @@ function KademeRewardsFamilyContent({
         {canManage ? (
           <>
             <form onSubmit={(event) => void submitTier(event)} className="panel-section-card">
-              <div className="flex items-center justify-between gap-3"><h3 className="text-base font-black text-slate-900">{editingTierId ? "Kademe duzenle" : "Odul kademesi ekle"}</h3>{editingTierId ? <button type="button" onClick={resetTierForm} className="panel-button-icon h-8 w-8"><X className="h-4 w-4" /></button> : null}</div>
+              <div className="flex items-center justify-between gap-3"><h3 className="text-base font-black text-slate-900">{editingTierId ? "Kademe düzenle" : "Ödül kademesi ekle"}</h3>{editingTierId ? <button type="button" onClick={resetTierForm} className="panel-button-icon h-8 w-8"><X className="h-4 w-4" /></button> : null}</div>
               <div className="mt-4 space-y-3">
-                <input value={tierForm.name} onChange={(event) => setTierForm((current) => ({ ...current, name: event.target.value }))} className="panel-control" placeholder="Kademe adi" />
+                <input value={tierForm.name} onChange={(event) => setTierForm((current) => ({ ...current, name: event.target.value }))} className="panel-control" placeholder="Kademe adı" />
                 <input value={tierForm.reward_description} onChange={(event) => setTierForm((current) => ({ ...current, reward_description: event.target.value }))} className="panel-control" placeholder="Hediye" />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input type="number" value={tierForm.min_badges} onChange={(event) => setTierForm((current) => ({ ...current, min_badges: event.target.value }))} className="panel-control" placeholder="Min rozet" />
                   <input type="number" value={tierForm.min_credits} onChange={(event) => setTierForm((current) => ({ ...current, min_credits: event.target.value }))} className="panel-control" placeholder="Min kredi" />
                 </div>
-                <textarea value={tierForm.description} onChange={(event) => setTierForm((current) => ({ ...current, description: event.target.value }))} className="panel-textarea min-h-20" placeholder="Aciklama" />
-                <button type="submit" disabled={busy === "tier"} className="panel-button panel-button-primary disabled:opacity-50"><Plus className="h-4 w-4" /> {editingTierId ? "Guncelle" : "Kaydet"}</button>
+                <textarea value={tierForm.description} onChange={(event) => setTierForm((current) => ({ ...current, description: event.target.value }))} className="panel-textarea min-h-20" placeholder="Açıklama" />
+                <button type="submit" disabled={busy === "tier"} className="panel-button panel-button-primary disabled:opacity-50"><Plus className="h-4 w-4" /> {editingTierId ? "Güncelle" : "Kaydet"}</button>
               </div>
             </form>
 
             <form onSubmit={(event) => void submitAward(event)} className="panel-section-card">
-              <h3 className="text-base font-black text-slate-900">Hediye kaydi ekle</h3>
+              <h3 className="text-base font-black text-slate-900">Hediye kaydı ekle</h3>
               <div className="mt-4 space-y-3">
-                <select value={awardForm.participant_id} onChange={(event) => setAwardForm((current) => ({ ...current, participant_id: event.target.value }))} className="panel-control"><option value="">Katilimci sec</option>{participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name || participant.email || `#${participant.id}`}</option>)}</select>
-                <select value={awardForm.reward_tier_id} onChange={(event) => { const tier = rewardTiers.find((item) => String(item.id) === event.target.value); setAwardForm((current) => ({ ...current, reward_tier_id: event.target.value, reward_name: tier?.reward_description || current.reward_name })); }} className="panel-control"><option value="">Kademe secmeden</option>{rewardTiers.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}</select>
+                <select value={awardForm.participant_id} onChange={(event) => setAwardForm((current) => ({ ...current, participant_id: event.target.value }))} className="panel-control"><option value="">Katılımcı seç</option>{participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name || participant.email || `#${participant.id}`}</option>)}</select>
+                <select value={awardForm.reward_tier_id} onChange={(event) => { const tier = rewardTiers.find((item) => String(item.id) === event.target.value); setAwardForm((current) => ({ ...current, reward_tier_id: event.target.value, reward_name: tier?.reward_description || current.reward_name })); }} className="panel-control"><option value="">Kademe seçmeden</option>{rewardTiers.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}</select>
                 <input value={awardForm.reward_name} onChange={(event) => setAwardForm((current) => ({ ...current, reward_name: event.target.value }))} className="panel-control" placeholder="Verilen hediye" />
-                <select value={awardForm.status} onChange={(event) => setAwardForm((current) => ({ ...current, status: event.target.value }))} className="panel-control"><option value="given">Verildi</option><option value="planned">Planlandi</option><option value="cancelled">Iptal</option></select>
+                <select value={awardForm.status} onChange={(event) => setAwardForm((current) => ({ ...current, status: event.target.value }))} className="panel-control"><option value="given">Verildi</option><option value="planned">Planlandı</option><option value="cancelled">Iptal</option></select>
                 <textarea value={awardForm.note} onChange={(event) => setAwardForm((current) => ({ ...current, note: event.target.value }))} className="panel-textarea min-h-20" placeholder="Not" />
                 <button type="submit" disabled={busy === "award"} className="panel-button panel-button-primary disabled:opacity-50"><Award className="h-4 w-4" /> Hediye ekle</button>
               </div>
             </form>
 
             <form onSubmit={(event) => void submitModule(event)} className="panel-section-card">
-              <div className="flex items-center justify-between gap-3"><h3 className="text-base font-black text-slate-900">{editingModuleId ? "Modul duzenle" : "Modul ekle"}</h3>{editingModuleId ? <button type="button" onClick={resetModuleForm} className="panel-button-icon h-8 w-8"><X className="h-4 w-4" /></button> : null}</div>
+              <div className="flex items-center justify-between gap-3"><h3 className="text-base font-black text-slate-900">{editingModuleId ? "Modül düzenle" : "Modül ekle"}</h3>{editingModuleId ? <button type="button" onClick={resetModuleForm} className="panel-button-icon h-8 w-8"><X className="h-4 w-4" /></button> : null}</div>
               <div className="mt-4 space-y-3">
-                <input value={moduleForm.title} onChange={(event) => setModuleForm((current) => ({ ...current, title: event.target.value }))} className="panel-control" placeholder="Modul basligi" />
+                <input value={moduleForm.title} onChange={(event) => setModuleForm((current) => ({ ...current, title: event.target.value }))} className="panel-control" placeholder="Modül başlığı" />
                 <select value={moduleForm.period_id} onChange={(event) => setModuleForm((current) => ({ ...current, period_id: event.target.value }))} className="panel-control"><option value="">Genel / donemsiz</option>{payload.periods.map((period) => <option key={period.id} value={period.id}>{period.name}</option>)}</select>
-                <textarea value={moduleForm.description} onChange={(event) => setModuleForm((current) => ({ ...current, description: event.target.value }))} className="panel-textarea min-h-20" placeholder="Aciklama" />
+                <textarea value={moduleForm.description} onChange={(event) => setModuleForm((current) => ({ ...current, description: event.target.value }))} className="panel-textarea min-h-20" placeholder="Açıklama" />
                 <textarea value={moduleForm.outcomesText} onChange={(event) => setModuleForm((current) => ({ ...current, outcomesText: event.target.value }))} className="panel-textarea min-h-20" placeholder="Kazanimlar, her satira bir madde" />
-                <input type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm((current) => ({ ...current, sort_order: event.target.value }))} className="panel-control" placeholder="Sira" />
-                <textarea value={moduleForm.warning_text} onChange={(event) => setModuleForm((current) => ({ ...current, warning_text: event.target.value }))} className="panel-textarea min-h-20" placeholder="Uyari metni" />
+                <input type="number" value={moduleForm.sort_order} onChange={(event) => setModuleForm((current) => ({ ...current, sort_order: event.target.value }))} className="panel-control" placeholder="Sıra" />
+                <textarea value={moduleForm.warning_text} onChange={(event) => setModuleForm((current) => ({ ...current, warning_text: event.target.value }))} className="panel-textarea min-h-20" placeholder="Uyarı metni" />
                 <input value={moduleForm.consent_checkbox_label} onChange={(event) => setModuleForm((current) => ({ ...current, consent_checkbox_label: event.target.value }))} className="panel-control" placeholder="Onay metni" />
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.is_active} onChange={(event) => setModuleForm((current) => ({ ...current, is_active: event.target.checked }))} /> Aktif</label>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.application_open} onChange={(event) => setModuleForm((current) => ({ ...current, application_open: event.target.checked }))} /> Basvuru acik</label>
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.application_open} onChange={(event) => setModuleForm((current) => ({ ...current, application_open: event.target.checked }))} /> Başvuru açık</label>
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.requires_consent} onChange={(event) => setModuleForm((current) => ({ ...current, requires_consent: event.target.checked }))} /> Onay gerekli</label>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.requires_coordinator_approval} onChange={(event) => setModuleForm((current) => ({ ...current, requires_coordinator_approval: event.target.checked }))} /> Koordinator onayi</label>
-                <button type="submit" disabled={busy === "module"} className="panel-button panel-button-primary disabled:opacity-50"><Plus className="h-4 w-4" /> {editingModuleId ? "Guncelle" : "Kaydet"}</button>
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={moduleForm.requires_coordinator_approval} onChange={(event) => setModuleForm((current) => ({ ...current, requires_coordinator_approval: event.target.checked }))} /> Koordinatör onayı</label>
+                <button type="submit" disabled={busy === "module"} className="panel-button panel-button-primary disabled:opacity-50"><Plus className="h-4 w-4" /> {editingModuleId ? "Güncelle" : "Kaydet"}</button>
               </div>
             </form>
           </>
-        ) : <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; odul ve modul duzenleme aksiyonlari gizlendi.</div>}
+        ) : <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda görüntüleme yetkiniz var; ödül ve modül düzenleme aksiyonları gizlendi.</div>}
       </aside>
     </div>
   );
@@ -1048,10 +1048,10 @@ const emptyEurodeskForm: EurodeskProjectForm = {
 };
 
 const eurodeskStatusMeta: Record<string, { label: string; className: string }> = {
-  applied: { label: "Basvuruldu", className: "border-sky-200 bg-sky-50 text-sky-700" },
-  approved: { label: "Onaylandi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  applied: { label: "Başvuruldu", className: "border-sky-200 bg-sky-50 text-sky-700" },
+  approved: { label: "Onaylandı", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   rejected: { label: "Reddedildi", className: "border-red-200 bg-red-50 text-red-700" },
-  completed: { label: "Tamamlandi", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  completed: { label: "Tamamlandı", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
 };
 
 function formatCurrency(value: string | number | null | undefined): string {
@@ -1121,7 +1121,7 @@ function EurodeskFamilyContent({
       } else {
         await api.post(`/panel/projects/${projectId}/special-modules/eurodesk-projects`, requestPayload);
       }
-      setFeedback(editingId ? "Eurodesk projesi guncellendi." : "Eurodesk projesi kaydedildi.");
+      setFeedback(editingId ? "Eurodesk projesi güncellendi." : "Eurodesk projesi kaydedildi.");
       resetProjectForm();
       onReload();
     } catch (error) {
@@ -1161,10 +1161,10 @@ function EurodeskFamilyContent({
         contact_info: partnershipForm.contact_info || null,
       });
       setPartnershipForm({ eurodesk_project_id: partnershipForm.eurodesk_project_id, organization_name: "", country: "", contact_info: "" });
-      setFeedback("Ortaklik kaydedildi.");
+      setFeedback("Ortaklık kaydedildi.");
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Ortaklik kaydedilemedi."));
+      setFeedback(apiMessage(error, "Ortaklık kaydedilemedi."));
     } finally {
       setBusy(null);
     }
@@ -1177,10 +1177,10 @@ function EurodeskFamilyContent({
 
     try {
       await api.delete(`/panel/projects/${projectId}/special-modules/eurodesk-projects/${eurodeskProjectId}/partnerships/${partnershipId}`);
-      setFeedback("Ortaklik silindi.");
+      setFeedback("Ortaklık silindi.");
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Ortaklik silinemedi."));
+      setFeedback(apiMessage(error, "Ortaklık silinemedi."));
     } finally {
       setBusy(null);
     }
@@ -1196,7 +1196,7 @@ function EurodeskFamilyContent({
 
         {summary ? (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Basvuru</div><div className="mt-2 text-xl font-black text-slate-900">{summary.applied_projects}</div></div>
+            <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Başvuru</div><div className="mt-2 text-xl font-black text-slate-900">{summary.applied_projects}</div></div>
             <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Tamamlanan</div><div className="mt-2 text-xl font-black text-slate-900">{summary.completed_projects}</div></div>
             <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Ulke</div><div className="mt-2 text-xl font-black text-slate-900">{summary.country_count}</div></div>
             <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Toplam hibe</div><div className="mt-2 text-xl font-black text-slate-900">{formatCurrency(summary.total_grant_amount)}</div></div>
@@ -1222,13 +1222,13 @@ function EurodeskFamilyContent({
                 </div>
                 <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
                   <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Hibe</div><div className="mt-1 font-bold text-slate-900">{formatCurrency(item.grant_amount)}</div></div>
-                  <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Ortak kaydi</div><div className="mt-1 font-bold text-slate-900">{item.partnerships?.length ?? 0}</div></div>
+                  <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Ortak kaydı</div><div className="mt-1 font-bold text-slate-900">{item.partnerships?.length ?? 0}</div></div>
                   <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Ortak listesi</div><div className="mt-1 font-bold text-slate-900">{partners.length ? partners.join(", ") : "-"}</div></div>
                 </div>
                 {canManage ? (
                   <div className="mt-4 flex flex-wrap justify-end gap-2">
                     <button type="button" onClick={() => editProject(item)} className="panel-card-action">
-                      <Edit2 className="h-4 w-4" /> Duzenle
+                      <Edit2 className="h-4 w-4" /> Düzenle
                     </button>
                     <button type="button" onClick={() => void deleteProject(item.id)} disabled={busy === `project-${item.id}`} className="panel-card-action panel-card-action-danger disabled:opacity-50">
                       <Trash2 className="h-4 w-4" /> Sil
@@ -1245,18 +1245,18 @@ function EurodeskFamilyContent({
                           <div className="text-xs text-slate-500">{[partnership.country, partnership.contact_info].filter(Boolean).join(" - ") || "Detay yok"}</div>
                         </div>
                         {canManage ? (
-                          <button type="button" onClick={() => void deletePartnership(item.id, partnership.id)} disabled={busy === `partnership-${partnership.id}`} className="panel-button-icon h-8 w-8 disabled:opacity-50" title="Ortakligi sil">
+                          <button type="button" onClick={() => void deletePartnership(item.id, partnership.id)} disabled={busy === `partnership-${partnership.id}`} className="panel-button-icon h-8 w-8 disabled:opacity-50" title="Ortaklığı sil">
                             <X className="h-4 w-4" />
                           </button>
                         ) : null}
                       </div>
-                    )) : <div className="text-sm font-semibold text-slate-500">Ortaklik kaydi yok.</div>}
+                    )) : <div className="text-sm font-semibold text-slate-500">Ortaklık kaydı yok.</div>}
                   </div>
                 </div>
               </div>
             );
           }) : (
-            <div className="panel-empty-card">Eurodesk proje kaydi yok.</div>
+            <div className="panel-empty-card">Eurodesk proje kaydı yok.</div>
           )}
         </div>
       </section>
@@ -1267,11 +1267,11 @@ function EurodeskFamilyContent({
           <>
             <form onSubmit={(event) => void submitProject(event)} className="panel-section-card">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-base font-black text-slate-900">{editingId ? "Eurodesk projesi duzenle" : "Eurodesk projesi ekle"}</h3>
-                {editingId ? <button type="button" onClick={resetProjectForm} className="panel-button-icon h-8 w-8" title="Vazgec"><X className="h-4 w-4" /></button> : null}
+                <h3 className="text-base font-black text-slate-900">{editingId ? "Eurodesk projesi düzenle" : "Eurodesk projesi ekle"}</h3>
+                {editingId ? <button type="button" onClick={resetProjectForm} className="panel-button-icon h-8 w-8" title="Vazgeç"><X className="h-4 w-4" /></button> : null}
               </div>
               <div className="mt-4 space-y-3">
-                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className="panel-control" placeholder="Proje adi" />
+                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className="panel-control" placeholder="Proje adı" />
                 <select value={form.period_id} onChange={(event) => setForm((current) => ({ ...current, period_id: event.target.value }))} className="panel-control">
                   <option value="">Genel / donemsiz</option>
                   {payload.periods.map((period) => <option key={period.id} value={period.id}>{period.name}</option>)}
@@ -1279,39 +1279,39 @@ function EurodeskFamilyContent({
                 <input value={form.partner_organizations} onChange={(event) => setForm((current) => ({ ...current, partner_organizations: event.target.value }))} className="panel-control" placeholder="Ortaklar, virgulle" />
                 <input type="number" value={form.grant_amount} onChange={(event) => setForm((current) => ({ ...current, grant_amount: event.target.value }))} className="panel-control" placeholder="Hibe tutari" />
                 <select value={form.grant_status} onChange={(event) => setForm((current) => ({ ...current, grant_status: event.target.value }))} className="panel-control">
-                  <option value="applied">Basvuruldu</option>
-                  <option value="approved">Onaylandi</option>
+                  <option value="applied">Başvuruldu</option>
+                  <option value="approved">Onaylandı</option>
                   <option value="rejected">Reddedildi</option>
-                  <option value="completed">Tamamlandi</option>
+                  <option value="completed">Tamamlandı</option>
                 </select>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input type="date" value={form.start_date} onChange={(event) => setForm((current) => ({ ...current, start_date: event.target.value }))} className="panel-control" />
                   <input type="date" value={form.end_date} onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))} className="panel-control" />
                 </div>
                 <button type="submit" disabled={busy === "project"} className="panel-button panel-button-primary disabled:opacity-50">
-                  <Plus className="h-4 w-4" /> {editingId ? "Guncelle" : "Kaydet"}
+                  <Plus className="h-4 w-4" /> {editingId ? "Güncelle" : "Kaydet"}
                 </button>
               </div>
             </form>
 
             <form onSubmit={(event) => void submitPartnership(event)} className="panel-section-card">
-              <h3 className="text-base font-black text-slate-900">Ortaklik ekle</h3>
+              <h3 className="text-base font-black text-slate-900">Ortaklık ekle</h3>
               <div className="mt-4 space-y-3">
                 <select value={partnershipForm.eurodesk_project_id} onChange={(event) => setPartnershipForm((current) => ({ ...current, eurodesk_project_id: event.target.value }))} className="panel-control">
-                  <option value="">Eurodesk projesi sec</option>
+                  <option value="">Eurodesk projesi seç</option>
                   {eurodeskProjects.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
                 </select>
-                <input value={partnershipForm.organization_name} onChange={(event) => setPartnershipForm((current) => ({ ...current, organization_name: event.target.value }))} className="panel-control" placeholder="Kurulus adi" />
+                <input value={partnershipForm.organization_name} onChange={(event) => setPartnershipForm((current) => ({ ...current, organization_name: event.target.value }))} className="panel-control" placeholder="Kurulus adı" />
                 <input value={partnershipForm.country} onChange={(event) => setPartnershipForm((current) => ({ ...current, country: event.target.value }))} className="panel-control" placeholder="Ulke" />
-                <input value={partnershipForm.contact_info} onChange={(event) => setPartnershipForm((current) => ({ ...current, contact_info: event.target.value }))} className="panel-control" placeholder="Iletisim / not" />
+                <input value={partnershipForm.contact_info} onChange={(event) => setPartnershipForm((current) => ({ ...current, contact_info: event.target.value }))} className="panel-control" placeholder="İletişim / not" />
                 <button type="submit" disabled={busy === "partnership"} className="panel-button panel-button-primary disabled:opacity-50">
-                  <Handshake className="h-4 w-4" /> Ortaklik ekle
+                  <Handshake className="h-4 w-4" /> Ortaklık ekle
                 </button>
               </div>
             </form>
           </>
         ) : (
-          <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; Eurodesk duzenleme aksiyonlari gizlendi.</div>
+          <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda görüntüleme yetkiniz var; Eurodesk düzenleme aksiyonları gizlendi.</div>
         )}
       </aside>
     </div>
@@ -1389,7 +1389,7 @@ function DiplomasiFamilyContent({
       } else {
         await api.post(`/panel/projects/${projectId}/special-modules/internships`, requestPayload);
       }
-      setFeedback(editingId ? "Staj guncellendi." : "Staj kaydedildi.");
+      setFeedback(editingId ? "Staj güncellendi." : "Staj kaydedildi.");
       resetForm();
       onReload();
     } catch (error) {
@@ -1428,9 +1428,9 @@ function DiplomasiFamilyContent({
         headers: { "Content-Type": "multipart/form-data" },
       });
       setForm((current) => ({ ...current, document_path: response.data.path }));
-      setFeedback("Belge yuklendi.");
+      setFeedback("Belge yüklendi.");
     } catch (error) {
-      setFeedback(apiMessage(error, "Belge yuklenemedi."));
+      setFeedback(apiMessage(error, "Belge yüklenemedi."));
     } finally {
       setBusy(null);
     }
@@ -1451,7 +1451,7 @@ function DiplomasiFamilyContent({
                   <div className="font-black text-slate-900">{item.company_name}</div>
                   <div className="mt-1 text-sm font-semibold text-slate-600">{item.position}</div>
                   <div className="mt-2 text-sm text-slate-500">
-                    {item.participant_name || item.participant_email || "Katilimci belirtilmemis"} / {dateInput(item.start_date)}{item.end_date ? ` - ${dateInput(item.end_date)}` : ""}
+                    {item.participant_name || item.participant_email || "Katılımcı belirtilmemis"} / {dateInput(item.start_date)}{item.end_date ? ` - ${dateInput(item.end_date)}` : ""}
                   </div>
                   {item.description ? <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p> : null}
                   {item.document_path ? <div className="mt-2 text-xs font-bold text-accent">Belge: {item.document_path}</div> : null}
@@ -1462,7 +1462,7 @@ function DiplomasiFamilyContent({
                       type="button"
                       onClick={() => editInternship(item)}
                       className="panel-button-icon"
-                      title="Staji duzenle"
+                      title="Staji düzenle"
                     >
                       <Edit2 className="h-4 w-4" />
                     </button>
@@ -1480,7 +1480,7 @@ function DiplomasiFamilyContent({
               </div>
             </div>
           )) : (
-            <div className="panel-empty-card">Staj kaydi bulunamadi.</div>
+            <div className="panel-empty-card">Staj kaydı bulunamadı.</div>
           )}
         </div>
       </section>
@@ -1490,9 +1490,9 @@ function DiplomasiFamilyContent({
         {canManage ? (
           <form onSubmit={(event) => void submitInternship(event)} className="panel-section-card">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-base font-black text-slate-900">{editingId ? "Staj duzenle" : "Staj ekle"}</h3>
+              <h3 className="text-base font-black text-slate-900">{editingId ? "Staj düzenle" : "Staj ekle"}</h3>
               {editingId ? (
-                <button type="button" onClick={resetForm} className="panel-button-icon h-8 w-8" title="Vazgec">
+                <button type="button" onClick={resetForm} className="panel-button-icon h-8 w-8" title="Vazgeç">
                   <X className="h-4 w-4" />
                 </button>
               ) : null}
@@ -1504,7 +1504,7 @@ function DiplomasiFamilyContent({
                 disabled={Boolean(editingId)}
                 className="panel-control disabled:bg-slate-50"
               >
-                <option value="">Katilimci sec</option>
+                <option value="">Katılımcı seç</option>
                 {participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name || participant.email || `#${participant.id}`}</option>)}
               </select>
               <input
@@ -1537,7 +1537,7 @@ function DiplomasiFamilyContent({
                 value={form.description}
                 onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                 className="panel-textarea min-h-24"
-                placeholder="Aciklama"
+                placeholder="Açıklama"
               />
               <input
                 value={form.document_path}
@@ -1546,7 +1546,7 @@ function DiplomasiFamilyContent({
                 placeholder="Belge yolu veya URL"
               />
               <label className="panel-button panel-button-secondary cursor-pointer">
-                <Upload className="h-4 w-4" /> Belge yukle
+                <Upload className="h-4 w-4" /> Belge yükle
                 <input
                   type="file"
                   className="hidden"
@@ -1559,12 +1559,12 @@ function DiplomasiFamilyContent({
                 />
               </label>
               <button type="submit" disabled={busy === "internship"} className="panel-button panel-button-primary disabled:opacity-50">
-                <Plus className="h-4 w-4" /> {editingId ? "Guncelle" : "Kaydet"}
+                <Plus className="h-4 w-4" /> {editingId ? "Güncelle" : "Kaydet"}
               </button>
             </div>
           </form>
         ) : (
-          <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; staj duzenleme aksiyonlari gizlendi.</div>
+          <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda görüntüleme yetkiniz var; staj düzenleme aksiyonları gizlendi.</div>
         )}
       </aside>
     </div>
@@ -1640,10 +1640,10 @@ function PergelFamilyContent({
         note: assignmentForm.note || null,
       });
       setAssignmentForm({ mentor_id: assignmentForm.mentor_id, participant_id: "", note: "" });
-      setFeedback("Katilimci mentor ile eslendi.");
+      setFeedback("Katılımcı mentor ile eslendi.");
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Eslestirme kaydedilemedi."));
+      setFeedback(apiMessage(error, "Eşleştirme kaydedilemedi."));
     } finally {
       setBusy(null);
     }
@@ -1656,10 +1656,10 @@ function PergelFamilyContent({
 
     try {
       await api.delete(`/panel/projects/${projectId}/special-modules/mentors/${mentorId}/participants/${participantId}`);
-      setFeedback("Eslestirme kaldirildi.");
+      setFeedback("Eşleştirme kaldirildi.");
       onReload();
     } catch (error) {
-      setFeedback(apiMessage(error, "Eslestirme kaldirilamadi."));
+      setFeedback(apiMessage(error, "Eşleştirme kaldirilamadi."));
     } finally {
       setBusy(null);
     }
@@ -1678,7 +1678,7 @@ function PergelFamilyContent({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="font-black text-slate-900">{mentor.name}</div>
-                  <div className="mt-1 text-sm text-slate-500">{mentor.expertise || "Uzmanlik belirtilmemis"}</div>
+                  <div className="mt-1 text-sm text-slate-500">{mentor.expertise || "Uzmanlık belirtilmemis"}</div>
                   {mentor.bio ? <p className="mt-2 text-sm leading-6 text-slate-600">{mentor.bio}</p> : null}
                 </div>
                 {canManage ? (
@@ -1708,20 +1708,20 @@ function PergelFamilyContent({
                           onClick={() => void unassignParticipant(mentor.id, participant.id)}
                           disabled={busy === `unassign-${mentor.id}-${participant.id}`}
                           className="panel-button-icon h-8 w-8 disabled:opacity-50"
-                          title="Eslestirmeyi kaldir"
+                          title="Eslestirmeyi kaldır"
                         >
                           <X className="h-4 w-4" />
                         </button>
                       ) : null}
                     </div>
                   )) : (
-                    <div className="text-sm font-semibold text-slate-500">Eslestirme yok.</div>
+                    <div className="text-sm font-semibold text-slate-500">Eşleştirme yok.</div>
                   )}
                 </div>
               </div>
             </div>
           )) : (
-            <div className="panel-empty-card">Mentor kaydi bulunamadi.</div>
+            <div className="panel-empty-card">Mentor kaydı bulunamadı.</div>
           )}
         </div>
       </section>
@@ -1743,13 +1743,13 @@ function PergelFamilyContent({
                   value={mentorForm.expertise}
                   onChange={(event) => setMentorForm((form) => ({ ...form, expertise: event.target.value }))}
                   className="panel-control"
-                  placeholder="Uzmanlik"
+                  placeholder="Uzmanlık"
                 />
                 <textarea
                   value={mentorForm.bio}
                   onChange={(event) => setMentorForm((form) => ({ ...form, bio: event.target.value }))}
                   className="panel-textarea min-h-24"
-                  placeholder="Kisa bio"
+                  placeholder="Kısa bio"
                 />
                 <button type="submit" disabled={busy === "mentor"} className="panel-button panel-button-primary disabled:opacity-50">
                   <Plus className="h-4 w-4" /> Kaydet
@@ -1758,14 +1758,14 @@ function PergelFamilyContent({
             </form>
 
             <form onSubmit={(event) => void assignParticipant(event)} className="panel-section-card">
-              <h3 className="text-base font-black text-slate-900">Eslestirme ekle</h3>
+              <h3 className="text-base font-black text-slate-900">Eşleştirme ekle</h3>
               <div className="mt-4 space-y-3">
                 <select
                   value={assignmentForm.mentor_id}
                   onChange={(event) => setAssignmentForm((form) => ({ ...form, mentor_id: event.target.value }))}
                   className="panel-control"
                 >
-                  <option value="">Mentor sec</option>
+                  <option value="">Mentor seç</option>
                   {mentors.map((mentor) => <option key={mentor.id} value={mentor.id}>{mentor.name}</option>)}
                 </select>
                 <select
@@ -1773,7 +1773,7 @@ function PergelFamilyContent({
                   onChange={(event) => setAssignmentForm((form) => ({ ...form, participant_id: event.target.value }))}
                   className="panel-control"
                 >
-                  <option value="">Katilimci sec</option>
+                  <option value="">Katılımcı seç</option>
                   {participants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name || participant.email || `#${participant.id}`}</option>)}
                 </select>
                 <textarea
@@ -1783,13 +1783,13 @@ function PergelFamilyContent({
                   placeholder="Not"
                 />
                 <button type="submit" disabled={busy === "assignment"} className="panel-button panel-button-primary disabled:opacity-50">
-                  <UserPlus className="h-4 w-4" /> Eslestir
+                  <UserPlus className="h-4 w-4" /> Eşleştir
                 </button>
               </div>
             </form>
           </>
         ) : (
-          <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda goruntuleme yetkiniz var; mentor duzenleme aksiyonlari gizlendi.</div>
+          <div className="panel-card-muted bg-white text-sm font-semibold text-slate-500">Bu ekranda görüntüleme yetkiniz var; mentor düzenleme aksiyonları gizlendi.</div>
         )}
       </aside>
     </div>

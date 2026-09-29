@@ -30,7 +30,7 @@ export function PublicAccordion({ className, defaultOpenId, items }: PublicAccor
             className={cn(
               "kdm-public-accordion-item overflow-hidden rounded-[1.5rem] border bg-white transition-all duration-300",
               isOpen
-                ? "is-open border-l-[3px] border-[#fd3a25]/30 bg-[rgba(253,58,37,0.01)] shadow-[0_8px_24px_rgba(253,58,37,0.08),0_2px_6px_rgba(9,9,11,0.06)]"
+                ? "iş-open border-l-[3px] border-[#fd3a25]/30 bg-[rgba(253,58,37,0.01)] shadow-[0_8px_24px_rgba(253,58,37,0.08),0_2px_6px_rgba(9,9,11,0.06)]"
                 : "border-[#d4d4d8]/80 shadow-[0_3px_3px_rgba(9,9,11,0.06),0_-2px_0_rgba(0,0,0,0.04)_inset,0_1px_0_rgba(255,255,255,0.7)_inset]",
             )}
           >
@@ -46,7 +46,7 @@ export function PublicAccordion({ className, defaultOpenId, items }: PublicAccor
               <span
                 className={cn(
                   "kdm-public-accordion-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-300",
-                  isOpen ? "is-open text-white" : "text-[#71717a]",
+                  isOpen ? "iş-open text-white" : "text-[#71717a]",
                 )}
               >
                 <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isOpen && "rotate-180")} />

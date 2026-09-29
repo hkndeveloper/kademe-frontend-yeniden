@@ -99,13 +99,13 @@ function formatDateTime(value: string) {
 function getStatusLabel(status: KpdAppointment["status"]) {
   switch (status) {
     case "scheduled":
-      return "Planlandi";
+      return "Planlandı";
     case "completed":
-      return "Tamamlandi";
+      return "Tamamlandı";
     case "cancelled":
       return "Iptal edildi";
     case "no_show":
-      return "Katilim olmadi";
+      return "Katılım olmadi";
     default:
       return status;
   }
@@ -144,8 +144,8 @@ export default function StudentKpdPage() {
         setCounselors(kpdResponse.data.counselors ?? []);
         setRooms(kpdResponse.data.rooms ?? []);
       } catch (error) {
-        console.error("Ogrenci KPD kapsami yuklenemedi", error);
-        setErrorMessage("KPD verileri yuklenirken bir sorun olustu.");
+        console.error("Öğrenci KPD kapsamı yüklenemedi", error);
+        setErrorMessage("KPD verileri yüklenirken bir sorun oluştu.");
       } finally {
         setLoading(false);
       }
@@ -174,8 +174,8 @@ export default function StudentKpdPage() {
       setFeedback(response.data.message);
       setForm(defaultFormState);
     } catch (error) {
-      console.error("KPD randevusu olusturulamadi", error);
-      setErrorMessage("Randevu talebi olusturulamadi. Saat araligini ve secimlerini kontrol edip tekrar dene.");
+      console.error("KPD randevusu oluşturulamadı", error);
+      setErrorMessage("Randevu talebi oluşturulamadı. Saat aralığını ve secimlerini kontrol edip tekrar dene.");
     } finally {
       setSaving(false);
     }
@@ -265,7 +265,7 @@ export default function StudentKpdPage() {
                 <p className="text-sm text-muted-foreground">Planlanan, tamamlanan ve iptal edilen KPD seanslarin burada listelenir.</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                {appointments.length} kayit
+                {appointments.length} kayıt
               </div>
             </div>
 
@@ -275,7 +275,7 @@ export default function StudentKpdPage() {
               </div>
             ) : appointments.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-muted-foreground">
-                Henuz olusturulmus bir KPD randevun yok. Asagidaki formdan ilk talebini olusturabilirsin.
+                Henüz olusturulmus bir KPD randevun yok. Aşağıdaki formdan ilk talebini olusturabilirsin.
               </div>
             ) : (
               <div className="space-y-4">
@@ -289,7 +289,7 @@ export default function StudentKpdPage() {
                           <div className="flex items-center gap-3">
                             <CalendarClock className="h-5 w-5 text-primary" />
                             <h3 className="text-lg font-bold text-slate-900">
-                              {appointment.counselor ? `${appointment.counselor.name} ${appointment.counselor.surname}` : "Danisman atanacak"}
+                              {appointment.counselor ? `${appointment.counselor.name} ${appointment.counselor.surname}` : "Danışman atanacak"}
                             </h3>
                           </div>
                           <p className="text-sm text-muted-foreground">
@@ -330,7 +330,7 @@ export default function StudentKpdPage() {
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-black text-slate-900">Raporlarim</h2>
-                <p className="text-sm text-muted-foreground">Danismanlar tarafindan yuklenen KPD raporlarini buradan indirebilirsin.</p>
+                <p className="text-sm text-muted-foreground">Danismanlar tarafından yüklenen KPD raporlarini buradan indirebilirsin.</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
                 {reports.length} dosya
@@ -343,7 +343,7 @@ export default function StudentKpdPage() {
               </div>
             ) : reports.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-muted-foreground">
-                Henuz yuklenmis bir KPD raporun yok.
+                Henüz yuklenmis bir KPD raporun yok.
               </div>
             ) : (
               <div className="space-y-3">
@@ -374,7 +374,7 @@ export default function StudentKpdPage() {
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-black text-slate-900">Bos Materyaller</h2>
-                <p className="text-sm text-muted-foreground">Test, envanter ve seans oncesi kullanabilecegin KPD dosyalari.</p>
+                <p className="text-sm text-muted-foreground">Test, envanter ve seans oncesi kullanabilecegin KPD dosyaları.</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
                 {materials.length} dosya
@@ -387,7 +387,7 @@ export default function StudentKpdPage() {
               </div>
             ) : materials.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-muted-foreground">
-                Henuz indirilebilir KPD materyali yok.
+                Henüz indirilebilir KPD materyali yok.
               </div>
             ) : (
               <div className="space-y-3">
@@ -416,20 +416,20 @@ export default function StudentKpdPage() {
           <div id="yeni-kpd-randevusu" className="glass-panel rounded-3xl p-8">
             <h3 className="mb-2 text-xl font-bold text-slate-900">Yeni Randevu Talebi</h3>
             <p className="mb-6 text-sm text-muted-foreground">
-              Uygun bir danisman, oda ve zaman araligi secerek yeni bir KPD seansi talep edebilirsin.
+              Uygun bir danışman, oda ve zaman aralığı secerek yeni bir KPD seansi talep edebilirsin.
             </p>
 
             <form className="space-y-6" onSubmit={handleCreateAppointment}>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-slate-900">Danisman</span>
+                  <span className="text-sm font-semibold text-slate-900">Danışman</span>
                   <select
                     value={form.counselor_id}
                     onChange={(event) => setForm((current) => ({ ...current, counselor_id: event.target.value }))}
                     required
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary"
                   >
-                    <option value="">Danisman sec</option>
+                    <option value="">Danışman seç</option>
                     {counselors.map((counselor) => (
                       <option key={counselor.id} value={counselor.id}>
                         {counselor.name} {counselor.surname} ({counselor.role})
@@ -446,7 +446,7 @@ export default function StudentKpdPage() {
                     required
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary"
                   >
-                    <option value="">Oda sec</option>
+                    <option value="">Oda seç</option>
                     {rooms.map((room) => (
                       <option key={room.id} value={room.id}>
                         {room.name}
@@ -458,7 +458,7 @@ export default function StudentKpdPage() {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-slate-900">Baslangic</span>
+                  <span className="text-sm font-semibold text-slate-900">Başlangıç</span>
                   <input
                     type="datetime-local"
                     value={form.start_at}
@@ -469,7 +469,7 @@ export default function StudentKpdPage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-slate-900">Bitis</span>
+                  <span className="text-sm font-semibold text-slate-900">Bitiş</span>
                   <input
                     type="datetime-local"
                     value={form.end_at}
@@ -481,12 +481,12 @@ export default function StudentKpdPage() {
               </div>
 
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-900">Paylasmak istedigin not</span>
+                <span className="text-sm font-semibold text-slate-900">Paylasmak istediğin not</span>
                 <textarea
                   value={form.notes}
                   onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
                   rows={4}
-                  placeholder="Danismanda onceden bilinmesini istedigin konu basliklarini yazabilirsin."
+                  placeholder="Danismanda onceden bilinmesini istediğin konu basliklarini yazabilirsin."
                   className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-primary"
                 />
               </label>
@@ -497,7 +497,7 @@ export default function StudentKpdPage() {
                 className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
-                Randevu Talebi Olustur
+                Randevu Talebi Oluştur
               </button>
             </form>
           </div>
@@ -518,7 +518,7 @@ export default function StudentKpdPage() {
                 <ul className="space-y-4 text-sm text-muted-foreground">
                   <li className="flex gap-2">
                     <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                    Kisilik analizi sonucu varsa danisman gorusmesine hazirlikta daha saglikli bir cizgi izlenebilir.
+                    Kişilik analizi sonucu varsa danışman gorusmesine hazirlikta daha saglikli bir cizgi izlenebilir.
                   </li>
                   <li className="flex gap-2">
                     <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
@@ -528,15 +528,15 @@ export default function StudentKpdPage() {
               </div>
 
               <div className="glass-panel rounded-3xl p-8">
-                <h3 className="mb-6 text-lg font-bold">Canli Ogrenci Baglami</h3>
+                <h3 className="mb-6 text-lg font-bold">Canlı Öğrenci Bağlamı</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
                       <User className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold">Aktif proje katilimi</p>
-                      <p className="text-[10px] uppercase text-muted-foreground">{participations.length} kayit</p>
+                      <p className="text-sm font-bold">Aktif proje katılımı</p>
+                      <p className="text-[10px] uppercase text-muted-foreground">{participations.length} kayıt</p>
                     </div>
                   </div>
 
@@ -545,8 +545,8 @@ export default function StudentKpdPage() {
                       <BrainCircuit className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold">Kisilik analizi verisi</p>
-                      <p className="text-[10px] uppercase text-muted-foreground">{hasPersonalityData ? "Kayitli veri var" : "Henuz veri yok"}</p>
+                      <p className="text-sm font-bold">Kişilik analizi verisi</p>
+                      <p className="text-[10px] uppercase text-muted-foreground">{hasPersonalityData ? "Kayıtlı veri var" : "Henüz veri yok"}</p>
                     </div>
                   </div>
 
@@ -556,7 +556,7 @@ export default function StudentKpdPage() {
                     </div>
                     <div>
                       <p className="text-sm font-bold">Toplam KPD randevusu</p>
-                      <p className="text-[10px] uppercase text-muted-foreground">{appointments.length} kayit</p>
+                      <p className="text-[10px] uppercase text-muted-foreground">{appointments.length} kayıt</p>
                     </div>
                   </div>
 

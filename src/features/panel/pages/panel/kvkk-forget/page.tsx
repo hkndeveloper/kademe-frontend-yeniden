@@ -40,7 +40,7 @@ interface ForgetRequestResponse {
 
 const statusLabel: Record<ForgetStatus, string> = {
   pending: "Bekliyor",
-  completed: "Tamamlandi",
+  completed: "Tamamlandı",
   rejected: "Reddedildi",
 };
 
@@ -62,8 +62,8 @@ export default function PanelKvkkForgetPage() {
       });
       setItems(response.data.forget_requests?.data ?? []);
     } catch (loadError) {
-      console.error("KVKK unutulma talepleri yuklenemedi", loadError);
-      setError("KVKK unutulma talepleri yuklenemedi.");
+      console.error("KVKK unutulma talepleri yüklenemedi", loadError);
+      setError("KVKK unutulma talepleri yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export default function PanelKvkkForgetPage() {
   return (
     <PermissionGate
       permission="users.update"
-      fallback={<div className="panel-empty-card">Bu modulu goruntulemek icin yetkiniz bulunmuyor.</div>}
+      fallback={<div className="panel-empty-card">Bu modülü görüntülemek için yetkiniz bulunmuyor.</div>}
     >
       <div className="space-y-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -119,7 +119,7 @@ export default function PanelKvkkForgetPage() {
             onChange={(event) => setStatusFilter(event.target.value)}
             className="panel-control w-auto min-w-52"
           >
-            <option value="">Tum durumlar</option>
+            <option value="">Tüm durumlar</option>
             <option value="pending">Bekleyen</option>
             <option value="completed">Tamamlanan</option>
             <option value="rejected">Reddedilen</option>

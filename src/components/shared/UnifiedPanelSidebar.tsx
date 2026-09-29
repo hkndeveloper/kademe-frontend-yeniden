@@ -113,7 +113,7 @@ export function UnifiedPanelSidebar() {
         >
           <LogOut className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
           <span className="w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 group-focus-within/sidebar:w-auto group-focus-within/sidebar:opacity-100">
-            Guvenli Cikis
+            Güvenli Çıkış
           </span>
         </button>
       </div>
@@ -155,7 +155,7 @@ export function MobilePanelNav() {
             type="button"
             onClick={() => setMenuOpen(true)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600"
-            aria-label="Panel menusu"
+            aria-label="Panel menüsü"
             aria-expanded={menuOpen}
           >
             <Menu className="h-5 w-5" />
@@ -187,7 +187,7 @@ export function MobilePanelNav() {
             className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
           >
             <Menu className="h-4 w-4" />
-            <span className="max-w-full truncate">Menu</span>
+            <span className="max-w-full truncate">Menü</span>
           </button>
         </div>
       </nav>
@@ -203,7 +203,7 @@ export function MobilePanelNav() {
           <section className="absolute inset-x-3 bottom-3 top-3 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-black text-slate-900">Tum panel menusu</p>
+                <p className="truncate text-sm font-black text-slate-900">Tüm panel menüsü</p>
                 <p className="truncate text-xs text-slate-500">{user?.name} {user?.surname}</p>
               </div>
               <button
@@ -259,7 +259,7 @@ export function MobilePanelNav() {
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-3 text-sm font-bold text-red-700"
               >
                 <LogOut className="h-4 w-4" />
-                Guvenli cikis
+                Güvenli çıkış
               </button>
             </div>
           </section>
@@ -268,4 +268,3 @@ export function MobilePanelNav() {
     </>
   );
 }
-

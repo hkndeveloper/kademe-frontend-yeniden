@@ -58,7 +58,7 @@ export function businessPermissionSourceLabel(
   }
 
   if (metadata?.coordinator_staff_business_source === "mixed") {
-    return "Pilot kullanicida Koordinasyon Birimleri, diger kullanicida Rol Matrisi";
+    return "Pilot kullanicida Koordinasyon Birimleri, diğer kullanicida Rol Matrisi";
   }
 
   return "Rol Yetki Matrisi";

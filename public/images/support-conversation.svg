@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" fill="none">
+  <defs>
+    <linearGradient id="paper" x1="143" y1="115" x2="340" y2="312" gradientUnits="userSpaceOnUse"><stop stop-color="#fffef7"/><stop offset="1" stop-color="#eadcc4"/></linearGradient>
+    <linearGradient id="sage" x1="263" y1="78" x2="394" y2="193" gradientUnits="userSpaceOnUse"><stop stop-color="#99aa7e"/><stop offset="1" stop-color="#60744f"/></linearGradient>
+    <linearGradient id="orange" x1="109" y1="234" x2="253" y2="324" gradientUnits="userSpaceOnUse"><stop stop-color="#f5ad6b"/><stop offset="1" stop-color="#d97a3f"/></linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#6e6048" flood-opacity=".17"/></filter>
+  </defs>
+  <ellipse cx="261" cy="364" rx="161" ry="17" fill="#a3a88d" opacity=".16"/>
+  <circle cx="263" cy="205" r="153" fill="#e3e8d6"/>
+  <circle cx="263" cy="205" r="177" stroke="#b7c0a4" stroke-dasharray="3 12" opacity=".6"/>
+  <g transform="rotate(-8 247 231)" filter="url(#shadow)">
+    <rect x="131" y="139" width="239" height="183" rx="21" fill="#e5d4b7"/>
+    <rect x="151" y="111" width="195" height="178" rx="14" fill="url(#paper)" stroke="#fffdf6" stroke-width="3"/>
+    <path d="M181 151h90M181 170h127M181 189h105" stroke="#c2bea7" stroke-width="6" stroke-linecap="round"/>
+    <path d="m131 163 119 93 120-93v138a21 21 0 0 1-21 21H152a21 21 0 0 1-21-21Z" fill="url(#paper)" stroke="#fdf6e8" stroke-width="2"/>
+    <path d="m143 310 79-69m135 69-79-69" stroke="#d7c7aa" stroke-width="2"/>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M291 74h93a26 26 0 0 1 26 26v59a26 26 0 0 1-26 26h-44l-32 27v-27h-17a26 26 0 0 1-26-26v-59a26 26 0 0 1 26-26Z" fill="url(#sage)" stroke="#dbe3cb" stroke-width="2"/>
+    <path d="M324 111c0-18 30-18 30 0 0 10-15 11-15 23" stroke="#fffdf0" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="339" cy="151" r="4" fill="#fffdf0"/>
+    <path d="M111 254h92a24 24 0 0 1 24 24v39a24 24 0 0 1-24 24h-13v23l-29-23h-50a24 24 0 0 1-24-24v-39a24 24 0 0 1 24-24Z" fill="url(#orange)" stroke="#ffe0bc" stroke-width="2"/>
+    <circle cx="128" cy="297" r="6" fill="#fff8e9"/><circle cx="157" cy="297" r="6" fill="#fff8e9"/><circle cx="186" cy="297" r="6" fill="#fff8e9"/>
+  </g>
+  <path d="m110 105 5 14 14 5-14 5-5 14-5-14-14-5 14-5Z" fill="#ce935c"/>
+  <path d="m411 259 3 9 9 3-9 3-3 9-3-9-9-3 9-3Z" fill="#8a9b74"/>
+  <circle cx="397" cy="320" r="5" fill="#d5a471"/>
+</svg>

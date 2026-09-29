@@ -309,9 +309,9 @@ const initialTemplateForm: FeedbackTemplateFormState = {
 };
 
 const statusLabels: Record<ProgramFormState["status"], string> = {
-  scheduled: "Planlandi",
+  scheduled: "Planlandı",
   active: "Aktif",
-  completed: "Tamamlandi",
+  completed: "Tamamlandı",
   cancelled: "Iptal",
 };
 
@@ -598,13 +598,13 @@ export default function PanelProgramsPage() {
           }));
           allPrograms.push(...projectPrograms);
         } catch (err) {
-          console.error(`Proje #${project.id} programlari yuklenemedi`, err);
+          console.error(`Proje #${project.id} programları yüklenemedi`, err);
         }
       }
       setPrograms(allPrograms);
     } catch (err) {
-      console.error("Panel programlari yuklenemedi", err);
-      setErrorMessage("Program listesi yuklenemedi.");
+      console.error("Panel programları yüklenemedi", err);
+      setErrorMessage("Program listesi yüklenemedi.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -624,7 +624,7 @@ export default function PanelProgramsPage() {
       });
       setFeedbackTemplates(response.data.templates ?? []);
     } catch (error) {
-      console.error("Degerlendirme form sablonlari yuklenemedi", error);
+      console.error("Değerlendirme form şablonları yüklenemedi", error);
       setFeedbackTemplates([]);
     } finally {
       setFeedbackTemplatesLoading(false);
@@ -733,7 +733,7 @@ export default function PanelProgramsPage() {
     event.preventDefault();
 
     if (!templateForm.project_id) {
-      setErrorMessage("Anket sablonu icin proje secilmelidir.");
+      setErrorMessage("Anket şablonu için proje seçilmelidir.");
       return;
     }
 
@@ -761,18 +761,18 @@ export default function PanelProgramsPage() {
     try {
       if (editingTemplateId) {
         await api.put(`/panel/feedback-form-templates/${editingTemplateId}`, payload);
-        setMessage("Degerlendirme sablonu guncellendi.");
+        setMessage("Değerlendirme şablonu güncellendi.");
       } else {
         await api.post("/panel/feedback-form-templates", payload);
-        setMessage("Degerlendirme sablonu olusturuldu.");
+        setMessage("Değerlendirme şablonu oluşturuldu.");
       }
 
       await loadFeedbackTemplatesForProject(templateForm.project_id);
       setEditingTemplateId(null);
       setTemplateForm({ ...initialTemplateForm, project_id: templateForm.project_id });
     } catch (error) {
-      console.error("Degerlendirme sablonu kaydedilemedi", error);
-      setErrorMessage(apiErrorMessage(error, "Degerlendirme sablonu kaydedilemedi."));
+      console.error("Değerlendirme şablonu kaydedilemedi", error);
+      setErrorMessage(apiErrorMessage(error, "Değerlendirme şablonu kaydedilemedi."));
     } finally {
       setTemplateSaving(false);
     }
@@ -784,15 +784,15 @@ export default function PanelProgramsPage() {
     setMessage(null);
     try {
       await api.delete(`/panel/feedback-form-templates/${template.id}`);
-      setMessage("Degerlendirme sablonu silindi.");
+      setMessage("Değerlendirme şablonu silindi.");
       if (editingTemplateId === template.id) {
         setEditingTemplateId(null);
         setTemplateForm({ ...initialTemplateForm, project_id: template.project_id ? String(template.project_id) : templateForm.project_id });
       }
       await loadFeedbackTemplatesForProject(template.project_id ? String(template.project_id) : templateForm.project_id);
     } catch (error) {
-      console.error("Degerlendirme sablonu silinemedi", error);
-      setErrorMessage(apiErrorMessage(error, "Degerlendirme sablonu silinemedi."));
+      console.error("Değerlendirme şablonu silinemedi", error);
+      setErrorMessage(apiErrorMessage(error, "Değerlendirme şablonu silinemedi."));
     } finally {
       setTemplateDeletingId(null);
     }
@@ -879,11 +879,11 @@ export default function PanelProgramsPage() {
     const selectedProject = projectPool.find((p) => p.id === Number(form.project_id));
     const selectedPeriodIdForSave = form.period_id || (selectedProject ? defaultPeriodIdForProject(selectedProject) : "");
     if (!selectedProject || !selectedPeriodIdForSave) {
-      setErrorMessage("Program kaydi icin proje ve donem secilmelidir.");
+      setErrorMessage("Program kaydı için proje ve dönem seçilmelidir.");
       return;
     }
     if (form.target_audience.length === 0) {
-      setErrorMessage("Program icin en az bir hedef kitle secilmelidir.");
+      setErrorMessage("Program için en az bir hedef kitle seçilmelidir.");
       return;
     }
     setSubmitting(true);
@@ -921,10 +921,10 @@ export default function PanelProgramsPage() {
           isCommunityForm ? `/panel/programs/${editingProgramId}/community-event` : `/panel/programs/${editingProgramId}`,
           payload,
         );
-        setMessage(isCommunityForm ? "Ortak etkinlik guncellendi." : "Program guncellendi.");
+        setMessage(isCommunityForm ? "Ortak etkinlik güncellendi." : "Program güncellendi.");
       } else {
         await api.post(isCommunityForm ? "/panel/programs/community-events" : "/panel/programs", payload);
-        setMessage(isCommunityForm ? "Ortak etkinlik olusturuldu." : "Yeni program basariyla olusturuldu.");
+        setMessage(isCommunityForm ? "Ortak etkinlik oluşturuldu." : "Yeni program başarıyla oluşturuldu.");
       }
       setShowForm(false);
       setEditingProgramId(null);
@@ -932,7 +932,7 @@ export default function PanelProgramsPage() {
       await loadPrograms();
     } catch (error) {
       console.error("Program kaydedilemedi", error);
-      setErrorMessage(apiErrorMessage(error, "Program kaydedilemedi. Alanlari ve yetkileri kontrol edin."));
+      setErrorMessage(apiErrorMessage(error, "Program kaydedilemedi. Alanları ve yetkileri kontrol edin."));
     } finally {
       setSubmitting(false);
     }
@@ -943,11 +943,11 @@ export default function PanelProgramsPage() {
       const response = await api.post<{ deducted_participant_count?: number }>(`/panel/programs/${programId}/complete`);
       const count = response.data.deducted_participant_count ?? 0;
       setPrograms((cur) => cur.map((p) => (p.id === programId ? { ...p, status: "completed" } : p)));
-      setMessage(`Program tamamlandi. ${count} aktif katilimciya kredi kesintisi uygulandi.`);
+      setMessage(`Program tamamlandı. ${count} aktif katilimciya kredi kesintisi uygulandı.`);
       await loadPrograms();
     } catch (error) {
-      console.error("Program tamamlanamadi", error);
-      setErrorMessage("Program tamamlanamadi.");
+      console.error("Program tamamlanamadı", error);
+      setErrorMessage("Program tamamlanamadı.");
     }
   };
 
@@ -965,8 +965,8 @@ export default function PanelProgramsPage() {
       setAttendanceRecords(response.data.records ?? []);
       setAttendanceUpdatedAt(new Date());
     } catch (error) {
-      console.error("Yoklama detaylari yuklenemedi", error);
-      setErrorMessage("Yoklama detaylari yuklenemedi.");
+      console.error("Yoklama detayları yüklenemedi", error);
+      setErrorMessage("Yoklama detayları yüklenemedi.");
     } finally {
       setAttendanceLoading(false);
     }
@@ -979,13 +979,13 @@ export default function PanelProgramsPage() {
     try {
       await api.put(`/panel/programs/${attendanceModalProgram.id}/attendances/${record.participant_id}`, {
         is_valid: isValid,
-        manual_note: isValid ? "Panel uzerinden manuel katilim onayi." : "Panel uzerinden manuel gelmedi isaretlendi.",
+        manual_note: isValid ? "Panel üzerinden manuel katılım onayı." : "Panel üzerinden manuel gelmedi isaretlendi.",
       });
       await openAttendanceModal(attendanceModalProgram);
       await loadPrograms();
     } catch (error) {
-      console.error("Manuel yoklama guncellenemedi", error);
-      setErrorMessage("Manuel yoklama guncellenemedi.");
+      console.error("Manuel yoklama güncellenemedi", error);
+      setErrorMessage("Manuel yoklama güncellenemedi.");
     } finally {
       setAttendanceActionLoading(null);
     }
@@ -1000,7 +1000,7 @@ export default function PanelProgramsPage() {
       const response = await api.get<{ photos: ProgramPhoto[] }>(`/panel/programs/${program.id}/photos`);
       setGalleryPhotos(response.data.photos ?? []);
     } catch {
-      setErrorMessage("Fotograf listesi yuklenemedi.");
+      setErrorMessage("Fotoğraf listesi yüklenemedi.");
     } finally {
       setGalleryLoading(false);
     }
@@ -1023,7 +1023,7 @@ export default function PanelProgramsPage() {
       setPhotoCaption("");
       if (photoInputRef.current) photoInputRef.current.value = "";
     } catch {
-      setErrorMessage("Fotograf yuklenemedi.");
+      setErrorMessage("Fotoğraf yüklenemedi.");
     } finally {
       setPhotoUploading(false);
     }
@@ -1037,7 +1037,7 @@ export default function PanelProgramsPage() {
       invalidatePublicProjectCaches();
       setGalleryPhotos((prev) => prev.filter((p) => p.id !== photoId));
     } catch {
-      setErrorMessage("Fotograf silinemedi.");
+      setErrorMessage("Fotoğraf silinemedi.");
     } finally {
       setPhotoDeletingId(null);
     }
@@ -1054,7 +1054,7 @@ export default function PanelProgramsPage() {
         setGalleryModalProgram((prev) => (prev ? { ...prev, [field]: newVal } : prev));
       }
     } catch {
-      setErrorMessage("Gorunurluk guncelleme basarisiz.");
+      setErrorMessage("Görünürlük güncelleme başarısız.");
     } finally {
       setVisibilityTogglingId(null);
     }
@@ -1068,8 +1068,8 @@ export default function PanelProgramsPage() {
       const response = await api.get<FeedbackStatsData>(`/panel/programs/${program.id}/feedback-stats`);
       setFeedbackStats(response.data);
     } catch (error) {
-      console.error("Degerlendirme istatistikleri yuklenemedi", error);
-      setErrorMessage("Degerlendirme istatistikleri yuklenemedi.");
+      console.error("Değerlendirme istatistikleri yüklenemedi", error);
+      setErrorMessage("Değerlendirme istatistikleri yüklenemedi.");
     } finally {
       setFeedbackLoading(false);
     }
@@ -1088,8 +1088,8 @@ export default function PanelProgramsPage() {
       });
       setFeedbackSummary(response.data);
     } catch (error) {
-      console.error("Toplu degerlendirme ozeti yuklenemedi", error);
-      setErrorMessage("Toplu degerlendirme ozeti yuklenemedi.");
+      console.error("Toplu değerlendirme özeti yüklenemedi", error);
+      setErrorMessage("Toplu değerlendirme özeti yüklenemedi.");
     } finally {
       setFeedbackSummaryLoading(false);
     }
@@ -1147,7 +1147,7 @@ export default function PanelProgramsPage() {
       require="any"
       fallback={
         <div className="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-10 text-center text-sm text-amber-800">
-          Programlari goruntuleme yetkiniz bulunmuyor.
+          Programları görüntüleme yetkiniz bulunmuyor.
         </div>
       }
     >
@@ -1198,7 +1198,7 @@ export default function PanelProgramsPage() {
                 }`}
               >
                 {showTemplateEditor ? <X className="h-4 w-4" /> : <MessageSquareText className="h-4 w-4" />}
-                {showTemplateEditor ? "Sablonlari Kapat" : "Anket Sablonlari"}
+                {showTemplateEditor ? "Şablonları Kapat" : "Anket Şablonları"}
               </button>
             )}
             {canViewAttendanceStats && (
@@ -1344,11 +1344,11 @@ export default function PanelProgramsPage() {
               <div>
                 <h2 className="text-base font-bold text-slate-900">
                   {editingProgramId
-                    ? isCommunityForm ? "Ortak Etkinligi Guncelle" : "Programi Guncelle"
-                    : isCommunityForm ? "Yeni Ortak Etkinlik Olustur" : "Yeni Program Olustur"}
+                    ? isCommunityForm ? "Ortak Etkinligi Güncelle" : "Programı Güncelle"
+                    : isCommunityForm ? "Yeni Ortak Etkinlik Oluştur" : "Yeni Program Oluştur"}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  {isCommunityForm ? "Topluluk etkinliginde yalniz planlama, konum ve hedef kitle alanlari kaydedilir." : "Programi aktif veya gecmis donem baglaminda kaydedebilirsiniz."}
+                  {isCommunityForm ? "Topluluk etkinliginde yalnız planlama, konum ve hedef kitle alanları kaydedilir." : "Programı aktif veya geçmiş dönem bağlamında kaydedebilirsiniz."}
                 </p>
               </div>
             </div>
@@ -1372,7 +1372,7 @@ export default function PanelProgramsPage() {
                   required
                   disabled={!!editingProgramId}
                 >
-                  <option value="">Proje secin</option>
+                  <option value="">Proje seçin</option>
                   {(editingProgramId ? updatableProjects : creatableProjects).map((p) => (
                     <option key={p.id} value={p.id}>
                       {fixMojibake(p.name)} {p.active_period ? ` - ${fixMojibake(p.active_period.name)}` : ""}
@@ -1392,18 +1392,18 @@ export default function PanelProgramsPage() {
                   <option value="">Dönem seçin</option>
                   {((editingProgramId ? updatableProjects : creatableProjects).find((project) => String(project.id) === form.project_id)?.periods ?? []).map((period) => (
                     <option key={period.id} value={period.id}>
-                      {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (gecmis)" : ""}
+                      {period.name}{period.status === "active" ? " (aktif)" : period.status === "completed" ? " (geçmiş)" : ""}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className={labelClass}>Program basligi</label>
+                <label className={labelClass}>Program başlığı</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  placeholder="Ornek: Liderlik Zirvesi 2026"
+                  placeholder="Örnek: Liderlik Zirvesi 2026"
                   className={inputClass}
                   required
                 />
@@ -1414,7 +1414,7 @@ export default function PanelProgramsPage() {
                   type="text"
                   value={form.location}
                   onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value, location_place_name: "", location_place_address: "", location_place_id: "", location_place_provider: "" }))}
-                  placeholder="Adres veya yer adi"
+                  placeholder="Adres veya yer adı"
                   className={inputClass}
                 />
               </div>
@@ -1425,14 +1425,14 @@ export default function PanelProgramsPage() {
                   onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as ProgramFormState["status"] }))}
                   className={inputClass}
                 >
-                  <option value="scheduled">Planlandi</option>
+                  <option value="scheduled">Planlandı</option>
                   <option value="active">Aktif</option>
-                  {!isCommunityForm ? <option value="completed">Tamamlandi</option> : null}
+                  {!isCommunityForm ? <option value="completed">Tamamlandı</option> : null}
                   <option value="cancelled">Iptal</option>
                 </select>
               </div>
               <div>
-                <label className={labelClass}>Baslangic tarihi / saati</label>
+                <label className={labelClass}>Başlangıç tarihi / saati</label>
                 <input
                   type="datetime-local"
                   value={form.start_at}
@@ -1442,7 +1442,7 @@ export default function PanelProgramsPage() {
                 />
               </div>
               <div>
-                <label className={labelClass}>Bitis tarihi / saati</label>
+                <label className={labelClass}>Bitiş tarihi / saati</label>
                 <input
                   type="datetime-local"
                   value={form.end_at}
@@ -1465,7 +1465,7 @@ export default function PanelProgramsPage() {
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Basvuru kontenjani (opsiyonel)</label>
+                    <label className={labelClass}>Başvuru kontenjani (opsiyonel)</label>
                     <input
                       type="number"
                       min={1}
@@ -1508,7 +1508,7 @@ export default function PanelProgramsPage() {
                           <span className="mt-1 block text-xs text-slate-500">
                             {audience === "student"
                               ? "Kredi dusumu ve iade kurali uygulanir."
-                              : "Yoklama ve anket olur, kredi islemi uygulanmaz."}
+                              : "Yoklama ve anket olur, kredi işlemi uygulanmaz."}
                           </span>
                         </span>
                         <span className={`h-5 w-5 rounded-md border ${selected ? "border-indigo-600 bg-indigo-600" : "border-slate-300 bg-white"}`}>
@@ -1529,25 +1529,25 @@ export default function PanelProgramsPage() {
                 className={inputClass}
                 disabled={!form.project_id || feedbackTemplatesLoading}
               >
-                <option value="">{feedbackTemplatesLoading ? "Formlar yukleniyor..." : "Varsayilan form"}</option>
+                <option value="">{feedbackTemplatesLoading ? "Formlar yükleniyor..." : "Varsayılan form"}</option>
                 {(form.project_id ? feedbackTemplates : []).map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name}
-                    {template.is_default ? " (varsayilan)" : ""}
+                    {template.is_default ? " (varsayılan)" : ""}
                     {template.project_id ? "" : " (global)"}
                   </option>
                 ))}
               </select>
               <p className="mt-1 text-xs text-slate-500">
-                Bos birakilirsa mevcut varsayilan degerlendirme sorulari kullanilir.
+                Bos birakilirsa mevcut varsayılan değerlendirme sorulari kullanilir.
               </p>
             </div> : null}
 
             <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
               <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <label className={labelClass}>Haritadan konum secimi</label>
-                  <p className="text-xs text-slate-500">Haritaya tiklayin veya isaretciyi surukleyin; GPS alanlari otomatik guncellenir.</p>
+                  <label className={labelClass}>Haritadan konum seçimi</label>
+                  <p className="text-xs text-slate-500">Haritaya tiklayin veya isaretciyi surukleyin; GPS alanları otomatik güncellenir.</p>
                 </div>
                 <button
                   type="button"
@@ -1618,7 +1618,7 @@ export default function PanelProgramsPage() {
             </div>
 
             <div className="mt-4">
-              <label className={labelClass}>Aciklama</label>
+              <label className={labelClass}>Açıklama</label>
               <textarea
                 rows={3}
                 value={form.description}
@@ -1629,7 +1629,7 @@ export default function PanelProgramsPage() {
             </div>
 
             {!isCommunityForm ? <div className="mt-5 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
-              <p className={labelClass}>Gorunurluk</p>
+              <p className={labelClass}>Görünürlük</p>
               <div className="flex flex-wrap gap-3 pt-1">
                 <button
                   type="button"
@@ -1641,7 +1641,7 @@ export default function PanelProgramsPage() {
                   }`}
                 >
                   {form.is_public ? <Globe className="h-4 w-4" /> : <GlobeLock className="h-4 w-4" />}
-                  {form.is_public ? "Faaliyetler sayfasinda gorunur" : "Faaliyetler sayfasinda gizli"}
+                  {form.is_public ? "Faaliyetler sayfasinda görünür" : "Faaliyetler sayfasinda gizli"}
                 </button>
                 <button
                   type="button"
@@ -1666,7 +1666,7 @@ export default function PanelProgramsPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                {editingProgramId ? "Kaydet" : "Programi Olustur"}
+                {editingProgramId ? "Kaydet" : "Programı Oluştur"}
               </button>
               <button
                 type="button"
@@ -1674,7 +1674,7 @@ export default function PanelProgramsPage() {
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 <X className="h-4 w-4" />
-                Vazgec
+                Vazgeç
               </button>
             </div>
           </motion.form>
@@ -1688,7 +1688,7 @@ export default function PanelProgramsPage() {
           >
             <div className="space-y-3">
               <div>
-                <h2 className="text-base font-bold text-slate-900">Anket Sablonlari</h2>
+                <h2 className="text-base font-bold text-slate-900">Anket Şablonları</h2>
                 <p className="mt-1 text-xs text-slate-500">Sayısal sorular ortalamaya, seçimli sorular dağılıma, metin sorular yorumlara dahil edilir.</p>
               </div>
               <select
@@ -1699,7 +1699,7 @@ export default function PanelProgramsPage() {
                 }}
                 className={inputClass}
               >
-                <option value="">Proje secin</option>
+                <option value="">Proje seçin</option>
                 {templateProjects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
@@ -1708,9 +1708,9 @@ export default function PanelProgramsPage() {
               </select>
               <div className="space-y-2">
                 {feedbackTemplatesLoading ? (
-                  <div className="rounded-2xl bg-white p-4 text-sm text-slate-500">Sablonlar yukleniyor...</div>
+                  <div className="rounded-2xl bg-white p-4 text-sm text-slate-500">Sablonlar yükleniyor...</div>
                 ) : feedbackTemplates.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-blue-200 bg-white/70 p-4 text-sm text-slate-500">Bu proje icin kayitli sablon yok.</div>
+                  <div className="rounded-2xl border border-dashed border-blue-200 bg-white/70 p-4 text-sm text-slate-500">Bu proje için kayıtlı şablon yok.</div>
                 ) : (
                   feedbackTemplates.map((template) => (
                     <div key={template.id} className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
@@ -1729,7 +1729,7 @@ export default function PanelProgramsPage() {
                         </div>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {template.is_default ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Varsayilan</span> : null}
+                        {template.is_default ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Varsayılan</span> : null}
                         {!template.is_active ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">Pasif</span> : null}
                       </div>
                     </div>
@@ -1741,8 +1741,8 @@ export default function PanelProgramsPage() {
             <form onSubmit={(event) => void handleSaveTemplate(event)} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-5 flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
                 <div>
-                  <h3 className="font-bold text-slate-900">{editingTemplateId ? "Sablonu Duzenle" : "Yeni Anket Sablonu"}</h3>
-                  <p className="mt-1 text-xs text-slate-500">Program baslamadan once programa ozel sablon secilebilir.</p>
+                  <h3 className="font-bold text-slate-900">{editingTemplateId ? "Şablonu Düzenle" : "Yeni Anket Şablonu"}</h3>
+                  <p className="mt-1 text-xs text-slate-500">Program baslamadan önce programa özel şablon secilebilir.</p>
                 </div>
                 <button type="button" onClick={() => { setEditingTemplateId(null); setTemplateForm({ ...initialTemplateForm, project_id: templateForm.project_id }); }} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
                   Temizle
@@ -1751,19 +1751,19 @@ export default function PanelProgramsPage() {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label>
-                  <span className={labelClass}>Sablon adi</span>
+                  <span className={labelClass}>Şablon adı</span>
                   <input value={templateForm.name} onChange={(event) => setTemplateForm((current) => ({ ...current, name: event.target.value }))} className={inputClass} required />
                 </label>
                 <label>
-                  <span className={labelClass}>Aciklama</span>
-                  <input value={templateForm.description} onChange={(event) => setTemplateForm((current) => ({ ...current, description: event.target.value }))} className={inputClass} placeholder="Kisa kullanim notu" />
+                  <span className={labelClass}>Açıklama</span>
+                  <input value={templateForm.description} onChange={(event) => setTemplateForm((current) => ({ ...current, description: event.target.value }))} className={inputClass} placeholder="Kısa kullanim notu" />
                 </label>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-3">
                 <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
                   <input type="checkbox" checked={templateForm.is_default} onChange={(event) => setTemplateForm((current) => ({ ...current, is_default: event.target.checked }))} />
-                  Varsayilan
+                  Varsayılan
                 </label>
                 <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
                   <input type="checkbox" checked={templateForm.is_active} onChange={(event) => setTemplateForm((current) => ({ ...current, is_active: event.target.checked }))} />
@@ -1883,7 +1883,7 @@ export default function PanelProgramsPage() {
         ) : filteredPrograms.length === 0 ? (
           <div className="panel-empty-card py-16">
             <Calendar className="mx-auto mb-4 h-10 w-10 text-slate-300" />
-            <p className="text-sm text-slate-500">Secili filtrelerde program bulunamadi.</p>
+            <p className="text-sm text-slate-500">Seçili filtrelerde program bulunamadı.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -1991,7 +1991,7 @@ export default function PanelProgramsPage() {
                           className="panel-card-action panel-card-action-info w-full px-2.5"
                         >
                           <BarChart3 className="h-3.5 w-3.5" />
-                          Degerlendirme
+                          Değerlendirme
                         </button>
                       )}
                       {program.capabilities?.view_media && (
@@ -2045,7 +2045,7 @@ export default function PanelProgramsPage() {
                           className="panel-card-action w-full px-2.5 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Pencil className="h-3.5 w-3.5" />
-                          Duzenle
+                          Düzenle
                         </button>
                       )}
                       {canCompletePrograms && canCompleteThisProgram && (
@@ -2070,7 +2070,7 @@ export default function PanelProgramsPage() {
                         <button
                           type="button"
                           disabled
-                          title="QR yoklama sadece program saat araliginda baslatilabilir."
+                          title="QR yoklama sadece program saat aralığında baslatilabilir."
                           className="panel-card-action w-full cursor-not-allowed bg-slate-100 px-2.5 text-slate-500"
                         >
                           <Clock className="h-3.5 w-3.5" />
@@ -2090,10 +2090,10 @@ export default function PanelProgramsPage() {
             <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" style={{ maxHeight: "90vh" }}>
               <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-5">
                 <div>
-                  <h2 className="text-lg font-black text-slate-900">Yoklama Detaylari</h2>
+                  <h2 className="text-lg font-black text-slate-900">Yoklama Detayları</h2>
                   <p className="mt-0.5 text-xs text-slate-500">
                     {attendanceModalProgram.title}
-                    {attendanceUpdatedAt ? ` - Son guncelleme: ${formatIstanbulTimeDisplay(attendanceUpdatedAt)}` : ""}
+                    {attendanceUpdatedAt ? ` - Son güncelleme: ${formatIstanbulTimeDisplay(attendanceUpdatedAt)}` : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -2126,7 +2126,7 @@ export default function PanelProgramsPage() {
               {attendanceSummary && (
                 <div className="shrink-0 grid grid-cols-3 gap-3 border-b border-slate-100 bg-slate-50/80 px-6 py-4 md:grid-cols-6">
                   {[
-                    { label: "Katilimci", val: attendanceSummary.participant_count ?? 0 },
+                    { label: "Katılımcı", val: attendanceSummary.participant_count ?? 0 },
                     { label: "Gelen", val: attendanceSummary.attendance_count },
                     { label: "Gelmeyen", val: attendanceSummary.absent_count ?? 0 },
                     ...(attendanceSummary.feedback_count === undefined ? [] : [{ label: "Geri bildirim", val: attendanceSummary.feedback_count }]),
@@ -2145,14 +2145,14 @@ export default function PanelProgramsPage() {
                 <table className="w-full text-left text-sm">
                   <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-600">
                     <tr>
-                      <th className="px-5 py-3">Katilimci</th>
+                      <th className="px-5 py-3">Katılımcı</th>
                       <th className="px-5 py-3">Durum</th>
                       <th className="px-5 py-3">Yontem</th>
                       {hasExtendedAttendanceData ? <th className="px-5 py-3">Kredi</th> : null}
                       {hasExtendedAttendanceData ? <th className="px-5 py-3">Geri bildirim</th> : null}
-                      <th className="px-5 py-3">Kayit zamani</th>
+                      <th className="px-5 py-3">Kayıt zamanı</th>
                       {canManageAttendance && attendanceModalProgram.capabilities?.manage_attendance && (
-                        <th className="px-5 py-3 text-right">Islem</th>
+                        <th className="px-5 py-3 text-right">İşlem</th>
                       )}
                     </tr>
                   </thead>
@@ -2166,7 +2166,7 @@ export default function PanelProgramsPage() {
                     ) : attendanceRecords.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-12 text-center text-sm text-slate-400">
-                          Kayit bulunamadi.
+                          Kayıt bulunamadı.
                         </td>
                       </tr>
                     ) : (
@@ -2328,7 +2328,7 @@ export default function PanelProgramsPage() {
                   </div>
                   <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.2fr_0.8fr]">
                     <div className="space-y-4">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Soru Bazli Analiz</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Soru Bazlı Analiz</h3>
                       {Object.entries(feedbackSummary.question_stats).map(([key, stat]) => (
                         <div key={key} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                           <div className="mb-3 flex items-center justify-between gap-3">
@@ -2357,7 +2357,7 @@ export default function PanelProgramsPage() {
                     </div>
 
                     <div className="space-y-4">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Program Ozeti</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Program Özeti</h3>
                       {feedbackSummary.programs.map((program) => (
                         <div key={program.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
                           <div className="font-bold text-slate-900">{fixMojibake(program.title)}</div>
@@ -2423,7 +2423,7 @@ export default function PanelProgramsPage() {
                 </div>
               ) : !feedbackStats || feedbackStats.summary.total_feedback === 0 ? (
                 <div className="flex-1 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-16 text-center text-sm text-slate-400">
-                  Bu program icin henuz degerlendirme gonderilmemis.
+                  Bu program için henüz değerlendirme gonderilmemis.
                 </div>
               ) : (
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -2463,7 +2463,7 @@ export default function PanelProgramsPage() {
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Soru Bazli Analiz</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Soru Bazlı Analiz</h3>
                     {Object.entries(feedbackStats.question_stats).map(([key, stat]) => (
                       <div key={key} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                         <div className="mb-3 flex items-center justify-between">
@@ -2519,7 +2519,7 @@ export default function PanelProgramsPage() {
                   {(feedbackStats.text_responses?.length ?? 0) > 0 && (
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Anonim Yazili Yanit Raporu</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Anonim Yazili Yanıt Raporu</h3>
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-600">
                           {feedbackStats.summary.identity_redacted ? "Kimlikler gizli" : "Anonim"}
                         </span>
@@ -2553,7 +2553,7 @@ export default function PanelProgramsPage() {
                 <div>
                   <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
                     <ImageIcon className="h-5 w-5 text-indigo-600" />
-                    Fotograf Galerisi
+                    Fotoğraf Galerisi
                   </h2>
                   <p className="mt-0.5 text-xs text-slate-500">{galleryModalProgram.title}</p>
                 </div>
@@ -2613,12 +2613,12 @@ export default function PanelProgramsPage() {
                           />
                           <div data-photo-error className="hidden absolute inset-0 flex flex-col items-center justify-center px-4 text-center text-xs font-medium text-slate-500">
                             <ImageIcon className="mb-2 h-6 w-6 text-slate-400" />
-                            Gorsel URL adresi acilamadi
+                            Görsel URL adresi acilamadi
                           </div>
                         </div>
                         <div className="flex min-h-14 items-center justify-between gap-3 px-3 py-2">
                           <p className="min-w-0 flex-1 text-xs font-medium text-slate-600 line-clamp-2">
-                            {photo.caption || "Aciklama yok"}
+                            {photo.caption || "Açıklama yok"}
                           </p>
                           {canManageMedia && canAccessProject("programs.media.upload", galleryModalProgram.project_id) ? (
                             <button
@@ -2640,10 +2640,10 @@ export default function PanelProgramsPage() {
 
                 {canManageMedia && canAccessProject("programs.media.upload", galleryModalProgram.project_id) ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-                  <h3 className="mb-4 text-sm font-semibold text-slate-800">Yeni fotograf ekle</h3>
+                  <h3 className="mb-4 text-sm font-semibold text-slate-800">Yeni fotoğraf ekle</h3>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                     <div className="flex-1">
-                      <label className={labelClass}>Aciklama (opsiyonel)</label>
+                      <label className={labelClass}>Açıklama (opsiyonel)</label>
                       <input
                         type="text"
                         value={photoCaption}
@@ -2677,11 +2677,11 @@ export default function PanelProgramsPage() {
                         className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
                       >
                         {photoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                        Yukle
+                        Yükle
                       </button>
                     </div>
                   </div>
-                  <p className="mt-2 text-xs text-slate-400">JPEG, PNG veya WEBP. Birden fazla dosya secebilirsiniz; sunucu PHP limitleri (upload_max_filesize / post_max_size) gecerli olur.</p>
+                  <p className="mt-2 text-xs text-slate-400">JPEG, PNG veya WEBP. Birden fazla dosya secebilirsiniz; sunucu PHP limitleri (upload_max_filesize / post_max_size) geçerli olur.</p>
                 </div>
                 ) : null}
               </div>

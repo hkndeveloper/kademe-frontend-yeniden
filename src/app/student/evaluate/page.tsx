@@ -66,8 +66,8 @@ export default function EvaluatePage() {
           setSelectedProgramId(initialProgramId);
         }
       } catch (error) {
-        console.error("Degerlendirme ekran verileri yuklenemedi", error);
-        setErrorMessage("Degerlendirme verileri yuklenemedi.");
+        console.error("Değerlendirme ekran verileri yüklenemedi", error);
+        setErrorMessage("Değerlendirme verileri yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -83,7 +83,7 @@ export default function EvaluatePage() {
     event.preventDefault();
 
     if (!selectedProgramId) {
-      setErrorMessage("Lutfen once bir oturum sec.");
+      setErrorMessage("Lütfen önce bir oturum seç.");
       return;
     }
 
@@ -118,8 +118,8 @@ export default function EvaluatePage() {
       setFeedbackMessage(response.data.message);
       setForm({});
     } catch (error) {
-      console.error("Degerlendirme gonderilemedi", error);
-      setErrorMessage("Degerlendirme gonderilemedi. Alanlari kontrol edip tekrar dene.");
+      console.error("Değerlendirme gönderilemedi", error);
+      setErrorMessage("Değerlendirme gönderilemedi. Alanları kontrol edip tekrar dene.");
     } finally {
       setSaving(false);
     }
@@ -143,19 +143,19 @@ export default function EvaluatePage() {
           <div>
             <h1 className="text-3xl font-black text-slate-900">Oturum Degerlendirmesi</h1>
             <p className="mt-1 max-w-2xl text-sm font-medium text-muted-foreground">
-              Tamamlanan ve yoklamasi alinan oturumlar icin anonim degerlendirme formunu doldurabilirsin.
+              Tamamlanan ve yoklamasi alınan oturumlar için anonim değerlendirme formunu doldurabilirsin.
             </p>
           </div>
         </div>
         <div className="grid w-full grid-cols-2 gap-3 lg:max-w-sm">
           <div className="rounded-2xl border border-border bg-background/70 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Acik Form</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Açık Form</p>
             <p className="mt-2 text-2xl font-black text-slate-900">
               {programs.filter((program) => !program.feedback_submitted && program.feedback_open !== false).length}
             </p>
           </div>
           <div className="rounded-2xl border border-border bg-background/70 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Gonderilen</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Gönderilen</p>
             <p className="mt-2 text-2xl font-black text-slate-900">{programs.filter((program) => program.feedback_submitted).length}</p>
           </div>
         </div>
@@ -183,7 +183,7 @@ export default function EvaluatePage() {
           <div className="space-y-4">
             {programs.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">
-                Degerlendirmeye acik oturum kaydi bulunmuyor.
+                Degerlendirmeye açık oturum kaydı bulunmuyor.
               </div>
             ) : (
               programs.map((program) => (
@@ -215,7 +215,7 @@ export default function EvaluatePage() {
                           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                           : "border-blue-200 bg-blue-50 text-blue-700"
                       }`}>
-                        {program.feedback_submitted ? "Gonderildi" : "Bekliyor"}
+                        {program.feedback_submitted ? "Gönderildi" : "Bekliyor"}
                       </span>
                       {program.feedback_deadline_at && !program.feedback_submitted ? (
                         <span className="text-[10px] text-muted-foreground">
@@ -239,19 +239,19 @@ export default function EvaluatePage() {
         </div>
 
         <div className="glass-panel rounded-3xl p-6 md:p-8">
-          <h3 className="mb-4 text-lg font-bold text-slate-900">Secili Oturum Formu</h3>
+          <h3 className="mb-4 text-lg font-bold text-slate-900">Seçili Oturum Formu</h3>
           {!selectedProgram ? (
             <div className="rounded-2xl border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground">
-              Formu doldurmak icin soldan bir oturum sec.
+              Formu doldurmak için soldan bir oturum seç.
             </div>
           ) : selectedProgram.feedback_submitted ? (
             <div className="rounded-2xl border border-primary/20 bg-primary/10 p-6 text-sm text-muted-foreground">
-              Bu oturum icin degerlendirme zaten gonderildi.
-              {selectedProgram.submitted_at ? ` Gonderim zamani: ${formatIstanbulDateTime(selectedProgram.submitted_at)}` : ""}
+              Bu oturum için değerlendirme zaten gönderildi.
+              {selectedProgram.submitted_at ? ` Gönderim zamanı: ${formatIstanbulDateTime(selectedProgram.submitted_at)}` : ""}
             </div>
           ) : selectedProgram.feedback_open === false ? (
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-6 text-sm font-medium text-amber-700">
-              Bu oturum icin degerlendirme suresi doldu.
+              Bu oturum için değerlendirme süresi doldu.
             </div>
           ) : (
             <form className="space-y-6" onSubmit={handleSubmit}>
@@ -346,7 +346,7 @@ export default function EvaluatePage() {
                 className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                Degerlendirmeyi Gonder
+                Değerlendirmeyi Gönder
               </button>
             </form>
           )}

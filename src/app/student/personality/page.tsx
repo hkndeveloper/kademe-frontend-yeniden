@@ -52,8 +52,8 @@ export default function StudentPersonalityPage() {
 
         setAnswers(initialAnswers);
       } catch (error) {
-        console.error("Kisilik testi yuklenemedi", error);
-        setErrorMessage("Kisilik testi yuklenemedi.");
+        console.error("Kişilik testi yüklenemedi", error);
+        setErrorMessage("Kişilik testi yüklenemedi.");
       } finally {
         setLoading(false);
       }
@@ -81,10 +81,10 @@ export default function StudentPersonalityPage() {
       });
 
       setSavedResult(response.data.result);
-      setMessage(response.data.message || "Kisilik analizi kaydedildi.");
+      setMessage(response.data.message || "Kişilik analizi kaydedildi.");
     } catch (error) {
-      console.error("Kisilik analizi kaydedilemedi", error);
-      setErrorMessage("Kisilik analizi kaydedilemedi.");
+      console.error("Kişilik analizi kaydedilemedi", error);
+      setErrorMessage("Kişilik analizi kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -105,8 +105,8 @@ export default function StudentPersonalityPage() {
           <BrainCircuit className="h-7 w-7" />
         </div>
         <div>
-          <h1 className="text-3xl font-black text-slate-900">Kisilik Analizi</h1>
-          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Soru seti ve kaydetme akisi artik backend&apos;e bagli</p>
+          <h1 className="text-3xl font-black text-slate-900">Kişilik Analizi</h1>
+          <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Soru seti ve kaydetme akışı artık backend&apos;e bağlı</p>
         </div>
       </div>
 
@@ -115,7 +115,7 @@ export default function StudentPersonalityPage() {
           <div className="mb-6 flex items-start gap-4 rounded-2xl border border-primary/20 bg-primary/10 p-5 text-primary">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
             <p className="text-sm leading-relaxed">
-              Bu testin sonucu profil verisine kaydedilir ve KPD surecinde yetkili uzmanlar tarafindan gorulebilir.
+              Bu testin sonucu profil verisine kaydedilir ve KPD surecinde yetkili uzmanlar tarafından gorulebilir.
             </p>
           </div>
 
@@ -159,7 +159,7 @@ export default function StudentPersonalityPage() {
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Sonuclari Kaydet
+            Sonuçları Kaydet
           </button>
         </form>
 
@@ -167,11 +167,11 @@ export default function StudentPersonalityPage() {
           <div className="glass-panel rounded-3xl p-6">
             <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
               <CheckCircle2 className="h-5 w-5 text-primary" />
-              Kayitli Sonuc
+              Kayıtlı Sonuç
             </h3>
 
             {!savedResult ? (
-              <div className="text-sm text-muted-foreground">Henuz kaydedilmis bir kisilik analizi sonucu bulunmuyor.</div>
+              <div className="text-sm text-muted-foreground">Henüz kaydedilmis bir kişilik analizi sonucu bulunmuyor.</div>
             ) : (
               <div className="space-y-4 text-sm text-muted-foreground">
                 <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
@@ -179,11 +179,11 @@ export default function StudentPersonalityPage() {
                   <div className="mt-2 text-lg font-bold text-slate-900">{savedResult.top_category || "Belirtilmemis"}</div>
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                  <div className="text-xs uppercase tracking-widest text-primary">Ozet</div>
-                  <div className="mt-2">{savedResult.summary || "Ozet bulunmuyor."}</div>
+                  <div className="text-xs uppercase tracking-widest text-primary">Özet</div>
+                  <div className="mt-2">{savedResult.summary || "Özet bulunmuyor."}</div>
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                  <div className="text-xs uppercase tracking-widest text-primary">Son Kayit</div>
+                  <div className="text-xs uppercase tracking-widest text-primary">Son Kayıt</div>
                   <div className="mt-2">
                     {savedResult.completed_at ? new Date(savedResult.completed_at).toLocaleString("tr-TR") : "Tarih yok"}
                   </div>
@@ -195,7 +195,7 @@ export default function StudentPersonalityPage() {
           <div className="glass-panel rounded-3xl p-6">
             <h3 className="mb-4 text-lg font-bold text-slate-900">Skorlar</h3>
             {!savedResult?.scores ? (
-              <div className="text-sm text-muted-foreground">Kayitli skor bulunmuyor.</div>
+              <div className="text-sm text-muted-foreground">Kayıtlı skor bulunmuyor.</div>
             ) : (
               <div className="space-y-3">
                 {Object.entries(savedResult.scores).map(([key, value]) => (
