@@ -1401,7 +1401,7 @@ export default function AdminCalendarPage() {
               ) : null}
 
               <div className="mt-6 flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-500">{createMode === "meeting" ? "Toplantı davetlilerin yaklaşan kayitlarinda görünür." : "Saat cakismalari backend tarafinda tüm projeler için kontrol edilir."}</p>
+                <p className="text-xs text-slate-500">{createMode === "meeting" ? "Toplantı davetlilerin yaklaşan kayitlarinda görünür." : "Ayni saatlerde birden fazla program planlanabilir. Adayin cakisan program başvurusu ayrica kontrol edilir."}</p>
                 <button
                   type="submit"
                   disabled={

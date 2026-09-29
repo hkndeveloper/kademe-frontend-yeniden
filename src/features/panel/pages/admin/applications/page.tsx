@@ -22,7 +22,7 @@ import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { defaultPeriodIdForProject, periodHasWriteCapability, periodOptionById, ProjectPeriodFilters, type PeriodOption } from "@/components/shared/ProjectPeriodFilters";
 import { usePermissions } from "@/hooks/usePermissions";
-import { formatIstanbulDate, formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
+import { formatIstanbulDateTime, withIstanbulOffset } from "@/lib/istanbul-time";
 import { panelStatusChipClass } from "@/lib/status-style";
 
 interface Project {
@@ -44,6 +44,10 @@ interface Application {
     id: number;
     name: string;
   } | null;
+  program?: {
+    id: number;
+    title: string;
+  } | null;
   projectId: number;
   projectName: string;
   hasInterview: boolean;
@@ -52,12 +56,24 @@ interface Application {
   interview_at?: string | null;
   evaluation_note?: string | null;
   rejection_reason?: string | null;
+  auto_rejected?: boolean;
+  auto_rejection_reason?: string | null;
+  screening_review_reason?: string | null;
+  auto_rejection_corrected_at?: string | null;
+  auto_rejection_corrected_by_name?: string | null;
+  auto_rejection_correction_reason?: string | null;
+  waitlist_order?: number | null;
+  waitlist_invited_at?: string | null;
+  waitlist_invitation_expires_at?: string | null;
+  waitlist_invitation_delivery_status?: string | null;
   available_statuses?: ActionStatus[];
   workflow?: {
     has_interview: boolean;
     next_step?: string | null;
   };
   form_entries?: FormEntry[];
+  consent_text_snapshot?: string | null;
+  consent_accepted_at?: string | null;
 }
 
 interface FormEntryFile {
@@ -87,17 +103,33 @@ interface ApplicationApiItem {
     id: number;
     name: string;
   } | null;
+  program?: {
+    id: number;
+    title: string;
+  } | null;
   status: string;
   created_at: string;
   interview_at?: string | null;
   evaluation_note?: string | null;
   rejection_reason?: string | null;
+  auto_rejected?: boolean;
+  auto_rejection_reason?: string | null;
+  screening_review_reason?: string | null;
+  auto_rejection_corrected_at?: string | null;
+  auto_rejection_corrected_by_name?: string | null;
+  auto_rejection_correction_reason?: string | null;
+  waitlist_order?: number | null;
+  waitlist_invited_at?: string | null;
+  waitlist_invitation_expires_at?: string | null;
+  waitlist_invitation_delivery_status?: string | null;
   available_statuses?: ActionStatus[];
   workflow?: {
     has_interview: boolean;
     next_step?: string | null;
   };
   form_entries?: FormEntry[];
+  consent_text_snapshot?: string | null;
+  consent_accepted_at?: string | null;
   project?: {
     id: number;
     name: string;
@@ -114,6 +146,16 @@ interface ApplicationPagination {
   to?: number | null;
 }
 
+interface DecisionResponse {
+  follow_up?: {
+    status_email_sent?: boolean | null;
+    password_link_sent?: boolean | null;
+    next_waitlist_checked?: boolean | null;
+  };
+}
+
+type RetryType = "status" | "password";
+
 type ActionStatus =
   | "accepted"
   | "rejected"
@@ -124,13 +166,13 @@ type ActionStatus =
 
 const statusOptions = [
   { value: "all", label: "Tüm durumlar" },
-  { value: "pending", label: "Bekleyen" },
-  { value: "accepted", label: "Kabul Edilen" },
-  { value: "waitlisted", label: "Yedek" },
-  { value: "interview_planned", label: "Mülakat Planlandı" },
-  { value: "interview_passed", label: "Mülakat Gecti" },
-  { value: "interview_failed", label: "Mülakat Olumsuz" },
-  { value: "rejected", label: "Reddedilen" },
+  { value: "pending", label: "Değerlendirme bekliyor" },
+  { value: "accepted", label: "Kabul edildi" },
+  { value: "waitlisted", label: "Yedek liste" },
+  { value: "interview_planned", label: "Mülakat planlandı" },
+  { value: "interview_passed", label: "Mülakat olumlu" },
+  { value: "interview_failed", label: "Mülakat olumsuz" },
+  { value: "rejected", label: "Reddedildi" },
 ];
 
 const quickActions: Array<{ label: string; status: ActionStatus; tone: string }> = [
@@ -198,7 +240,7 @@ function mapApplications(items: ApplicationApiItem[]): Application[] {
     ...item,
     projectId: item.project?.id ?? 0,
     projectName: item.project?.name ?? "-",
-    hasInterview: Boolean(item.project?.has_interview),
+    hasInterview: item.workflow?.has_interview ?? Boolean(item.project?.has_interview),
   }));
 }
 
@@ -222,6 +264,7 @@ export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [retryNeeded, setRetryNeeded] = useState<Record<number, RetryType[]>>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [projectFilter, setProjectFilter] = useState(() => {
     if (typeof window === "undefined") return "all";
@@ -233,7 +276,10 @@ export default function AdminApplicationsPage() {
   });
   const [statusFilter, setStatusFilter] = useState("pending");
   const [evaluationNote, setEvaluationNote] = useState<Record<number, string>>({});
+  const [rejectionReason, setRejectionReason] = useState<Record<number, string>>({});
+  const [correctionReason, setCorrectionReason] = useState<Record<number, string>>({});
   const [interviewPlanAt, setInterviewPlanAt] = useState<Record<number, string>>({});
+  const [waitlistOrderDraft, setWaitlistOrderDraft] = useState<Record<number, string>>({});
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -310,29 +356,58 @@ export default function AdminApplicationsPage() {
   }, [fetchApplications]);
 
   const availableActionStatuses = (application: Application): ActionStatus[] =>
-    computeAvailableActionStatuses(application);
+    application.available_statuses ?? computeAvailableActionStatuses(application);
+
+  const handleSaveEvaluationNote = async (application: Application) => {
+    const note = (evaluationNote[application.id] ?? "").trim();
+    if (!note) {
+      setErrorMessage("Kaydetmek için iç değerlendirme notunu yazın.");
+      return;
+    }
+    setActionLoading(application.id);
+    setMessage(null);
+    setErrorMessage(null);
+    try {
+      await api.put(`/panel/applications/${application.id}/evaluation-note`, { evaluation_note: note });
+      setApplications((current) => current.map((item) => item.id === application.id ? { ...item, evaluation_note: note } : item));
+      setEvaluationNote((current) => { const next = { ...current }; delete next[application.id]; return next; });
+      setMessage("İç değerlendirme notu kaydedildi. Adaya bildirim gönderilmedi.");
+    } catch (error) {
+      console.error("İç değerlendirme notu kaydedilemedi", error);
+      setErrorMessage(isAxiosError(error) ? error.response?.data?.message || "İç değerlendirme notu kaydedilemedi." : "İç değerlendirme notu kaydedilemedi.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const handleStatusChange = async (id: number, status: ActionStatus) => {
     const note = evaluationNote[id]?.trim();
+    const candidateReason = rejectionReason[id]?.trim();
+    if (status === "rejected" && !candidateReason) {
+      setErrorMessage("Ret kararında adaya gösterilecek gerekçeyi ayrı alana yazın.");
+      return;
+    }
     const interviewAt = interviewPlanAt[id];
     setActionLoading(id);
     setMessage(null);
     setErrorMessage(null);
 
     try {
+      let result;
       if (status === "waitlisted") {
-        await api.post(`/panel/applications/${id}/waitlist`, {
+        result = await api.post<DecisionResponse>(`/panel/applications/${id}/waitlist`, {
           evaluation_note: note || null,
         });
       } else if (status === "interview_planned") {
-        await api.put(`/panel/applications/${id}/interview`, {
+        result = await api.put<DecisionResponse>(`/panel/applications/${id}/interview`, {
           interview_at: withIstanbulOffset(interviewAt),
+          evaluation_note: note || null,
         });
       } else {
-        await api.put(`/panel/applications/${id}/status`, {
+        result = await api.put<DecisionResponse>(`/panel/applications/${id}/status`, {
           status,
           evaluation_note: note || null,
-          rejection_reason: status === "rejected" ? note || "Yönetim degerlendirmesi sonucunda reddedildi." : null,
+          rejection_reason: status === "rejected" ? candidateReason : null,
         });
       }
 
@@ -345,7 +420,7 @@ export default function AdminApplicationsPage() {
             interview_at: status === "interview_planned" && interviewAt ? withIstanbulOffset(interviewAt) : application.interview_at,
             evaluation_note: note || application.evaluation_note,
             rejection_reason:
-              status === "rejected" ? note || application.rejection_reason || "Yönetim degerlendirmesi sonucunda reddedildi." : application.rejection_reason,
+              status === "rejected" ? candidateReason : application.rejection_reason,
             workflow: {
               has_interview: application.hasInterview,
               next_step: computeWorkflowNextStep({
@@ -353,12 +428,29 @@ export default function AdminApplicationsPage() {
                 hasInterview: application.hasInterview,
               }),
             },
+            available_statuses: computeAvailableActionStatuses({ status, hasInterview: application.hasInterview }),
           };
           return next;
         })
       );
 
-      setMessage("Başvuru durumu başarıyla güncellendi.");
+      setEvaluationNote((current) => { const next = { ...current }; delete next[id]; return next; });
+      if (status === "rejected") {
+        setRejectionReason((current) => { const next = { ...current }; delete next[id]; return next; });
+      }
+
+      const followUp = result.data.follow_up;
+      const pending: RetryType[] = [];
+      if (followUp?.status_email_sent === false) pending.push("status");
+      if (followUp?.password_link_sent === false) pending.push("password");
+      setRetryNeeded((prev) => ({ ...prev, [id]: pending }));
+      await fetchApplications();
+      setMessage("Başvuru kararı kaydedildi.");
+      if (pending.length > 0) {
+        setErrorMessage("Başvuru kararı kaydedildi; e-posta gönderilemedi. Aşağıdaki düğmeyle yalnız bildirimi yeniden deneyebilirsiniz.");
+      } else if (followUp?.next_waitlist_checked === false) {
+        setErrorMessage("Ret kararı kaydedildi; sıradaki yedek için davet kontrolü tamamlanamadı.");
+      }
     } catch (error) {
       console.error("Başvuru durumu güncellenemedi", error);
       const responseMessage = isAxiosError(error)
@@ -368,6 +460,112 @@ export default function AdminApplicationsPage() {
             .join(" ")
         : null;
       setErrorMessage(responseMessage || "Başvuru durumu güncellenirken hata oluştu.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReopenAutomaticRejection = async (application: Application) => {
+    const reason = correctionReason[application.id]?.trim() ?? "";
+    if (reason.length < 10) {
+      setErrorMessage("Düzeltme nedenini en az 10 karakterle açıklayın.");
+      return;
+    }
+    setActionLoading(application.id);
+    setMessage(null);
+    setErrorMessage(null);
+    try {
+      const result = await api.post<DecisionResponse>(`/panel/applications/${application.id}/reopen-auto-rejection`, { reason });
+      setCorrectionReason((current) => { const next = { ...current }; delete next[application.id]; return next; });
+      setRetryNeeded((current) => ({ ...current, [application.id]: result.data.follow_up?.status_email_sent === false ? ["status"] : [] }));
+      setMessage("Otomatik ret düzeltildi; başvuru yeniden değerlendirmeye alındı.");
+      if (result.data.follow_up?.status_email_sent === false) {
+        setErrorMessage("Karar kaydedildi; adaya e-posta gönderilemedi. Yalnız bildirimi yeniden deneyebilirsiniz.");
+      }
+      setStatusFilter("pending");
+      setPage(1);
+    } catch (error) {
+      const detail = isAxiosError(error) ? Object.values(error.response?.data?.errors ?? {}).flat().join(" ") || error.response?.data?.message : null;
+      setErrorMessage(detail || "Otomatik ret düzeltilemedi.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleNotificationRetry = async (id: number, type: RetryType) => {
+    setActionLoading(id);
+    setErrorMessage(null);
+    try {
+      const response = await api.post<{ sent: boolean; message: string }>(`/panel/applications/${id}/notification-retry`, { type });
+      if (response.data.sent) {
+        setRetryNeeded((prev) => ({ ...prev, [id]: (prev[id] ?? []).filter((item) => item !== type) }));
+        setMessage("Başvuru kararı değişmeden bildirim yeniden gönderildi.");
+      } else {
+        setErrorMessage(response.data.message);
+      }
+    } catch (error) {
+      setErrorMessage(isAxiosError(error) ? error.response?.data?.message ?? "Bildirim gönderilemedi." : "Bildirim gönderilemedi.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleWaitlistInvitationRetry = async (id: number) => {
+    setActionLoading(id);
+    setErrorMessage(null);
+    try {
+      const response = await api.post<{
+        invitation_email_sent: boolean;
+        message: string;
+        application: { waitlist_invitation_delivery_status: string };
+      }>(`/panel/applications/${id}/waitlist-invite-retry`);
+      setApplications((prev) => prev.map((application) => application.id === id
+        ? { ...application, waitlist_invitation_delivery_status: response.data.application.waitlist_invitation_delivery_status }
+        : application));
+      if (response.data.invitation_email_sent) {
+        setMessage("Yedek daveti e-postası gönderildi; cevap süresi başladı.");
+      } else {
+        setErrorMessage("Yedek daveti kaydı korundu; e-posta gönderilemedi ve cevap süresi başlamadı.");
+      }
+    } catch (error) {
+      setErrorMessage(isAxiosError(error) ? error.response?.data?.message ?? "Davet e-postası gönderilemedi." : "Davet e-postası gönderilemedi.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleWaitlistAction = async (application: Application, action: "order" | "invite" | "refresh") => {
+    const order = Number(waitlistOrderDraft[application.id] ?? application.waitlist_order ?? 1);
+    if (action === "order" && (!Number.isInteger(order) || order < 1)) {
+      setErrorMessage("Yedek sıra numarası 1 veya daha büyük bir tam sayı olmalı.");
+      return;
+    }
+    setActionLoading(application.id);
+    setMessage(null);
+    setErrorMessage(null);
+    try {
+      let successMessage: string;
+      let warningMessage: string | null = null;
+      if (action === "order") {
+        await api.put(`/panel/applications/${application.id}/waitlist-order`, { waitlist_order: order });
+        successMessage = "Yedek sırası güncellendi.";
+      } else if (action === "invite") {
+        const result = await api.post<{ invitation_email_sent: boolean; message: string }>(`/panel/applications/${application.id}/waitlist-invite`);
+        successMessage = result.data.message;
+        if (!result.data.invitation_email_sent) warningMessage = "Davet e-postası gönderilemedi; adayın cevap süresi başlamadı.";
+      } else {
+        const result = await api.post<{ expired_count: number; auto_invited_application_id: number | null }>(`/panel/applications/${application.id}/waitlist-refresh`);
+        successMessage = result.data.auto_invited_application_id
+          ? `${result.data.expired_count} davetin süresi doldu; sıradaki adaya davet gönderildi.`
+          : `${result.data.expired_count} davetin süresi doldu; gönderilecek yeni davet yok.`;
+      }
+      await fetchApplications();
+      if (action === "order") setWaitlistOrderDraft((current) => { const next = { ...current }; delete next[application.id]; return next; });
+      setMessage(successMessage);
+      if (warningMessage) setErrorMessage(warningMessage);
+    } catch (error) {
+      const detail = isAxiosError(error) ? Object.values(error.response?.data?.errors ?? {}).flat().join(" ") || error.response?.data?.message : null;
+      setErrorMessage(detail || "Yedek liste işlemi tamamlanamadı.");
     } finally {
       setActionLoading(null);
     }
@@ -423,7 +621,7 @@ export default function AdminApplicationsPage() {
               project_id: projectFilter !== "all" ? projectFilter : undefined,
               period_id: periodFilter !== "all" ? periodFilter : undefined,
               status: statusFilter !== "all" ? statusFilter : undefined,
-              search: searchTerm || undefined,
+              search: searchTerm.trim() || undefined,
             }}
           />
         </PermissionGate>
@@ -499,6 +697,12 @@ export default function AdminApplicationsPage() {
           {applications.map((application, index) => {
             const applicationPeriod = periodOptionById(projects, application.period?.id);
             const canResolveApplication = periodHasWriteCapability(applicationPeriod, "resolve_operations");
+            const canSaveEvaluationNote = canAccessProject("applications.update_status", application.projectId);
+            const canEditEvaluationNote = canSaveEvaluationNote
+              || canAccessProject("applications.plan_interview", application.projectId)
+              || canAccessProject("applications.waitlist.manage", application.projectId);
+            const noteDraft = evaluationNote[application.id];
+            const noteChanged = noteDraft !== undefined && noteDraft.trim() !== (application.evaluation_note ?? "").trim();
             return (
             <motion.div
               key={application.id}
@@ -524,7 +728,13 @@ export default function AdminApplicationsPage() {
                         {application.period?.name && (
                           <span className="panel-chip">{application.period.name}</span>
                         )}
+                        {application.program?.title && (
+                          <span className="panel-chip">Program: {application.program.title}</span>
+                        )}
                         <span className={`panel-chip ${panelStatusChipClass(application.status)}`}>{statusLabel(application.status)}</span>
+                        {application.status === "pending" && application.screening_review_reason && (
+                          <span className="panel-chip panel-chip-warning">Ön inceleme gerekli</span>
+                        )}
                         {application.hasInterview ? (
                           <span className="panel-chip panel-chip-warning">Akış: Mulakatli</span>
                         ) : (
@@ -537,7 +747,7 @@ export default function AdminApplicationsPage() {
                       {application.user.phone && <div>{application.user.phone}</div>}
                       <div className="flex items-center gap-1 font-bold">
                         <Calendar className="h-4 w-4" />
-                        {formatIstanbulDate(application.created_at)}
+                        {formatIstanbulDateTime(application.created_at)}
                       </div>
                     </div>
                   </div>
@@ -546,7 +756,7 @@ export default function AdminApplicationsPage() {
                 <div className="grid w-full gap-3 xl:max-w-xl">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     <MessageSquareText className="h-4 w-4" />
-                    Değerlendirme Notu
+                    İç değerlendirme notu
                   </div>
                   <textarea
                     rows={2}
@@ -557,9 +767,39 @@ export default function AdminApplicationsPage() {
                         [application.id]: event.target.value,
                       }))
                     }
-                    placeholder="Mülakat notu, yedek gerekcesi veya ret açıklaması yazın..."
+                    maxLength={5000}
+                    disabled={!canEditEvaluationNote || !canResolveApplication || actionLoading === application.id}
+                    placeholder="Yalnız yetkililerin göreceği değerlendirme notunu yazın..."
                     className="panel-textarea min-h-20"
                   />
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>Bu not adaya gönderilmez. Karar verirken yazılı not da kaydedilir.</span>
+                    {canSaveEvaluationNote ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleSaveEvaluationNote(application)}
+                        disabled={!canResolveApplication || actionLoading === application.id || !noteChanged || !noteDraft?.trim()}
+                        className="panel-card-action panel-card-action-info disabled:opacity-40"
+                      >
+                        Notu Kaydet
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {availableActionStatuses(application).includes("rejected") && canSaveEvaluationNote ? (
+                    <label className="text-xs font-semibold text-slate-700">
+                      Adaya gösterilecek ret gerekçesi
+                      <textarea
+                        rows={2}
+                        value={rejectionReason[application.id] ?? ""}
+                        onChange={(event) => setRejectionReason((current) => ({ ...current, [application.id]: event.target.value }))}
+                        maxLength={2000}
+                        disabled={!canResolveApplication || actionLoading === application.id}
+                        placeholder="Ret kararında adayın göreceği açıklamayı yazın..."
+                        className="panel-textarea mt-2 min-h-20"
+                      />
+                    </label>
+                  ) : null}
 
                   {application.hasInterview && availableActionStatuses(application).includes("interview_planned") ? (
                     <input
@@ -639,10 +879,135 @@ export default function AdminApplicationsPage() {
                     )}
                   </div>
 
+                  {application.status === "rejected" && application.auto_rejected && !application.auto_rejection_corrected_at && canAccessProject("applications.update_status", application.projectId) && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                      <p className="font-bold">Otomatik ret hatalıysa yeniden incelemeye aç</p>
+                      <p className="mt-1">İlk ret gerekçesi saklanır. Bu işlem kabul kararı vermez; başvuru yeniden değerlendirilir.</p>
+                      <textarea
+                        value={correctionReason[application.id] ?? ""}
+                        onChange={(event) => setCorrectionReason((current) => ({ ...current, [application.id]: event.target.value }))}
+                        maxLength={2000}
+                        rows={2}
+                        placeholder="Düzeltmenin nedenini yazın (en az 10 karakter)"
+                        className="panel-textarea mt-3"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleReopenAutomaticRejection(application)}
+                        disabled={!canResolveApplication || actionLoading === application.id || (correctionReason[application.id]?.trim().length ?? 0) < 10}
+                        className="panel-card-action panel-card-action-info mt-3 disabled:opacity-40"
+                      >
+                        Yeniden incelemeye aç
+                      </button>
+                    </div>
+                  )}
+
+                  {(application.status !== "pending" || application.auto_rejection_corrected_at) && canAccessProject("applications.update_status", application.projectId) && (
+                    <div className="flex flex-wrap gap-2">
+                      {(["status", ...(application.status === "accepted" ? ["password"] : [])] as RetryType[]).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => void handleNotificationRetry(application.id, type)}
+                          disabled={actionLoading === application.id}
+                          className="panel-card-action panel-card-action-info disabled:opacity-40"
+                        >
+                          {type === "status" ? "Durum e-postasını yeniden gönder" : "Şifre bağlantısını yeniden gönder"}
+                          {(retryNeeded[application.id] ?? []).includes(type) ? " (gönderilemedi)" : ""}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {application.status === "waitlisted" && (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+                      <p className="font-bold">Yedek liste · Sıra {application.waitlist_order ?? "belirlenmedi"}</p>
+                      {application.waitlist_invitation_delivery_status === "sent" && application.waitlist_invitation_expires_at && (
+                        <p className="mt-1">Davet gönderildi. Son yanıt: {formatIstanbulDateTime(application.waitlist_invitation_expires_at)}</p>
+                      )}
+                      {application.waitlist_invitation_delivery_status === "expired" && (
+                        <p className="mt-1">Önceki davetin süresi doldu. Bu aday otomatik olarak yeniden çağrılmaz.</p>
+                      )}
+                      {canAccessProject("applications.waitlist.manage", application.projectId) && (
+                        <div className="mt-3 flex flex-wrap items-end gap-2">
+                          <label className="text-xs font-semibold">
+                            Sıraya taşı
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={waitlistOrderDraft[application.id] ?? String(application.waitlist_order ?? 1)}
+                              onChange={(event) => setWaitlistOrderDraft((current) => ({ ...current, [application.id]: event.target.value }))}
+                              disabled={!canResolveApplication || actionLoading === application.id}
+                              className="panel-control mt-1 w-24"
+                            />
+                          </label>
+                          <button type="button" onClick={() => void handleWaitlistAction(application, "order")}
+                            disabled={!canResolveApplication || actionLoading === application.id}
+                            className="panel-card-action panel-card-action-info disabled:opacity-40">Sırayı kaydet</button>
+                          {(!application.waitlist_invited_at || application.waitlist_invitation_delivery_status === "expired") && (
+                            <button type="button" onClick={() => void handleWaitlistAction(application, "invite")}
+                              disabled={!canResolveApplication || actionLoading === application.id}
+                              className="panel-card-action panel-card-action-info disabled:opacity-40">Davet gönder</button>
+                          )}
+                          <button type="button" onClick={() => void handleWaitlistAction(application, "refresh")}
+                            disabled={!canResolveApplication || actionLoading === application.id}
+                            className="panel-card-action panel-card-action-info disabled:opacity-40">Süresi dolanları kontrol et</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {application.status === "waitlisted" && application.waitlist_invitation_delivery_status === "failed" && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      Davet e-postası gönderilemedi. Adayın cevap süresi henüz başlamadı.
+                      {canAccessProject("applications.waitlist.manage", application.projectId) && (
+                        <button
+                          type="button"
+                          onClick={() => void handleWaitlistInvitationRetry(application.id)}
+                          disabled={!canResolveApplication || actionLoading === application.id}
+                          className="panel-card-action panel-card-action-info mt-3 disabled:opacity-40"
+                        >
+                          Yalnız davet e-postasını yeniden gönder
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {application.status === "waitlisted" && application.waitlist_invitation_delivery_status === "pending" && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      Davet e-postasının sonucu henüz kesinleşmedi. Adayın cevap süresi başlamadı; gönderim durumu kontrol edilmeli.
+                    </div>
+                  )}
+
+                  {application.status === "waitlisted" && application.waitlist_invitation_delivery_status === "unknown" && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      Davet e-postasının sonucu doğrulanamadı. Cevap süresi başlamadı. Yeniden göndermeden önce gönderim kaydı kontrol edilmeli.
+                    </div>
+                  )}
+
                   {application.rejection_reason && (
                     <div className="mt-2 flex items-center gap-2 text-xs font-bold text-amber-500">
                       <Clock className="h-4 w-4" />
                       Son ret/değerlendirme notu: {application.rejection_reason}
+                    </div>
+                  )}
+
+                  {application.screening_review_reason && (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                      <strong>{application.status === "pending" ? "Koordinatör incelemesi:" : "İlk ön inceleme nedeni:"}</strong> {application.screening_review_reason}
+                    </div>
+                  )}
+
+                  {application.auto_rejection_reason && (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                      <strong>İlk otomatik ret gerekçesi:</strong> {application.auto_rejection_reason}
+                      {application.auto_rejection_corrected_at && (
+                        <p className="mt-2">
+                          {formatIstanbulDateTime(application.auto_rejection_corrected_at)} tarihinde {application.auto_rejection_corrected_by_name || "yetkili kişi"} tarafından yeniden incelemeye alındı.
+                          {application.auto_rejection_correction_reason && ` Düzeltme nedeni: ${application.auto_rejection_correction_reason}`}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -695,6 +1060,17 @@ export default function AdminApplicationsPage() {
                   </div>
                 </div>
               ) : null}
+              <details className="panel-card-muted mt-4">
+                <summary className="cursor-pointer text-sm font-bold text-slate-900">Başvuru koşulu onayı</summary>
+                {application.consent_accepted_at && application.consent_text_snapshot ? (
+                  <div className="mt-3 text-sm text-slate-700">
+                    <p>Kabul zamanı: {formatIstanbulDateTime(application.consent_accepted_at)}</p>
+                    <p className="mt-2 whitespace-pre-line">{application.consent_text_snapshot}</p>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">Bu eski başvuru için onay kaydı bulunmuyor.</p>
+                )}
+              </details>
             </motion.div>
             );
           })}

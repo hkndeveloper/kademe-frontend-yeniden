@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { isAxiosError } from "axios";
 import { ClipboardList, Loader2, Pencil, Plus, Trash2, UserCheck, X } from "lucide-react";
 import api from "@/lib/api/axios";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -10,6 +11,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { toIstanbulDateTimeLocal, withIstanbulOffset } from "@/lib/istanbul-time";
 import { panelStatusActionClass, panelStatusChipClass } from "@/lib/status-style";
 import { optionalPanelRequest } from "@/lib/panel-load-state";
+import { VolunteerApplicationConsentReceipt } from "@/components/shared/VolunteerApplicationConsent";
 
 type Project = {
   id: number;
@@ -24,6 +26,10 @@ type VolunteerApplication = {
   motivation_text?: string | null;
   notes?: string | null;
   evaluation_note?: string | null;
+  consent_text_snapshot?: string | null;
+  consent_accepted_at?: string | null;
+  receipt_email_status?: "pending" | "sent" | "failed" | "unknown" | null;
+  decision_email_status?: "pending" | "sent" | "failed" | "unknown" | null;
   user?: { id: number; name: string; surname: string; email: string; phone?: string | null } | null;
 };
 
@@ -31,6 +37,7 @@ type Opportunity = {
   id: number;
   title: string;
   description?: string | null;
+  consent_text?: string | null;
   location?: string | null;
   start_at?: string | null;
   end_at?: string | null;
@@ -51,6 +58,7 @@ type VolunteerForm = {
   period_id: string;
   title: string;
   description: string;
+  consent_text: string;
   location: string;
   start_at: string;
   end_at: string;
@@ -63,6 +71,7 @@ const emptyForm: VolunteerForm = {
   period_id: "",
   title: "",
   description: "",
+  consent_text: "",
   location: "",
   start_at: "",
   end_at: "",
@@ -83,12 +92,18 @@ const applicationStatusLabel: Record<VolunteerApplication["status"], string> = {
   rejected: "Olumsuz",
 };
 
+function requestErrorMessage(error: unknown, fallback: string): string {
+  if (!isAxiosError<{ message?: string; errors?: Record<string, string[]> }>(error)) return fallback;
+  return Object.values(error.response?.data?.errors ?? {}).flat().find(Boolean) ?? error.response?.data?.message ?? fallback;
+}
+
 function formPayload(form: VolunteerForm) {
   return {
     project_id: Number(form.project_id),
     period_id: form.period_id ? Number(form.period_id) : null,
     title: form.title,
-    description: form.description || null,
+    description: form.description.trim(),
+    consent_text: form.consent_text.trim() || null,
     location: form.location || null,
     start_at: withIstanbulOffset(form.start_at),
     end_at: withIstanbulOffset(form.end_at),
@@ -103,9 +118,12 @@ export default function PanelVolunteerPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [retryingId, setRetryingId] = useState<number | null>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackIsError, setFeedbackIsError] = useState(false);
   const [form, setForm] = useState<VolunteerForm>(emptyForm);
   const [projectFilter, setProjectFilter] = useState(() => {
     if (typeof window === "undefined") return "all";
@@ -196,6 +214,7 @@ export default function PanelVolunteerPage() {
       period_id: opportunity.period_id ? String(opportunity.period_id) : "",
       title: opportunity.title ?? "",
       description: opportunity.description ?? "",
+      consent_text: opportunity.consent_text ?? "",
       location: opportunity.location ?? "",
       start_at: toIstanbulDateTimeLocal(opportunity.start_at),
       end_at: toIstanbulDateTimeLocal(opportunity.end_at),
@@ -215,6 +234,7 @@ export default function PanelVolunteerPage() {
     event.preventDefault();
     setSaving(true);
     setFeedback(null);
+    setFeedbackIsError(false);
     try {
       const payload = formPayload(form);
       const response = editingId
@@ -222,25 +242,29 @@ export default function PanelVolunteerPage() {
         : await api.post<{ message: string; opportunity: Opportunity }>("/panel/volunteer/opportunities", payload);
 
       setOpportunities((current) =>
-        editingId ? current.map((item) => (item.id === editingId ? response.data.opportunity : item)) : [response.data.opportunity, ...current],
+        editingId ? current.map((item) => (item.id === editingId ? { ...item, ...response.data.opportunity } : item)) : [response.data.opportunity, ...current],
       );
       setFeedback(response.data.message);
+      setFeedbackIsError(false);
       closeForm();
     } catch (error) {
       console.error("Gönüllü ilanı kaydedilemedi", error);
-      setFeedback("Gönüllü ilanı kaydedilirken bir hata oluştu.");
+      setFeedback(requestErrorMessage(error, "Gönüllü ilanı kaydedilirken bir hata oluştu."));
+      setFeedbackIsError(true);
     } finally {
       setSaving(false);
     }
   }
 
   async function updateApplication(application: VolunteerApplication, status: VolunteerApplication["status"]) {
+    setUpdatingId(application.id);
     try {
-      const response = await api.put<{ message: string; application: VolunteerApplication }>(
+      const response = await api.put<{ message: string; application: VolunteerApplication; follow_up?: { decision_email_sent?: boolean | null } }>(
         `/panel/volunteer/applications/${application.id}`,
         { status },
       );
       setFeedback(response.data.message);
+      setFeedbackIsError(response.data.follow_up?.decision_email_sent === false);
       setOpportunities((current) =>
         current.map((opportunity) => ({
           ...opportunity,
@@ -251,7 +275,35 @@ export default function PanelVolunteerPage() {
       );
     } catch (error) {
       console.error("Gönüllü başvurusu güncellenemedi", error);
-      setFeedback("Başvuru güncellenirken bir hata oluştu.");
+      setFeedback(requestErrorMessage(error, "Başvuru güncellenirken bir hata oluştu."));
+      setFeedbackIsError(true);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function retryNotification(application: VolunteerApplication, type: "receipt" | "decision") {
+    setRetryingId(application.id);
+    try {
+      const response = await api.post<{ message: string; application: VolunteerApplication; sent: boolean }>(
+        `/panel/volunteer/applications/${application.id}/notification-retry`,
+        { type },
+      );
+      setFeedback(response.data.message);
+      setFeedbackIsError(!response.data.sent);
+      setOpportunities((current) =>
+        current.map((opportunity) => ({
+          ...opportunity,
+          applications: opportunity.applications?.map((item) =>
+            item.id === application.id ? response.data.application : item,
+          ),
+        })),
+      );
+    } catch (error) {
+      setFeedback(requestErrorMessage(error, "Bildirim e-postası yeniden gönderilemedi."));
+      setFeedbackIsError(true);
+    } finally {
+      setRetryingId(null);
     }
   }
 
@@ -262,6 +314,7 @@ export default function PanelVolunteerPage() {
     } catch (error) {
       console.error("Gönüllü ilanı silinemedi", error);
       setFeedback("Ilan silinirken bir hata oluştu.");
+      setFeedbackIsError(true);
     }
   }
 
@@ -300,7 +353,7 @@ export default function PanelVolunteerPage() {
           </div>
         </div>
 
-        {feedback ? <div className="panel-notice panel-notice-success">{feedback}</div> : null}
+        {feedback ? <div className={`panel-notice ${feedbackIsError ? "panel-notice-error" : "panel-notice-success"}`}>{feedback}</div> : null}
 
         {showForm ? (
           <PermissionGate permission="volunteer.manage">
@@ -382,12 +435,25 @@ export default function PanelVolunteerPage() {
                 />
               </div>
               <textarea
+                required
                 rows={3}
                 value={form.description}
                 onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                 placeholder="Açıklama"
                 className="panel-textarea mt-4"
               />
+              <label className="mt-4 block text-sm font-semibold text-slate-800">
+                İlave başvuru koşulu, uyarı veya yaptırım (isteğe bağlı)
+                <textarea
+                  rows={3}
+                  maxLength={20000}
+                  value={form.consent_text}
+                  onChange={(event) => setForm((current) => ({ ...current, consent_text: event.target.value }))}
+                  placeholder="Genel zorunlu koşula bu ilana özgü bir açıklama ekleyebilirsiniz."
+                  className="panel-textarea mt-2"
+                />
+              </label>
+              <p className="mt-2 text-xs text-muted-foreground">Genel başvuru koşulu her gönüllülük başvurusunda ayrıca gösterilir ve onaylanır.</p>
               <div className="panel-modal-footer mt-4">
                 <button type="button" onClick={closeForm} className="panel-button panel-button-secondary h-11 px-5">Iptal</button>
                 <button disabled={saving || !canWriteSelectedOpportunityPeriod} title={!canWriteSelectedOpportunityPeriod ? "Bu dönemde ilan ekleme veya düzenleme işlemi kapalıdır." : undefined} className="panel-button panel-button-primary h-11 px-6 disabled:cursor-not-allowed disabled:opacity-50">
@@ -428,6 +494,8 @@ export default function PanelVolunteerPage() {
                 const opportunityPeriod = periodOptionById(projects, opportunity.period_id);
                 const canWriteOpportunity = !opportunity.period_id || periodHasWriteCapability(opportunityPeriod, "create_operations");
                 const canResolveOpportunity = !opportunity.period_id || periodHasWriteCapability(opportunityPeriod, "resolve_operations");
+                const acceptedCount = opportunity.applications?.filter((application) => application.status === "accepted").length ?? 0;
+                const isQuotaFull = opportunity.quota != null && acceptedCount >= opportunity.quota;
                 return (
                 <div key={opportunity.id} className="panel-list-card">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -437,7 +505,7 @@ export default function PanelVolunteerPage() {
                         <span className={`panel-chip ${panelStatusChipClass(opportunity.status)}`}>{opportunityStatusLabel[opportunity.status]}</span>
                       </div>
                       <div className="mt-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                        {opportunity.project?.name ?? "-"} {opportunity.period?.name ? `/ ${opportunity.period.name}` : ""} / {opportunity.applications_count ?? opportunity.applications?.length ?? 0} başvuru
+                        {opportunity.project?.name ?? "-"} {opportunity.period?.name ? `/ ${opportunity.period.name}` : ""} / {opportunity.applications_count ?? opportunity.applications?.length ?? 0} başvuru / {acceptedCount}{opportunity.quota != null ? `/${opportunity.quota}` : ""} kabul
                       </div>
                       {opportunity.description ? <p className="mt-2 text-sm text-muted-foreground">{opportunity.description}</p> : null}
                     </div>
@@ -468,15 +536,31 @@ export default function PanelVolunteerPage() {
                               <span className={`panel-chip ${panelStatusChipClass(application.status)}`}>{applicationStatusLabel[application.status]}</span>
                             </div>
                             {application.motivation_text ? <p className="mt-2 text-xs text-muted-foreground">{application.motivation_text}</p> : null}
+                            <VolunteerApplicationConsentReceipt application={application} />
+                            {application.receipt_email_status === "failed" && application.status === "pending" ? (
+                              <p className="mt-2 text-xs text-red-700">Başvuru alındı e-postası gönderilemedi.</p>
+                            ) : null}
+                            {application.decision_email_status === "failed" ? (
+                              <p className="mt-2 text-xs text-red-700">Son durum e-postası gönderilemedi; karar kaydedildi.</p>
+                            ) : null}
+                            {application.receipt_email_status === "unknown" || application.receipt_email_status === "pending" || application.decision_email_status === "unknown" || application.decision_email_status === "pending" ? (
+                              <p className="mt-2 text-xs text-amber-700">E-posta gönderimi kontrol edilmeli; kararı tekrar vermeyin.</p>
+                            ) : null}
                           </div>
                           <PermissionGate permission="volunteer.manage" requireProjectAccess={{ permission: "volunteer.manage", projectId: opportunity.project_id }}>
                             <div className="flex flex-wrap gap-2">
                               {(["accepted", "waitlisted", "rejected"] as const).map((status) => (
-                                <button key={status} disabled={!canResolveOpportunity} title={!canResolveOpportunity ? "Bu dönemde başvuru sonuçlandırma işlemi kapalıdır." : undefined} onClick={() => void updateApplication(application, status)} className={`panel-card-action py-1 ${panelStatusActionClass(status)} disabled:cursor-not-allowed disabled:opacity-40`}>
+                                <button key={status} disabled={!canResolveOpportunity || updatingId === application.id || retryingId === application.id || (status === "accepted" && application.status !== "accepted" && isQuotaFull)} title={!canResolveOpportunity ? "Bu dönemde başvuru sonuçlandırma işlemi kapalıdır." : status === "accepted" && application.status !== "accepted" && isQuotaFull ? "Kontenjan dolu; yeni kabul yapılamaz." : undefined} onClick={() => void updateApplication(application, status)} className={`panel-card-action py-1 ${panelStatusActionClass(status)} disabled:cursor-not-allowed disabled:opacity-40`}>
                                   <UserCheck className="h-3 w-3" />
                                   {applicationStatusLabel[status]}
                                 </button>
                               ))}
+                              {application.receipt_email_status === "failed" && application.status === "pending" ? (
+                                <button type="button" disabled={retryingId === application.id || updatingId === application.id} onClick={() => void retryNotification(application, "receipt")} className="panel-card-action py-1 disabled:opacity-40">Alındı e-postasını yeniden gönder</button>
+                              ) : null}
+                              {application.decision_email_status === "failed" ? (
+                                <button type="button" disabled={retryingId === application.id || updatingId === application.id} onClick={() => void retryNotification(application, "decision")} className="panel-card-action py-1 disabled:opacity-40">Durum e-postasını yeniden gönder</button>
+                              ) : null}
                             </div>
                           </PermissionGate>
                         </div>

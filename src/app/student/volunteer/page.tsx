@@ -5,6 +5,7 @@ import { AlertCircle, HeartHandshake, Loader2, Send } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { VolunteerTextAreaField } from "@/components/shared/VolunteerTextAreaField";
+import { VolunteerApplicationConsentField, VolunteerApplicationConsentReceipt } from "@/components/shared/VolunteerApplicationConsent";
 import { statusBadgeClass } from "@/lib/status-style";
 
 interface Project {
@@ -20,6 +21,9 @@ interface VolunteerApplication {
   motivation_text: string;
   notes?: string | null;
   evaluation_note?: string | null;
+  consent_text_snapshot?: string | null;
+  consent_accepted_at?: string | null;
+  receipt_email_status?: "pending" | "sent" | "failed" | "unknown" | null;
   created_at?: string;
   opportunity?: {
     id: number;
@@ -32,6 +36,7 @@ interface VolunteerOpportunity {
   id: number;
   title: string;
   description: string;
+  application_consent_text: string;
   location?: string | null;
   start_at?: string | null;
   end_at?: string | null;
@@ -82,8 +87,10 @@ export default function StudentVolunteerPage() {
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<number | null>(null);
   const [motivationText, setMotivationText] = useState("");
   const [notes, setNotes] = useState("");
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackIsWarning, setFeedbackIsWarning] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -114,16 +121,23 @@ export default function StudentVolunteerPage() {
       return;
     }
 
+    if (!consentAccepted || !selectedOpportunity?.application_consent_text) {
+      setErrorMessage("Başvuru koşullarını okuyup onaylamalısın.");
+      return;
+    }
+
     setSaving(true);
     setFeedback(null);
     setErrorMessage(null);
 
     try {
-      const response = await api.post<{ message: string; application: VolunteerApplication }>(
+      const response = await api.post<{ message: string; application: VolunteerApplication; follow_up?: { receipt_email_sent?: boolean } }>(
         `/volunteer/opportunities/${selectedOpportunityId}/apply`,
         {
           motivation_text: motivationText,
           notes: notes.trim() || null,
+          accepted_terms: true,
+          expected_consent_text: selectedOpportunity.application_consent_text,
         },
       );
 
@@ -136,10 +150,26 @@ export default function StudentVolunteerPage() {
         ),
       );
       setFeedback(response.data.message);
+      setFeedbackIsWarning(response.data.follow_up?.receipt_email_sent === false);
       setMotivationText("");
       setNotes("");
+      setConsentAccepted(false);
     } catch (error) {
       console.error("Gönüllü başvurusu gönderilemedi", error);
+      if (isAxiosError(error) && error.response?.data?.errors?.expected_consent_text) {
+        try {
+          const latest = await api.get<VolunteerResponse>("/volunteer/opportunities");
+          setOpportunities(latest.data.opportunities ?? []);
+          setApplications(latest.data.my_applications ?? []);
+        } catch {
+          setErrorMessage("Başvuru koşulları değişti. Güncel bilgileri görmek için sayfayı yenile.");
+          setConsentAccepted(false);
+          return;
+        }
+        setConsentAccepted(false);
+        setErrorMessage("Başvuru koşulları değişti. Güncel metni yeniden okuyup onayla.");
+        return;
+      }
       setErrorMessage(
         isAxiosError(error) && typeof error.response?.data?.message === "string"
           ? error.response.data.message
@@ -164,9 +194,28 @@ export default function StudentVolunteerPage() {
         </div>
       </div>
 
+      {applications.length > 0 ? (
+        <div className="glass-panel rounded-3xl p-6">
+          <h2 className="text-lg font-bold text-slate-900">Gönüllülük başvurularım</h2>
+          <div className="mt-4 space-y-3">
+            {applications.map((application) => (
+              <div key={application.id} className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-semibold">{application.opportunity?.title || "Gönüllülük ilanı"}</span>
+                  <span className={`rounded-full border px-3 py-1 text-xs ${statusBadgeClass(application.status)}`}>{getStatusLabel(application.status)}</span>
+                </div>
+                {application.receipt_email_status === "failed" ? <p className="mt-2 text-xs text-amber-700">Başvurun kayıtlı; alındı e-postası gönderilemedi.</p> : null}
+                {application.receipt_email_status === "unknown" || application.receipt_email_status === "pending" ? <p className="mt-2 text-xs text-amber-700">Başvurun kayıtlı; e-posta gönderimi kontrol edilmeli.</p> : null}
+                <VolunteerApplicationConsentReceipt application={application} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="glass-panel rounded-3xl p-8 text-sm text-muted-foreground">
         {feedback ? (
-          <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-emerald-200">{feedback}</div>
+          <div className={`mb-6 rounded-2xl border p-5 ${feedbackIsWarning ? "border-amber-500/30 bg-amber-500/10 text-amber-700" : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700"}`}>{feedback}</div>
         ) : null}
 
         {errorMessage ? (
@@ -193,7 +242,7 @@ export default function StudentVolunteerPage() {
                   <button
                     key={opportunity.id}
                     type="button"
-                    onClick={() => setSelectedOpportunityId(opportunity.id)}
+                    onClick={() => { setSelectedOpportunityId(opportunity.id); setConsentAccepted(false); }}
                     className={`w-full rounded-2xl border p-5 text-left transition ${
                       selectedOpportunityId === opportunity.id
                         ? "border-primary bg-primary/10"
@@ -256,6 +305,7 @@ export default function StudentVolunteerPage() {
                         Değerlendirme notu: {selectedOpportunity.my_application.evaluation_note}
                       </div>
                     ) : null}
+                    <VolunteerApplicationConsentReceipt application={selectedOpportunity.my_application} />
                   </div>
                 ) : (
                   <form className="space-y-4" onSubmit={handleApply}>
@@ -282,9 +332,11 @@ export default function StudentVolunteerPage() {
                       placeholder="Varsa eklemek istediğin detayları yaz."
                     />
 
+                    <VolunteerApplicationConsentField text={selectedOpportunity.application_consent_text} checked={consentAccepted} onChange={setConsentAccepted} />
+
                     <button
                       type="submit"
-                      disabled={saving || motivationText.trim().length < 20}
+                      disabled={saving || motivationText.trim().length < 20 || !consentAccepted}
                       className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}

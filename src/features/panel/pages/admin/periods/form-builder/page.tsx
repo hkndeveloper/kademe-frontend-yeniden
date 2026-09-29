@@ -7,6 +7,7 @@ import Link from "next/link";
 import { CheckCircle2, ChevronLeft, GripVertical, Loader2, Save, Settings2, Trash2, Type, List, Upload, Eye, CheckSquare } from "lucide-react";
 import { Reorder } from "framer-motion";
 import api from "@/lib/api/axios";
+import { isAxiosError } from "axios";
 import {
   isPeriodArchiveMode,
   periodHasWriteCapability,
@@ -42,6 +43,7 @@ interface AutoRejectRule {
   operator: "equals" | "not_equals" | "contains" | "gt" | "lt" | "gte" | "lte";
   value: string;
   reason: string;
+  mode?: "reject" | "review";
 }
 
 interface ApplicationFormResponse {
@@ -61,6 +63,8 @@ interface ApplicationFormResponse {
 }
 
 const defaultConsentText =
+  "Başvurunun değerlendirme ve kontenjan sonucuna bağlı olduğunu; mazeretsiz katılmamanın başvuru kısıtına yol açabileceğini biliyorum. Başvuru koşullarını, uyarıları ve yaptırımları okudum, kabul ediyorum.";
+const legacyDefaultConsentText =
   "Başvuru koşullarını, uyarıları ve yaptırımları okudum; verdiğim bilgilerin doğru olduğunu kabul ediyorum.";
 
 const questionTypes: Array<{ type: Question["type"]; label: string; icon: typeof Type }> = [
@@ -94,15 +98,16 @@ export default function FormBuilderPage() {
   const [projectId, setProjectId] = useState(initialProjectId);
   const [periodId, setPeriodId] = useState(initialPeriodId);
   const [programId, setProgramId] = useState(initialProgramId);
-  const [questionSeed, setQuestionSeed] = useState(1);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [requireConsent, setRequireConsent] = useState(false);
-  const [consentText, setConsentText] = useState(defaultConsentText);
+  const [consentText, setConsentText] = useState("");
   const [autoRejectRules, setAutoRejectRules] = useState<AutoRejectRule[]>([]);
+  const [sampleAnswers, setSampleAnswers] = useState<Record<number, string>>({});
+  const [screeningResults, setScreeningResults] = useState<Record<number, string>>({});
+  const [previewingRule, setPreviewingRule] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { canAccessProject } = usePermissions();
@@ -183,10 +188,10 @@ export default function FormBuilderPage() {
         setPeriods(nextPeriods);
         setPrograms(nextPrograms);
         setQuestions(nextQuestions);
-        setRequireConsent(Boolean(nextForm?.require_consent));
-        setConsentText(nextForm?.consent_text || defaultConsentText);
-        setAutoRejectRules(nextForm?.auto_reject_rules ?? []);
-        setQuestionSeed(Math.max(1, nextQuestions.length + 1));
+        setConsentText(nextForm?.consent_text === legacyDefaultConsentText ? "" : nextForm?.consent_text || "");
+        setAutoRejectRules((nextForm?.auto_reject_rules ?? []).map((rule) => ({ ...rule, reason: rule.reason ?? "", mode: rule.mode ?? "reject" })));
+        setSampleAnswers({});
+        setScreeningResults({});
 
         if (response.data.application_form?.period_id) {
           setPeriodId(String(response.data.application_form.period_id));
@@ -204,8 +209,7 @@ export default function FormBuilderPage() {
         setQuestions([]);
         setPeriods([]);
         setPrograms([]);
-        setRequireConsent(false);
-        setConsentText(defaultConsentText);
+        setConsentText("");
         setAutoRejectRules([]);
         setErrorMessage("Başvuru formu yüklenemedi.");
       } finally {
@@ -229,7 +233,7 @@ export default function FormBuilderPage() {
   const addQuestion = (type: Question["type"]) => {
     if (!canEditForm) return;
     const nextQuestion: Question = {
-      id: `q_${questionSeed}`,
+      id: `q_${crypto.randomUUID()}`,
       type,
       label: "Yeni soru başlığı",
       required: false,
@@ -237,17 +241,19 @@ export default function FormBuilderPage() {
     };
 
     setQuestions((prev) => [...prev, nextQuestion]);
-    setQuestionSeed((prev) => prev + 1);
+    setScreeningResults({});
   };
 
   const removeQuestion = (id: string) => {
     if (!canEditForm) return;
     setQuestions((prev) => prev.filter((question) => question.id !== id));
+    setScreeningResults({});
   };
 
   const updateQuestion = (id: string, updates: Partial<Question>) => {
     if (!canEditForm) return;
     setQuestions((prev) => prev.map((question) => (question.id === id ? { ...question, ...updates } : question)));
+    setScreeningResults({});
   };
 
   const autoRejectFields = useMemo(
@@ -261,9 +267,10 @@ export default function FormBuilderPage() {
       ...current,
       {
         field_id: autoRejectFields[0]?.id ?? "",
-        operator: "equals",
+        operator: autoRejectFields[0]?.type === "checkbox" ? "contains" : "equals",
         value: "",
         reason: "",
+        mode: "reject",
       },
     ]);
   };
@@ -271,11 +278,46 @@ export default function FormBuilderPage() {
   const updateAutoRejectRule = (index: number, updates: Partial<AutoRejectRule>) => {
     if (!canEditForm) return;
     setAutoRejectRules((current) => current.map((rule, itemIndex) => (itemIndex === index ? { ...rule, ...updates } : rule)));
+    setScreeningResults((current) => { const next = { ...current }; delete next[index]; return next; });
   };
 
   const removeAutoRejectRule = (index: number) => {
     if (!canEditForm) return;
     setAutoRejectRules((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setSampleAnswers({});
+    setScreeningResults({});
+  };
+
+  const previewScreeningRule = async (index: number) => {
+    const rule = autoRejectRules[index];
+    const field = questions.find((question) => question.id === rule?.field_id);
+    if (!projectId || !field) return;
+    setPreviewingRule(index);
+    try {
+      const response = await api.post<{ matched: boolean; result: "rejected" | "review" | "no_match"; reason: string | null }>(
+        `/panel/projects/${projectId}/application-form/screening-preview`,
+        {
+          field,
+          rule: { ...rule, reason: rule.reason || null },
+          sample_answer: field.type === "checkbox" ? (sampleAnswers[index] ? [sampleAnswers[index]] : []) : (sampleAnswers[index] ?? ""),
+        },
+      );
+      setScreeningResults((current) => ({
+        ...current,
+        [index]: response.data.matched
+          ? response.data.result === "review"
+            ? `Bu kural örnek cevabı koordinatör incelemesine yönlendirir. Başka bir ret kuralı eşleşirse ret önceliklidir. İç not: ${response.data.reason}`
+            : `Bu örnek cevap başvuruyu reddeder. Gerekçe: ${response.data.reason}`
+          : "Bu örnek cevap bu kurala takılmıyor. Diğer kurallar ayrıca değerlendirilecektir.",
+      }));
+    } catch (error) {
+      const message = isAxiosError(error)
+        ? Object.values(error.response?.data?.errors ?? {}).flat().join(" ") || error.response?.data?.message
+        : null;
+      setScreeningResults((current) => ({ ...current, [index]: message || "Örnek cevap denenemedi." }));
+    } finally {
+      setPreviewingRule(null);
+    }
   };
 
   const handleSave = async () => {
@@ -291,8 +333,6 @@ export default function FormBuilderPage() {
 
     setSaving(true);
     setErrorMessage(null);
-    const autoRejectFieldIds = new Set(autoRejectFields.map((field) => field.id));
-
     try {
       await api.put(`/panel/projects/${projectId}/application-form`, {
         period_id: periodId ? Number(periodId) : null,
@@ -304,15 +344,14 @@ export default function FormBuilderPage() {
           required: question.required,
           options: question.options ?? [],
         })),
-        require_consent: requireConsent,
-        consent_text: requireConsent ? consentText.trim() : null,
-        auto_reject_rules: autoRejectRules
-          .filter((rule) => autoRejectFieldIds.has(rule.field_id) && rule.value.trim())
-          .map((rule) => ({
+        require_consent: true,
+        consent_text: consentText.trim() || null,
+        auto_reject_rules: autoRejectRules.map((rule) => ({
             field_id: rule.field_id,
             operator: rule.operator,
             value: rule.value.trim(),
             reason: rule.reason.trim() || null,
+            mode: rule.mode ?? "reject",
           })),
         is_active: true,
       });
@@ -321,7 +360,10 @@ export default function FormBuilderPage() {
       setTimeout(() => setSuccess(false), 2500);
     } catch (error) {
       console.error("Başvuru formu kaydedilemedi", error);
-      setErrorMessage("Başvuru formu kaydedilemedi.");
+      const message = isAxiosError(error)
+        ? Object.values(error.response?.data?.errors ?? {}).flat().join(" ") || error.response?.data?.message
+        : null;
+      setErrorMessage(message || "Başvuru formu kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -423,12 +465,10 @@ export default function FormBuilderPage() {
                   </div>
                 ))}
               </div>
-              {requireConsent ? (
-                <label className="panel-card-muted flex items-start gap-3 text-sm text-slate-700">
-                  <input disabled type="checkbox" className="mt-1" />
-                  <span>{consentText || defaultConsentText}</span>
-                </label>
-              ) : null}
+              <label className="panel-card-muted flex items-start gap-3 text-sm text-slate-700">
+                <input disabled type="checkbox" className="mt-1" />
+                <span className="whitespace-pre-line">{defaultConsentText}{consentText.trim() && consentText.trim() !== defaultConsentText ? `\n\n${consentText.trim()}` : ""}</span>
+              </label>
             </div>
           )}
         </div>
@@ -495,24 +535,25 @@ export default function FormBuilderPage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Başvuru Onayı</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Uyarı, yaptirim ve kosul metnini public başvuru formunda zorunlu onay olarak gosterir.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Genel başvuru koşulu her başvuruda zorunludur. Bu alana projeye veya programa özel ek uyarı ve yaptırımları yazabilirsiniz.</p>
           </div>
-          <label className={`flex items-center gap-2 ${canEditForm ? "cursor-pointer" : "cursor-default opacity-70"}`}>
+          <label className="flex items-center gap-2">
             <input
               type="checkbox"
-              checked={requireConsent}
-              disabled={!canEditForm}
-              onChange={(event) => setRequireConsent(event.target.checked)}
+              checked
+              disabled
               className="h-4 w-4 rounded border-slate-200 bg-white text-indigo-600 disabled:opacity-50"
             />
             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Zorunlu</span>
           </label>
         </div>
+        <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">{defaultConsentText}</p>
         <textarea
           value={consentText}
           readOnly={!canEditForm}
           onChange={(event) => setConsentText(event.target.value)}
           rows={4}
+          placeholder="Bu proje veya programa özel ek koşul, uyarı ve yaptırım metni (isteğe bağlı)"
           className="panel-textarea mt-4"
         />
       </div>
@@ -520,8 +561,8 @@ export default function FormBuilderPage() {
       <div className="panel-section-card">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Otomatik Eleme Kuralları</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Başvuru cevabi belirli kosulu sagladiginda başvuru otomatik reddedilir ve gerekçe kayda yazilir.</p>
+            <h2 className="text-lg font-bold text-slate-900">Başvuru Ön Eleme Kuralları</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Her kural için otomatik ret veya koordinatör incelemesi seçin. Bir ret kuralı eşleşirse inceleme kuralından önce uygulanır. Önce örnek cevapla sonucu deneyin. Sayısal koşul için adayın metin sorusuna sayı yazması gerekir.</p>
           </div>
           <button
             type="button"
@@ -550,7 +591,10 @@ export default function FormBuilderPage() {
                   <select
                     disabled={!canEditForm}
                     value={rule.field_id}
-                    onChange={(event) => updateAutoRejectRule(index, { field_id: event.target.value })}
+                    onChange={(event) => {
+                      const field = questions.find((question) => question.id === event.target.value);
+                      updateAutoRejectRule(index, { field_id: event.target.value, operator: field?.type === "checkbox" ? "contains" : "equals", value: "" });
+                    }}
                     className="panel-control h-10"
                   >
                     <option value="">Soru seçin</option>
@@ -566,7 +610,12 @@ export default function FormBuilderPage() {
                     onChange={(event) => updateAutoRejectRule(index, { operator: event.target.value as AutoRejectRule["operator"] })}
                     className="panel-control h-10"
                   >
-                    {autoRejectOperators.map((operator) => (
+                    {autoRejectOperators.filter((operator) => {
+                      const type = questions.find((question) => question.id === rule.field_id)?.type;
+                      if (type === "checkbox") return operator.value === "contains";
+                      if (type === "select" || type === "radio") return operator.value === "equals" || operator.value === "not_equals";
+                      return true;
+                    }).map((operator) => (
                       <option key={operator.value} value={operator.value}>
                         {operator.label}
                       </option>
@@ -575,6 +624,7 @@ export default function FormBuilderPage() {
                   <input
                     readOnly={!canEditForm}
                     value={rule.value}
+                    maxLength={255}
                     onChange={(event) => updateAutoRejectRule(index, { value: event.target.value })}
                     placeholder="Karsilastirilacak cevap"
                     className="panel-control h-10"
@@ -591,10 +641,49 @@ export default function FormBuilderPage() {
                 <input
                   readOnly={!canEditForm}
                   value={rule.reason}
+                  maxLength={500}
                   onChange={(event) => updateAutoRejectRule(index, { reason: event.target.value })}
-                  placeholder="Adaya/panele yazilacak gerekçe"
+                  placeholder={rule.mode === "review" ? "Yalnız panelde görünecek inceleme nedeni" : "Adaya ve panele yazılacak ret gerekçesi"}
                   className="panel-control mt-3 h-10"
                 />
+                <label className="mt-3 flex items-center gap-3 text-sm font-semibold text-slate-700">
+                  Sonuç
+                  <select
+                    disabled={!canEditForm}
+                    value={rule.mode ?? "reject"}
+                    onChange={(event) => updateAutoRejectRule(index, { mode: event.target.value as "reject" | "review" })}
+                    className="panel-control h-10 max-w-72"
+                  >
+                    <option value="reject">Otomatik reddet</option>
+                    <option value="review">Koordinatör incelemesine yönlendir</option>
+                  </select>
+                </label>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  {(() => {
+                    const field = questions.find((question) => question.id === rule.field_id);
+                    return field && ["select", "radio", "checkbox"].includes(field.type) ? (
+                      <select
+                        value={sampleAnswers[index] ?? ""}
+                        onChange={(event) => { setSampleAnswers((current) => ({ ...current, [index]: event.target.value })); setScreeningResults((current) => { const next = { ...current }; delete next[index]; return next; }); }}
+                        className="panel-control h-10 min-w-48"
+                      >
+                        <option value="">Örnek cevap seçin</option>
+                        {(field.options ?? []).map((option) => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        value={sampleAnswers[index] ?? ""}
+                        onChange={(event) => { setSampleAnswers((current) => ({ ...current, [index]: event.target.value })); setScreeningResults((current) => { const next = { ...current }; delete next[index]; return next; }); }}
+                        placeholder="Örnek aday cevabı"
+                        className="panel-control h-10 min-w-48"
+                      />
+                    );
+                  })()}
+                  <button type="button" disabled={!canEditForm || previewingRule === index} onClick={() => void previewScreeningRule(index)} className="panel-button panel-button-secondary h-10 px-4">
+                    {previewingRule === index ? "Deneniyor..." : "Örnek cevabı dene"}
+                  </button>
+                </div>
+                {screeningResults[index] && <p className="mt-2 text-sm text-slate-700" role="status">{screeningResults[index]}</p>}
               </div>
             ))}
           </div>

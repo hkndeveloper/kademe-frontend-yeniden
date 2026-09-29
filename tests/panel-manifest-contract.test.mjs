@@ -35,6 +35,22 @@ test("YF-5: manifest root and dynamic action routes share one decision", () => {
   assert.equal(panelPathAllowedByManifest("/panel/financials", [readOnly]), false);
 });
 
+test("form builder accepts a scoped project module only when its update action is enabled", () => {
+  const myProject = manifestModule({
+    id: "my_project",
+    href: "/panel/my-project",
+    entry_permissions: ["projects.view"],
+    enabled_actions: ["projects.view", "projects.application_form.update"],
+  });
+  const readOnlyProject = { ...myProject, enabled_actions: ["projects.view"] };
+  const projectList = { ...myProject, id: "projects", href: "/panel/projects" };
+
+  assert.equal(panelPathAllowedByManifest("/panel/periods/form-builder?project_id=1&period_id=1", [myProject]), true);
+  assert.equal(panelPathAllowedByManifest("/panel/periods/form-builder", [projectList]), true);
+  assert.equal(panelPathAllowedByManifest("/panel/periods/form-builder", [readOnlyProject]), false);
+  assert.equal(panelPathAllowedByManifest("/panel/periods/form-builder", []), false);
+});
+
 test("YF-5: an optional dropdown failure preserves the primary response", async () => {
   const fallback = { data: { projects: [] } };
   const result = await optionalPanelRequest(Promise.reject(new Error("dropdown failed")), fallback, "Test dropdown");

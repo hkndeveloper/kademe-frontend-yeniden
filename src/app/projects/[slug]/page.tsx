@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import Image from "next/image";
 import Link from "next/link";
@@ -195,9 +195,13 @@ interface ProjectResponse {
   project: ProjectDetail;
   current_period?: ActivePeriod | null;
   application_form?: ApplicationFormData | null;
+  application_consent_text?: string;
   programs?: ProjectProgramsPayload;
   project_specials?: ProjectSpecialsPayload;
 }
+
+const fallbackApplicationConsentText =
+  "Başvurunun değerlendirme ve kontenjan sonucuna bağlı olduğunu; mazeretsiz katılmamanın başvuru kısıtına yol açabileceğini biliyorum. Başvuru koşullarını, uyarıları ve yaptırımları okudum, kabul ediyorum.";
 
 const hasProgramCoordinates = (program: PublicProgram) =>
   program.latitude !== null &&
@@ -234,13 +238,16 @@ export default function ProjectDetailPage() {
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [applicationForm, setApplicationForm] = useState<ApplicationFormData | null>(null);
+  const [applicationConsentText, setApplicationConsentText] = useState(fallbackApplicationConsentText);
   const [programs, setPrograms] = useState<ProjectProgramsPayload | null>(null);
   const [projectSpecials, setProjectSpecials] = useState<ProjectSpecialsPayload | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string | string[] | File | null>>({});
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
+  const formRequestId = useRef(0);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [guestApplicant, setGuestApplicant] = useState({
     name: "",
@@ -248,20 +255,32 @@ export default function ProjectDetailPage() {
     email: "",
     phone: "",
   });
+  const [guestVerificationCode, setGuestVerificationCode] = useState("");
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [sendingVerification, setSendingVerification] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [guestApplySuccess, setGuestApplySuccess] = useState(false);
+  const [guestReceiptEmailSent, setGuestReceiptEmailSent] = useState<boolean | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    formRequestId.current += 1;
     const fetchProject = async () => {
       try {
         const response = await api.get<ProjectResponse>(`/projects/${params.slug}`);
         setProject(response.data.project);
+        setFormLoading(false);
         setApplicationForm(response.data.application_form ?? null);
+        setApplicationConsentText(response.data.application_consent_text || fallbackApplicationConsentText);
+        setSelectedProgramId(null);
+        setShowApplicationForm(false);
         setPrograms(response.data.programs ?? null);
         setProjectSpecials(response.data.project_specials ?? null);
         setGuestApplySuccess(false);
+        setGuestReceiptEmailSent(null);
+        setGuestVerificationCode("");
+        setVerificationEmail(null);
         setMessage(null);
 
         const nextFormValues: Record<string, string | string[] | File | null> = {};
@@ -307,6 +326,8 @@ export default function ProjectDetailPage() {
           project_id: project?.id,
           period_id: project?.active_period?.id,
           program_id: selectedProgramId,
+          application_form_id: applicationForm?.id ?? 0,
+          expected_consent_text: applicationConsentText,
           form_data: formValues,
           consent_accepted: consentAccepted,
           applicant: {
@@ -315,6 +336,7 @@ export default function ProjectDetailPage() {
             email: guestApplicant.email.trim(),
             phone: guestApplicant.phone.trim() || null,
           },
+          verification_code: guestVerificationCode.trim(),
         },
         config: undefined,
       };
@@ -324,6 +346,8 @@ export default function ProjectDetailPage() {
     data.append("project_id", String(project?.id ?? ""));
     data.append("period_id", String(project?.active_period?.id ?? ""));
     if (selectedProgramId) data.append("program_id", String(selectedProgramId));
+    data.append("application_form_id", String(applicationForm?.id ?? 0));
+    data.append("expected_consent_text", applicationConsentText);
     data.append("consent_accepted", consentAccepted ? "1" : "0");
 
     for (const [key, value] of Object.entries(formValues)) {
@@ -339,6 +363,7 @@ export default function ProjectDetailPage() {
     data.append("applicant[name]", guestApplicant.name.trim());
     data.append("applicant[surname]", guestApplicant.surname.trim());
     data.append("applicant[email]", guestApplicant.email.trim());
+    data.append("verification_code", guestVerificationCode.trim());
     if (guestApplicant.phone.trim()) data.append("applicant[phone]", guestApplicant.phone.trim());
 
     return {
@@ -378,29 +403,84 @@ export default function ProjectDetailPage() {
     return null;
   };
 
-  const handleApply = async (programId?: number | null) => {
+  const requestGuestVerification = async () => {
+    if (!project) return;
+    const email = guestApplicant.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setErrorMessage("Önce geçerli bir e-posta adresi girin.");
+      return;
+    }
+
+    setErrorMessage(null);
+    setSendingVerification(true);
+    try {
+      await api.post("/applications/public/verification", { project_id: project.id, email });
+      setVerificationEmail(email);
+      setMessage("Kod isteğiniz alındı. Gelen kutunuzu kontrol edip kodu aşağıya yazın; gelmediyse bir dakika sonra yeniden isteyin.");
+    } catch (error: unknown) {
+      setErrorMessage(
+        isAxiosError(error)
+          ? error.response?.data?.message || "Doğrulama kodu gönderilemedi. Lütfen tekrar deneyin."
+          : "Doğrulama kodu gönderilemedi. Lütfen tekrar deneyin.",
+      );
+    } finally {
+      setSendingVerification(false);
+    }
+  };
+
+  const openApplicationForm = async (programId: number | null) => {
     if (!project) {
       return;
     }
 
     setMessage(null);
     setErrorMessage(null);
-    const nextProgramId = programId !== undefined ? programId : selectedProgramId;
-    setSelectedProgramId(nextProgramId ?? null);
-
     if (!project.active_period) {
       setErrorMessage("Bu proje için aktif dönem bulunmuyor.");
       return;
     }
 
-    const needsApplicationModal = !isAuthenticated || (applicationForm?.fields?.length ?? 0) > 0 || Boolean(applicationForm?.require_consent);
+    const requestId = ++formRequestId.current;
+    setFormLoading(true);
+    setShowApplicationForm(false);
+    setApplicationForm(null);
+    setFormValues({});
+    setConsentAccepted(false);
+    setSelectedProgramId(programId);
 
-    if (!showApplicationForm && needsApplicationModal) {
+    try {
+      const response = await api.get<{ application_form: ApplicationFormData | null; application_consent_text?: string }>(`/projects/${project.slug}/application-form`, {
+        params: { program_id: programId ?? undefined },
+      });
+      if (requestId !== formRequestId.current) return;
+
+      const nextForm = response.data.application_form ?? null;
+      const nextFormValues: Record<string, string | string[] | File | null> = {};
+      for (const field of nextForm?.fields ?? []) {
+        const fieldId = field.id ?? field.key;
+        if (!fieldId) continue;
+        nextFormValues[fieldId] = field.type === "checkbox" ? [] : field.type === "file" ? null : "";
+      }
+      setApplicationForm(nextForm);
+      setApplicationConsentText(response.data.application_consent_text || fallbackApplicationConsentText);
+      setFormValues(nextFormValues);
       setShowApplicationForm(true);
-      return;
+    } catch (error: unknown) {
+      if (requestId !== formRequestId.current) return;
+      setErrorMessage(isAxiosError(error)
+        ? error.response?.data?.message || "Başvuru formu yüklenemedi. Lütfen tekrar deneyin."
+        : "Başvuru formu yüklenemedi. Lütfen tekrar deneyin.");
+    } finally {
+      if (requestId === formRequestId.current) setFormLoading(false);
     }
+  };
 
-    if (applicationForm?.require_consent && !consentAccepted) {
+  const handleApply = async () => {
+    if (!project || !project.active_period || !showApplicationForm || formLoading) return;
+
+    setMessage(null);
+    setErrorMessage(null);
+    if (!consentAccepted) {
       setErrorMessage("Başvuru koşullarını kabul etmeniz gerekiyor.");
       return;
     }
@@ -408,6 +488,11 @@ export default function ProjectDetailPage() {
     const validationError = validateApplicationInputs();
     if (validationError) {
       setErrorMessage(validationError);
+      return;
+    }
+
+    if (!isAuthenticated && (verificationEmail !== guestApplicant.email.trim().toLowerCase() || !/^\d{8}$/.test(guestVerificationCode.trim()))) {
+      setErrorMessage("E-postanıza gönderilen 8 haneli doğrulama kodunu girin.");
       return;
     }
 
@@ -422,7 +507,9 @@ export default function ProjectDetailPage() {
             : {
                 project_id: project.id,
                 period_id: project.active_period.id,
-                program_id: nextProgramId,
+                program_id: selectedProgramId,
+                application_form_id: applicationForm?.id ?? 0,
+                expected_consent_text: applicationConsentText,
                 form_data: formValues,
                 consent_accepted: consentAccepted,
               },
@@ -431,15 +518,27 @@ export default function ProjectDetailPage() {
         setMessage("Başvurunuz alındı. Durumu öğrenci panelinizde görebilirsiniz.");
         router.push("/student/applications");
       } else {
-        await api.post("/applications/public", payload, config);
+        const response = await api.post<{ follow_up?: { applicant_email_sent?: boolean } }>("/applications/public", payload, config);
+        setGuestReceiptEmailSent(response.data.follow_up?.applicant_email_sent ?? null);
         setGuestApplySuccess(true);
         setShowApplicationForm(false);
-        setMessage(
-          "Başvurunuz alındı. E-posta adresinize bilgilendirme gelebilir. Başvurularınızı takip etmek için hesap oluşturabilirsiniz.",
-        );
+        setMessage(response.data.follow_up?.applicant_email_sent === false
+          ? "E-posta adresiniz doğrulandı ve başvurunuz kaydedildi. Alındı e-postası gönderilemedi; durumunuzu giriş yaparak takip edebilirsiniz."
+          : "E-posta adresiniz doğrulandı ve başvurunuz alındı. Takip için giriş yapabilir veya şifrenizi belirleyebilirsiniz.");
       }
     } catch (error: unknown) {
       if (isAxiosError(error)) {
+        const consentTextChanged = Boolean(error.response?.data?.errors?.expected_consent_text);
+        if (error.response?.data?.errors?.application_form_id || consentTextChanged) {
+          setShowApplicationForm(false);
+          setApplicationForm(null);
+          setFormValues({});
+          setConsentAccepted(false);
+          setErrorMessage(consentTextChanged
+            ? "Başvuru koşulları güncellendi. Lütfen başvuru düğmesine tekrar basıp yeni metni okuyarak onaylayın."
+            : "Başvuru formu güncellendi. Lütfen başvuru düğmesine tekrar basıp yeni soruları doldurun.");
+          return;
+        }
         const responseMessage =
           error.response?.data?.message ||
           Object.values(error.response?.data?.errors ?? {})
@@ -693,10 +792,11 @@ export default function ProjectDetailPage() {
           />
         </div>
       ) : null}
-      {project?.is_application_open && program.status !== "completed" ? (
+      {project?.is_application_open && program.period?.id === project.active_period?.id && ["scheduled", "active"].includes(program.status) ? (
         <button
           type="button"
-          onClick={() => void handleApply(program.id)}
+          onClick={() => void openApplicationForm(program.id)}
+          disabled={formLoading || applying}
           className="kdm-public-btn-shine kdm-public-btn-brand mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-bold uppercase tracking-widest text-white transition hover:-translate-y-0.5"
         >
           Programa Başvur
@@ -732,7 +832,6 @@ export default function ProjectDetailPage() {
   );
 
   const hasDynamicForm = (applicationForm?.fields?.length ?? 0) > 0;
-  const needsApplicationModal = !isAuthenticated || hasDynamicForm || Boolean(applicationForm?.require_consent);
   const detailHeroImage = project.cover_image || "/aigocy/images/section/work-single-1.jpg";
 
   return (
@@ -1133,16 +1232,18 @@ export default function ProjectDetailPage() {
                   <div>
                     <p className="font-bold text-[#292c2e]">Başvurunuz alındı</p>
                     <p className="mt-2 text-sm text-[#71717a]">
-                      E-posta kutunuzu kontrol edin. Başvurularınızı izlemek ve panele erişmek için ücretsiz hesap oluşturabilirsiniz.
+                      {guestReceiptEmailSent === false
+                        ? "Başvurunuz kaydedildi, ancak alındı e-postası gönderilemedi. Durumunuzu takip etmek için giriş yapın; henüz şifreniz yoksa aşağıdan belirleyin."
+                        : "E-posta kutunuzu kontrol edin. Başvurunuzu takip etmek için giriş yapın; henüz şifreniz yoksa aşağıdan belirleyin."}
                     </p>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Link
-                    href="/auth/register"
+                    href="/auth/forgot-password"
                     className="inline-flex flex-1 items-center justify-center rounded-xl bg-orange-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:opacity-95"
                   >
-                    Hesap oluştur
+                    Şifremi belirle
                   </Link>
                   <Link
                     href="/auth/login"
@@ -1193,11 +1294,11 @@ export default function ProjectDetailPage() {
 
                 <button
                   type="button"
-                  onClick={() => void handleApply(null)}
-                  disabled={applying}
+                  onClick={() => void openApplicationForm(null)}
+                  disabled={formLoading || applying}
                   className="kdm-public-btn-shine kdm-public-btn-brand flex w-full items-center justify-center gap-2 rounded-full py-4 font-bold text-white shadow-[0_16px_36px_rgba(253,58,37,0.24)] transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-70"
                 >
-                  {applying ? (
+                  {formLoading || applying ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
@@ -1233,7 +1334,7 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {showApplicationForm && needsApplicationModal ? (
+      {showApplicationForm ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
@@ -1300,13 +1401,40 @@ export default function ProjectDetailPage() {
                         E-posta
                         <input
                           value={guestApplicant.email}
-                          onChange={(event) => setGuestApplicant((current) => ({ ...current, email: event.target.value }))}
+                          onChange={(event) => {
+                            setGuestApplicant((current) => ({ ...current, email: event.target.value }));
+                            setVerificationEmail(null);
+                            setGuestVerificationCode("");
+                          }}
                           placeholder="örnek@e-posta.com"
                           type="email"
                           autoComplete="email"
                           className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
                         />
                       </label>
+                      <div className="space-y-2 md:col-span-2">
+                        <button
+                          type="button"
+                          onClick={() => void requestGuestVerification()}
+                          disabled={sendingVerification}
+                          className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-2.5 text-sm font-bold text-orange-700 disabled:opacity-60"
+                        >
+                          {sendingVerification ? "Kod gönderiliyor..." : verificationEmail ? "Kodu yeniden iste" : "E-postama kod gönder"}
+                        </button>
+                        {verificationEmail ? <p className="text-xs text-green-700">{verificationEmail} adresinin gelen kutusunu kontrol edin. Kod 10 dakika geçerlidir.</p> : null}
+                        <label className="block space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a]">
+                          E-posta doğrulama kodu
+                          <input
+                            value={guestVerificationCode}
+                            onChange={(event) => setGuestVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={8}
+                            placeholder="8 haneli kod"
+                            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
+                          />
+                        </label>
+                      </div>
                       <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a] md:col-span-2">
                         Telefon
                         <input
@@ -1351,8 +1479,7 @@ export default function ProjectDetailPage() {
                   )}
                 </section>
 
-                {applicationForm?.require_consent ? (
-                  <section className="rounded-2xl border border-orange-200 bg-orange-50/70 p-5">
+                <section className="rounded-2xl border border-orange-200 bg-orange-50/70 p-5">
                     <p className="mb-3 text-sm font-bold text-[#292c2e]">Onay</p>
                     <label className="flex items-start gap-3 text-sm leading-relaxed text-[#292c2e]">
                       <input
@@ -1361,13 +1488,9 @@ export default function ProjectDetailPage() {
                         onChange={(event) => setConsentAccepted(event.target.checked)}
                         className="mt-1 h-4 w-4 rounded border-slate-200 text-orange-600"
                       />
-                      <span>
-                        {applicationForm.consent_text ||
-                          "Başvuru koşullarını, uyarıları ve yaptırımları okudum; verdiğim bilgilerin doğru olduğunu kabul ediyorum."}
-                      </span>
+                      <span className="whitespace-pre-line">{applicationConsentText}</span>
                     </label>
                   </section>
-                ) : null}
               </div>
 
               {errorMessage ? <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 ">{errorMessage}</div> : null}
@@ -1383,7 +1506,7 @@ export default function ProjectDetailPage() {
               </button>
               <button
                 type="button"
-                onClick={() => void handleApply(selectedProgramId)}
+                onClick={() => void handleApply()}
                 disabled={applying}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 py-3 font-bold text-white shadow-md shadow-orange-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-600/30 disabled:opacity-70"
               >
@@ -1416,8 +1539,6 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
-
-
 
 
 

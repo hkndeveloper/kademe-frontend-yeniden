@@ -5,12 +5,14 @@ import { CheckCircle2, HeartHandshake, Loader2, MapPin, Send, Users } from "luci
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { VolunteerTextAreaField } from "@/components/shared/VolunteerTextAreaField";
+import { VolunteerApplicationConsentField, VolunteerApplicationConsentReceipt } from "@/components/shared/VolunteerApplicationConsent";
 import { statusBadgeClass } from "@/lib/status-style";
 
 interface VolunteerOpportunity {
   id: number;
   title: string;
   description: string;
+  application_consent_text: string;
   location?: string | null;
   start_at?: string | null;
   end_at?: string | null;
@@ -28,6 +30,9 @@ interface VolunteerOpportunity {
     motivation_text: string;
     notes?: string | null;
     evaluation_note?: string | null;
+    consent_text_snapshot?: string | null;
+    consent_accepted_at?: string | null;
+    receipt_email_status?: "pending" | "sent" | "failed" | "unknown" | null;
     created_at: string;
   } | null;
 }
@@ -38,6 +43,9 @@ interface VolunteerApplication {
   motivation_text: string;
   notes?: string | null;
   evaluation_note?: string | null;
+  consent_text_snapshot?: string | null;
+  consent_accepted_at?: string | null;
+  receipt_email_status?: "pending" | "sent" | "failed" | "unknown" | null;
   created_at: string;
   opportunity?: {
     id: number;
@@ -79,9 +87,11 @@ export default function AlumniVolunteerPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [motivationText, setMotivationText] = useState("");
   const [notes, setNotes] = useState("");
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageIsWarning, setMessageIsWarning] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadData = async () => {
@@ -115,22 +125,45 @@ export default function AlumniVolunteerPage() {
       return;
     }
 
+    if (!consentAccepted || !selectedOpportunity.application_consent_text) {
+      setErrorMessage("Başvuru koşullarını okuyup onaylamalısınız.");
+      return;
+    }
+
     setSubmitting(true);
     setMessage(null);
     setErrorMessage(null);
 
     try {
-      await api.post(`/volunteer/opportunities/${selectedOpportunity.id}/apply`, {
+      const response = await api.post<{ message: string; follow_up?: { receipt_email_sent?: boolean } }>(`/volunteer/opportunities/${selectedOpportunity.id}/apply`, {
         motivation_text: motivationText,
         notes: notes || null,
+        accepted_terms: true,
+        expected_consent_text: selectedOpportunity.application_consent_text,
       });
 
-      setMessage("Gönüllülük başvurunuz alındı.");
+      setMessage(response.data.message);
+      setMessageIsWarning(response.data.follow_up?.receipt_email_sent === false);
       setMotivationText("");
       setNotes("");
+      setConsentAccepted(false);
       await loadData();
     } catch (error) {
       console.error("Gönüllülük başvurusu gönderilemedi", error);
+      if (isAxiosError(error) && error.response?.data?.errors?.expected_consent_text) {
+        try {
+          const latest = await api.get<VolunteerPayload>("/volunteer/opportunities");
+          setOpportunities(latest.data.opportunities ?? []);
+          setApplications(latest.data.my_applications ?? []);
+        } catch {
+          setErrorMessage("Başvuru koşulları değişti. Güncel bilgileri görmek için sayfayı yenileyin.");
+          setConsentAccepted(false);
+          return;
+        }
+        setConsentAccepted(false);
+        setErrorMessage("Başvuru koşulları değişti. Güncel metni yeniden okuyup onaylayın.");
+        return;
+      }
       setErrorMessage(
         isAxiosError(error) && typeof error.response?.data?.message === "string"
           ? error.response.data.message
@@ -155,7 +188,7 @@ export default function AlumniVolunteerPage() {
         </div>
       </div>
 
-      {message && <div className="rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-400">{message}</div>}
+      {message && <div className={`rounded-2xl border px-4 py-3 text-sm ${messageIsWarning ? "border-amber-500/30 bg-amber-500/10 text-amber-700" : "border-green-500/20 bg-green-500/10 text-green-700"}`}>{message}</div>}
       {errorMessage && <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{errorMessage}</div>}
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.2fr_0.8fr]">
@@ -178,7 +211,7 @@ export default function AlumniVolunteerPage() {
                 <button
                   key={opportunity.id}
                   type="button"
-                  onClick={() => setSelectedId(opportunity.id)}
+                  onClick={() => { setSelectedId(opportunity.id); setConsentAccepted(false); }}
                   className={`glass-panel w-full rounded-3xl p-8 text-left transition ${
                     isSelected ? "border-primary/40 bg-primary/5" : ""
                   }`}
@@ -236,6 +269,8 @@ export default function AlumniVolunteerPage() {
                   <p className="mt-2 text-slate-500">
                     Başvuru tarihi: {new Date(selectedOpportunity.my_application.created_at).toLocaleString("tr-TR")}
                   </p>
+                  <VolunteerApplicationConsentReceipt application={selectedOpportunity.my_application} />
+                  {selectedOpportunity.my_application.receipt_email_status === "failed" ? <p className="mt-2 text-xs text-amber-700">Başvurunuz kayıtlı; alındı e-postası gönderilemedi.</p> : null}
                 </div>
               ) : (
                 <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
@@ -260,9 +295,10 @@ export default function AlumniVolunteerPage() {
                     maxLength={NOTES_MAX}
                     placeholder="Uygunluk, deneyim veya ek açıklamalarınızı yazabilirsiniz."
                   />
+                  <VolunteerApplicationConsentField text={selectedOpportunity.application_consent_text} checked={consentAccepted} onChange={setConsentAccepted} />
                   <button
                     type="submit"
-                    disabled={submitting || motivationText.trim().length < 20}
+                    disabled={submitting || motivationText.trim().length < 20 || !consentAccepted}
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-bold text-slate-900 transition hover:opacity-90 disabled:opacity-50"
                   >
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
@@ -286,7 +322,7 @@ export default function AlumniVolunteerPage() {
               {applications.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Henüz gönüllülük başvurunuz bulunmuyor.</p>
               ) : (
-                applications.slice(0, 4).map((application) => (
+                applications.map((application) => (
                   <div key={application.id} className="rounded-2xl bg-white/5 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <h4 className="text-sm font-bold text-slate-900">{application.opportunity?.title || "Gönüllülük ilanı"}</h4>
@@ -298,6 +334,9 @@ export default function AlumniVolunteerPage() {
                     <p className="mt-2 text-xs uppercase tracking-widest text-muted-foreground">
                       {new Date(application.created_at).toLocaleString("tr-TR")}
                     </p>
+                    {application.receipt_email_status === "failed" ? <p className="mt-2 text-xs text-amber-700">Başvurunuz kayıtlı; alındı e-postası gönderilemedi.</p> : null}
+                    {application.receipt_email_status === "unknown" || application.receipt_email_status === "pending" ? <p className="mt-2 text-xs text-amber-700">Başvurunuz kayıtlı; e-posta gönderimi kontrol edilmeli.</p> : null}
+                    <VolunteerApplicationConsentReceipt application={application} />
                   </div>
                 ))
               )}
