@@ -1,0 +1,15 @@
+.brand { position: relative; width: 170px; height: 52px; flex-shrink: 0; }
+.wordmark { position: absolute; width: 122px; height: 29px; left: 24px; top: 12px; }
+.piece { position: absolute; width: 15px; height: 18px; filter: drop-shadow(0 0 4px #f3a64065); }
+.piece svg { display: block; width: 100%; height: 100%; }
+.piece[data-piece="0"] { left: 2px; top: 6px; }
+.piece[data-piece="1"] { right: 2px; top: 1px; }
+.piece[data-piece="2"] { left: 10px; bottom: 2px; width: 12px; height: 14px; }
+.piece[data-piece="3"] { right: 6px; bottom: 0; width: 13px; height: 16px; }
+.piece { pointer-events: none; }
+.spark { position: absolute; right: -5px; top: -4px; width: 7px; height: 7px; background: #d99b3a; clip-path: polygon(50% 0,62% 37%,100% 50%,62% 63%,50% 100%,38% 63%,0 50%,38% 37%); opacity: .55; animation: glimmer 2s ease-in-out 2; }
+.piece[data-piece="1"] .spark { animation-delay: .25s; }
+.piece[data-piece="2"] .spark { animation-delay: .5s; }
+.piece[data-piece="3"] .spark { animation-delay: .75s; }
+@keyframes glimmer { 0%,100% { opacity: .55; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.3) rotate(35deg); } }
+@media (prefers-reduced-motion: reduce) { .spark { animation: none; } }

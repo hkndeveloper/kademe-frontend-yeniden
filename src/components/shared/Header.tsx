@@ -11,6 +11,7 @@ import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/store/useAuth";
 import styles from "./Header.module.css";
+import { HeaderBrand } from "./HeaderBrand";
 
 interface HeaderProject {
   id: number;
@@ -137,14 +138,8 @@ export function Header() {
             : "border-white/70 bg-white/55 shadow-[0_18px_52px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.95)]",
         )}
       >
-        <Link href="/" className="group flex shrink-0 items-center gap-3 transition-transform duration-300 hover:-translate-y-px">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_8px_24px_rgba(9,9,11,0.12),inset_0_-2px_0_rgba(9,9,11,0.06)] transition group-hover:-translate-y-0.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/branding/kademe-logo-turuncu.svg" alt="KADEME" className="h-9 w-auto" width={120} height={36} />
-          </span>
-          <span className="hidden sm:block">
-            <span className="block text-2xl font-black tracking-tight text-[#3b3f43]">{siteName}</span>
-          </span>
+        <Link href="/" aria-label={`${siteName} — Ana sayfa`} className="group flex shrink-0 items-center">
+          <HeaderBrand />
         </Link>
 
         <nav className="hidden items-center gap-1 min-[1180px]:flex">

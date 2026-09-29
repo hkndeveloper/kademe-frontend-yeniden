@@ -59,7 +59,7 @@ export function HomeDiscoveryHero({ settings, projects, isAuthenticated, dashboa
           <div className={styles.orbit} aria-hidden="true" />
           <motion.div className={styles.tilt} style={{ rotateX: staticScene ? 0 : rotateX, rotateY: staticScene ? 0 : rotateY }}>
             <div className={styles.floating}>
-              <Image src="/images/kademe-campus.png" alt="Sıcak ışıklı çalışma alanları, kütüphanesi ve yeşil terasıyla üç boyutlu gelişim kampüsü illüstrasyonu" width={1280} height={1280} sizes="(min-width: 1024px) 55vw, 100vw" preload className={styles.campus} />
+              <Image src="/images/kademe-atmosfer.png" alt="KADEME biriminin bulunduğu Atmosfer binasının sıcak ışıklı, cam cepheli üç boyutlu illüstrasyonu" width={1280} height={1280} sizes="(min-width: 1024px) 55vw, 100vw" unoptimized preload className={styles.campus} />
             </div>
           </motion.div>
           <span className={`${styles.sceneLabel} ${styles.topLabel}`}><span /> Keşfet. Öğren. Dönüştür.</span>

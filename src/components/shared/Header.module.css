@@ -2,9 +2,6 @@
 .header .surface { height: 74px; border: 1px solid #d7dfcb90; background: #faf8f0e8; box-shadow: 0 8px 28px #3a4d2910; backdrop-filter: blur(16px); }
 .header[data-scrolled="true"] { padding-top: 12px; }
 .header[data-scrolled="true"] .surface { height: 66px; background: #faf8f0f7; box-shadow: 0 6px 22px #3a4d2914; }
-.surface > a > span:first-child { width: 42px; height: 42px; background: #fffdf5; box-shadow: none; border: 1px solid #e6e8da; }
-.surface > a img { height: 33px; }
-.surface > a > span:last-child > span { color: #34432e; font-size: 22px; font-weight: 700; }
 .header :global(.kdm-public-nav-link) { color: #5b6752; font-size: 14px; padding: 9px 13px; font-weight: 600; }
 .header :global(.kdm-public-nav-link)::after { display: none; }
 .header :global(.kdm-public-nav-link):hover { color: #3e5233; background: #edf0e5; }
