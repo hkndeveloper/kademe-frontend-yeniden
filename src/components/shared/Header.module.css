@@ -13,9 +13,19 @@
 .header :global(.kdm-public-btn-shine)::after { display: none; }
 .surface button[aria-label="Menüyü aç"], .surface button[aria-label="Menüyü kapat"] { width: 42px; height: 42px; background: #f3f5eb; color: #536a43; border-color: #dce3d0; box-shadow: none; }
 .header :global(.kdm-public-sub-menu) > div { background: #faf9f2f7; border: 1px solid #dde4d2; border-radius: 20px; box-shadow: 0 14px 32px #344b2414; }
-.header :global(.kdm-public-sub-menu) a { border-radius: 12px; color: #58664c; }
+.header :global(.kdm-public-sub-menu) { width: 310px; }
+.header :global(.kdm-public-sub-menu) a { border-radius: 12px; color: #58664c; padding-inline: 12px; }
 .header :global(.kdm-public-sub-menu) a:hover { background: #e9efdf; color: #3f5632; }
-.header :global(.kdm-public-sub-menu) a > span:last-child { background: #99ab83; }
+.logoIcon { position: relative; display: inline-flex; width: 14px; height: 18px; flex-shrink: 0; filter: drop-shadow(0 0 4px #f3a64065); }
+.logoIcon svg { display: block; width: 100%; height: 100%; }
+.header :global(.kdm-public-sub-menu) .logoIcon, .mobile a .logoIcon { margin-right: 2px; }
+.menuIcon { width: 22px; height: 22px; }
+.menuIcon svg { transform: rotate(90deg); }
+.iconSpark { position: absolute; right: -5px; top: -3px; width: 6px; height: 6px; background: #d99b3a; clip-path: polygon(50% 0,62% 37%,100% 50%,62% 63%,50% 100%,38% 63%,0 50%,38% 37%); opacity: .7; animation: iconGlimmer 2s ease-in-out 2; }
+.menuIcon .iconSpark { width: 7px; height: 7px; }
+.header a:hover .iconSpark, .header a:focus-visible .iconSpark, .header button:hover .iconSpark { animation: iconGlimmerHover 1.5s ease-in-out 2; }
+@keyframes iconGlimmer { 0%,100% { opacity: .7; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.25) rotate(30deg); } }
+@keyframes iconGlimmerHover { 0%,100% { opacity: .7; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.25) rotate(30deg); } }
 .header .mobile { background: #faf8f0fa; border-color: #dce3d0; box-shadow: 0 14px 32px #344b2414; }
 .mobile nav > a { color: #526247; font-weight: 600; }
 .mobile nav > a:hover, .mobile nav > a[aria-current="page"] { background: #e5ecd9; color: #3e5532; }
@@ -23,5 +33,5 @@
 .mobile nav > div:first-of-type a, .mobile nav > div:first-of-type svg { color: #546b43; }
 .header a:focus-visible, .header button:focus-visible { outline: 2px solid #7b9265; outline-offset: 3px; }
 @media (max-width: 640px) { .header { padding-top: 14px; padding-inline: 12px; } .header .surface { height: 66px; padding-inline: 14px; } .header[data-scrolled="true"] .surface { height: 62px; } }
-@media (prefers-reduced-motion: reduce) { .header, .header * { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .header, .header * { transition: none; } .header .iconSpark { animation: none; } }
 @media (prefers-reduced-transparency: reduce) { .header .surface, .header .mobile { background: #faf8f0; backdrop-filter: none; } }

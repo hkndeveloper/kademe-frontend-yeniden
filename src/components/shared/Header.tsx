@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import { ChevronDown, LayoutDashboard, LogOut, X } from "lucide-react";
 import { PublicButton } from "@/components/public";
 import { getCachedPublicProjects, getCachedSiteConfig } from "@/lib/public-api-cache";
 import { homePathForUser } from "@/lib/role-home";
@@ -17,6 +17,17 @@ interface HeaderProject {
   id: number;
   name: string;
   slug: string;
+}
+
+function HeaderLogoIcon({ menu = false }: { menu?: boolean }) {
+  return (
+    <span className={cn(styles.logoIcon, menu && styles.menuIcon)} aria-hidden="true">
+      <svg viewBox={menu ? "130 550 360 370" : "705 535 330 400"} focusable="false">
+        <image href="/branding/kademe-logo-turuncu.svg" width="1200" height="1200" />
+      </svg>
+      <i className={styles.iconSpark} />
+    </span>
+  );
 }
 
 /** Panel workspace routes: unified `/panel/*` and legacy role-prefixed paths. */
@@ -106,17 +117,17 @@ export function Header() {
   const projectsMenu = (
     <div className={cn("kdm-public-sub-menu absolute left-1/2 top-full z-50 w-[17rem] -translate-x-1/2 pt-4", projectsOpen ? "pointer-events-auto visible translate-y-0 opacity-100" : "pointer-events-none invisible translate-y-3 opacity-0")}>
       <div className="overflow-hidden rounded-lg border border-black/5 bg-[#f4f4f5] p-2 text-[#09090b] shadow-[0_18px_44px_rgba(9,9,11,0.12)] backdrop-blur-2xl">
-        <div className="grid gap-1">
+        <div className="grid min-w-0 grid-cols-1 gap-1">
           {dropdownProjects.length > 0 ? (
             dropdownProjects.map((project) => (
               <Link
                 key={project.id}
                 href={`/projects/${project.slug}`}
                 onClick={closeProjects}
-                className="group flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-semibold text-zinc-700 transition duration-200 hover:bg-white hover:text-[#fd3a25]"
+                className="group flex min-w-0 items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-semibold text-zinc-700 transition duration-200 hover:bg-white hover:text-[#fd3a25]"
               >
-                <span className="truncate">{project.name}</span>
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-300 transition group-hover:bg-[#fd3a25]" />
+                <span className="min-w-0 whitespace-normal break-words">{project.name}</span>
+                <HeaderLogoIcon />
               </Link>
             ))
           ) : (
@@ -177,8 +188,10 @@ export function Header() {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-white text-[#09090b] shadow-sm transition hover:bg-[#f4f4f5] min-[1180px]:hidden"
             aria-label={mobileMenuOpen ? "Menüyü kapat" : "Menüyü aç"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="public-mobile-navigation"
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <HeaderLogoIcon menu />}
           </button>
 
           <div className="hidden items-center gap-2 min-[1180px]:flex">
@@ -211,7 +224,7 @@ export function Header() {
       </div>
 
       {mobileMenuOpen ? (
-        <div className={`${styles.mobile} mx-auto mt-3 max-h-[calc(100dvh-7rem)] max-w-[1296px] overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white/94 p-3 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur-2xl min-[1180px]:hidden`}>
+        <div id="public-mobile-navigation" className={`${styles.mobile} mx-auto mt-3 max-h-[calc(100dvh-7rem)] max-w-[1296px] overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white/94 p-3 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur-2xl min-[1180px]:hidden`}>
           <nav className="flex flex-col gap-2">
             {navLinks.map((item) => (
               <Link
@@ -247,9 +260,10 @@ export function Header() {
                       key={`mobile-project-${project.id}`}
                       href={`/projects/${project.slug}`}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="rounded-2xl px-4 py-2.5 text-sm font-semibold text-zinc-600 transition hover:bg-white hover:text-[#fd3a25]"
+                      className="flex items-center justify-between gap-3 rounded-2xl px-4 py-2.5 text-sm font-semibold text-zinc-600 transition hover:bg-white hover:text-[#fd3a25]"
                     >
-                      {project.name}
+                      <span>{project.name}</span>
+                      <HeaderLogoIcon />
                     </Link>
                   ))}
                 </div>
