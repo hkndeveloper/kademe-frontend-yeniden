@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import api from "@/lib/api/axios";
+import { isAxiosError } from "axios";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { useAuth } from "@/store/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -545,21 +546,22 @@ export default function AdminContentPage() {
     const imageUrl = blog.cover_image_path?.startsWith("http") ? blog.cover_image_path : undefined;
 
     try {
-      const response = await api.post<{ message: string; shared: boolean }>("/panel/social-sharing/post", {
+      const response = await api.post<{ message: string; webhook_accepted: boolean }>("/panel/social-sharing/post", {
         text: [blog.title, blog.excerpt].filter(Boolean).join("\n\n"),
         url,
         image_url: imageUrl,
         platforms: ["instagram", "twitter", "linkedin"],
       });
 
-      if (response.data.shared) {
+      if (response.data.webhook_accepted) {
         setMessage(response.data.message);
       } else {
         setErrorMessage(response.data.message);
       }
     } catch (error) {
       console.error("Sosyal paylaşım gönderilemedi", error);
-      setErrorMessage("Sosyal paylaşım gönderilemedi. Webhook ayarini ve ag bağlantısını kontrol edin.");
+      const detail = isAxiosError<{ message?: string }>(error) ? error.response?.data?.message : null;
+      setErrorMessage(detail || "Sosyal paylaşım webhook isteği gönderilemedi. Webhook ayarını ve ağ bağlantısını kontrol edin.");
     } finally {
       setSharingBlogId(null);
     }

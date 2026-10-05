@@ -38,6 +38,13 @@ interface AttendanceSummary {
   feedback_count: number;
   deduction_count?: number;
   restore_count?: number;
+  qr_review?: {
+    window_hours: number;
+    outside_radius_attempts: number;
+    repeat_outside_radius_users: number;
+    accuracy_reported_attempts: number;
+    reported_low_accuracy_attempts: number;
+  };
 }
 
 export default function PanelProgramQrPage() {
@@ -314,6 +321,14 @@ export default function PanelProgramQrPage() {
                 <LiveMetric label="Gelmeyen" value={attendanceSummary?.absent_count ?? Math.max(participantCount - presentCount, 0)} tone="amber" />
                 <LiveMetric label="Oran" value={`${attendanceRate}%`} />
               </div>
+
+              {attendanceSummary?.qr_review ? (
+                <div className="border-b border-amber-100 bg-amber-50/70 px-6 py-4 text-xs text-amber-950">
+                  <p className="font-black">QR konum gözlemi · son {attendanceSummary.qr_review.window_hours} saat</p>
+                  <p className="mt-1">Yarıçap dışı deneme: {attendanceSummary.qr_review.outside_radius_attempts} · 3+ dışarıda denemesi olan kişi: {attendanceSummary.qr_review.repeat_outside_radius_users} · Bildirilen düşük GPS doğruluğu: {attendanceSummary.qr_review.reported_low_accuracy_attempts}/{attendanceSummary.qr_review.accuracy_reported_attempts}</p>
+                  <p className="mt-1 text-amber-800">Bunlar inceleme sinyalidir; tek başına kötüye kullanım kanıtı veya otomatik yaptırım değildir. Gerekirse konum/izin durumunu ve gerekçeli manuel yoklamayı kontrol edin.</p>
+                </div>
+              ) : null}
 
               {attendanceError ? (
                 <div className="border-b border-red-100 bg-red-50 px-6 py-4 text-sm font-semibold text-red-700">

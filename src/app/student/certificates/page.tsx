@@ -10,7 +10,7 @@ import { downloadBlobResponse } from "@/lib/download";
 interface CertificateItem {
   id: number;
   type: string;
-  verification_code: string;
+  verification_code: string | null;
   issued_at?: string | null;
   download_url?: string | null;
   project?: {
@@ -245,7 +245,7 @@ export default function StudentCertificatesPage() {
                       </span>
                     </div>
                     <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground md:grid-cols-3">
-                      <span>Kod: {certificate.verification_code}</span>
+                      <span>{certificate.verification_code ? `Kod: ${certificate.verification_code}` : "Kişisel yükleme · KADEME doğrulaması yok"}</span>
                       <span>Dönem: {certificate.period?.name || "-"}</span>
                       <span>Tarih: {formatDate(certificate.issued_at)}</span>
                     </div>
@@ -264,13 +264,13 @@ export default function StudentCertificatesPage() {
                       Indir
                     </button>
                   ) : null}
-                  <Link
+                  {certificate.verification_code ? <Link
                     href={`/certificates/verify?code=${encodeURIComponent(certificate.verification_code)}`}
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-white/70"
                   >
                     Doğrula
                     <ExternalLink className="h-4 w-4" />
-                  </Link>
+                  </Link> : null}
                 </div>
               </div>
             </div>

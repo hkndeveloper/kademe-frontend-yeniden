@@ -6,6 +6,7 @@ import { Bell, Loader2, Megaphone, Pin, Star } from "lucide-react";
 import api from "@/lib/api/axios";
 import { LinkifiedText } from "@/components/shared/LinkifiedText";
 import { useAuth } from "@/store/useAuth";
+import { DirectMessagePanel } from "@/features/shared/DirectMessagePanel";
 
 type InboxMessage = {
   source_type: string;
@@ -109,7 +110,7 @@ export default function PanelInboxPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Gelen Kutusu</h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-              Size gorunen duyurular, kariyer fırsatları ve forum bildirimleri burada toplanır. Bu ekran kişiye özel mesaj yazma alanı degildir.
+              Kişisel mesajlarınız ile size görünen duyuru, kariyer fırsatı ve forum bildirimleri burada yer alır.
             </p>
           </div>
         </div>
@@ -119,6 +120,7 @@ export default function PanelInboxPage() {
           </Link>
         ) : null}
       </div>
+      <DirectMessagePanel panel />
       <div className="panel-filter-card">
         <div className="flex flex-wrap items-center gap-3">
           <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="panel-control w-auto min-w-56">

@@ -146,6 +146,11 @@ interface ApplicationPagination {
   to?: number | null;
 }
 
+interface WaitlistAutomationStatus {
+  schedule_enabled: boolean;
+  pilot_project_ids: number[];
+}
+
 interface DecisionResponse {
   follow_up?: {
     status_email_sent?: boolean | null;
@@ -262,6 +267,7 @@ export default function AdminApplicationsPage() {
   const { canAccessProject, hasPermission } = usePermissions();
   const [projects, setProjects] = useState<Project[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [waitlistAutomation, setWaitlistAutomation] = useState<WaitlistAutomationStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [retryNeeded, setRetryNeeded] = useState<Record<number, RetryType[]>>({});
@@ -317,7 +323,7 @@ export default function AdminApplicationsPage() {
     setErrorMessage(null);
 
     try {
-      const response = await api.get<{ applications: ApplicationPagination }>("/panel/applications", {
+      const response = await api.get<{ applications: ApplicationPagination; waitlist_automation?: WaitlistAutomationStatus }>("/panel/applications", {
         params: {
           page,
           per_page: perPage,
@@ -328,6 +334,7 @@ export default function AdminApplicationsPage() {
         },
       });
       const pagination = response.data.applications;
+      setWaitlistAutomation(response.data.waitlist_automation ?? null);
 
       setApplications(mapApplications(pagination?.data ?? []));
       setLastPage(pagination?.last_page ?? 1);
@@ -337,6 +344,7 @@ export default function AdminApplicationsPage() {
     } catch (error) {
       console.error("Başvurular yüklenemedi", error);
       setApplications([]);
+      setWaitlistAutomation(null);
       setLastPage(1);
       setTotal(0);
       setRangeStart(null);
@@ -626,6 +634,17 @@ export default function AdminApplicationsPage() {
           />
         </PermissionGate>
       </div>
+
+      {waitlistAutomation && (
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          <span className="font-bold">Yedek davet otomasyonu: </span>
+          {!waitlistAutomation.schedule_enabled
+            ? "Kapalı. Davet ve sıra işlemleri bu panelden manuel yapılabilir."
+            : waitlistAutomation.pilot_project_ids.length === 0
+              ? "Bu proje kapsamında kapalı. Davet ve sıra işlemleri manuel yapılabilir."
+              : `Pilot yapılandırıldı: ${waitlistAutomation.pilot_project_ids.map((id) => projects.find((project) => project.id === id)?.name ?? `Proje ${id}`).join(", ")}. Davetlerin otomatik gönderimi sunucudaki zamanlanmış görevin çalışmasına bağlıdır.`}
+        </div>
+      )}
 
       <div className="panel-filter-card">
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(280px,1fr)_minmax(360px,440px)_220px] xl:items-end">

@@ -72,6 +72,7 @@ interface ProgramPhoto {
 
 interface Program {
   id: number;
+  created_at?: string | null;
   program_kind?: "core_program" | "community_event";
   managing_unit?: { id: number; name: string } | null;
   title: string;
@@ -672,7 +673,10 @@ export default function PanelProgramsPage() {
           const projectName = p.project?.name ?? projectNameMap[p.project_id] ?? "";
           return `${p.title} ${projectName} ${p.location ?? ""} ${p.location_place_name ?? ""} ${p.location_place_address ?? ""}`.toLowerCase().includes(searchTerm.toLowerCase());
         })
-        .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime()),
+        .sort((a, b) => {
+          const createdAtDifference = new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+          return createdAtDifference || b.id - a.id;
+        }),
     [programs, projectNameMap, searchTerm, selectedPeriodId, selectedProjectId],
   );
 
@@ -1452,14 +1456,16 @@ export default function PanelProgramsPage() {
                 <label className={labelClass}>Durum</label>
                 <select
                   value={form.status}
+                  disabled={form.status === "completed"}
                   onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as ProgramFormState["status"] }))}
                   className={inputClass}
                 >
                   <option value="scheduled">Planlandı</option>
                   <option value="active">Aktif</option>
-                  {!isCommunityForm ? <option value="completed">Tamamlandı</option> : null}
+                  {!isCommunityForm && form.status === "completed" ? <option value="completed">Tamamlandı</option> : null}
                   <option value="cancelled">Iptal</option>
                 </select>
+                {!isCommunityForm && form.status !== "completed" ? <p className="mt-1 text-xs text-muted-foreground">Kredi hesaplaması için programı listedeki Tamamla işlemiyle bitirin.</p> : null}
               </div>
               <div>
                 <label className={labelClass}>Başlangıç tarihi / saati</label>
@@ -1489,6 +1495,7 @@ export default function PanelProgramsPage() {
                       type="number"
                       min={0}
                       value={form.credit_deduction}
+                      disabled={form.status === "completed"}
                       onChange={(e) => setForm((prev) => ({ ...prev, credit_deduction: e.target.value }))}
                       className={inputClass}
                       required
@@ -1927,7 +1934,8 @@ export default function PanelProgramsPage() {
               const canResolveProgram = periodHasWriteCapability(programPeriod, "resolve_operations");
               const canCompleteThisProgram = canResolveProgram && Boolean(program.capabilities?.complete) && programStatus !== "completed" && programStatus !== "cancelled";
               const qrWindowOpen = isProgramAttendanceWindowOpen(program);
-              const canStartQrForProgram = canResolveProgram && (programStatus === "scheduled" || programStatus === "active") && qrWindowOpen;
+              const qrLocationConfigured = program.latitude != null && program.longitude != null;
+              const canStartQrForProgram = canResolveProgram && (programStatus === "scheduled" || programStatus === "active") && qrWindowOpen && qrLocationConfigured;
               const canShowQrStatus = Boolean(program.capabilities?.manage_qr) && (programStatus === "scheduled" || programStatus === "active");
               const canEditProgram = Boolean(program.capabilities?.update_core || program.capabilities?.update_community_event);
 
@@ -2100,11 +2108,11 @@ export default function PanelProgramsPage() {
                         <button
                           type="button"
                           disabled
-                          title="QR yoklama sadece program saat aralığında baslatilabilir."
+                          title={!qrLocationConfigured ? "QR yoklama için program koordinatlarını ekleyin." : "QR yoklama sadece program saat aralığında başlatılabilir."}
                           className="panel-card-action w-full cursor-not-allowed bg-slate-100 px-2.5 text-slate-500"
                         >
                           <Clock className="h-3.5 w-3.5" />
-                          QR Saat Disi
+                          {!qrLocationConfigured ? "QR için Konum Ekle" : "QR Saat Disi"}
                         </button>
                       )}
                   </div>

@@ -5,6 +5,7 @@ import { Loader2, MessageCircle, MessagesSquare, Search, UsersRound } from "luci
 import { LinkifiedText } from "@/components/shared/LinkifiedText";
 import { ProjectPeriodFilters, type ProjectWithPeriods } from "@/components/shared/ProjectPeriodFilters";
 import api from "@/lib/api/axios";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type Author = { id: number; name: string; surname: string };
 
@@ -28,7 +29,7 @@ type ForumPost = {
   replies?: ForumReply[];
 };
 
-type Paginated<T> = { data?: T[] };
+type Paginated<T> = { data?: T[]; current_page?: number; last_page?: number };
 
 function authorName(author?: Author | null) {
   return author ? `${author.name} ${author.surname}` : "KADEME uyesi";
@@ -47,22 +48,43 @@ function sortReplies(replies: ForumReply[] = []) {
 }
 
 export default function PanelForumPage() {
+  const { canAccessProject } = usePermissions();
   const [posts, setPosts] = useState<ForumPost[]>([]);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
   const [projects, setProjects] = useState<ProjectWithPeriods[]>([]);
   const [projectFilter, setProjectFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [savingPostId, setSavingPostId] = useState<number | null>(null);
 
-  async function fetchPosts(nextProject = projectFilter, nextPeriod = periodFilter) {
+  async function fetchPosts(nextProject = projectFilter, nextPeriod = periodFilter, nextPage = 1) {
     const response = await api.get<{ posts?: Paginated<ForumPost> }>("/panel/forum/posts", {
       params: {
         project_id: nextProject !== "all" ? Number(nextProject) : undefined,
         period_id: nextPeriod !== "all" ? Number(nextPeriod) : undefined,
+        page: nextPage,
       },
     });
     setPosts(response.data.posts?.data ?? []);
+    setPage(response.data.posts?.current_page ?? nextPage);
+    setLastPage(response.data.posts?.last_page ?? 1);
+  }
+
+  async function togglePinned(post: ForumPost) {
+    setSavingPostId(post.id);
+    setErrorMessage(null);
+    try {
+      await api.put(`/panel/forum/posts/${post.id}/pin`, { is_pinned: !post.is_pinned });
+      await fetchPosts(projectFilter, periodFilter, page);
+    } catch (error) {
+      console.error("Forum sabitleme islemi basarisiz", error);
+      setErrorMessage("Konu sabitleme durumu guncellenemedi.");
+    } finally {
+      setSavingPostId(null);
+    }
   }
 
   useEffect(() => {
@@ -74,6 +96,8 @@ export default function PanelForumPage() {
       .then(([postsResponse, projectsResponse]) => {
         if (!active) return;
         setPosts(postsResponse.data.posts?.data ?? []);
+        setPage(postsResponse.data.posts?.current_page ?? 1);
+        setLastPage(postsResponse.data.posts?.last_page ?? 1);
         setProjects(projectsResponse.data.projects ?? []);
       })
       .catch((error) => {
@@ -163,7 +187,7 @@ export default function PanelForumPage() {
           <input
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Başlık, içerik, proje veya yanıt ara"
+            placeholder="Bu sayfada başlık, içerik, proje veya yanıt ara"
             className="panel-control w-full pl-10"
           />
         </div>
@@ -186,6 +210,16 @@ export default function PanelForumPage() {
                     <span className="text-xs font-medium text-muted-foreground">
                       {authorName(post.author)} - {formatDate(post.created_at)}
                     </span>
+                    {post.project && canAccessProject("forum.moderate", post.project.id) ? (
+                      <button
+                        type="button"
+                        disabled={savingPostId !== null}
+                        onClick={() => void togglePinned(post)}
+                        className="panel-table-action panel-table-action-info disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {savingPostId === post.id ? "Kaydediliyor..." : post.is_pinned ? "Sabitlemeyi kaldır" : "Sabitle"}
+                      </button>
+                    ) : null}
                   </div>
                   <h2 className="text-xl font-black text-slate-900">{post.title}</h2>
                   <LinkifiedText text={post.content} className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground" />
@@ -216,6 +250,13 @@ export default function PanelForumPage() {
           })
         )}
       </div>
+      {lastPage > 1 ? (
+        <nav aria-label="Forum sayfaları" className="flex items-center justify-center gap-3 text-sm">
+          <button type="button" disabled={page <= 1} onClick={() => void fetchPosts(projectFilter, periodFilter, page - 1)} className="panel-button panel-button-secondary">Daha yeni</button>
+          <span className="font-medium text-muted-foreground">{page} / {lastPage}</span>
+          <button type="button" disabled={page >= lastPage} onClick={() => void fetchPosts(projectFilter, periodFilter, page + 1)} className="panel-button panel-button-secondary">Daha eski</button>
+        </nav>
+      ) : null}
     </div>
   );
 }

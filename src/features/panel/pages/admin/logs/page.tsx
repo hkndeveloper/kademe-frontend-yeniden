@@ -9,6 +9,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { LogFiltersBar } from "./components/LogFiltersBar";
 import { LogSummaryCards } from "./components/LogSummaryCards";
 import { LogTable } from "./components/LogTable";
+import { OperationsStatusPanel } from "./components/OperationsStatusPanel";
 import { exportableFilterParams, normalizeActivityRow } from "./log-utils";
 import type { ActivityLog, LogFilterOptions, LogFilters, LogSummary, PaginatedLogs } from "./types";
 
@@ -50,7 +51,7 @@ function normalizeLogsPayload(payload: LogsApiResponse["logs"]): PaginatedLogs {
 }
 
 export default function AdminLogsPage() {
-  const { hasPermission } = usePermissions();
+  const { hasPermission, hasGlobalScope } = usePermissions();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [summary, setSummary] = useState<LogSummary | null>(null);
   const [filterOptions, setFilterOptions] = useState<LogFilterOptions>({ log_names: [], events: [] });
@@ -129,6 +130,7 @@ export default function AdminLogsPage() {
       {warningMessage && !errorMessage ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">{warningMessage}</div> : null}
 
       <PermissionGate permission="logs.view" fallback={<div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-8 text-center text-sm font-bold text-amber-800">İşlem loglarini görüntüleme yetkiniz bulunmuyor.</div>}>
+        {hasGlobalScope("logs.view") ? <OperationsStatusPanel /> : null}
         <LogSummaryCards summary={summary} />
         <LogFiltersBar filters={filters} options={filterOptions} loading={loading} onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} onApply={applyFilters} />
         <LogTable logs={logs} loading={loading} />

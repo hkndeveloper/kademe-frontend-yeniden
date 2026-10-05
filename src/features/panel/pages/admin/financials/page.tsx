@@ -36,6 +36,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { activeOrganizationMembership } from "@/lib/organization-context";
 import { optionalPanelRequest, panelLoadErrorMessage } from "@/lib/panel-load-state";
 import { downloadBlobResponse } from "@/lib/download";
+import { FinancialDraftEditor } from "./FinancialDraftEditor";
 
 interface Project {
   id: number;
@@ -54,6 +55,7 @@ interface FinancialTransaction {
   capabilities?: {
     view: boolean;
     download_invoice: boolean;
+    edit: boolean;
     delete: boolean;
     approve: boolean;
     reject: boolean;
@@ -68,6 +70,7 @@ interface FinancialTransaction {
   status: "pending" | "approved" | "rejected" | "paid";
   invoice_path?: string | null;
   invoice_no?: string | null;
+  invoice_revisions_count?: number;
   payment_date?: string | null;
   payment_method?: string | null;
   accounting_code?: string | null;
@@ -144,6 +147,8 @@ export default function AdminFinancialsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<FinancialTransaction | null>(null);
+  const [selectedTransactionEditable, setSelectedTransactionEditable] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [formProjectId, setFormProjectId] = useState(initialFinancialProjectId);
@@ -862,6 +867,27 @@ export default function AdminFinancialsPage() {
                         </button>
                       )}
 
+                      {transaction.capabilities?.edit && transaction.status === "pending" ? (
+                        <button
+                          type="button"
+                          disabled={transaction.period?.id != null && !canWriteTransaction}
+                          onClick={() => { setSelectedTransaction(transaction); setSelectedTransactionEditable(true); }}
+                          className="panel-table-action panel-table-action-info disabled:cursor-not-allowed disabled:opacity-40"
+                          title={transaction.period?.id != null && !canWriteTransaction ? "Bu dönemde düzenleme kapalıdır." : "Bekleyen kaydı düzenle"}
+                        >
+                          Düzenle
+                        </button>
+                      ) : null}
+                      {transaction.capabilities?.download_invoice && (transaction.invoice_revisions_count ?? 0) > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedTransaction(transaction); setSelectedTransactionEditable(false); }}
+                          className="panel-table-action panel-table-action-info"
+                        >
+                          Fatura geçmişi
+                        </button>
+                      ) : null}
+
                       {transaction.status === "pending" && transaction.project?.id != null && (
                         <>
                           {transaction.capabilities?.approve && (
@@ -1143,6 +1169,19 @@ export default function AdminFinancialsPage() {
             </button>
           </div>
         </form>
+      ) : null}
+      {selectedTransaction ? (
+        <FinancialDraftEditor
+          key={`${selectedTransaction.id}-${selectedTransactionEditable ? "edit" : "history"}`}
+          transaction={selectedTransaction}
+          editable={selectedTransactionEditable}
+          categoryLabels={categoryLabels}
+          onClose={() => setSelectedTransaction(null)}
+          onSaved={async () => {
+            setSuccessMessage("Bekleyen mali kayıt güncellendi.");
+            await loadData(page);
+          }}
+        />
       ) : null}
     </div>
   );
