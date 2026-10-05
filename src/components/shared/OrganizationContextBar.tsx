@@ -56,25 +56,25 @@ export function OrganizationContextBar() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
           {memberships.length > 1 ? (
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <label className="flex min-w-0 items-center gap-2 text-xs font-bold text-slate-500">
               Birim
-              <select aria-label="Birim" disabled={isContextSwitching} value={activeMembership.unit_id} onChange={(event) => void handleUnitChange(Number(event.target.value))} className="min-w-52 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-primary disabled:cursor-wait disabled:opacity-60">
+              <select aria-label="Birim" disabled={isContextSwitching} value={activeMembership.unit_id} onChange={(event) => void handleUnitChange(Number(event.target.value))} className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-primary disabled:cursor-wait disabled:opacity-60 sm:w-52 sm:flex-none">
                 {memberships.map((membership) => <option key={membership.membership_id} value={membership.unit_id}>{membership.unit_name} — {membership.position === "coordinator" ? "Koordinatör" : "Personel"}</option>)}
               </select>
             </label>
           ) : null}
           {projects.length > 0 ? (
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <label className="flex min-w-0 items-center gap-2 text-xs font-bold text-slate-500">
               Proje
-              <select aria-label="Proje" disabled={isContextSwitching} value={selectedProjectId ?? ""} onChange={(event) => setActiveProjectId(event.target.value ? Number(event.target.value) : null)} className="min-w-44 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-primary disabled:cursor-wait disabled:opacity-60">
+              <select aria-label="Proje" disabled={isContextSwitching} value={selectedProjectId ?? ""} onChange={(event) => setActiveProjectId(event.target.value ? Number(event.target.value) : null)} className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-primary disabled:cursor-wait disabled:opacity-60 sm:w-44 sm:flex-none">
                 <option value="">Tüm yetkili projeler</option>
                 {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
               </select>
             </label>
           ) : null}
-          <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${context?.authoritative ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+          <span className={`w-fit max-w-full rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${context?.authoritative ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
             {isContextSwitching ? "Bağlam yenileniyor" : context?.authoritative ? "Aktif yetki bağlamı" : `${context?.authorization_mode ?? "legacy"} hazırlık`}
           </span>
         </div>

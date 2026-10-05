@@ -32,6 +32,8 @@ type ForumPost = {
   replies?: ForumReply[];
 };
 
+type ForumPage = { data?: ForumPost[]; current_page?: number; last_page?: number };
+
 function authorName(author?: { name: string; surname: string } | null) {
   return author ? `${author.name} ${author.surname}` : "KADEME uyesi";
 }
@@ -63,6 +65,8 @@ function normalizeProjects(items: Project[]) {
 export function ForumPortalPage() {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<ForumPost[]>([]);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
   const [projectFilter, setProjectFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,24 +87,29 @@ export function ForumPortalPage() {
   const selectedPeriod = periodOptionById(projects, periodFilter);
   const canCreateInSelectedPeriod = periodHasWriteCapability(selectedPeriod, "create_operations");
 
-  async function fetchPosts(projectId?: string, periodId?: string) {
-    const res = await api.get<{ posts?: { data?: ForumPost[] } }>("/forum/posts", {
+  async function fetchPosts(projectId?: string, periodId?: string, nextPage = 1) {
+    const res = await api.get<{ posts?: ForumPage }>("/forum/posts", {
       params: {
         project_id: projectId && projectId !== "all" ? projectId : undefined,
         period_id: periodId && periodId !== "all" ? periodId : undefined,
+        page: nextPage,
       },
     });
     setPosts(res.data.posts?.data ?? []);
+    setPage(res.data.posts?.current_page ?? nextPage);
+    setLastPage(res.data.posts?.last_page ?? 1);
   }
 
   useEffect(() => {
     const run = async () => {
       try {
         const [postsRes, projectsRes] = await Promise.all([
-          api.get<{ posts?: { data?: ForumPost[] } }>("/forum/posts"),
+          api.get<{ posts?: ForumPage }>("/forum/posts"),
           api.get<{ projects?: Project[] }>("/dashboard/projects"),
         ]);
         setPosts(postsRes.data.posts?.data ?? []);
+        setPage(postsRes.data.posts?.current_page ?? 1);
+        setLastPage(postsRes.data.posts?.last_page ?? 1);
         setProjects(normalizeProjects(projectsRes.data.projects ?? []));
       } catch (error) {
         console.error("Forum yüklenemedi", error);
@@ -307,7 +316,7 @@ export function ForumPortalPage() {
               <input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Başlık, içerik, proje veya yanıt ara"
+                placeholder="Bu sayfada başlık, içerik, proje veya yanıt ara"
                 className="w-full rounded-2xl border border-border bg-background py-3 pl-10 pr-4 text-sm outline-none focus:border-primary"
               />
             </div>
@@ -374,6 +383,13 @@ export function ForumPortalPage() {
               );
             })
           )}
+          {lastPage > 1 ? (
+            <nav aria-label="Forum sayfaları" className="flex items-center justify-center gap-3 py-3 text-sm">
+              <button type="button" disabled={page <= 1} onClick={() => void fetchPosts(projectFilter, periodFilter, page - 1)} className="rounded-xl border border-border bg-background px-4 py-2 font-bold disabled:opacity-40">Daha yeni</button>
+              <span className="font-medium text-muted-foreground">{page} / {lastPage}</span>
+              <button type="button" disabled={page >= lastPage} onClick={() => void fetchPosts(projectFilter, periodFilter, page + 1)} className="rounded-xl border border-border bg-background px-4 py-2 font-bold disabled:opacity-40">Daha eski</button>
+            </nav>
+          ) : null}
         </main>
       </div>
     </div>

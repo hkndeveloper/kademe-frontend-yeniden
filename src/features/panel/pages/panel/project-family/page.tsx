@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
-import { cn } from "@/lib/utils";
 import {
   periodHasWriteCapability,
   PeriodArchiveModeNotice,
@@ -316,6 +315,21 @@ const familyConfigs: Record<FamilyKey, FamilyConfig> = {
   },
 };
 
+const familySectionIds: Record<FamilyKey, string[]> = {
+  diplomasi360: ["overview", "internships", "files"],
+  pergel: ["overview", "mentors", "assignments"],
+  eurodesk: ["overview", "projects", "partnerships"],
+  kademe_plus: ["overview", "badges", "rewards", "modules"],
+  zirve_kademe: ["overview", "badges", "rewards", "modules"],
+};
+
+const sectionLinkLabels: Record<string, string> = {
+  files: "Staj belgesi yükle",
+  assignments: "Eşleştirme ekle",
+  partnerships: "Ortaklık ekle",
+  badges: "Rozet durumu",
+};
+
 function hasAny(enabledActions: string[], permissions: string[]): boolean {
   return permissions.some((permission) => enabledActions.includes(permission));
 }
@@ -425,6 +439,10 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
   const projectCount = payload?.projects.length ?? matchedProjectIds.length;
   const selectedPeriod = payload?.periods.find((period) => String(period.id) === requestedPeriodId);
   const selectedPeriodCanCreate = !selectedPeriod || periodHasWriteCapability(selectedPeriod, "create_operations");
+  const sectionLinks = visibleTabs.filter((tab) =>
+    familySectionIds[familyKey].includes(tab.id) &&
+    (!["files", "assignments", "partnerships"].includes(tab.id) || selectedPeriodCanCreate)
+  );
 
   function updateFilter(name: "project_id" | "period_id", value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -498,20 +516,16 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        {visibleTabs.map((tab, index) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={cn(
-              "panel-tab",
-              index === 0 ? "panel-tab-active" : ""
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {payload && sectionLinks.length > 0 ? (
+        <nav aria-label="Proje ailesi bölümleri" className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-xs font-bold uppercase tracking-wide text-slate-500">Bölümlere git</span>
+          {sectionLinks.map((tab) => (
+            <a key={tab.id} href={`#project-family-${tab.id}`} className="panel-tab rounded-xl border border-slate-200 bg-white focus-visible:ring-2 focus-visible:ring-accent/30">
+              {sectionLinkLabels[tab.id] ?? tab.label}
+            </a>
+          ))}
+        </nav>
+      ) : null}
 
       {isLoading ? (
         <section className="panel-section-card flex min-h-52 items-center justify-center text-sm font-bold text-slate-600">
@@ -519,7 +533,7 @@ export function ProjectFamilyPanelPage({ familyKey }: { familyKey: FamilyKey }) 
         </section>
       ) : payload ? (
         <div className="space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div id="project-family-overview" className="grid scroll-mt-28 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {payload.summary.map((item) => (
               <div key={item.id} className="panel-stat-card">
                 <div className="text-xs font-black uppercase tracking-widest text-slate-500">{item.label}</div>
@@ -886,7 +900,7 @@ function KademeRewardsFamilyContent({
           <div className="panel-card-muted p-3"><div className="text-xs font-black uppercase text-slate-500">Modül</div><div className="mt-2 text-xl font-black text-slate-900">{kademeModules.length}</div></div>
         </div>
 
-        <div className="panel-card-muted bg-white">
+        <div id="project-family-rewards" className="panel-card-muted scroll-mt-28 bg-white">
           <h3 className="font-black text-slate-900">Ödül kademeleri</h3>
           <div className="mt-3 space-y-2">
             {rewardTiers.length ? rewardTiers.map((tier) => (
@@ -936,8 +950,8 @@ function KademeRewardsFamilyContent({
           </div>
         </div>
 
-        <div className="panel-card-muted bg-white">
-          <h3 className="font-black text-slate-900">Hak kazananlar</h3>
+        <div id="project-family-badges" className="panel-card-muted scroll-mt-28 bg-white">
+          <h3 className="font-black text-slate-900">Rozet durumu ve hak kazananlar</h3>
           <div className="mt-3 space-y-2">
             {eligibleParticipants.length ? eligibleParticipants.map((participant) => (
               <div key={participant.participant_id} className="panel-card-muted p-3 text-sm">
@@ -948,7 +962,7 @@ function KademeRewardsFamilyContent({
           </div>
         </div>
 
-        <div className="panel-card-muted bg-white">
+        <div id="project-family-modules" className="panel-card-muted scroll-mt-28 bg-white">
           <h3 className="font-black text-slate-900">Modüller ve kayıtlar</h3>
           <div className="mt-3 space-y-3">
             {kademeModules.length ? kademeModules.map((module) => (
@@ -1212,7 +1226,7 @@ function EurodeskFamilyContent({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
-      <section className="panel-section-card space-y-5">
+      <section id="project-family-projects" className="panel-section-card scroll-mt-28 space-y-5">
         <div>
           <h2 className="text-lg font-black text-slate-900">Eurodesk projeleri</h2>
           <p className="mt-1 text-sm text-muted-foreground">{payload.selected_project?.name ?? "Eurodesk"}</p>
@@ -1318,7 +1332,7 @@ function EurodeskFamilyContent({
               </div>
             </form>
 
-            <form onSubmit={(event) => void submitPartnership(event)} className="panel-section-card">
+            <form id="project-family-partnerships" onSubmit={(event) => void submitPartnership(event)} className="panel-section-card scroll-mt-28">
               <h3 className="text-base font-black text-slate-900">Ortaklık ekle</h3>
               <div className="mt-4 space-y-3">
                 <select value={partnershipForm.eurodesk_project_id} onChange={(event) => setPartnershipForm((current) => ({ ...current, eurodesk_project_id: event.target.value }))} className="panel-control">
@@ -1462,7 +1476,7 @@ function DiplomasiFamilyContent({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-      <section className="panel-section-card">
+      <section id="project-family-internships" className="panel-section-card scroll-mt-28">
         <div>
           <h2 className="text-lg font-black text-slate-900">Stajlar</h2>
           <p className="mt-1 text-sm text-muted-foreground">{payload.selected_project?.name ?? "Diplomasi360"}</p>
@@ -1569,7 +1583,7 @@ function DiplomasiFamilyContent({
                 className="panel-control"
                 placeholder="Belge yolu veya URL"
               />
-              <label className="panel-button panel-button-secondary cursor-pointer">
+              <label id="project-family-files" className="panel-button panel-button-secondary scroll-mt-28 cursor-pointer">
                 <Upload className="h-4 w-4" /> Belge yükle
                 <input
                   type="file"
@@ -1691,7 +1705,7 @@ function PergelFamilyContent({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-      <section className="panel-section-card">
+      <section id="project-family-mentors" className="panel-section-card scroll-mt-28">
         <div>
           <h2 className="text-lg font-black text-slate-900">Mentorler</h2>
           <p className="mt-1 text-sm text-muted-foreground">{payload.selected_project?.name ?? "Pergel"}</p>
@@ -1781,7 +1795,7 @@ function PergelFamilyContent({
               </div>
             </form>
 
-            <form onSubmit={(event) => void assignParticipant(event)} className="panel-section-card">
+            <form id="project-family-assignments" onSubmit={(event) => void assignParticipant(event)} className="panel-section-card scroll-mt-28">
               <h3 className="text-base font-black text-slate-900">Eşleştirme ekle</h3>
               <div className="mt-4 space-y-3">
                 <select

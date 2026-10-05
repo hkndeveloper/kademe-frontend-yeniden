@@ -55,7 +55,9 @@ interface Program {
   id: number;
   program_kind?: "core_program" | "community_event";
   calendar_event_id?: number | null;
-  event_type?: "program" | "meeting";
+  event_type?: "program" | "meeting" | "google_external";
+  google_event_id?: string;
+  all_day?: boolean;
   title: string;
   description?: string | null;
   location?: string | null;
@@ -100,10 +102,23 @@ interface CalendarSummary {
 interface GoogleCalendarStatus {
   configured: boolean;
   connected: boolean;
+  external_read_enabled?: boolean;
   calendar_id?: string | null;
   last_synced_at?: string | null;
   last_error?: string | null;
   last_error_at?: string | null;
+  last_read_at?: string | null;
+  last_read_error?: string | null;
+}
+
+interface GoogleExternalEvent {
+  google_event_id: string;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  start_at: string;
+  end_at: string;
+  all_day: boolean;
 }
 
 interface CalendarOverviewResponse {
@@ -117,7 +132,7 @@ interface CalendarOverviewResponse {
 
 type ViewMode = "daily" | "weekly" | "monthly";
 type ProgramStatusFilter = "all" | "scheduled" | "active" | "completed" | "cancelled";
-type RecordTypeFilter = "all" | "program" | "meeting";
+type RecordTypeFilter = "all" | "program" | "meeting" | "google_external";
 type CreateMode = "program" | "meeting";
 
 const initialForm = {
@@ -172,6 +187,7 @@ function GoogleStatusMetric({ label, value }: { label: string; value: string }) 
   );
 }
 function formatTimeRange(program: Program) {
+  if (program.all_day) return "Tüm gün";
   const start = formatIstanbulTime(program.start_at);
   const end = program.end_at ? formatIstanbulTime(program.end_at) : null;
   return end ? `${start} - ${end}` : start;
@@ -187,6 +203,12 @@ export default function AdminCalendarPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [externalSnapshot, setExternalSnapshot] = useState<{
+    queryKey: string;
+    events: Program[];
+    error: string;
+    truncated: boolean;
+  } | null>(null);
   const [summary, setSummary] = useState<CalendarSummary | null>(null);
   const [upcomingTasks, setUpcomingTasks] = useState<Program[]>([]);
   const [attentionItems, setAttentionItems] = useState<Program[]>([]);
@@ -349,6 +371,7 @@ export default function AdminCalendarPage() {
 
   const canManageCalendarItemAssignments = useCallback(
     (item: Program) => {
+      if (item.event_type === "google_external") return false;
       if (!itemPeriodCanCreate(item)) return false;
       if ((item.event_type ?? "program") === "meeting") {
         if (!canManageMeetings) return false;
@@ -518,6 +541,7 @@ export default function AdminCalendarPage() {
   };
 
   const openAssignmentModal = (program: Program) => {
+    if (program.event_type === "google_external") return;
     const canEditAssignments = canManageCalendarItemAssignments(program);
     const isMeeting = (program.event_type ?? "program") === "meeting";
     setSelectedProgram(program);
@@ -616,31 +640,6 @@ export default function AdminCalendarPage() {
     setCreateAssigneeIds((current) => current.filter((id) => !filteredAssigneeIds.includes(id)));
   };
 
-  const allFilteredPrograms = useMemo(() => {
-    return programs
-      .filter((program) => (selectedProject === "all" ? true : program.project_id === Number(selectedProject)))
-      .filter((program) => (selectedPeriod === "all" ? true : String(program.period?.id ?? "") === selectedPeriod))
-      .filter((program) => (statusFilter === "all" ? true : (program.status ?? "scheduled") === statusFilter))
-      .filter((program) => (recordTypeFilter === "all" ? true : (program.event_type ?? "program") === recordTypeFilter))
-      .filter((program) => (responsibleUnitFilter === "all" ? true : String(program.responsible_unit?.id ?? "none") === responsibleUnitFilter))
-      .filter((program) => {
-        const normalizedTerm = searchTerm.trim().toLowerCase();
-        if (!normalizedTerm) return true;
-        return `${program.title} ${program.project?.name ?? ""} ${program.period?.name ?? ""} ${program.location ?? ""} ${program.responsible_unit?.name ?? ""}`
-          .toLowerCase()
-          .includes(normalizedTerm);
-      })
-      .sort((left, right) => new Date(left.start_at).getTime() - new Date(right.start_at).getTime());
-  }, [programs, recordTypeFilter, responsibleUnitFilter, searchTerm, selectedPeriod, selectedProject, statusFilter]);
-
-  const responsibleUnitOptions = useMemo(() => Array.from(
-    new Map(
-      programs
-        .filter((program) => program.responsible_unit)
-        .map((program) => [program.responsible_unit!.id, program.responsible_unit!]),
-    ).values(),
-  ).sort((left, right) => left.name.localeCompare(right.name, "tr")), [programs]);
-
   const rangeStart = useMemo(() => {
     const base = new Date(currentDate);
     base.setHours(0, 0, 0, 0);
@@ -659,6 +658,72 @@ export default function AdminCalendarPage() {
     if (viewMode === "monthly") end.setMonth(end.getMonth() + 1);
     return end;
   }, [rangeStart, viewMode]);
+
+  const externalReadEnabled = Boolean(googleStatus?.configured && googleStatus.connected && googleStatus.external_read_enabled);
+  const externalQueryKey = `${rangeStart.toISOString()}|${rangeEnd.toISOString()}|${googleStatus?.calendar_id ?? ""}|${googleStatus?.last_synced_at ?? ""}`;
+  const externalEvents = useMemo(
+    () => externalReadEnabled && externalSnapshot?.queryKey === externalQueryKey ? externalSnapshot.events : [],
+    [externalReadEnabled, externalSnapshot, externalQueryKey],
+  );
+  const externalError = externalReadEnabled && externalSnapshot?.queryKey === externalQueryKey ? externalSnapshot.error : "";
+  const externalTruncated = externalReadEnabled && externalSnapshot?.queryKey === externalQueryKey && externalSnapshot.truncated;
+
+  const allFilteredPrograms = useMemo(() => {
+    return [...programs, ...externalEvents]
+      .filter((program) => (selectedProject === "all" ? true : program.project_id === Number(selectedProject)))
+      .filter((program) => (selectedPeriod === "all" ? true : String(program.period?.id ?? "") === selectedPeriod))
+      .filter((program) => (statusFilter === "all" ? true : (program.status ?? "scheduled") === statusFilter))
+      .filter((program) => (recordTypeFilter === "all" ? true : (program.event_type ?? "program") === recordTypeFilter))
+      .filter((program) => (responsibleUnitFilter === "all" ? true : String(program.responsible_unit?.id ?? "none") === responsibleUnitFilter))
+      .filter((program) => {
+        const normalizedTerm = searchTerm.trim().toLowerCase();
+        if (!normalizedTerm) return true;
+        return `${program.title} ${program.project?.name ?? ""} ${program.period?.name ?? ""} ${program.location ?? ""} ${program.responsible_unit?.name ?? ""}`
+          .toLowerCase()
+          .includes(normalizedTerm);
+      })
+      .sort((left, right) => new Date(left.start_at).getTime() - new Date(right.start_at).getTime());
+  }, [programs, externalEvents, recordTypeFilter, responsibleUnitFilter, searchTerm, selectedPeriod, selectedProject, statusFilter]);
+
+  const responsibleUnitOptions = useMemo(() => Array.from(
+    new Map(
+      programs
+        .filter((program) => program.responsible_unit)
+        .map((program) => [program.responsible_unit!.id, program.responsible_unit!]),
+    ).values(),
+  ).sort((left, right) => left.name.localeCompare(right.name, "tr")), [programs]);
+
+  useEffect(() => {
+    if (!externalReadEnabled) return;
+
+    let cancelled = false;
+    void api.get<{ events: GoogleExternalEvent[]; truncated: boolean }>("/panel/calendar/google/external-events", {
+      params: { start_at: rangeStart.toISOString(), end_at: rangeEnd.toISOString() },
+    }).then((response) => {
+      if (cancelled) return;
+      const events = (response.data.events ?? []).map((event, index) => ({
+        ...event,
+        id: -(index + 1),
+        event_type: "google_external",
+        status: "scheduled",
+        project_id: null,
+        project: null,
+        period: null,
+      })) as Program[];
+      setExternalSnapshot({ queryKey: externalQueryKey, events, truncated: Boolean(response.data.truncated), error: "" });
+      setGoogleStatus((current) => current ? { ...current, last_read_at: new Date().toISOString(), last_read_error: null } : current);
+    }).catch(() => {
+      if (cancelled) return;
+      setExternalSnapshot({
+        queryKey: externalQueryKey,
+        events: [],
+        truncated: false,
+        error: "Google takvimindeki harici etkinlikler okunamadı; KADEME kayıtları görüntülenmeye devam ediyor.",
+      });
+    });
+
+    return () => { cancelled = true; };
+  }, [externalReadEnabled, externalQueryKey, rangeStart, rangeEnd]);
 
   const visiblePrograms = useMemo(
     () => allFilteredPrograms.filter((program) => {
@@ -729,12 +794,15 @@ export default function AdminCalendarPage() {
   const ProgramChip = ({ program, compact = false }: { program: Program; compact?: boolean }) => {
     const meta = statusMeta(program.status);
     const isMeeting = (program.event_type ?? "program") === "meeting";
+    const isExternal = program.event_type === "google_external";
     const canAssign = canManageCalendarItemAssignments(program);
     return (
       <button
         type="button"
+        disabled={isExternal}
         onClick={() => openAssignmentModal(program)}
-        className={`w-full rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md ${
+        title={isExternal ? [program.description, program.location].filter(Boolean).join(" · ") || "Google takviminden salt okunur etkinlik" : undefined}
+        className={`w-full rounded-xl border border-slate-200 bg-white text-left shadow-sm transition ${isExternal ? "cursor-default" : "hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"} ${
           compact ? "p-2" : "p-3"
         }`}
       >
@@ -745,7 +813,7 @@ export default function AdminCalendarPage() {
               <p className="truncate text-sm font-bold text-slate-900">{program.title}</p>
             </div>
             <p className="mt-1 truncate text-xs text-slate-500">
-              {isMeeting ? "Toplantı" : program.program_kind === "community_event" ? "Ortak etkinlik" : "Program"} / {program.project?.name ?? "Genel"}
+              {isExternal ? "Google takvimi · salt okunur" : isMeeting ? "Toplantı" : program.program_kind === "community_event" ? "Ortak etkinlik" : "Program"} / {program.project?.name ?? "Genel"}
             </p>
           </div>
           <span className="shrink-0 text-xs font-semibold text-slate-500">{formatTimeRange(program)}</span>
@@ -753,21 +821,22 @@ export default function AdminCalendarPage() {
         {!compact && (
           <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-500">
             <span className={`rounded-full border px-2 py-0.5 ${meta.chip} ${meta.text}`}>{meta.label}</span>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5">
+            {!isExternal && <span className="rounded-full bg-slate-100 px-2 py-0.5">
               {program.calendar_event?.assigned_count ?? 0} {isMeeting ? "davetli" : "gorevli"}
-            </span>
+            </span>}
             {program.responsible_unit ? (
               <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
                 {program.responsible_unit.name}
               </span>
             ) : null}
-            {!isMeeting && (
+            {!isMeeting && !isExternal && (
               program.calendar_event?.google_event_id ? (
                 <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">Google</span>
               ) : (
                 <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">Senkron bekliyor</span>
               )
             )}
+            {isExternal && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">Harici · salt okunur</span>}
             {canAssign ? <span className="ml-auto text-indigo-600">{isMeeting ? "Davetli" : "Ata"}</span> : null}
           </div>
         )}
@@ -842,6 +911,12 @@ export default function AdminCalendarPage() {
           </div>
         )}
 
+        {(externalError || externalTruncated) && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {externalError || "Google takviminde bu aralıkta çok sayıda etkinlik var; ilk 1250 kayıt gösteriliyor."}
+          </div>
+        )}
+
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
@@ -854,14 +929,17 @@ export default function AdminCalendarPage() {
                   {!googleStatus?.configured
                     ? "Google Calendar ayarları eksik."
                     : googleStatus.connected
-                      ? "Bağlantı aktif, manuel senkron ile bekleyen programlar Google takvime yazilir."
-                      : "Ayarlar hazir, bağlantı bekleniyor."}
+                      ? googleStatus.external_read_enabled
+                        ? "Bağlantı aktif. Harici etkinlikler tüm projeler görünümünde salt okunur gösterilir; Senkron düğmesi KADEME programlarını Google'a yazar."
+                        : "Bağlantı aktif. Harici etkinlik okuması, kurum takvimi doğrulanana kadar kapalı; Senkron düğmesi KADEME programlarını Google'a yazar."
+                      : "Ayarlar hazır, bağlantı bekleniyor."}
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3 lg:min-w-[520px]">
+            <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-4 lg:min-w-[620px]">
               <GoogleStatusMetric label="Takvim" value={googleStatus?.calendar_id || "-"} />
               <GoogleStatusMetric label="Son senkron" value={formatDateTime(googleStatus?.last_synced_at)} />
+              <GoogleStatusMetric label="Son okuma" value={formatDateTime(googleStatus?.last_read_at)} />
               <GoogleStatusMetric label="Bekleyen" value={String(summary?.google_pending_count ?? 0)} />
             </div>
           </div>
@@ -871,15 +949,19 @@ export default function AdminCalendarPage() {
               {googleStatus.last_error_at ? <span className="ml-2 text-xs font-semibold">({formatDateTime(googleStatus.last_error_at)})</span> : null}
             </div>
           ) : null}
+          {googleStatus?.last_read_error ? (
+            <p className="mt-2 text-xs text-amber-700">Son Google okuma hatası: {googleStatus.last_read_error}</p>
+          ) : null}
         </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-7">
           {[
-            { label: "Toplam", value: summary?.total_events ?? summary?.total_programs ?? 0, icon: Clock3, color: "text-slate-700", bg: "bg-slate-50" },
+            { label: "KADEME kaydı", value: summary?.total_events ?? summary?.total_programs ?? 0, icon: Clock3, color: "text-slate-700", bg: "bg-slate-50" },
             { label: "Bugun", value: summary?.today_programs ?? 0, icon: CalendarDays, color: "text-indigo-700", bg: "bg-indigo-50" },
             { label: "Bu Hafta", value: summary?.upcoming_this_week ?? 0, icon: Filter, color: "text-sky-700", bg: "bg-sky-50" },
             { label: "Atamasiz", value: summary?.unassigned_count ?? 0, icon: Users, color: "text-amber-700", bg: "bg-amber-50" },
             { label: "Toplantı", value: summary?.total_meetings ?? 0, icon: Users, color: "text-violet-700", bg: "bg-violet-50" },
             { label: "Google", value: summary?.google_synced_count ?? 0, icon: LinkIcon, color: "text-emerald-700", bg: "bg-emerald-50" },
+            { label: "Google harici", value: externalEvents.length, icon: LinkIcon, color: "text-blue-700", bg: "bg-blue-50" },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -972,6 +1054,7 @@ export default function AdminCalendarPage() {
                     <option value="all">Tüm kayıt türleri</option>
                     <option value="program">Program ve etkinlik</option>
                     <option value="meeting">Toplantı</option>
+                    <option value="google_external">Google harici</option>
                   </select>
                   <select value={responsibleUnitFilter} onChange={(event) => setResponsibleUnitFilter(event.target.value)} className={inputClass}>
                     <option value="all">Tüm sorumlu birimler</option>

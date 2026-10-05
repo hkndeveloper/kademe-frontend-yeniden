@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Mail, Phone, Search, ShieldCheck, Users } from "lucide-react";
+import { CheckCircle, Loader2, Mail, Phone, Search, Users, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 import { useAuth } from "@/store/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { ExportButtons } from "@/components/shared/ExportButtons";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 
@@ -22,45 +23,152 @@ interface StaffMember {
 
 interface PaginatedMembers {
   data: StaffMember[];
+  current_page: number;
+  last_page: number;
+  total: number;
+}
+
+interface LeaveRequest {
+  id: number;
+  start_date: string;
+  end_date: string;
+  reason: string | null;
+  status: "pending" | "approved" | "rejected";
+  user?: { name: string; surname: string } | null;
+  approver?: { name: string; surname: string } | null;
+  unit?: { name: string } | null;
+  can_approve: boolean;
+  can_reject: boolean;
+}
+
+interface PaginatedLeaves {
+  data: LeaveRequest[];
+  current_page: number;
+  last_page: number;
+  total: number;
+}
+
+function formatDate(value: string): string {
+  const [year, month, day] = value.slice(0, 10).split("-");
+  return year && month && day ? `${day}.${month}.${year}` : value;
 }
 
 export default function StaffMembersPage() {
+  const { activeUnitId } = usePermissions();
+  return <StaffMembersContent key={activeUnitId ?? "none"} />;
+}
+
+function StaffMembersContent() {
   const { user, hasPermission } = useAuth();
+  const { activeUnitId, hasScopedPermission } = usePermissions();
+  const canApprove = hasScopedPermission("staff.leave.approve");
+  const canReject = hasScopedPermission("staff.leave.reject");
+  const canReviewLeaves = hasScopedPermission("staff.view") && (canApprove || canReject);
+  const [activeTab, setActiveTab] = useState<"members" | "leaves">("members");
   const [members, setMembers] = useState<StaffMember[]>([]);
+  const [membersPage, setMembersPage] = useState(1);
+  const [membersLastPage, setMembersLastPage] = useState(1);
+  const [leaves, setLeaves] = useState<PaginatedLeaves>({ data: [], current_page: 1, last_page: 1, total: 0 });
+  const [leavePage, setLeavePage] = useState(1);
+  const [leaveStatus, setLeaveStatus] = useState("pending");
+  const [leaveRefresh, setLeaveRefresh] = useState(0);
+  const [leavesLoading, setLeavesLoading] = useState(false);
+  const [processingLeaveId, setProcessingLeaveId] = useState<number | null>(null);
+  const [success, setSuccess] = useState("");
   const [unit, setUnit] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setMembersPage(1);
+      setDebouncedSearch(search.trim());
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [search]);
 
   useEffect(() => {
     if (!hasPermission("staff.view")) {
       return;
     }
 
+    if (activeTab !== "members") return;
+    const controller = new AbortController();
     const loadMembers = async () => {
       try {
         setLoading(true);
-        const response = await api.get<{ members: PaginatedMembers; unit?: string | null; message?: string }>("/panel/members");
-        setMembers(response.data.members?.data ?? []);
+        setError("");
+        const response = await api.get<{ members: PaginatedMembers | []; unit?: string | null; message?: string }>("/panel/members", {
+          params: { search: debouncedSearch || undefined, page: membersPage }, signal: controller.signal,
+        });
+        const page = Array.isArray(response.data.members) ? null : response.data.members;
+        setMembers(page?.data ?? []);
+        setMembersLastPage(page?.last_page ?? 1);
         setUnit(response.data.unit ?? "");
         if (response.data.message) {
           setError(response.data.message);
         }
       } catch (requestError) {
-        console.error("Staff uye listesi yüklenemedi", requestError);
-        setError("Birim uye listesi su anda yüklenemedi.");
+        if (!controller.signal.aborted) {
+          console.error("Birim üye listesi yüklenemedi", requestError);
+          setError("Birim üye listesi şu anda yüklenemedi.");
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     void loadMembers();
-  }, [hasPermission]);
+    return () => controller.abort();
+  }, [activeTab, activeUnitId, debouncedSearch, hasPermission, membersPage]);
 
-  const filteredMembers = members.filter((member) => {
-    const haystack = `${member.name} ${member.surname} ${member.email ?? ""} ${member.staff_profile?.title ?? ""}`.toLowerCase();
-    return haystack.includes(search.toLowerCase());
-  });
+  useEffect(() => {
+    if (!canReviewLeaves || activeTab !== "leaves") return;
+    const controller = new AbortController();
+    const loadLeaves = async () => {
+      setLeavesLoading(true);
+      setError("");
+      try {
+        const response = await api.get<{ leave_requests: PaginatedLeaves }>("/panel/leave-requests", {
+          params: { status: leaveStatus || undefined, page: leavePage }, signal: controller.signal,
+        });
+        const page = response.data.leave_requests;
+        if (page.data.length === 0 && leavePage > 1 && page.total > 0) {
+          setLeavePage(Math.min(leavePage - 1, page.last_page));
+        } else {
+          setLeaves(page);
+        }
+      } catch (requestError) {
+        if (!controller.signal.aborted) {
+          console.error("İzin talepleri yüklenemedi", requestError);
+          setError("İzin talepleri şu anda yüklenemedi.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLeavesLoading(false);
+      }
+    };
+    void loadLeaves();
+    return () => controller.abort();
+  }, [activeTab, activeUnitId, canReviewLeaves, leavePage, leaveRefresh, leaveStatus]);
+
+  const reviewLeave = async (id: number, action: "approve" | "reject") => {
+    if (processingLeaveId !== null) return;
+    setProcessingLeaveId(id);
+    setError("");
+    setSuccess("");
+    try {
+      await api.put(`/panel/leave-requests/${id}/${action}`);
+      setSuccess(action === "approve" ? "İzin talebi onaylandı." : "İzin talebi reddedildi.");
+      setLeaveRefresh((current) => current + 1);
+    } catch (requestError) {
+      console.error("İzin işlemi tamamlanamadı", requestError);
+      setError("İzin işlemi tamamlanamadı. Yetki ve talep durumunu kontrol edin.");
+    } finally {
+      setProcessingLeaveId(null);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -70,12 +178,16 @@ export default function StaffMembersPage() {
             <Users className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900">Personel Listesi</h1>
-            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">Kendi biriminize ait sade ekip görünümü</p>
+            <h1 className="text-3xl font-black text-slate-900">Birim üyeleri</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{unit || "Seçili birim"} · {user?.name} {user?.surname}</p>
           </div>
         </div>
         <PermissionGate permission="staff.export">
-          <ExportButtons endpoint="/panel/members/export" filename="birim_uyeleri" params={{ search: search || undefined }} buttonLabel="Uyeleri Dışa Aktar" />
+          {activeTab === "members" ? (
+            <ExportButtons endpoint="/panel/members/export" filename="birim_uyeleri" params={{ search: debouncedSearch || undefined }} buttonLabel="Üyeleri dışa aktar" />
+          ) : (
+            <ExportButtons endpoint="/panel/leave-requests/export" filename="izin_talepleri" params={{ status: leaveStatus || undefined }} buttonLabel="İzinleri dışa aktar" />
+          )}
         </PermissionGate>
       </div>
 
@@ -83,44 +195,25 @@ export default function StaffMembersPage() {
         permission="staff.view"
         fallback={
         <div className="panel-empty-card">
-          Bu modülü görüntülemek için yetkiniz bulunmuyor.
+          Bu modülü görüntüleme yetkiniz bulunmuyor.
         </div>
         }
       >
-      {
-        <>
-      <div className="panel-section-card">
-        <div className="space-y-5 text-sm text-muted-foreground">
-          <p>Bu ekran artık sahte ekip kartları yerine gercek birim listesine bağlı çalışıyor.</p>
-          <p>
-            Personel rolunde hassas özlük verileri gosterilmiyor. Bu yuzey yalnızca ayni birimdeki ekip arkadaslarini ad, unvan ve
-            temel iletişim özeti ile sunuyor.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="panel-section-card">
-          <div className="mb-4 flex items-center gap-2 text-amber-500">
-            <ShieldCheck className="h-5 w-5" />
-            <h2 className="text-lg font-bold text-slate-900">Beklenen Veri Kapsamı</h2>
+      <div className="space-y-6">
+        {canReviewLeaves ? (
+          <div className="panel-tabs md:w-max">
+            <button type="button" onClick={() => { setActiveTab("members"); setError(""); }} className={`panel-tab ${activeTab === "members" ? "panel-tab-active" : ""}`}>Ekip listesi</button>
+            <button type="button" onClick={() => { setActiveTab("leaves"); setError(""); }} className={`panel-tab ${activeTab === "leaves" ? "panel-tab-active" : ""}`}>İzin talepleri</button>
           </div>
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <div className="panel-card-muted px-4 py-3">Birim bazlı uye listesi</div>
-            <div className="panel-card-muted px-4 py-3">Ad soyad, görev, iletişim, aktif/pasif durumu</div>
-            <div className="panel-card-muted px-4 py-3">Detaylı özlük verisi olmayan sade görünüm</div>
-            <div className="panel-card-muted px-4 py-3">Yetki bazlı sadece kendi birimine erişim</div>
-          </div>
-        </div>
-
+        ) : null}
+        {error ? <div role="alert" className="panel-notice panel-notice-error">{error}</div> : null}
+        {success ? <div role="status" className="panel-notice panel-notice-success">{success}</div> : null}
+        {activeTab === "members" ? (
         <div className="panel-section-card">
           <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Canlı Birim Listesi</h2>
-              <p className="text-sm text-muted-foreground">
-                Hesap: {user?.name} {user?.surname} ({user?.role || "staff"})
-              </p>
-              <p className="text-sm font-semibold text-amber-700">{unit ? `Birim: ${unit}` : "Birim bilgisi tanımlı değil"}</p>
+              <h2 className="text-lg font-bold text-slate-900">Ekip listesi</h2>
+              <p className="text-sm text-muted-foreground">Özlük belgeleri bu listede gösterilmez.</p>
             </div>
             <label className="relative block md:w-72">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -128,6 +221,7 @@ export default function StaffMembersPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Ad, e-posta veya unvan ara"
+                aria-label="Ekip listesinde ara"
                 className="panel-control pl-10"
               />
             </label>
@@ -137,13 +231,11 @@ export default function StaffMembersPage() {
             <div className="flex min-h-32 items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
             </div>
-          ) : error && members.length === 0 ? (
-            <div className="panel-notice panel-notice-error">{error}</div>
-          ) : filteredMembers.length === 0 ? (
-            <div className="panel-empty-card">Bu filtreye uygun ekip uyesi bulunmuyor.</div>
+          ) : members.length === 0 ? (
+            <div className="panel-empty-card">Bu filtreye uygun ekip üyesi bulunmuyor.</div>
           ) : (
             <div className="space-y-3 text-sm text-muted-foreground">
-              {filteredMembers.map((member) => (
+              {members.map((member) => (
                 <div key={member.id} className="panel-card-muted">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -172,10 +264,67 @@ export default function StaffMembersPage() {
               ))}
             </div>
           )}
+          {membersLastPage > 1 ? (
+            <div className="mt-5 flex items-center justify-end gap-3 text-sm text-muted-foreground">
+              <button type="button" disabled={membersPage <= 1} onClick={() => setMembersPage((page) => page - 1)} className="panel-button">Önceki</button>
+              <span>{membersPage} / {membersLastPage}</span>
+              <button type="button" disabled={membersPage >= membersLastPage} onClick={() => setMembersPage((page) => page + 1)} className="panel-button">Sonraki</button>
+            </div>
+          ) : null}
         </div>
-        </div>
-        </>
-      }
+        ) : canReviewLeaves ? (
+          <div className="panel-section-card space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">İzin talepleri</h2>
+                <p className="text-sm text-muted-foreground">Seçili birimin görünür talepleri · {leaves.total} kayıt</p>
+              </div>
+              <select value={leaveStatus} onChange={(event) => { setLeaveStatus(event.target.value); setLeavePage(1); }} aria-label="İzin durumu" className="panel-control sm:w-48">
+                <option value="pending">Bekleyenler</option>
+                <option value="approved">Onaylananlar</option>
+                <option value="rejected">Reddedilenler</option>
+                <option value="">Tüm durumlar</option>
+              </select>
+            </div>
+            {leavesLoading ? (
+              <div className="flex min-h-32 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-amber-500" /></div>
+            ) : leaves.data.length === 0 ? (
+              <div className="panel-empty-card">Bu durumda izin talebi bulunmuyor.</div>
+            ) : (
+              <div className="space-y-3">
+                {leaves.data.map((leave) => (
+                  <div key={leave.id} className="panel-card-muted flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-bold text-slate-900">{leave.user?.name} {leave.user?.surname}</h3>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${leave.status === "approved" ? "bg-green-100 text-green-700" : leave.status === "rejected" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}`}>
+                          {leave.status === "approved" ? "Onaylandı" : leave.status === "rejected" ? "Reddedildi" : "Bekliyor"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{formatDate(leave.start_date)} – {formatDate(leave.end_date)}{leave.unit?.name ? ` · ${leave.unit.name}` : ""}</p>
+                      {leave.reason ? <p className="whitespace-pre-wrap break-words text-sm text-slate-700">{leave.reason}</p> : null}
+                      {leave.approver ? <p className="text-xs text-muted-foreground">İşlem yapan: {leave.approver.name} {leave.approver.surname}</p> : null}
+                    </div>
+                    {leave.status === "pending" && ((leave.can_approve && canApprove) || (leave.can_reject && canReject)) ? (
+                      <div className="flex shrink-0 gap-2">
+                        {leave.can_approve && canApprove ? <button type="button" disabled={processingLeaveId !== null} onClick={() => void reviewLeave(leave.id, "approve")} className="panel-table-action panel-table-action-success"><CheckCircle className="h-4 w-4" /> Onayla</button> : null}
+                        {leave.can_reject && canReject ? <button type="button" disabled={processingLeaveId !== null} onClick={() => void reviewLeave(leave.id, "reject")} className="panel-table-action panel-table-action-danger"><XCircle className="h-4 w-4" /> Reddet</button> : null}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+            {leaves.last_page > 1 ? (
+              <div className="flex items-center justify-end gap-3 text-sm text-muted-foreground">
+                <button type="button" disabled={leavePage <= 1} onClick={() => setLeavePage((page) => page - 1)} className="panel-button">Önceki</button>
+                <span>{leavePage} / {leaves.last_page}</span>
+                <button type="button" disabled={leavePage >= leaves.last_page} onClick={() => setLeavePage((page) => page + 1)} className="panel-button">Sonraki</button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
       </PermissionGate>
     </div>
   );

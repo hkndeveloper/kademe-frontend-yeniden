@@ -53,6 +53,7 @@ export default function QrScanPage() {
   const upcomingPrograms = useMemo(() => programs.filter((program) => program.status === "scheduled").slice(0, 4), [programs]);
   const nearestActiveRadius = scannablePrograms.find((program) => program.radius_meters)?.radius_meters ?? null;
   const locationAccuracyWarning = Boolean(location?.accuracy && nearestActiveRadius && location.accuracy > nearestActiveRadius);
+  const selectedLocationAccuracyWarning = Boolean(location?.accuracy && selectedProgram?.radius_meters && location.accuracy > selectedProgram.radius_meters);
 
   const extractToken = useCallback((raw: string): string => {
     const value = raw.trim();
@@ -169,6 +170,7 @@ export default function QrScanPage() {
         qr_token: qrToken,
         latitude: currentLocation.lat,
         longitude: currentLocation.lng,
+        accuracy_meters: currentLocation.accuracy ?? null,
       });
 
       setStatus("success");
@@ -356,8 +358,8 @@ export default function QrScanPage() {
                       <span className="text-primary">Güvenli yoklama</span>
                     </div>
                     {location?.accuracy ? (
-                      <p className={`text-center text-xs ${locationAccuracyWarning ? "text-amber-600" : "text-muted-foreground"}`}>
-                        Konum dogrulugu yaklasik {Math.round(location.accuracy)} metre{selectedProgram?.radius_meters ? `; etkinlik yaricapi ${selectedProgram.radius_meters} metre.` : "."}
+                      <p className={`text-center text-xs ${selectedLocationAccuracyWarning ? "text-amber-600" : "text-muted-foreground"}`}>
+                        Konum dogrulugu yaklasik {Math.round(location.accuracy)} metre{selectedProgram?.radius_meters ? `; etkinlik yaricapi ${selectedProgram.radius_meters} metre.` : "."}{selectedLocationAccuracyWarning ? " Konumunu yenileyebilir veya gorevliye danisabilirsin." : ""}
                       </p>
                     ) : null}
                     {message ? <p className="text-center text-sm text-amber-600">{message}</p> : null}

@@ -34,6 +34,8 @@ interface DashboardSummaryResponse {
 
 interface Assignment {
   id: number;
+  project_id: number;
+  period_id: number;
   title: string;
   description?: string;
   due_date?: string | null;
@@ -72,6 +74,7 @@ interface LeaderboardRow {
 
 interface ProjectSpecial {
   project: { id: number; name: string; type?: string | null };
+  participation: { id: number };
   modules: string[];
   internships: Array<{ id: number; company_name: string; position: string; has_document?: boolean }>;
   mentors: Array<{ id: number; name: string; expertise?: string | null; bio?: string | null }>;
@@ -123,6 +126,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
   const base = portal === "alumni" ? "/alumni" : "/student";
   const [loading, setLoading] = useState(true);
   const [participations, setParticipations] = useState<Participation[]>([]);
+  const [selectedParticipationId, setSelectedParticipationId] = useState<number | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [specials, setSpecials] = useState<ProjectSpecial[]>([]);
   const [leaderboardByProject, setLeaderboardByProject] = useState<Record<number, LeaderboardRow[]>>({});
@@ -139,7 +143,13 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
           api.get<{ projects: ProjectSpecial[] }>("/dashboard/project-specials"),
         ]);
 
-        setParticipations(summaryResponse.data.participations ?? []);
+        const availableParticipations = summaryResponse.data.participations ?? [];
+        const requestedId = Number(new URL(window.location.href).searchParams.get("participation_id"));
+        const initialSelection = availableParticipations.find((item) => item.id === requestedId)
+          ?? availableParticipations[0]
+          ?? null;
+        setParticipations(availableParticipations);
+        setSelectedParticipationId(initialSelection?.id ?? null);
         setAssignments(assignmentsResponse.data.assignments ?? []);
         const projects = specialsResponse.data.projects ?? [];
         setSpecials(projects);
@@ -171,11 +181,21 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
     }, 0);
   }, []);
 
-  const activeParticipation = participations[0] ?? null;
+  const activeParticipation = participations.find((item) => item.id === selectedParticipationId)
+    ?? participations[0]
+    ?? null;
   const activeProjectName = activeParticipation?.project?.name || "Aktif Proje Bulunamadı";
   const activeThreshold = activeParticipation?.period?.credit_threshold ?? 100;
   const progress = activeThreshold > 0 ? Math.min(Math.round(((activeParticipation?.credit ?? 0) / activeThreshold) * 100), 100) : 0;
-  const activeSpecial = specials.find((item) => item.project.id === activeParticipation?.project?.id) ?? specials[0] ?? null;
+  const activeSpecial = specials.find((item) => item.participation.id === activeParticipation?.id) ?? null;
+
+  function selectParticipation(participationId: number) {
+    if (!participations.some((item) => item.id === participationId)) return;
+    setSelectedParticipationId(participationId);
+    const url = new URL(window.location.href);
+    url.searchParams.set("participation_id", String(participationId));
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }
 
   async function enrollModule(projectId: number, module: KademeModuleRow) {
     const key = `${projectId}-${module.id}`;
@@ -220,20 +240,25 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
     }
   }
 
+  const selectedAssignments = useMemo(() => assignments.filter((assignment) =>
+    assignment.project_id === activeParticipation?.project?.id
+      && assignment.period_id === activeParticipation?.period?.id),
+  [assignments, activeParticipation?.project?.id, activeParticipation?.period?.id]);
+
   const assignmentSummary = useMemo(() => {
-    const submitted = assignments.filter((assignment) => (assignment.submissions?.length ?? 0) > 0).length;
+    const submitted = selectedAssignments.filter((assignment) => (assignment.submissions?.length ?? 0) > 0).length;
     return {
-      total: assignments.length,
+      total: selectedAssignments.length,
       submitted,
-      pending: Math.max(assignments.length - submitted, 0),
+      pending: Math.max(selectedAssignments.length - submitted, 0),
     };
-  }, [assignments]);
+  }, [selectedAssignments]);
 
   const nextAssignment = useMemo(() => {
-    return assignments
+    return selectedAssignments
       .filter((assignment) => (assignment.submissions?.length ?? 0) === 0 && assignment.due_date)
       .sort((a, b) => new Date(a.due_date || "").getTime() - new Date(b.due_date || "").getTime())[0];
-  }, [assignments]);
+  }, [selectedAssignments]);
 
   if (loading) {
     return (
@@ -262,6 +287,23 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
         </div>
       </div>
 
+      {participations.length > 1 ? (
+        <label className="glass-panel block max-w-xl rounded-2xl p-4 text-sm font-semibold text-slate-900">
+          Proje ve dönem seç
+          <select
+            value={activeParticipation?.id ?? ""}
+            onChange={(event) => selectParticipation(Number(event.target.value))}
+            className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+          >
+            {participations.map((participation) => (
+              <option key={participation.id} value={participation.id}>
+                {participation.project?.name ?? "Proje"} · {participation.period?.name ?? "Dönem belirtilmemiş"} · {statusLabel(participation.status)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
       {!activeParticipation ? (
         <div className="glass-panel rounded-[32px] p-12 text-center">
           <h2 className="mb-3 text-2xl font-bold text-slate-900">Aktif proje kaydı görünmüyor</h2>
@@ -283,7 +325,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
               <Link href={`${base}/bohca`} className="glass-panel group rounded-[28px] p-8 transition-all hover:border-primary/40">
                 <BookOpen className="mb-6 h-10 w-10 text-primary" />
                 <h3 className="mb-2 text-xl font-bold">Dijital Bohça</h3>
-                <p className="mb-6 text-sm text-muted-foreground">Bu projeye ait belge, dosya ve materyallere buradan ulasabilirsin.</p>
+                <p className="mb-6 text-sm text-muted-foreground">Katıldığın projelerin belge, dosya ve materyallerine buradan ulaşabilirsin.</p>
                 <span className="flex items-center gap-2 text-sm font-bold text-primary">
                   Dosyalara Git
                   <ChevronRight className="h-4 w-4" />
@@ -293,7 +335,7 @@ export function MyProjectPortalPage({ portal }: { portal: "student" | "alumni" }
               <Link href={`${base}/assignments`} className="glass-panel group rounded-[28px] p-8 transition-all hover:border-primary/40">
                 <FileCheck className="mb-6 h-10 w-10 text-primary" />
                 <h3 className="mb-2 text-xl font-bold">Ödev Gonderimi</h3>
-                <p className="mb-6 text-sm text-muted-foreground">Aktif proje dönemine ait ödevleri ve teslim durumunu takip et.</p>
+                <p className="mb-6 text-sm text-muted-foreground">Katıldığın proje dönemlerinin ödevlerini ve teslim durumunu takip et.</p>
                 <span className="flex items-center gap-2 text-sm font-bold text-primary">
                   Ödevleri Gör
                   <ChevronRight className="h-4 w-4" />

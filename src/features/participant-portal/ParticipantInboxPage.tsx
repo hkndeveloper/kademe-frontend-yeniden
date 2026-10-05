@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Bell, Calendar, Loader2, Pin, Star } from "lucide-react";
 import api from "@/lib/api/axios";
 import { LinkifiedText } from "@/components/shared/LinkifiedText";
+import { DirectMessagePanel } from "@/features/shared/DirectMessagePanel";
 
 interface InboxMessage {
   type: string;
@@ -110,9 +111,11 @@ export function ParticipantInboxPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Mesaj / Duyuru Kutusu</h1>
-          <p className="text-sm text-muted-foreground">Sana açık duyurular tek kutuda listelenir.</p>
+          <p className="text-sm text-muted-foreground">Kişisel mesajların ve sana açık duyurular burada listelenir.</p>
         </div>
       </div>
+
+      <DirectMessagePanel />
 
       <div className="glass-panel rounded-3xl p-5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

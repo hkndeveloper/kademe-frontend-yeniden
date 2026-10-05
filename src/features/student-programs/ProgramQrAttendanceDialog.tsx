@@ -27,10 +27,10 @@ export function ProgramQrAttendanceDialog({ program, open, onClose, onAttendance
   const [scanStatus, setScanStatus] = useState<ScanStatus>("idle");
   const [scanMessage, setScanMessage] = useState("");
   const [feedbackBlock, setFeedbackBlock] = useState<FeedbackBlock | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number; accuracy?: number | null } | null>(null);
   const [scannerAttempt, setScannerAttempt] = useState(0);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const locationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const locationRef = useRef<{ lat: number; lng: number; accuracy?: number | null } | null>(null);
   const submittedRef = useRef(false);
 
   useEffect(() => {
@@ -88,6 +88,7 @@ export function ProgramQrAttendanceDialog({ program, open, onClose, onAttendance
           qr_token: qrToken,
           latitude: currentLocation.lat,
           longitude: currentLocation.lng,
+          accuracy_meters: currentLocation.accuracy ?? null,
         });
 
         setScanStatus("success");
@@ -143,7 +144,7 @@ export function ProgramQrAttendanceDialog({ program, open, onClose, onAttendance
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => setLocation({ lat: position.coords.latitude, lng: position.coords.longitude }),
+        (position) => setLocation({ lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy }),
         () => setScanMessage("Yoklama için konum izni vermen zorunludur."),
         { enableHighAccuracy: true },
       );
@@ -219,6 +220,9 @@ export function ProgramQrAttendanceDialog({ program, open, onClose, onAttendance
                     <span className={location ? "text-emerald-600" : "text-blue-600"}>{location ? "Konum alındı" : "Konum bekleniyor"}</span>
                     <span className="text-primary">Güvenli yoklama</span>
                   </div>
+                  {location?.accuracy != null && program.radius_meters != null && location.accuracy > program.radius_meters ? (
+                    <p className="text-center text-xs text-amber-700">Konum doğruluğu yaklaşık {Math.round(location.accuracy)} m; izinli yarıçap {program.radius_meters} m. Konumunu yenileyebilir veya görevliye danışabilirsin.</p>
+                  ) : null}
                   {scanMessage ? <p className="text-center text-sm text-red-600">{scanMessage}</p> : null}
                 </div>
               ) : null}

@@ -1,4 +1,5 @@
 // Read-only copy audit. Emits apply_patch patches; never changes API keys or identifiers.
+/* eslint-disable @typescript-eslint/no-require-imports -- This standalone Node script uses CommonJS. */
 const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
