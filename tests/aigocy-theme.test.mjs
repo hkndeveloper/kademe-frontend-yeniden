@@ -39,6 +39,15 @@ test("smooth scrolling includes the new shell and respects reduced motion", () =
   assert.match(source, /\[pathname\]/);
 });
 
+test("icon inputs retain their text inset above the generic input rule", () => {
+  const css = readFileSync(
+    new URL("../src/components/aigocy/theme.css", import.meta.url),
+    "utf8",
+  );
+  assert.match(css, /input:not\(\[type="checkbox"\], \[type="radio"\], \[type="file"\]\)/);
+  assert.match(css, /\.kdm-public-shell input\.pl-12\s*\{\s*padding-left:\s*48px/);
+});
+
 const defaultsUrl = new URL("../src/lib/aigocy-defaults.json", import.meta.url);
 const source = readFileSync(
   new URL("../src/lib/aigocy.ts", import.meta.url),

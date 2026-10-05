@@ -933,8 +933,7 @@
   display: grid;
   gap: 16px;
 }
-.aigocy-site
-  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.aigocy-site input:not([type="checkbox"], [type="radio"], [type="file"]),
 .aigocy-site select,
 .aigocy-site textarea {
   background: #fff;
