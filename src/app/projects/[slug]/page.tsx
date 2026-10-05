@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
+import { PageHero, Reveal, ThemeButton, ThemeImage } from "@/components/aigocy/Primitives";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   BriefcaseBusiness,
   Calendar,
   CheckCircle2,
@@ -25,9 +25,7 @@ import {
 } from "lucide-react";
 import { isAxiosError } from "axios";
 import api from "@/lib/api/axios";
-import { PublicBreadcrumbs } from "@/components/shared/PublicBreadcrumbs";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
-import { PublicBadge, PublicGradientTitle } from "@/components/public";
 import { useAuth } from "@/store/useAuth";
 
 interface ActivePeriod {
@@ -89,6 +87,7 @@ interface ProjectDetail {
   type: string;
   description: string;
   shoet_description: string;
+  short_description?: string;
   cover_image: string | null;
   status: string;
   is_application_open: boolean;
@@ -832,59 +831,11 @@ export default function ProjectDetailPage() {
   );
 
   const hasDynamicForm = (applicationForm?.fields?.length ?? 0) > 0;
-  const detailHeroImage = project.cover_image || "/aigocy/images/section/work-single-1.jpg";
 
   return (
     <div className="kdm-public-shell min-h-screen bg-[#edecec] pb-24">
-      <section className="relative isolate overflow-hidden px-4 pb-12 pt-36 sm:px-6 sm:pt-40 lg:pt-44">
-        <div className="kdm-public-detail-hero-bg absolute inset-x-4 bottom-0 top-4 -z-10 overflow-hidden sm:inset-x-6 lg:inset-x-10">
-          <Image src="/aigocy/images/section/hero-1.jpg" alt="" fill className="object-cover opacity-55" priority />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_24%,rgba(255,255,255,0.88),transparent_20rem),radial-gradient(circle_at_82%_18%,rgba(253,58,37,0.15),transparent_16rem),linear-gradient(180deg,rgba(255,255,255,0.36),rgba(231,231,228,0.86))]" />
-        </div>
-
-        <div className="container relative z-10 mx-auto">
-          <PublicBreadcrumbs
-            className="mb-6 justify-center"
-            items={[
-              { label: "Ana Sayfa", href: "/" },
-              { label: "Projeler", href: "/projects" },
-              { label: project.name },
-            ]}
-          />
-
-          <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
-            <Link
-              href="/projects"
-              className="kdm-public-btn-shine mb-6 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#09090b] shadow-[0_10px_30px_rgba(9,9,11,0.10)] transition hover:-translate-y-0.5 hover:text-[#fd3a25]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Tüm projelere dön
-            </Link>
-            <PublicBadge className="mb-6 border-white/80 bg-white/90 text-[#fd3a25] shadow-[0_4px_12px_rgba(9,9,11,0.10)]">
-              <Sparkles className="h-3.5 w-3.5" />
-              {project.type || "Proje"}
-            </PublicBadge>
-            <h1 className="max-w-5xl text-balance text-5xl font-semibold leading-[0.95] tracking-normal text-[#2f3437] sm:text-6xl lg:text-8xl">
-              {project.name}
-            </h1>
-            <p className="mt-7 max-w-3xl text-base leading-8 text-[#3f4653] sm:text-lg">
-              {project.shoet_description || "Bu proje için kısa tanıtım metni bulunmuyor."}
-            </p>
-          </div>
-
-          <div className="kdm-public-media-frame relative mx-auto mt-12 max-w-6xl overflow-hidden rounded-[2rem] border-[10px] border-[#09090b] bg-[#09090b] kdm-public-dark-gradient shadow-[0_34px_90px_rgba(9,9,11,0.22)]">
-            <div className="relative aspect-[16/8] min-h-[280px]">
-              <Image src={detailHeroImage} alt={project.name} fill unoptimized priority className="object-cover" sizes="(min-width: 1024px) 1100px, 100vw" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/72 via-transparent to-transparent" />
-              <div className="absolute bottom-5 left-5 right-5 flex flex-wrap items-center gap-3">
-                <span className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white backdrop-blur">{projectStatusLabel(project.status)}</span>
-                <span className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white backdrop-blur">{project.active_period?.name || "Aktif dönem yok"}</span>
-                <span className="rounded-full bg-[#fd3a25] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white shadow-[0_12px_28px_rgba(253,58,37,0.35)]">{project.is_application_open ? "Başvuru açık" : "Başvuru kapalı"}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PageHero badge="KADEME projesi" title={project.name} description={project.short_description || project.shoet_description}><ThemeButton secondary href="/projects">Tüm projeler</ThemeButton><div className="theme-detail-meta"><span>{project.type}</span><span>{projectStatusLabel(project.status)}</span><span>{project.active_period?.name || "Aktif dönem yok"}</span><span>{project.is_application_open ? "Başvuru açık" : "Başvuru kapalı"}</span></div></PageHero>
+      <Reveal className="container theme-detail-cover"><ThemeImage src={project.cover_image} alt={project.name} priority /></Reveal>
       <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-14 sm:px-6 lg:grid-cols-3 lg:gap-10 lg:py-20">
         <div className="space-y-10 lg:col-span-2">
           <section className="kdm-public-card rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-8">
@@ -1539,9 +1490,6 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
-
-
-
 
 
 

@@ -1,9 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ChevronDown, Clock3, Loader2, Save, Settings, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  Clock3,
+  Loader2,
+  Save,
+  Settings,
+  ShieldCheck,
+} from "lucide-react";
 import api from "@/lib/api/axios";
-import { defaultSiteSettings, SiteSettingsPayload, SiteSettingsResponse } from "@/lib/site-config";
+import {
+  defaultSiteSettings,
+  SiteSettingsPayload,
+  SiteSettingsResponse,
+} from "@/lib/site-config";
+import { resolveTheme, type ThemeSettings } from "@/lib/aigocy";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   SETTINGS_MODULES,
@@ -19,10 +32,13 @@ import {
 type SiteSettingsRecord = Record<string, unknown>;
 type HomepageBlockKey = SiteSettingsPayload["homepage"]["block_order"][number];
 
-const homepageBlockKeys = Object.keys(defaultSiteSettings.homepage.block_visibility) as HomepageBlockKey[];
+const homepageBlockKeys = Object.keys(
+  defaultSiteSettings.homepage.block_visibility,
+) as HomepageBlockKey[];
 
 const completeHomepageBlockOrder = (order: HomepageBlockKey[]) => {
-  const baseOrder = order.length > 0 ? order : defaultSiteSettings.homepage.block_order;
+  const baseOrder =
+    order.length > 0 ? order : defaultSiteSettings.homepage.block_order;
 
   return [
     ...baseOrder,
@@ -33,11 +49,16 @@ const completeHomepageBlockOrder = (order: HomepageBlockKey[]) => {
 const isRecord = (value: unknown): value is SiteSettingsRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const arrayOr = <T,>(value: unknown, fallback: T[]): T[] => (Array.isArray(value) ? (value as T[]) : fallback);
+const arrayOr = <T,>(value: unknown, fallback: T[]): T[] =>
+  Array.isArray(value) ? (value as T[]) : fallback;
 
-const stringOr = (value: unknown, fallback = "") => (typeof value === "string" ? value : fallback);
+const stringOr = (value: unknown, fallback = "") =>
+  typeof value === "string" ? value : fallback;
 
-const mergeGroup = <T extends SiteSettingsRecord>(fallback: T, value: unknown): T => ({
+const mergeGroup = <T extends SiteSettingsRecord>(
+  fallback: T,
+  value: unknown,
+): T => ({
   ...fallback,
   ...(isRecord(value) ? value : {}),
 });
@@ -81,7 +102,9 @@ const normalizeIntroCards = (
     }));
 
 const normalizeStringList = (value: unknown, fallback: string[]) =>
-  arrayOr(value, fallback).filter((item): item is string => typeof item === "string");
+  arrayOr(value, fallback).filter(
+    (item): item is string => typeof item === "string",
+  );
 
 const normalizeNumberList = (value: unknown, fallback: number[]) =>
   arrayOr(value, fallback)
@@ -92,17 +115,32 @@ const normalizeSiteSettings = (rawSettings: unknown): SiteSettingsPayload => {
   const raw = isRecord(rawSettings) ? rawSettings : {};
   const navigation = mergeGroup(defaultSiteSettings.navigation, raw.navigation);
   const homepage = mergeGroup(defaultSiteSettings.homepage, raw.homepage);
-  const blockVisibility = mergeGroup(defaultSiteSettings.homepage.block_visibility, homepage.block_visibility);
-  const normalizedBlockOrder = arrayOr(homepage.block_order, defaultSiteSettings.homepage.block_order).filter(
-    (key): key is HomepageBlockKey => typeof key === "string" && homepageBlockKeys.includes(key as HomepageBlockKey),
+  const blockVisibility = mergeGroup(
+    defaultSiteSettings.homepage.block_visibility,
+    homepage.block_visibility,
   );
-return {
+  const normalizedBlockOrder = arrayOr(
+    homepage.block_order,
+    defaultSiteSettings.homepage.block_order,
+  ).filter(
+    (key): key is HomepageBlockKey =>
+      typeof key === "string" &&
+      homepageBlockKeys.includes(key as HomepageBlockKey),
+  );
+  return {
+    theme: resolveTheme(raw.theme as Partial<ThemeSettings> | undefined),
     general: mergeGroup(defaultSiteSettings.general, raw.general),
     contact: mergeGroup(defaultSiteSettings.contact, raw.contact),
-    social_media: mergeGroup(defaultSiteSettings.social_media, raw.social_media),
+    social_media: mergeGroup(
+      defaultSiteSettings.social_media,
+      raw.social_media,
+    ),
     navigation: {
       ...navigation,
-      header_links: normalizeLinks(navigation.header_links, defaultSiteSettings.navigation.header_links),
+      header_links: normalizeLinks(
+        navigation.header_links,
+        defaultSiteSettings.navigation.header_links,
+      ),
       footer_quick_links: normalizeLinks(
         navigation.footer_quick_links,
         defaultSiteSettings.navigation.footer_quick_links,
@@ -119,22 +157,41 @@ return {
       block_visibility: homepageBlockKeys.reduce(
         (visibility, key) => ({
           ...visibility,
-          [key]: typeof blockVisibility[key] === "boolean" ? blockVisibility[key] : defaultSiteSettings.homepage.block_visibility[key],
+          [key]:
+            typeof blockVisibility[key] === "boolean"
+              ? blockVisibility[key]
+              : defaultSiteSettings.homepage.block_visibility[key],
         }),
         {} as SiteSettingsPayload["homepage"]["block_visibility"],
       ),
-      intro_cards: normalizeIntroCards(homepage.intro_cards, defaultSiteSettings.homepage.intro_cards),
+      intro_cards: normalizeIntroCards(
+        homepage.intro_cards,
+        defaultSiteSettings.homepage.intro_cards,
+      ),
       featured_project_slugs: normalizeStringList(
         homepage.featured_project_slugs,
         defaultSiteSettings.homepage.featured_project_slugs,
       ),
-      featured_blog_slugs: normalizeStringList(homepage.featured_blog_slugs, defaultSiteSettings.homepage.featured_blog_slugs),
+      featured_blog_slugs: normalizeStringList(
+        homepage.featured_blog_slugs,
+        defaultSiteSettings.homepage.featured_blog_slugs,
+      ),
       featured_activity_ids: normalizeNumberList(
         homepage.featured_activity_ids,
         defaultSiteSettings.homepage.featured_activity_ids,
       ),
-      marquee_items: normalizeStringList(homepage.marquee_items, defaultSiteSettings.homepage.marquee_items),
-      marquee_speed_seconds: Math.min(90, Math.max(8, Number(homepage.marquee_speed_seconds) || defaultSiteSettings.homepage.marquee_speed_seconds)),
+      marquee_items: normalizeStringList(
+        homepage.marquee_items,
+        defaultSiteSettings.homepage.marquee_items,
+      ),
+      marquee_speed_seconds: Math.min(
+        90,
+        Math.max(
+          8,
+          Number(homepage.marquee_speed_seconds) ||
+            defaultSiteSettings.homepage.marquee_speed_seconds,
+        ),
+      ),
       stats: normalizeStats(homepage.stats, defaultSiteSettings.homepage.stats),
     },
     about: mergeGroup(defaultSiteSettings.about, raw.about),
@@ -147,14 +204,19 @@ export default function AdminSettingsPage() {
   const { hasPermission, hasGlobalScope } = usePermissions();
   const canViewSettings =
     (hasPermission("settings.view") && hasGlobalScope("settings.view")) ||
-    (hasPermission("content.site_settings.update") && hasGlobalScope("content.site_settings.update"));
+    (hasPermission("content.site_settings.update") &&
+      hasGlobalScope("content.site_settings.update"));
   const canUpdateSettings =
     (hasPermission("settings.update") && hasGlobalScope("settings.update")) ||
-    (hasPermission("content.site_settings.update") && hasGlobalScope("content.site_settings.update"));
+    (hasPermission("content.site_settings.update") &&
+      hasGlobalScope("content.site_settings.update"));
 
   const [activeModule, setActiveModule] = useState<SettingsModuleId>("general");
-  const [settings, setSettings] = useState<SiteSettingsPayload>(defaultSiteSettings);
-  const [computedStats, setComputedStats] = useState<Array<{ label: string; value: string; icon: string }>>([]);
+  const [settings, setSettings] =
+    useState<SiteSettingsPayload>(defaultSiteSettings);
+  const [computedStats, setComputedStats] = useState<
+    Array<{ label: string; value: string; icon: string }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -172,25 +234,45 @@ export default function AdminSettingsPage() {
 
     const loadSettings = async () => {
       try {
-        const [settingsResponse, projectsResponse, blogsResponse, activitiesResponse] = await Promise.all([
+        const [
+          settingsResponse,
+          projectsResponse,
+          blogsResponse,
+          activitiesResponse,
+        ] = await Promise.all([
           api.get<SiteSettingsResponse>("/panel/site-settings"),
-          api.get<{ projects: ProjectOption[] }>("/projects").catch(() => ({ data: { projects: [] as ProjectOption[] } })),
-          api.get<{ blogs: BlogOption[] | { data?: BlogOption[] } }>("/blogs").catch(() => ({ data: { blogs: [] as BlogOption[] } })),
           api
-            .get<{ programs: ActivityOption[] | { data?: ActivityOption[] } }>("/activities", { params: { per_page: 48 } })
+            .get<{ projects: ProjectOption[] }>("/projects")
+            .catch(() => ({ data: { projects: [] as ProjectOption[] } })),
+          api
+            .get<{ blogs: BlogOption[] | { data?: BlogOption[] } }>("/blogs")
+            .catch(() => ({ data: { blogs: [] as BlogOption[] } })),
+          api
+            .get<{ programs: ActivityOption[] | { data?: ActivityOption[] } }>(
+              "/activities",
+              { params: { per_page: 48 } },
+            )
             .catch(() => ({ data: { programs: [] as ActivityOption[] } })),
         ]);
 
         setSettings(normalizeSiteSettings(settingsResponse.data.settings));
         setComputedStats(settingsResponse.data.computed_homepage_stats ?? []);
-        setProjectOptions(Array.isArray(projectsResponse.data.projects) ? projectsResponse.data.projects : []);
+        setProjectOptions(
+          Array.isArray(projectsResponse.data.projects)
+            ? projectsResponse.data.projects
+            : [],
+        );
 
         const rawBlogs = blogsResponse.data.blogs;
-        setBlogOptions(Array.isArray(rawBlogs) ? rawBlogs : rawBlogs?.data ?? []);
+        setBlogOptions(
+          Array.isArray(rawBlogs) ? rawBlogs : (rawBlogs?.data ?? []),
+        );
 
         /** Public `/activities` Laravel paginator dondurur: `programs` bazen `{ data: [...] }` nesnesidir. */
         const rawPrograms = activitiesResponse.data.programs;
-        setActivityOptions(Array.isArray(rawPrograms) ? rawPrograms : rawPrograms?.data ?? []);
+        setActivityOptions(
+          Array.isArray(rawPrograms) ? rawPrograms : (rawPrograms?.data ?? []),
+        );
       } catch (error) {
         console.error("Site ayarları yüklenemedi", error);
         setErrorMessage("Site ayarları yüklenemedi.");
@@ -216,7 +298,11 @@ export default function AdminSettingsPage() {
       const response = await api.put<{
         message: string;
         settings: SiteSettingsPayload;
-        computed_homepage_stats?: Array<{ label: string; value: string; icon: string }>;
+        computed_homepage_stats?: Array<{
+          label: string;
+          value: string;
+          icon: string;
+        }>;
       }>("/panel/site-settings", {
         settings,
       });
@@ -231,24 +317,30 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const updateStat = useCallback((index: number, field: "label" | "value" | "icon", value: string) => {
-    setSettings((current) => ({
-      ...current,
-      homepage: {
-        ...current.homepage,
-        stats: current.homepage.stats.map((stat, statIndex) =>
-          statIndex === index ? { ...stat, [field]: value } : stat,
-        ),
-      },
-    }));
-  }, []);
+  const updateStat = useCallback(
+    (index: number, field: "label" | "value" | "icon", value: string) => {
+      setSettings((current) => ({
+        ...current,
+        homepage: {
+          ...current.homepage,
+          stats: current.homepage.stats.map((stat, statIndex) =>
+            statIndex === index ? { ...stat, [field]: value } : stat,
+          ),
+        },
+      }));
+    },
+    [],
+  );
 
   const addStat = useCallback(() => {
     setSettings((current) => ({
       ...current,
       homepage: {
         ...current.homepage,
-        stats: [...current.homepage.stats, { label: "Yeni Alan", value: "0", icon: "users" }],
+        stats: [
+          ...current.homepage.stats,
+          { label: "Yeni Alan", value: "0", icon: "users" },
+        ],
       },
     }));
   }, []);
@@ -258,7 +350,9 @@ export default function AdminSettingsPage() {
       ...current,
       homepage: {
         ...current.homepage,
-        stats: current.homepage.stats.filter((_, statIndex) => statIndex !== index),
+        stats: current.homepage.stats.filter(
+          (_, statIndex) => statIndex !== index,
+        ),
       },
     }));
   }, []);
@@ -283,23 +377,34 @@ export default function AdminSettingsPage() {
     [],
   );
 
-  const addNavLink = useCallback((key: "header_links" | "footer_quick_links" | "footer_project_links") => {
-    setSettings((current) => ({
-      ...current,
-      navigation: {
-        ...current.navigation,
-        [key]: [...current.navigation[key], { label: "Yeni Link", href: "/" }],
-      },
-    }));
-  }, []);
-
-  const removeNavLink = useCallback(
-    (key: "header_links" | "footer_quick_links" | "footer_project_links", index: number) => {
+  const addNavLink = useCallback(
+    (key: "header_links" | "footer_quick_links" | "footer_project_links") => {
       setSettings((current) => ({
         ...current,
         navigation: {
           ...current.navigation,
-          [key]: current.navigation[key].filter((_, itemIndex) => itemIndex !== index),
+          [key]: [
+            ...current.navigation[key],
+            { label: "Yeni Link", href: "/" },
+          ],
+        },
+      }));
+    },
+    [],
+  );
+
+  const removeNavLink = useCallback(
+    (
+      key: "header_links" | "footer_quick_links" | "footer_project_links",
+      index: number,
+    ) => {
+      setSettings((current) => ({
+        ...current,
+        navigation: {
+          ...current.navigation,
+          [key]: current.navigation[key].filter(
+            (_, itemIndex) => itemIndex !== index,
+          ),
         },
       }));
     },
@@ -343,7 +448,9 @@ export default function AdminSettingsPage() {
   const toggleFeaturedActivity = useCallback((id: number) => {
     setSettings((current) => {
       const currentIds = current.homepage.featured_activity_ids;
-      const nextIds = currentIds.includes(id) ? currentIds.filter((item) => item !== id) : [...currentIds, id];
+      const nextIds = currentIds.includes(id)
+        ? currentIds.filter((item) => item !== id)
+        : [...currentIds, id];
 
       return {
         ...current,
@@ -364,10 +471,21 @@ export default function AdminSettingsPage() {
         return current;
       }
 
-      [nextOrder[index], nextOrder[targetIndex]] = [nextOrder[targetIndex], nextOrder[index]];
+      [nextOrder[index], nextOrder[targetIndex]] = [
+        nextOrder[targetIndex],
+        nextOrder[index],
+      ];
+      const theme = resolveTheme(current.theme);
+      let coreIndex = 0;
+      const themeOrder = theme.home_block_order.map((id) =>
+        nextOrder.includes(id as HomepageBlockKey)
+          ? nextOrder[coreIndex++]
+          : id,
+      );
 
       return {
         ...current,
+        theme: { ...theme, home_block_order: themeOrder },
         homepage: {
           ...current.homepage,
           block_order: nextOrder,
@@ -376,24 +494,25 @@ export default function AdminSettingsPage() {
     });
   }, []);
 
-  const toggleBlockVisibility = useCallback(
-    (key: HomepageBlockKey) => {
-      setSettings((current) => ({
-        ...current,
-        homepage: {
-          ...current.homepage,
-          block_visibility: {
-            ...current.homepage.block_visibility,
-            [key]: !current.homepage.block_visibility[key],
-          },
+  const toggleBlockVisibility = useCallback((key: HomepageBlockKey) => {
+    setSettings((current) => ({
+      ...current,
+      homepage: {
+        ...current.homepage,
+        block_visibility: {
+          ...current.homepage.block_visibility,
+          [key]: !current.homepage.block_visibility[key],
         },
-      }));
-    },
-    [],
-  );
+      },
+    }));
+  }, []);
 
   const updateIntroCard = useCallback(
-    (index: number, field: "title" | "description" | "image_url" | "cta_label" | "cta_href", value: string) => {
+    (
+      index: number,
+      field: "title" | "description" | "image_url" | "cta_label" | "cta_href",
+      value: string,
+    ) => {
       setSettings((current) => ({
         ...current,
         homepage: {
@@ -407,26 +526,34 @@ export default function AdminSettingsPage() {
     [],
   );
 
-  const homepageBlockLabels: SiteSettingsPanelsProps["homepageBlockLabels"] = useMemo(
-    () => ({
-      hero: "Hero",
-      intro: "Kısa tanıtım kartları",
-      stats: "Sayilarla veriler",
-      projects: "Projelerimiz",
-      activities: "Faaliyetlerimiz",
-      about: "Hakkımızda",
-      blog: "Blog",
-      newsletter: "E-Bulten",
-      certificate_verify: "Sertifika doğrulama",
-      marquee: "Kayan yazılar",
-    }),
-    [],
-  );
+  const homepageBlockLabels: SiteSettingsPanelsProps["homepageBlockLabels"] =
+    useMemo(
+      () => ({
+        hero: "Hero",
+        intro: "Kısa tanıtım kartları",
+        stats: "Sayilarla veriler",
+        projects: "Projelerimiz",
+        activities: "Faaliyetlerimiz",
+        about: "Hakkımızda",
+        blog: "Blog",
+        newsletter: "E-Bulten",
+        certificate_verify: "Sertifika doğrulama",
+        marquee: "Kayan yazılar",
+      }),
+      [],
+    );
 
   const uploadImage = useCallback(
-    async (file: File, folder: string, onSuccess: (url: string) => void, fieldKey: string) => {
+    async (
+      file: File,
+      folder: string,
+      onSuccess: (url: string) => void,
+      fieldKey: string,
+    ) => {
       if (!canUpdateSettings) {
-        setErrorMessage("Görsel yuklemek için global site ayari güncelleme yetkisi gerekir.");
+        setErrorMessage(
+          "Görsel yuklemek için global site ayari güncelleme yetkisi gerekir.",
+        );
         return;
       }
 
@@ -438,11 +565,15 @@ export default function AdminSettingsPage() {
         formData.append("file", file);
         formData.append("folder", folder);
 
-        const response = await api.post<{ url: string }>("/panel/media/upload", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
+        const response = await api.post<{ url: string }>(
+          "/panel/media/upload",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
           },
-        });
+        );
 
         onSuccess(response.data.url);
       } catch (error) {
@@ -507,10 +638,13 @@ export default function AdminSettingsPage() {
     ],
   );
 
-  const activeModuleDef = SETTINGS_MODULES.find((m) => m.id === activeModule) ?? SETTINGS_MODULES[0];
+  const activeModuleDef =
+    SETTINGS_MODULES.find((m) => m.id === activeModule) ?? SETTINGS_MODULES[0];
   const ActiveModuleIcon = activeModuleDef.icon;
   const activeModuleLabel = activeModuleDef.label;
-  const visibleBlockCount = Object.values(settings.homepage.block_visibility).filter(Boolean).length;
+  const visibleBlockCount = Object.values(
+    settings.homepage.block_visibility,
+  ).filter(Boolean).length;
   const selectedContentCount =
     settings.homepage.featured_project_slugs.length +
     settings.homepage.featured_blog_slugs.length +
@@ -520,9 +654,14 @@ export default function AdminSettingsPage() {
     return (
       <div className="panel-empty-card">
         Site ayarlarını görüntülemek için{" "}
-        <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">settings.view</code> veya{" "}
-        <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">content.site_settings.update</code> izninin{" "}
-        <strong>tüm sistem (all)</strong> kapsamında verilmesi gerekir.
+        <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+          settings.view
+        </code>{" "}
+        veya{" "}
+        <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+          content.site_settings.update
+        </code>{" "}
+        izninin <strong>tüm sistem (all)</strong> kapsamında verilmesi gerekir.
       </div>
     );
   }
@@ -544,10 +683,12 @@ export default function AdminSettingsPage() {
               <Settings className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Site ayarları</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                Site ayarları
+              </h1>
               <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                Public site metinleri, anasayfa düzeni ve navigasyon tek panel icinden action + scope izinleriyle
-                yönetilir.
+                Public site metinleri, anasayfa düzeni ve navigasyon tek panel
+                icinden action + scope izinleriyle yönetilir.
               </p>
             </div>
           </div>
@@ -557,14 +698,18 @@ export default function AdminSettingsPage() {
                 <ActiveModuleIcon className="h-4 w-4" />
                 Modül
               </div>
-              <div className="mt-1 truncate text-sm font-bold text-slate-900">{activeModuleLabel}</div>
+              <div className="mt-1 truncate text-sm font-bold text-slate-900">
+                {activeModuleLabel}
+              </div>
             </div>
             <div className="panel-card-muted px-3 py-2.5">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <ShieldCheck className="h-4 w-4" />
                 Yetki
               </div>
-              <div className={`mt-1 text-sm font-bold ${canUpdateSettings ? "text-emerald-700" : "text-amber-700"}`}>
+              <div
+                className={`mt-1 text-sm font-bold ${canUpdateSettings ? "text-emerald-700" : "text-amber-700"}`}
+              >
                 {canUpdateSettings ? "Düzenlenebilir" : "Salt okunur"}
               </div>
             </div>
@@ -585,7 +730,9 @@ export default function AdminSettingsPage() {
             Ayar verisi yüklendi
           </span>
           <span className="panel-chip">
-            {settings.homepage.stats_mode === "manual" ? "Manuel istatistik" : "Otomatik istatistik"}
+            {settings.homepage.stats_mode === "manual"
+              ? "Manuel istatistik"
+              : "Otomatik istatistik"}
           </span>
           <span className="panel-chip">
             {settings.navigation.header_links.length} header linki
@@ -607,7 +754,9 @@ export default function AdminSettingsPage() {
           className="panel-button panel-button-secondary flex h-auto w-full justify-between px-4 py-3 text-left"
         >
           <span>Modül: {activeModuleLabel}</span>
-          <ChevronDown className={`h-5 w-5 text-slate-500 transition ${mobileNavOpen ? "rotate-180" : ""}`} />
+          <ChevronDown
+            className={`h-5 w-5 text-slate-500 transition ${mobileNavOpen ? "rotate-180" : ""}`}
+          />
         </button>
         {mobileNavOpen ? (
           <div className="panel-section-card mt-2 p-2">
@@ -625,7 +774,10 @@ export default function AdminSettingsPage() {
       <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
         <aside className="hidden w-64 shrink-0 lg:block">
           <div className="panel-section-card sticky top-4 p-2">
-            <SettingsModuleNav activeModule={activeModule} onSelect={setActiveModule} />
+            <SettingsModuleNav
+              activeModule={activeModule}
+              onSelect={setActiveModule}
+            />
           </div>
         </aside>
 
@@ -636,9 +788,13 @@ export default function AdminSettingsPage() {
 
       <div className="panel-section-card sticky bottom-4 z-10 mt-8 flex flex-col gap-3 bg-white/95 p-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
         {!canUpdateSettings ? (
-          <p className="text-xs text-amber-800 sm:text-sm">Salt okunur: kaydetmek için düzenleme yetkisi gerekir.</p>
+          <p className="text-xs text-amber-800 sm:text-sm">
+            Salt okunur: kaydetmek için düzenleme yetkisi gerekir.
+          </p>
         ) : (
-          <p className="text-xs text-slate-500 sm:text-sm">Değişiklikleri kaydetmeyi unutmayin.</p>
+          <p className="text-xs text-slate-500 sm:text-sm">
+            Değişiklikleri kaydetmeyi unutmayin.
+          </p>
         )}
         <button
           type="button"
@@ -646,7 +802,11 @@ export default function AdminSettingsPage() {
           disabled={saving || !canUpdateSettings}
           className="panel-button panel-button-primary shrink-0"
         >
-          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+          {saving ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Save className="h-5 w-5" />
+          )}
           Ayarları kaydet
         </button>
       </div>

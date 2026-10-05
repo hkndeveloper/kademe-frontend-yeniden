@@ -1,0 +1,96 @@
+{
+  "theme": "Aigocy purchased HTML template",
+  "appearance": "original gradient/material design; no Apple or sage redesign",
+  "assets": "/aigocy-original/",
+  "css_generation": "node scripts/build-aigocy-css.cjs",
+  "pages": [
+    {
+      "source": "index.html",
+      "route": "/",
+      "data": "homepage settings, projects, activities, blogs, FAQs, computed counters, theme groups"
+    },
+    {
+      "source": "index-v2.html",
+      "route": "/home-animated",
+      "data": "same homepage data; CMS video or included original hero.mp4"
+    },
+    {
+      "source": "about.html",
+      "route": "/about",
+      "data": "about settings, theme groups, real published content"
+    },
+    {
+      "source": "service.html",
+      "route": "/services",
+      "data": "theme.services cards, falling back to public projects"
+    },
+    {
+      "source": "service-single.html",
+      "route": "/services/[slug]",
+      "data": "CMS service card ID or project slug"
+    },
+    { "source": "work.html", "route": "/projects", "data": "public projects" },
+    {
+      "source": "work-single.html",
+      "route": "/projects/[slug]",
+      "data": "existing project detail, periods, dynamic application fields, gallery and maps"
+    },
+    {
+      "source": "blog-standard.html",
+      "route": "/blog-standard",
+      "data": "paginated public blogs, horizontal cards"
+    },
+    {
+      "source": "blog-two-columns.html",
+      "route": "/blog-two-columns",
+      "data": "paginated public blogs, two columns"
+    },
+    {
+      "source": "blog-three-columns.html",
+      "route": "/blog-three-columns",
+      "data": "paginated public blogs, three columns; /blog includes a view selector"
+    },
+    {
+      "source": "blog-single.html",
+      "route": "/blog/[slug]",
+      "data": "published blog detail and related content"
+    },
+    {
+      "source": "contact.html",
+      "route": "/contact",
+      "data": "contact settings, projects, existing public contact/authenticated support APIs"
+    },
+    {
+      "source": "404.html",
+      "route": "not-found",
+      "data": "Next.js missing route handling"
+    }
+  ],
+  "additional_pages": [
+    "/activities",
+    "/activities/[id]",
+    "/faq",
+    "/certificates/verify",
+    "/auth/login",
+    "/auth/register",
+    "/auth/forgot-password",
+    "/auth/reset-password",
+    "/auth/kvkk-consent",
+    "/offline",
+    "/newsletter/unsubscribe"
+  ],
+  "cms": {
+    "page": "/panel/settings",
+    "module": "Aigocy",
+    "group": "settings.theme",
+    "permission": "existing global settings/content update permission",
+    "storage": "existing SystemSetting records; no migration needed"
+  },
+  "release": {
+    "frontend": "build with deployment NEXT_PUBLIC_API_URL and NEXT_PUBLIC_STORAGE_URL",
+    "backend": "deploy SiteSettingsController and resources/theme/aigocy.json together",
+    "production_writes": "not tested against live API; tests use isolated SQLite",
+    "panels": "existing authority and participant workflows retained; vendor CSS scoped to public shell"
+  },
+  "content_policy": "Team, partners, awards and testimonials require real authorized CMS content; empty lists are hidden. Pricing layout shows project application paths without fabricated prices."
+}

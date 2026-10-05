@@ -1,4 +1,5 @@
 export interface SiteSettingsPayload {
+  theme?: import('./aigocy').ThemeSettings;
   general: {
     site_name: string;
     site_tagline: string;

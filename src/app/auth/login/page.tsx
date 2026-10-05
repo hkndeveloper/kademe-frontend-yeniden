@@ -79,7 +79,7 @@ export default function LoginPage() {
       <div className="px-4 pt-4 sm:px-6 lg:px-10">
       <section className="relative isolate overflow-hidden rounded-[2rem] pb-10 pt-36 sm:pt-40 lg:pt-44">
         <div className="absolute inset-0 -z-10 overflow-hidden bg-[#e7e7e4]">
-          <Image src="/aigocy/images/section/hero-1.jpg" alt="" fill priority className="object-cover opacity-55" />
+          <Image src="/aigocy-original/images/section/hero-1.jpg" alt="" fill priority className="object-cover" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.92),transparent_20rem),radial-gradient(circle_at_82%_18%,rgba(253,58,37,0.15),transparent_17rem),linear-gradient(180deg,rgba(255,255,255,0.4),rgba(231,231,228,0.9))]" />
         </div>
 

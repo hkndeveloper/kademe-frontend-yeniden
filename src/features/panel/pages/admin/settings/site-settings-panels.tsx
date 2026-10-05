@@ -14,11 +14,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { SiteSettingsPayload } from "@/lib/site-config";
+import { ThemeEditor } from "@/components/aigocy/ThemeEditor";
 
 type HomepageBlockKey = SiteSettingsPayload["homepage"]["block_order"][number];
 
 export type SettingsModuleId =
   | "general"
+  | "theme"
   | "navigation"
   | "homepage"
   | "intro"
@@ -35,6 +37,7 @@ export type SettingsModuleDef = {
 };
 
 export const SETTINGS_MODULES: SettingsModuleDef[] = [
+  {id: "theme", label: "Aigocy tema", description: "Yeni bölümler, kartlar, ekip ve görüşler", icon: Sparkles},
   {
     id: "general",
     label: "Marka ve iletişim",
@@ -228,6 +231,8 @@ export function SiteSettingsPanels(props: SiteSettingsPanelsProps) {
     updateIntroCard,
     homepageBlockLabels,
   } = props;
+
+  if (activeModule === "theme") return <ThemeEditor settings={settings} setSettings={setSettings} disabled={disabled} uploadImage={uploadImage} uploadingField={uploadingField} />;
 
   if (activeModule === "general") {
     return (

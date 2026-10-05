@@ -1,0 +1,1382 @@
+/* React/data adaptations. Visual component rules are retained in vendor.css. */
+.aigocy-site {
+  font-family: var(--font-urbanist), Arial, sans-serif;
+  background: #edecec;
+  color: #09090b;
+  width: 100%;
+  min-height: 100vh;
+  --brand: #fd3a25;
+  --body: #edecec;
+  --primary: #09090b;
+  --secondary: #71717a;
+  --white: #fff;
+}
+.aigocy-site p {
+  white-space: pre-line;
+}
+.aigocy-site button,
+.aigocy-site input,
+.aigocy-site select,
+.aigocy-site textarea {
+  font-family: inherit;
+}
+.aigocy-site :focus-visible {
+  outline: 2px solid #fd3a25;
+  outline-offset: 4px;
+}
+.aigocy-site [inert] {
+  pointer-events: none;
+}
+.aigocy-site .theme-header {
+  position: relative;
+  z-index: 60;
+  padding-inline: 16px;
+}
+.aigocy-site .tf-header.header2.theme-header .header-inner {
+  max-width: 1280px;
+  gap: 24px;
+}
+.aigocy-site .theme-header .item-link {
+  white-space: nowrap;
+}
+.aigocy-site .theme-header .logo-site {
+  width: 172px;
+  flex-shrink: 0;
+}
+.aigocy-site .theme-header .logo-site > div {
+  transform: scale(0.75);
+  transform-origin: left center;
+}
+.aigocy-site .nav-menu-main {
+  gap: 20px;
+}
+.aigocy-site .nav-menu-main .theme-projects {
+  order: 0;
+}
+.aigocy-site .nav-menu-main li:nth-child(n + 3):not(.theme-projects) {
+  order: 1;
+}
+.aigocy-site .theme-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.aigocy-site .theme-login {
+  font-weight: 600;
+  font-size: 15px;
+}
+.aigocy-site .theme-header .tf-btn {
+  min-height: 44px;
+  padding: 12px 22px;
+}
+.aigocy-site .theme-mobile-trigger {
+  display: none;
+}
+.aigocy-site .theme-projects .item-link {
+  gap: 6px;
+  align-items: center;
+}
+.aigocy-site .theme-projects .sub-menu {
+  width: 350px;
+  max-width: calc(100vw - 32px);
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  padding: 16px;
+}
+.aigocy-site .theme-projects.is-open .sub-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+.aigocy-site .theme-projects:not(.is-open) .sub-menu {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none;
+}
+.aigocy-site .theme-projects .sub-menu .item-link {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px;
+  white-space: normal;
+}
+.aigocy-site .theme-projects .sub-menu .icon {
+  flex-shrink: 0;
+}
+.aigocy-site .theme-mobile-menu {
+  position: fixed;
+  margin: 0;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: 0;
+  padding: 0;
+  background: #09090b;
+  color: #fff;
+}
+.aigocy-site .theme-mobile-menu::backdrop {
+  background: rgba(9, 9, 11, 0.58);
+  backdrop-filter: blur(6px);
+}
+.aigocy-site .theme-mobile-inner {
+  padding: 28px;
+}
+.aigocy-site .theme-mobile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  font-size: 26px;
+  font-weight: 600;
+}
+.aigocy-site .theme-mobile-inner nav {
+  display: grid;
+  gap: 10px;
+}
+.aigocy-site .theme-mobile-inner nav > a,
+.aigocy-site .theme-mobile-inner summary {
+  font-size: clamp(28px, 6vw, 64px);
+  font-weight: 600;
+  padding: 12px 0;
+  line-height: 1.2;
+}
+.aigocy-site .theme-mobile-inner details a {
+  display: block;
+  padding: 12px 14px;
+  font-size: 17px;
+}
+.aigocy-site .theme-mobile-inner .active {
+  color: var(--brand);
+}
+.aigocy-site .theme-mobile-inner .tf-btn {
+  margin-top: 18px;
+  justify-content: center;
+}
+.aigocy-site .section-hero .hero-image.theme-gradient-background {
+  background-image: url("/aigocy-original/images/section/hero-1.jpg");
+  filter: none;
+}
+.aigocy-site .theme-service-picture {
+  margin-top: 40px;
+  aspect-ratio: 1.7;
+  max-width: 416px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.aigocy-site .theme-service-picture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.aigocy-site .services-image-btn {
+  width: 100%;
+  text-align: left;
+}
+.aigocy-site .theme-benefit-grid .benefits-box {
+  padding: 48px;
+}
+.aigocy-site .theme-benefit-grid .benefits-design-inner {
+  min-height: 250px;
+}
+.aigocy-site .theme-detail-cover {
+  padding-top: 64px;
+}
+.aigocy-site .theme-detail-cover > img,
+.aigocy-site .theme-detail-cover > div {
+  width: 100%;
+  max-height: 600px;
+  object-fit: cover;
+  border-radius: 32px;
+}
+.aigocy-site .theme-detail-meta,
+.aigocy-site .theme-article-meta {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 28px;
+  font-size: 14px;
+}
+.aigocy-site .theme-resource-link {
+  display: block;
+  border-bottom: 1px solid #d4d4d8;
+  padding: 16px 0;
+}
+.aigocy-site .theme-support-card {
+  background: radial-gradient(ellipse at bottom right, #411c15, #09090b 70%);
+  padding: 56px;
+  border-radius: 40px;
+  margin-top: 80px;
+}
+.aigocy-site .theme-contact-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 36px;
+}
+.aigocy-site .theme-contact-socials a {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.aigocy-site .theme-result-count {
+  margin-bottom: 32px;
+}
+.aigocy-site .theme-article-body p {
+  margin-bottom: 24px;
+}
+.aigocy-site .theme-article-navigation {
+  margin-top: 40px;
+}
+.aigocy-site .theme-home-hero .content-wrap {
+  padding-bottom: 160px;
+}
+.aigocy-site .theme-home-hero .title1 {
+  display: inline-block;
+}
+.aigocy-site .section-hero .content-wrap .text {
+  max-width: 660px;
+  margin-inline: auto;
+}
+.aigocy-site .section-hero .title {
+  overflow-wrap: anywhere;
+}
+.aigocy-site .theme-hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.aigocy-site .section-hero .container {
+  position: relative;
+  z-index: 2;
+}
+.aigocy-site .theme-description {
+  margin-top: 24px;
+  max-width: 680px;
+  line-height: 1.8;
+  font-size: 18px;
+}
+.aigocy-site .heading-section.center .theme-description {
+  margin-inline: auto;
+}
+.aigocy-site .heading-title {
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.aigocy-site .theme-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  margin-top: 20px;
+}
+.aigocy-site .theme-inline-link:hover {
+  color: var(--brand);
+}
+.aigocy-site .theme-earth {
+  pointer-events: none;
+}
+.aigocy-site .section-about-us .col-left {
+  min-height: 560px;
+  height: 100%;
+}
+.aigocy-site .section-about-us .col-left .theme-description {
+  max-width: 70%;
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 3;
+}
+.aigocy-site .box-quotes .image {
+  min-width: 32%;
+}
+.aigocy-site .box-quotes .content {
+  min-width: 0;
+}
+.aigocy-site .theme-about-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 32px;
+  color: #71717a;
+}
+.aigocy-site .theme-about-meta a {
+  display: flex;
+  gap: 12px;
+}
+.aigocy-site .theme-project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+.aigocy-site .theme-project-grid > div {
+  min-width: 0;
+}
+.aigocy-site .featured-works-item {
+  height: 100%;
+}
+.aigocy-site .featured-works-item .image {
+  aspect-ratio: 1.45;
+  display: block;
+}
+.aigocy-site .featured-works-item .image img {
+  height: 100%;
+}
+.aigocy-site .featured-works-item .content-top {
+  display: block;
+}
+.aigocy-site .featured-works-item .content h3 {
+  font-size: 32px;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+.aigocy-site .featured-works-item .content p {
+  line-height: 1.7;
+}
+.aigocy-site .theme-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+  border-top: 1px solid #d4d4d8;
+  padding-top: 20px;
+  font-size: 14px;
+}
+.aigocy-site .theme-section-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+.aigocy-site .theme-kicker {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #71717a;
+  display: block;
+  margin-bottom: 12px;
+}
+.aigocy-site .theme-service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.aigocy-site .theme-service-card {
+  display: block;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff 0%, #f4f4f5 100%);
+  padding: 32px;
+  position: relative;
+  height: 100%;
+  box-shadow:
+    0 -4px 0 #e4e4e7 inset,
+    0 8px 20px #09090b08;
+  transition: transform 0.4s;
+}
+.aigocy-site .theme-service-card:hover {
+  transform: translateY(-6px);
+}
+.aigocy-site .theme-service-icon,
+.aigocy-site .features-item .icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(#ff6546, #fd3a25);
+  color: white;
+  box-shadow: 0 -5px 0 #ea2b16 inset;
+  margin-bottom: 28px;
+}
+.aigocy-site .theme-service-card h3 {
+  font-size: 28px;
+  line-height: 1.2;
+  margin-bottom: 18px;
+}
+.aigocy-site .theme-service-card p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #71717a;
+  margin-bottom: 32px;
+}
+.aigocy-site .theme-service-arrow {
+  display: flex;
+  justify-content: flex-end;
+  color: var(--brand);
+}
+.aigocy-site .theme-carousel {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  padding: 8px 0 24px;
+}
+.aigocy-site .theme-carousel > * {
+  flex: 0 0 min(380px, 85%);
+  scroll-snap-align: start;
+}
+.aigocy-site .theme-carousel-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  gap: 12px;
+}
+.aigocy-site .process-card {
+  height: auto;
+  min-height: 360px;
+}
+.aigocy-site .process-card h3 {
+  font-size: 28px;
+}
+.aigocy-site .process-card .time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aigocy-site .theme-benefit-grid,
+.aigocy-site .theme-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.aigocy-site .theme-benefit-grid .benefits-box {
+  height: 100%;
+  padding: 32px;
+}
+.aigocy-site .theme-benefit-art {
+  position: relative;
+  height: 210px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 24px;
+  border-radius: 24px;
+  background: radial-gradient(ellipse, #fff, #e4e4e7);
+}
+.aigocy-site .theme-benefit-art > svg {
+  position: relative;
+  z-index: 1;
+  padding: 20px;
+  box-sizing: content-box;
+  border-radius: 24px;
+  background: linear-gradient(#ff6546, #fd3a25);
+  color: white;
+  box-shadow: 0 8px 30px #fd3a2533;
+}
+.aigocy-site .theme-orbit {
+  position: absolute;
+  border: 1px solid #d4d4d8;
+  border-radius: 50%;
+  width: 240px;
+  height: 240px;
+}
+.aigocy-site .orbit-2 {
+  width: 340px;
+  height: 340px;
+}
+.aigocy-site .theme-benefit-dot {
+  position: absolute;
+  left: 20%;
+  top: 22%;
+  width: 14px;
+  height: 14px;
+  background: #fd3a25;
+  border-radius: 50%;
+}
+.aigocy-site .theme-benefit-grid h3 {
+  font-size: 28px;
+  line-height: 1.3;
+}
+.aigocy-site .theme-benefit-grid p {
+  margin-top: 16px;
+  line-height: 1.7;
+}
+.aigocy-site .theme-partner-strip {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.aigocy-site .theme-partner-strip img {
+  width: 130px;
+  height: 60px;
+  object-fit: contain;
+}
+.aigocy-site .theme-tool-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+.aigocy-site .theme-tool-chip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 24px;
+  background: white;
+  box-shadow:
+    0 -4px 0 #e4e4e7 inset,
+    0 10px 25px #09090b0a;
+  font-size: 20px;
+  font-weight: 600;
+}
+.aigocy-site .theme-tool-chip svg {
+  color: var(--brand);
+}
+.aigocy-site .theme-template-tools .theme-tool-symbol {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  background: white;
+  color: #fd3a25;
+  box-shadow: 4px 18px 28px #09090b1a;
+  border-radius: 11px;
+  overflow: hidden;
+}
+.aigocy-site .theme-tool-symbol img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.aigocy-site .theme-template-tools .tf-btn {
+  margin-top: 32px;
+}
+.aigocy-site .theme-intro-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.aigocy-site .theme-intro-grid img {
+  border-radius: 16px;
+  aspect-ratio: 1.5;
+  object-fit: cover;
+  margin-bottom: 24px;
+}
+.aigocy-site .theme-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 32px;
+}
+.aigocy-site .theme-stat-grid .statistic-number {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.aigocy-site .theme-stat-grid .number {
+  font-size: clamp(56px, 7vw, 100px);
+}
+.aigocy-site .theme-stat-note {
+  font-size: 14px;
+  margin-top: 40px;
+}
+.aigocy-site .theme-team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.aigocy-site .theme-team-grid .image {
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 24px;
+}
+.aigocy-site .theme-team-grid .image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.aigocy-site .theme-team-grid .content {
+  padding: 24px;
+}
+.aigocy-site .theme-team-grid h3 {
+  font-size: 26px;
+}
+.aigocy-site .theme-award-row {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  border-bottom: 1px solid #ffffff20;
+  padding: 28px 0;
+  color: white;
+}
+.aigocy-site .theme-award-row div {
+  flex: 1;
+}
+.aigocy-site .theme-award-row p {
+  color: #a1a1aa;
+  margin-top: 12px;
+}
+.aigocy-site .theme-testimonial {
+  padding: 32px;
+  border-radius: 24px;
+  background: linear-gradient(#27272a, #18181b);
+  color: white;
+}
+.aigocy-site .theme-testimonial > svg {
+  color: #fd3a25;
+  margin-bottom: 24px;
+}
+.aigocy-site .theme-testimonial blockquote {
+  font-size: 24px;
+  line-height: 1.5;
+}
+.aigocy-site .theme-testimonial-person {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+.aigocy-site .theme-testimonial-person img {
+  height: 56px;
+  width: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.aigocy-site .theme-testimonial-person p {
+  color: #a1a1aa;
+  font-size: 14px;
+}
+.aigocy-site .theme-price-label {
+  font-size: 36px !important;
+  line-height: 1.25;
+}
+.aigocy-site .pricing-item h3.text {
+  font-size: 22px;
+}
+.aigocy-site .pricing-item .content {
+  gap: 24px;
+}
+.aigocy-site .pricing-item .list-text li {
+  display: flex;
+  gap: 10px;
+}
+.aigocy-site .theme-blog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+}
+.aigocy-site .theme-blog-grid.layout-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.aigocy-site .theme-blog-grid.layout-standard {
+  grid-template-columns: 1fr;
+  max-width: 1000px;
+  margin-inline: auto;
+}
+.aigocy-site .section-page-title .page-title {
+  overflow-wrap: anywhere;
+}
+.aigocy-site .theme-service-details {
+  margin-top: 32px;
+}
+.aigocy-site .theme-service-details li {
+  padding: 16px;
+  border-bottom: 1px solid #d4d4d8;
+}
+.aigocy-site .theme-blog-card {
+  height: 100%;
+}
+.aigocy-site .theme-blog-image {
+  display: block;
+  position: relative;
+  aspect-ratio: 1.4;
+  border-radius: 32px;
+  overflow: hidden;
+}
+.aigocy-site .theme-blog-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s;
+}
+.aigocy-site .theme-blog-image:hover img {
+  transform: scale(1.06);
+}
+.aigocy-site .theme-round-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  border-radius: 50%;
+  background: white;
+  width: 48px;
+  height: 48px;
+}
+.aigocy-site .theme-blog-copy {
+  padding-top: 24px;
+}
+.aigocy-site .theme-blog-copy h2 {
+  font-size: 28px;
+  line-height: 1.25;
+  margin: 16px 0;
+}
+.aigocy-site .theme-blog-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #71717a;
+}
+.aigocy-site .theme-faq-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 80px;
+}
+.aigocy-site .theme-faq-list {
+  display: grid;
+  gap: 16px;
+}
+.aigocy-site .theme-faq-item {
+  border-radius: 24px;
+  background: #f4f4f5;
+  box-shadow: 0 -4px 0 #e4e4e7 inset;
+  overflow: hidden;
+}
+.aigocy-site .theme-faq-item h3 button {
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  text-align: left;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.aigocy-site .theme-faq-item button svg {
+  flex-shrink: 0;
+  transition: transform 0.3s;
+}
+.aigocy-site .theme-faq-item.is-open button svg {
+  transform: rotate(45deg);
+  color: #fd3a25;
+}
+.aigocy-site .theme-faq-answer {
+  overflow: hidden;
+}
+.aigocy-site .theme-faq-answer p {
+  padding: 0 24px 28px;
+  line-height: 1.8;
+  color: #71717a;
+}
+.aigocy-site .theme-marquee {
+  overflow: hidden;
+  border-block: 1px solid #d4d4d8;
+  padding: 32px 0;
+}
+.aigocy-site .theme-marquee-track {
+  display: flex;
+  gap: 48px;
+  width: max-content;
+  animation: aigocy-marquee 24s linear infinite;
+}
+.aigocy-site .theme-marquee-group {
+  display: flex;
+  gap: 48px;
+}
+.aigocy-site .theme-marquee-group > span {
+  display: flex;
+  gap: 48px;
+  align-items: center;
+  font-size: clamp(28px, 4vw, 56px);
+  font-weight: 600;
+}
+@keyframes aigocy-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.aigocy-site .theme-certificate {
+  background: #f4f4f5;
+  border-radius: 40px;
+  padding: 56px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 40px;
+  box-shadow: 0 -6px 0 #e4e4e7 inset;
+  align-items: center;
+}
+.aigocy-site .theme-certificate .heading-title {
+  font-size: 48px;
+}
+.aigocy-site .theme-certificate-art {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  min-height: 290px;
+}
+.aigocy-site .theme-document {
+  width: 220px;
+  min-height: 270px;
+  background: white;
+  border-radius: 20px;
+  box-shadow:
+    0 16px 60px #09090b20,
+    inset 0 -5px 0 #e4e4e7;
+  padding: 36px;
+  transform: rotate(-8deg);
+  color: #fd3a25;
+}
+.aigocy-site .theme-document span {
+  display: block;
+  height: 8px;
+  border-radius: 5px;
+  margin-bottom: 14px;
+  background: #e4e4e7;
+}
+.aigocy-site .theme-document svg {
+  margin-top: 24px;
+}
+.aigocy-site .theme-verified {
+  position: absolute;
+  right: 12%;
+  bottom: 10%;
+  padding: 20px;
+  border-radius: 24px;
+  background: linear-gradient(#ff6546, #fd3a25);
+  box-shadow: 0 -4px 0 #ea2b16 inset;
+  color: white;
+}
+.aigocy-site .theme-newsletter {
+  padding: 56px;
+  border-radius: 40px;
+  background: radial-gradient(ellipse at right bottom, #52140c, #09090b 65%);
+  color: white;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+.aigocy-site .theme-newsletter form {
+  display: grid;
+  gap: 16px;
+}
+.aigocy-site
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.aigocy-site select,
+.aigocy-site textarea {
+  background: #fff;
+  border: 1px solid #d4d4d8;
+  border-radius: 16px;
+  padding: 16px 20px;
+  color: #09090b;
+  width: 100%;
+  font-size: 16px;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+.aigocy-site input[type="checkbox"],
+.aigocy-site input[type="radio"] {
+  accent-color: #fd3a25;
+}
+.aigocy-site textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+.aigocy-site .theme-newsletter label,
+.aigocy-site .theme-contact-form label {
+  display: grid;
+  gap: 10px;
+  font-size: 14px;
+}
+.aigocy-site .theme-feedback {
+  padding: 24px;
+  border: 1px solid #fd3a25;
+  background: #fff5f3;
+  border-radius: 16px;
+  margin-block: 32px;
+}
+.aigocy-site .theme-feedback button {
+  margin-left: 20px;
+  text-decoration: underline;
+}
+.aigocy-site .theme-empty {
+  padding: 40px;
+  border: 1px solid #d4d4d8;
+  border-radius: 24px;
+  color: #71717a;
+  background: #fafafa;
+  text-align: center;
+}
+.aigocy-site .theme-media-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background:
+    radial-gradient(ellipse at 75% 0%, #fd3a2533, transparent 55%),
+    linear-gradient(135deg, #292c2e, #555d64);
+  color: white;
+  padding: 24px;
+  text-align: center;
+}
+.aigocy-site .theme-media-placeholder span {
+  font-size: 20px;
+  line-height: 1.4;
+}
+.aigocy-site .theme-filter-bar {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 24px;
+  border-radius: 24px;
+  background: white;
+  margin-bottom: 40px;
+}
+.aigocy-site .theme-filter-bar label {
+  flex: 1;
+  min-width: 160px;
+}
+.aigocy-site .theme-view-buttons {
+  display: flex;
+  gap: 8px;
+}
+.aigocy-site .theme-view-buttons button {
+  padding: 12px 20px;
+  border-radius: 14px;
+  background: #f4f4f5;
+}
+.aigocy-site .theme-view-buttons button[aria-pressed="true"] {
+  background: #09090b;
+  color: #fff;
+}
+.aigocy-site .theme-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin-top: 40px;
+}
+.aigocy-site .theme-pagination button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+.aigocy-site button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.aigocy-site .theme-contact-grid {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 80px;
+  align-items: start;
+}
+.aigocy-site .theme-contact-details {
+  display: grid;
+  gap: 32px;
+}
+.aigocy-site .theme-contact-details dt {
+  font-size: 14px;
+  color: #a1a1aa;
+  margin-bottom: 8px;
+}
+.aigocy-site .theme-contact-details dd {
+  font-size: 22px;
+  line-height: 1.4;
+}
+.aigocy-site .theme-contact-form {
+  padding: 56px;
+  background: #f4f4f5;
+  border-radius: 40px;
+  color: #09090b;
+}
+.aigocy-site .theme-contact-form h3 {
+  font-size: 32px;
+  margin-bottom: 28px;
+}
+.aigocy-site .theme-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.aigocy-site .theme-form-grid .full {
+  grid-column: 1/-1;
+}
+.aigocy-site .theme-contact-form .tf-btn {
+  margin-top: 24px;
+}
+.aigocy-site .theme-form-status {
+  margin-top: 20px;
+  line-height: 1.7;
+}
+.aigocy-site .theme-form-error {
+  color: #b71c0c;
+}
+.aigocy-site .theme-contact.section-contact {
+  background: url("/aigocy-original/images/section/contact-image-bg.jpg")
+    center/cover;
+  color: #09090b;
+  margin-inline: 16px;
+  border-radius: 40px;
+}
+.aigocy-site .theme-contact .heading-section {
+  margin-bottom: 40px;
+}
+.aigocy-site .theme-contact .heading-title {
+  font-size: clamp(36px, 4vw, 58px);
+}
+.aigocy-site .theme-footer {
+  padding: 80px 0 24px;
+  background: #edecec;
+}
+.aigocy-site .theme-footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+}
+.aigocy-site .theme-footer-brand {
+  display: block;
+  font-size: 60px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  margin-bottom: 24px;
+}
+.aigocy-site .theme-footer-display {
+  display: block;
+  font-size: clamp(120px, 26vw, 420px);
+  font-weight: 600;
+  letter-spacing: -0.07em;
+  line-height: 1;
+  text-align: center;
+  background: linear-gradient(#ccc, #edecec);
+  color: transparent;
+  background-clip: text;
+}
+.aigocy-site .theme-original-footer .footer-links {
+  flex-wrap: wrap;
+}
+.aigocy-site .theme-footer h3 {
+  font-size: 18px;
+  margin-bottom: 24px;
+}
+.aigocy-site .theme-footer ul {
+  display: grid;
+  gap: 14px;
+}
+.aigocy-site .theme-footer p {
+  color: #71717a;
+  line-height: 1.8;
+}
+.aigocy-site .theme-footer-bottom {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid #d4d4d8;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 14px;
+  color: #71717a;
+}
+.aigocy-site .theme-article {
+  max-width: 1040px;
+  margin-inline: auto;
+  padding-bottom: 80px;
+}
+.aigocy-site .theme-article-cover {
+  border-radius: 32px;
+  overflow: hidden;
+  aspect-ratio: 1.7;
+  margin-bottom: 48px;
+}
+.aigocy-site .theme-article-cover img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+.aigocy-site .theme-article-body {
+  font-size: 18px;
+  line-height: 1.9;
+  white-space: pre-line;
+  color: #52525b;
+}
+.aigocy-site .theme-detail-hero {
+  padding-top: 190px;
+  padding-bottom: 80px;
+}
+.aigocy-site .theme-detail-hero h1 {
+  font-size: clamp(44px, 6vw, 88px);
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  margin: 24px 0;
+}
+.aigocy-site .theme-detail-hero .theme-detail-meta {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  color: #71717a;
+}
+.aigocy-site .theme-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 64px;
+}
+.aigocy-site .theme-detail-sidebar {
+  padding: 32px;
+  border-radius: 24px;
+  background: #fafafa;
+  align-self: start;
+  position: sticky;
+  top: 24px;
+}
+.aigocy-site .theme-detail-sidebar h2 {
+  font-size: 24px;
+  margin-bottom: 24px;
+}
+.aigocy-site .theme-detail-sidebar li {
+  margin: 16px 0;
+  border-bottom: 1px solid #d4d4d8;
+  padding-bottom: 16px;
+}
+.aigocy-site .theme-detail-section {
+  margin-bottom: 48px;
+}
+.aigocy-site .theme-detail-section h2 {
+  font-size: 32px;
+  margin-bottom: 24px;
+}
+.aigocy-site .theme-error-page {
+  padding-top: 200px;
+  padding-bottom: 100px;
+  text-align: center;
+}
+.aigocy-site .theme-error-page .number {
+  font-size: clamp(100px, 20vw, 240px);
+  font-weight: 600;
+  letter-spacing: -0.05em;
+}
+.aigocy-site .theme-error-page p {
+  margin: 24px 0;
+}
+/* Existing application/forms stay functional, but use the same purchased material rules. */
+.aigocy-site .kdm-public-card,
+.aigocy-site .kdm-public-surface,
+.aigocy-site .kdm-public-stat-card {
+  background: #f4f4f5 !important;
+  border: 0 !important;
+  border-radius: 24px !important;
+  box-shadow:
+    0 -4px 0 #e4e4e7 inset,
+    0 8px 20px #09090b08 !important;
+  backdrop-filter: none !important;
+}
+.aigocy-site .kdm-public-shell {
+  background: #edecec !important;
+  color: #09090b;
+}
+.aigocy-site .kdm-public-heading-title {
+  color: #292c2e !important;
+  background: linear-gradient(180deg, #555d64, #292c2e);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.aigocy-site .kdm-public-btn-brand,
+.aigocy-site .kdm-public-btn-dark {
+  background: radial-gradient(100% 100% at 50% 0%, #43484d, #09090b) !important;
+  color: #fff !important;
+  box-shadow:
+    inset 0 -5px 0 #000,
+    0 7px 16px #09090b20 !important;
+  border-color: #09090b !important;
+}
+.aigocy-site .kdm-public-btn-light {
+  background: #fff !important;
+  color: #09090b !important;
+  border-color: #d4d4d8 !important;
+}
+.aigocy-site .kdm-public-input {
+  background: white !important;
+  border: 1px solid #d4d4d8 !important;
+  box-shadow: none !important;
+}
+.aigocy-site [class*="text-emerald"],
+.aigocy-site [class*="text-green"] {
+  color: #fd3a25;
+}
+@media (min-width: 1400px) {
+  .aigocy-site .container {
+    max-width: 1320px;
+  }
+}
+@media (max-width: 1199px) {
+  .aigocy-site .theme-header .box-navigation,
+  .aigocy-site .theme-register {
+    display: none;
+  }
+  .aigocy-site .theme-mobile-trigger {
+    display: flex;
+  }
+  .aigocy-site .theme-header .header-inner {
+    max-width: 960px;
+  }
+  .aigocy-site .theme-faq-grid,
+  .aigocy-site .theme-contact-grid {
+    gap: 40px;
+  }
+}
+@media (max-width: 991px) {
+  .aigocy-site .theme-service-grid,
+  .aigocy-site .theme-intro-grid,
+  .aigocy-site .theme-team-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .aigocy-site .theme-blog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .aigocy-site .theme-faq-grid,
+  .aigocy-site .theme-contact-grid,
+  .aigocy-site .theme-newsletter,
+  .aigocy-site .theme-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .aigocy-site .theme-footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .aigocy-site .theme-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .aigocy-site .theme-detail-sidebar {
+    position: static;
+  }
+}
+@media (max-width: 767px) {
+  .aigocy-site .tf-header {
+    padding-top: 24px;
+  }
+  .aigocy-site .tf-header .header-inner {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .aigocy-site .theme-header .logo-site {
+    width: 152px;
+  }
+  .aigocy-site .theme-header .logo-site > div {
+    transform: scale(0.65);
+  }
+  .aigocy-site .theme-login {
+    font-size: 13px;
+  }
+  .aigocy-site .theme-header-actions {
+    gap: 10px;
+  }
+  .aigocy-site .theme-header .tf-btn {
+    padding: 12px;
+  }
+  .aigocy-site .theme-home-hero .content-wrap {
+    padding-top: 170px;
+    padding-bottom: 100px;
+  }
+  .aigocy-site .section-hero .title {
+    font-size: clamp(38px, 10vw, 64px);
+  }
+  .aigocy-site .theme-project-grid,
+  .aigocy-site .theme-service-grid,
+  .aigocy-site .theme-intro-grid,
+  .aigocy-site .theme-benefit-grid,
+  .aigocy-site .theme-team-grid,
+  .aigocy-site .theme-pricing-grid,
+  .aigocy-site .theme-blog-grid,
+  .aigocy-site .theme-blog-grid.layout-two {
+    grid-template-columns: 1fr;
+  }
+  .aigocy-site .theme-certificate {
+    grid-template-columns: 1fr;
+    padding: 28px;
+  }
+  .aigocy-site .theme-certificate .heading-title {
+    font-size: 36px;
+  }
+  .aigocy-site .theme-newsletter {
+    padding: 28px;
+    gap: 32px;
+  }
+  .aigocy-site .theme-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .aigocy-site .theme-contact-form {
+    padding: 24px;
+  }
+  .aigocy-site .theme-footer-grid {
+    grid-template-columns: 1fr;
+  }
+  .aigocy-site .theme-footer-bottom,
+  .aigocy-site .theme-about-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .aigocy-site .theme-award-row {
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .aigocy-site .featured-works-item .content {
+    padding: 24px 16px 16px;
+  }
+  .aigocy-site .theme-detail-hero {
+    padding-top: 170px;
+  }
+  .aigocy-site .theme-certificate-art {
+    min-height: 290px;
+  }
+  .aigocy-site .section-about-us .col-left {
+    min-height: 460px;
+  }
+  .aigocy-site .section-about-us .col-left .theme-description {
+    max-width: 100%;
+  }
+  .aigocy-site .theme-description {
+    font-size: 16px;
+  }
+  .aigocy-site .box-quotes {
+    flex-direction: column;
+  }
+  .aigocy-site .box-quotes .image {
+    max-height: 240px;
+  }
+  .aigocy-site .theme-blog-copy h2 {
+    font-size: 26px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aigocy-site *,
+  .aigocy-site *::before,
+  .aigocy-site *::after {
+    animation: none !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  .aigocy-site .theme-marquee-track {
+    width: auto;
+  }
+  .aigocy-site .theme-marquee-group {
+    flex-wrap: wrap;
+  }
+  .aigocy-site .theme-marquee-group + .theme-marquee-group {
+    display: none;
+  }
+  .aigocy-site .theme-hero-video {
+    display: none;
+  }
+}

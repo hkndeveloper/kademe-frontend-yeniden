@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowRight, ExternalLink, Loader2, Search, ShieldCheck } from "lucide-react";
@@ -9,6 +8,7 @@ import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import styles from "@/components/public/CertificateDesign.module.css";
 import api from "@/lib/api/axios";
 import { downloadBlobResponse } from "@/lib/download";
+import {PageHero} from '@/components/aigocy/Primitives';
 
 interface CertificateItem {
   id: number;
@@ -91,14 +91,7 @@ function CertificateVerifyContent() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <span className={styles.eyebrow}><ShieldCheck size={16} /> KADEME BELGE DOĞRULAMA</span>
-          <h1>Emekle kazanıldı.<em>Güvenle doğrula.</em></h1>
-          <p>KADEME tarafından verilen sertifika ve katılım belgelerini doğrulama koduyla kontrol edebilirsiniz.</p>
-        </div>
-        <Image src="/images/certificate-illustration.svg" alt="" width={520} height={420} priority />
-      </section>
+      <PageHero badge="KADEME belge doğrulama" title="Sertifikanı güvenle doğrula." description="KADEME tarafından verilen sertifika ve katılım belgelerini doğrulama koduyla kontrol edebilirsiniz."/>
       <section className={styles.content} aria-label="Sertifika doğrulama">
         <div className={styles.formCard}>
           <div className={styles.formHeading}>
@@ -164,7 +157,6 @@ export default function CertificateVerifyPage() {
     </Suspense>
   );
 }
-
 
 
 

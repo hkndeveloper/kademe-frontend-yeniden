@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowRight, Calendar, ChevronLeft, MapPin, Sparkles, X } from "lucide-react";
+import { ArrowRight, MapPin, X } from "lucide-react";
 import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
-import Link from "next/link";
+import { PageHero, Reveal, ThemeButton, ThemeImage } from "@/components/aigocy/Primitives";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ProgramLocationMap } from "@/components/maps/ProgramLocationMap";
-import { PublicBadge, PublicButton, PublicCard, PublicGradientTitle, PublicIconBadge } from "@/components/public";
+import { PublicButton, PublicCard, PublicIconBadge } from "@/components/public";
 import api from "@/lib/api/axios";
 
 interface ProgramPhoto {
@@ -16,6 +17,7 @@ interface ProgramPhoto {
 }
 
 interface ActivityDetail {
+  cover_image?: string | null;
   id: number;
   title: string;
   description?: string | null;
@@ -105,7 +107,6 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
 
   const photos = program.photos ?? [];
   const coverPhoto = photos[0];
-  const activityCoverImage = coverPhoto?.url || "/aigocy/images/section/work-single-3.jpg";
   const hasCoordinates =
     program.latitude !== null &&
     program.latitude !== undefined &&
@@ -116,70 +117,8 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <main className="kdm-public-shell min-h-screen overflow-hidden bg-[#edecec] pb-24">
-      <section className="relative isolate overflow-hidden px-4 pb-12 pt-36 sm:px-6 sm:pt-40 lg:pt-44">
-        <div className="kdm-public-detail-hero-bg absolute inset-x-4 bottom-0 top-4 -z-10 overflow-hidden sm:inset-x-6 lg:inset-x-10">
-          <img src="/aigocy/images/section/hero-1.jpg" alt="" className="h-full w-full object-cover opacity-55" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_24%,rgba(255,255,255,0.88),transparent_20rem),radial-gradient(circle_at_82%_18%,rgba(253,58,37,0.14),transparent_16rem),linear-gradient(180deg,rgba(255,255,255,0.38),rgba(231,231,228,0.88))]" />
-        </div>
-
-        <div className="container relative z-10 mx-auto">
-          <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
-            <Link
-              href="/activities"
-              className="kdm-public-btn-shine mb-6 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#09090b] shadow-[0_10px_30px_rgba(9,9,11,0.10)] transition hover:-translate-y-0.5 hover:text-[#fd3a25]"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Tüm Faaliyetler
-            </Link>
-
-            <PublicBadge className="mb-6 border-white/80 bg-white/90 text-[#fd3a25] shadow-[0_4px_12px_rgba(9,9,11,0.10)]">
-              {program.is_featured ? <Sparkles className="h-3.5 w-3.5" /> : null}
-              {program.project?.name || "Faaliyet"}
-            </PublicBadge>
-
-            <h1 className="max-w-5xl text-balance text-5xl font-semibold leading-[0.95] tracking-normal text-[#2f3437] sm:text-6xl lg:text-8xl">
-              {program.title}
-            </h1>
-
-            <div className="mt-8 flex flex-wrap justify-center gap-3 text-sm font-bold text-[#3f4653]">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/86 px-4 py-3 shadow-sm backdrop-blur">
-                <Calendar className="h-4 w-4 text-[#fd3a25]" />
-                {formatDateTime(program.start_at)}
-                {program.end_at ? <span className="text-slate-500"> - {formatDateTime(program.end_at)}</span> : null}
-              </div>
-              {program.location ? (
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/86 px-4 py-3 shadow-sm backdrop-blur">
-                  <MapPin className="h-4 w-4 text-[#fd3a25]" />
-                  {program.location}
-                </div>
-              ) : null}
-              {program.period?.name ? <div className="rounded-full border border-white/80 bg-white/86 px-4 py-3 shadow-sm backdrop-blur">{program.period.name}</div> : null}
-              <div className="rounded-full bg-[#fd3a25] px-4 py-3 text-white shadow-[0_12px_28px_rgba(253,58,37,0.28)]">{statusLabel[program.status] ?? program.status}</div>
-            </div>
-          </div>
-
-          <div className="kdm-public-media-frame relative mx-auto mt-12 max-w-6xl overflow-hidden rounded-[2rem] border-[10px] border-[#09090b] bg-[#09090b] kdm-public-dark-gradient shadow-[0_34px_90px_rgba(9,9,11,0.22)]">
-            <div className="relative aspect-[16/8] min-h-[280px]">
-              {coverPhoto ? (
-                <img src={coverPhoto.url} alt={program.title} className="h-full w-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 overflow-hidden bg-[#fd3a25]">
-                  <div className="absolute left-1/2 top-1/2 h-24 w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fd3a25] shadow-[0_28px_70px_rgba(253,58,37,0.42)]" />
-                  <div className="absolute left-[52%] top-[22%] h-28 w-28 rotate-[-58deg] rounded-[1.1rem] bg-[#94a9bc]" />
-                  <div className="absolute left-[64%] top-[38%] h-24 w-24 rotate-[-15deg] rounded-[1.1rem] bg-[#94a9bc]" />
-                  <div className="absolute left-[56%] top-[60%] h-20 w-20 rotate-[14deg] rounded-[1rem] bg-[#94a9bc]" />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,9,11,0.20),transparent_45%,rgba(9,9,11,0.16))]" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#09090b]/68 via-transparent to-transparent" />
-              <div className="absolute bottom-5 left-5 right-5 flex flex-wrap items-center gap-3">
-                <span className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white backdrop-blur">Faaliyet Detayı</span>
-                {program.project?.name ? <span className="rounded-full bg-[#fd3a25] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white shadow-[0_12px_28px_rgba(253,58,37,0.35)]">{program.project.name}</span> : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PageHero badge="KADEME faaliyeti" title={program.title} description={program.description ? program.description.replace(/<[^>]*>/g, '').slice(0, 200) : undefined}><ThemeButton secondary href="/activities">Tüm faaliyetler</ThemeButton><div className="theme-detail-meta"><span>{formatDateTime(program.start_at)}{program.end_at ? ' — '+formatDateTime(program.end_at) : ''}</span><span>{program.location}</span><span>{program.period?.name}</span><span>{statusLabel[program.status] || program.status}</span><span>{program.project?.name}</span>{program.is_featured && <span>Öne çıkan faaliyet</span>}</div></PageHero>
+      <Reveal className="container theme-detail-cover"><ThemeImage src={program.cover_image || coverPhoto?.url} alt={program.title} priority /></Reveal>
       {photos.length > 1 ? (
         <section className="border-b border-slate-200 bg-white py-12">
           <div className="container mx-auto px-4 sm:px-6">
@@ -195,7 +134,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
                   onClick={() => setLightboxPhoto(photo)}
                   className="group kdm-public-gallery-card overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl hover:shadow-slate-900/10"
                 >
-                  <img src={photo.url} alt={photo.caption || program.title} className="h-40 w-full object-cover transition duration-500 group-hover:scale-105" />
+                  <Image src={photo.url} alt={photo.caption || program.title} width={400} height={240} unoptimized className="h-40 w-full object-cover transition duration-500 group-hover:scale-105" />
                   {photo.caption ? <p className="line-clamp-1 px-3 py-2 text-left text-xs font-semibold text-slate-600">{photo.caption}</p> : null}
                 </button>
               ))}
@@ -260,7 +199,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
       {lightboxPhoto ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm" onClick={() => setLightboxPhoto(null)}>
           <div className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-3xl shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <img src={lightboxPhoto.url} alt={lightboxPhoto.caption || program.title} className="max-h-[80vh] w-auto object-contain" />
+            <Image src={lightboxPhoto.url} alt={lightboxPhoto.caption || program.title} width={1200} height={800} unoptimized className="max-h-[80vh] w-auto object-contain" />
             {lightboxPhoto.caption ? <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-6 py-3 text-sm text-white backdrop-blur-sm">{lightboxPhoto.caption}</div> : null}
             <button
               type="button"
@@ -276,6 +215,3 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ id: s
     </main>
   );
 }
-
-
-
