@@ -1,11 +1,5 @@
 "use client";
 import { useRef, useState } from "react";
-import {
-  motion,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-} from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -50,19 +44,8 @@ import { ToolsSection } from "./ToolsSection";
 export function HomeHero({ settings }: { settings: SiteSettingsPayload }) {
   const home = settings.homepage;
   const theme = resolveTheme(settings.theme);
-  const target = useRef<HTMLElement>(null),
-    reduced = useReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target,
-    offset: ["start start", "end start"],
-  });
-  const cardShift = useTransform(scrollYProgress, [0, 1], [0, -60]);
   return (
-    <section
-      ref={target}
-      className="section-hero theme-home-hero"
-      id="baslangic"
-    >
+    <section className="section-hero theme-home-hero" id="baslangic">
       <div
         className="hero-image theme-gradient-background"
         aria-hidden="true"
@@ -107,9 +90,11 @@ export function HomeHero({ settings }: { settings: SiteSettingsPayload }) {
                 <span className="box" />
                 <span className="title-icon-wrap">
                   {[1, 2, 3].map((n) => (
-                    <motion.img
+                    <Image
                       key={n}
-                      style={{ y: reduced ? 0 : cardShift }}
+                      width={100}
+                      height={100}
+                      unoptimized
                       className={`img-${n} img-transform-3`}
                       src={`/aigocy-original/images/item/hero-${n}.svg`}
                       alt=""
@@ -510,19 +495,30 @@ export function ExtraSection({
           <div className="partner-wrap">
             <p className="text-secondary text fw-semibold">{section.title}</p>
             <div className="theme-partner-strip">
-              {items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={safeHref(item.href)}
-                  aria-label={item.title}
-                >
-                  {item.image_url ? (
-                    <ThemeImage src={item.image_url} alt={item.title} />
-                  ) : (
-                    <span>{item.title}</span>
-                  )}
-                </Link>
-              ))}
+              <div className="theme-partner-track">
+                {[0, 1].map((group) => (
+                  <div
+                    className="theme-partner-group"
+                    key={group}
+                    aria-hidden={group === 1 ? true : undefined}
+                  >
+                    {items.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={safeHref(item.href)}
+                        aria-label={item.title}
+                        tabIndex={group === 1 ? -1 : undefined}
+                      >
+                        {item.image_url ? (
+                          <ThemeImage src={item.image_url} alt={item.title} />
+                        ) : (
+                          <span>{item.title}</span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

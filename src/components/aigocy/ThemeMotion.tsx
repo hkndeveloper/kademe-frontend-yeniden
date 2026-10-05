@@ -12,6 +12,25 @@ export function ThemeMotion() {
       return;
     const cards = new Set<HTMLElement>();
     const animations = new Set<Animation>();
+    const decorations = new Map<HTMLElement, Animation>();
+    let frame = 0;
+    const updateDecorations = () => {
+      frame = 0;
+      decorations.forEach((animation, element) => {
+        const progress = Math.min(
+          1,
+          Math.max(
+            0,
+            (window.innerHeight * 0.6 - element.getBoundingClientRect().top) /
+              Math.max(1, window.innerHeight * 0.1),
+          ),
+        );
+        animation.currentTime = progress * 1000;
+      });
+    };
+    const queueDecorations = () => {
+      if (!frame) frame = requestAnimationFrame(updateDecorations);
+    };
     const observer = new IntersectionObserver(
       (entries) =>
         entries.forEach((entry) => {
@@ -31,7 +50,7 @@ export function ThemeMotion() {
         }),
       { threshold: 0.06 },
     );
-    const scan = () =>
+    const scan = () => {
       root
         .querySelectorAll<HTMLElement>(".kdm-public-card,[data-theme-card]")
         .forEach((card) => {
@@ -40,13 +59,32 @@ export function ThemeMotion() {
             observer.observe(card);
           }
         });
+      root
+        .querySelectorAll<HTMLElement>(".img-transform-3")
+        .forEach((element) => {
+          if (decorations.has(element)) return;
+          const animation = element.animate(
+            [{ translate: "0px 0px" }, { translate: "-20px -20px" }],
+            { duration: 1000, fill: "both", easing: "linear" },
+          );
+          animation.pause();
+          decorations.set(element, animation);
+        });
+      queueDecorations();
+    };
     scan();
     const mutations = new MutationObserver(scan);
     mutations.observe(root, { childList: true, subtree: true });
+    window.addEventListener("scroll", queueDecorations, { passive: true });
+    window.addEventListener("resize", queueDecorations, { passive: true });
     return () => {
       mutations.disconnect();
       observer.disconnect();
       animations.forEach((animation) => animation.cancel());
+      decorations.forEach((animation) => animation.cancel());
+      window.removeEventListener("scroll", queueDecorations);
+      window.removeEventListener("resize", queueDecorations);
+      if (frame) cancelAnimationFrame(frame);
     };
   }, [pathname]);
   return null;

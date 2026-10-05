@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
-import { PageHero, Reveal, ThemeButton, ThemeImage } from "@/components/aigocy/Primitives";
+import {
+  PageHero,
+  Reveal,
+  ThemeButton,
+  ThemeImage,
+} from "@/components/aigocy/Primitives";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -146,7 +151,13 @@ interface ProjectProgramsPayload {
   };
   upcoming: PublicProgram[];
   recent_completed: PublicProgram[];
-  calendar_months?: Array<{ key: string; label: string; year?: number; month?: number; count: number }>;
+  calendar_months?: Array<{
+    key: string;
+    label: string;
+    year?: number;
+    month?: number;
+    count: number;
+  }>;
 }
 
 interface ProjectSpecialsPayload {
@@ -236,16 +247,64 @@ export default function ProjectDetailPage() {
   const { isAuthenticated } = useAuth();
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
-  const [applicationForm, setApplicationForm] = useState<ApplicationFormData | null>(null);
-  const [applicationConsentText, setApplicationConsentText] = useState(fallbackApplicationConsentText);
+  const [applicationForm, setApplicationForm] =
+    useState<ApplicationFormData | null>(null);
+  const [applicationConsentText, setApplicationConsentText] = useState(
+    fallbackApplicationConsentText,
+  );
   const [programs, setPrograms] = useState<ProjectProgramsPayload | null>(null);
-  const [projectSpecials, setProjectSpecials] = useState<ProjectSpecialsPayload | null>(null);
-  const [formValues, setFormValues] = useState<Record<string, string | string[] | File | null>>({});
+  const [projectSpecials, setProjectSpecials] =
+    useState<ProjectSpecialsPayload | null>(null);
+  const [formValues, setFormValues] = useState<
+    Record<string, string | string[] | File | null>
+  >({});
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
-  const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
+  const applicationDialog = useRef<HTMLDivElement>(null);
+  const applicationTrigger = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!showApplicationForm || !applicationDialog.current) return;
+    const dialog = applicationDialog.current;
+    const previousFocus = applicationTrigger.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusable = () =>
+      Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]',
+        ),
+      ).filter((element) => element.getClientRects().length > 0);
+    focusable()[0]?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setShowApplicationForm(false);
+      }
+      if (event.key !== "Tab") return;
+      const elements = focusable();
+      const first = elements[0],
+        last = elements.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    dialog.addEventListener("keydown", onKey);
+    return () => {
+      dialog.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected)
+        previousFocus.focus({ preventScroll: true });
+    };
+  }, [showApplicationForm]);
+  const [selectedProgramId, setSelectedProgramId] = useState<number | null>(
+    null,
+  );
   const formRequestId = useRef(0);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [guestApplicant, setGuestApplicant] = useState({
@@ -255,23 +314,32 @@ export default function ProjectDetailPage() {
     phone: "",
   });
   const [guestVerificationCode, setGuestVerificationCode] = useState("");
-  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(
+    null,
+  );
   const [sendingVerification, setSendingVerification] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [guestApplySuccess, setGuestApplySuccess] = useState(false);
-  const [guestReceiptEmailSent, setGuestReceiptEmailSent] = useState<boolean | null>(null);
+  const [guestReceiptEmailSent, setGuestReceiptEmailSent] = useState<
+    boolean | null
+  >(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   useEffect(() => {
     formRequestId.current += 1;
     const fetchProject = async () => {
       try {
-        const response = await api.get<ProjectResponse>(`/projects/${params.slug}`);
+        const response = await api.get<ProjectResponse>(
+          `/projects/${params.slug}`,
+        );
         setProject(response.data.project);
         setFormLoading(false);
         setApplicationForm(response.data.application_form ?? null);
-        setApplicationConsentText(response.data.application_consent_text || fallbackApplicationConsentText);
+        setApplicationConsentText(
+          response.data.application_consent_text ||
+            fallbackApplicationConsentText,
+        );
         setSelectedProgramId(null);
         setShowApplicationForm(false);
         setPrograms(response.data.programs ?? null);
@@ -282,11 +350,13 @@ export default function ProjectDetailPage() {
         setVerificationEmail(null);
         setMessage(null);
 
-        const nextFormValues: Record<string, string | string[] | File | null> = {};
+        const nextFormValues: Record<string, string | string[] | File | null> =
+          {};
         for (const field of response.data.application_form?.fields ?? []) {
           const fieldId = field.id ?? field.key;
           if (!fieldId) continue;
-          nextFormValues[fieldId] = field.type === "checkbox" ? [] : field.type === "file" ? null : "";
+          nextFormValues[fieldId] =
+            field.type === "checkbox" ? [] : field.type === "file" ? null : "";
         }
         setFormValues(nextFormValues);
         setConsentAccepted(false);
@@ -317,7 +387,9 @@ export default function ProjectDetailPage() {
   }, [lightboxUrl]);
 
   const buildApplicationPayload = () => {
-    const hasFile = Object.values(formValues).some((value) => value instanceof File);
+    const hasFile = Object.values(formValues).some(
+      (value) => value instanceof File,
+    );
 
     if (!hasFile) {
       return {
@@ -363,7 +435,8 @@ export default function ProjectDetailPage() {
     data.append("applicant[surname]", guestApplicant.surname.trim());
     data.append("applicant[email]", guestApplicant.email.trim());
     data.append("verification_code", guestVerificationCode.trim());
-    if (guestApplicant.phone.trim()) data.append("applicant[phone]", guestApplicant.phone.trim());
+    if (guestApplicant.phone.trim())
+      data.append("applicant[phone]", guestApplicant.phone.trim());
 
     return {
       payload: data,
@@ -373,7 +446,11 @@ export default function ProjectDetailPage() {
 
   const validateApplicationInputs = (): string | null => {
     if (!isAuthenticated) {
-      if (!guestApplicant.name.trim() || !guestApplicant.surname.trim() || !guestApplicant.email.trim()) {
+      if (
+        !guestApplicant.name.trim() ||
+        !guestApplicant.surname.trim() ||
+        !guestApplicant.email.trim()
+      ) {
         return "Lütfen ad, soyad ve e-posta bilgilerinizi doldurun.";
       }
       const email = guestApplicant.email.trim();
@@ -413,13 +490,19 @@ export default function ProjectDetailPage() {
     setErrorMessage(null);
     setSendingVerification(true);
     try {
-      await api.post("/applications/public/verification", { project_id: project.id, email });
+      await api.post("/applications/public/verification", {
+        project_id: project.id,
+        email,
+      });
       setVerificationEmail(email);
-      setMessage("Kod isteğiniz alındı. Gelen kutunuzu kontrol edip kodu aşağıya yazın; gelmediyse bir dakika sonra yeniden isteyin.");
+      setMessage(
+        "Kod isteğiniz alındı. Gelen kutunuzu kontrol edip kodu aşağıya yazın; gelmediyse bir dakika sonra yeniden isteyin.",
+      );
     } catch (error: unknown) {
       setErrorMessage(
         isAxiosError(error)
-          ? error.response?.data?.message || "Doğrulama kodu gönderilemedi. Lütfen tekrar deneyin."
+          ? error.response?.data?.message ||
+              "Doğrulama kodu gönderilemedi. Lütfen tekrar deneyin."
           : "Doğrulama kodu gönderilemedi. Lütfen tekrar deneyin.",
       );
     } finally {
@@ -428,6 +511,7 @@ export default function ProjectDetailPage() {
   };
 
   const openApplicationForm = async (programId: number | null) => {
+    applicationTrigger.current = document.activeElement as HTMLElement | null;
     if (!project) {
       return;
     }
@@ -448,34 +532,51 @@ export default function ProjectDetailPage() {
     setSelectedProgramId(programId);
 
     try {
-      const response = await api.get<{ application_form: ApplicationFormData | null; application_consent_text?: string }>(`/projects/${project.slug}/application-form`, {
+      const response = await api.get<{
+        application_form: ApplicationFormData | null;
+        application_consent_text?: string;
+      }>(`/projects/${project.slug}/application-form`, {
         params: { program_id: programId ?? undefined },
       });
       if (requestId !== formRequestId.current) return;
 
       const nextForm = response.data.application_form ?? null;
-      const nextFormValues: Record<string, string | string[] | File | null> = {};
+      const nextFormValues: Record<string, string | string[] | File | null> =
+        {};
       for (const field of nextForm?.fields ?? []) {
         const fieldId = field.id ?? field.key;
         if (!fieldId) continue;
-        nextFormValues[fieldId] = field.type === "checkbox" ? [] : field.type === "file" ? null : "";
+        nextFormValues[fieldId] =
+          field.type === "checkbox" ? [] : field.type === "file" ? null : "";
       }
       setApplicationForm(nextForm);
-      setApplicationConsentText(response.data.application_consent_text || fallbackApplicationConsentText);
+      setApplicationConsentText(
+        response.data.application_consent_text ||
+          fallbackApplicationConsentText,
+      );
       setFormValues(nextFormValues);
       setShowApplicationForm(true);
     } catch (error: unknown) {
       if (requestId !== formRequestId.current) return;
-      setErrorMessage(isAxiosError(error)
-        ? error.response?.data?.message || "Başvuru formu yüklenemedi. Lütfen tekrar deneyin."
-        : "Başvuru formu yüklenemedi. Lütfen tekrar deneyin.");
+      setErrorMessage(
+        isAxiosError(error)
+          ? error.response?.data?.message ||
+              "Başvuru formu yüklenemedi. Lütfen tekrar deneyin."
+          : "Başvuru formu yüklenemedi. Lütfen tekrar deneyin.",
+      );
     } finally {
       if (requestId === formRequestId.current) setFormLoading(false);
     }
   };
 
   const handleApply = async () => {
-    if (!project || !project.active_period || !showApplicationForm || formLoading) return;
+    if (
+      !project ||
+      !project.active_period ||
+      !showApplicationForm ||
+      formLoading
+    )
+      return;
 
     setMessage(null);
     setErrorMessage(null);
@@ -490,8 +591,14 @@ export default function ProjectDetailPage() {
       return;
     }
 
-    if (!isAuthenticated && (verificationEmail !== guestApplicant.email.trim().toLowerCase() || !/^\d{8}$/.test(guestVerificationCode.trim()))) {
-      setErrorMessage("E-postanıza gönderilen 8 haneli doğrulama kodunu girin.");
+    if (
+      !isAuthenticated &&
+      (verificationEmail !== guestApplicant.email.trim().toLowerCase() ||
+        !/^\d{8}$/.test(guestVerificationCode.trim()))
+    ) {
+      setErrorMessage(
+        "E-postanıza gönderilen 8 haneli doğrulama kodunu girin.",
+      );
       return;
     }
 
@@ -514,28 +621,43 @@ export default function ProjectDetailPage() {
               },
           config,
         );
-        setMessage("Başvurunuz alındı. Durumu öğrenci panelinizde görebilirsiniz.");
+        setMessage(
+          "Başvurunuz alındı. Durumu öğrenci panelinizde görebilirsiniz.",
+        );
         router.push("/student/applications");
       } else {
-        const response = await api.post<{ follow_up?: { applicant_email_sent?: boolean } }>("/applications/public", payload, config);
-        setGuestReceiptEmailSent(response.data.follow_up?.applicant_email_sent ?? null);
+        const response = await api.post<{
+          follow_up?: { applicant_email_sent?: boolean };
+        }>("/applications/public", payload, config);
+        setGuestReceiptEmailSent(
+          response.data.follow_up?.applicant_email_sent ?? null,
+        );
         setGuestApplySuccess(true);
         setShowApplicationForm(false);
-        setMessage(response.data.follow_up?.applicant_email_sent === false
-          ? "E-posta adresiniz doğrulandı ve başvurunuz kaydedildi. Alındı e-postası gönderilemedi; durumunuzu giriş yaparak takip edebilirsiniz."
-          : "E-posta adresiniz doğrulandı ve başvurunuz alındı. Takip için giriş yapabilir veya şifrenizi belirleyebilirsiniz.");
+        setMessage(
+          response.data.follow_up?.applicant_email_sent === false
+            ? "E-posta adresiniz doğrulandı ve başvurunuz kaydedildi. Alındı e-postası gönderilemedi; durumunuzu giriş yaparak takip edebilirsiniz."
+            : "E-posta adresiniz doğrulandı ve başvurunuz alındı. Takip için giriş yapabilir veya şifrenizi belirleyebilirsiniz.",
+        );
       }
     } catch (error: unknown) {
       if (isAxiosError(error)) {
-        const consentTextChanged = Boolean(error.response?.data?.errors?.expected_consent_text);
-        if (error.response?.data?.errors?.application_form_id || consentTextChanged) {
+        const consentTextChanged = Boolean(
+          error.response?.data?.errors?.expected_consent_text,
+        );
+        if (
+          error.response?.data?.errors?.application_form_id ||
+          consentTextChanged
+        ) {
           setShowApplicationForm(false);
           setApplicationForm(null);
           setFormValues({});
           setConsentAccepted(false);
-          setErrorMessage(consentTextChanged
-            ? "Başvuru koşulları güncellendi. Lütfen başvuru düğmesine tekrar basıp yeni metni okuyarak onaylayın."
-            : "Başvuru formu güncellendi. Lütfen başvuru düğmesine tekrar basıp yeni soruları doldurun.");
+          setErrorMessage(
+            consentTextChanged
+              ? "Başvuru koşulları güncellendi. Lütfen başvuru düğmesine tekrar basıp yeni metni okuyarak onaylayın."
+              : "Başvuru formu güncellendi. Lütfen başvuru düğmesine tekrar basıp yeni soruları doldurun.",
+          );
           return;
         }
         const responseMessage =
@@ -543,7 +665,9 @@ export default function ProjectDetailPage() {
           Object.values(error.response?.data?.errors ?? {})
             .flat()
             .join(" ");
-        setErrorMessage(responseMessage || "Başvuru sırasında bir hata oluştu.");
+        setErrorMessage(
+          responseMessage || "Başvuru sırasında bir hata oluştu.",
+        );
       } else {
         setErrorMessage("Başvuru sırasında bir hata oluştu.");
       }
@@ -558,7 +682,9 @@ export default function ProjectDetailPage() {
     }
 
     const activeStudents = project?.active_students ?? [];
-    return activeStudents.length > 0 ? [{ year: "Aktif", students: activeStudents }] : [];
+    return activeStudents.length > 0
+      ? [{ year: "Aktif", students: activeStudents }]
+      : [];
   }, [project?.active_student_groups, project?.active_students]);
 
   const alumniGroups = useMemo<PublicStudentGroup<Alumni>[]>(() => {
@@ -566,10 +692,13 @@ export default function ProjectDetailPage() {
       return project.alumni_groups;
     }
 
-    const grouped = (project?.alumni ?? []).reduce((acc, curr) => {
-      (acc[curr.year] = acc[curr.year] || []).push(curr);
-      return acc;
-    }, {} as Record<string, Alumni[]>);
+    const grouped = (project?.alumni ?? []).reduce(
+      (acc, curr) => {
+        (acc[curr.year] = acc[curr.year] || []).push(curr);
+        return acc;
+      },
+      {} as Record<string, Alumni[]>,
+    );
 
     return Object.entries(grouped)
       .sort((a, b) => Number(b[0]) - Number(a[0]))
@@ -590,14 +719,23 @@ export default function ProjectDetailPage() {
     }));
   }, [project?.gallery, project?.gallery_items]);
   const groupedGalleryItems = useMemo(() => {
-    return galleryItems.reduce((acc, item) => {
-      const key = item.period_name || item.year || "Galeri";
-      (acc[key] = acc[key] || []).push(item);
-      return acc;
-    }, {} as Record<string, typeof galleryItems>);
+    return galleryItems.reduce(
+      (acc, item) => {
+        const key = item.period_name || item.year || "Galeri";
+        (acc[key] = acc[key] || []).push(item);
+        return acc;
+      },
+      {} as Record<string, typeof galleryItems>,
+    );
   }, [galleryItems]);
-  const upcomingPrograms = useMemo(() => programs?.upcoming ?? [], [programs?.upcoming]);
-  const completedPrograms = useMemo(() => programs?.recent_completed ?? [], [programs?.recent_completed]);
+  const upcomingPrograms = useMemo(
+    () => programs?.upcoming ?? [],
+    [programs?.upcoming],
+  );
+  const completedPrograms = useMemo(
+    () => programs?.recent_completed ?? [],
+    [programs?.recent_completed],
+  );
   const calendarMonths = programs?.calendar_months ?? [];
 
   const selectedProgramTitle = useMemo(() => {
@@ -610,10 +748,10 @@ export default function ProjectDetailPage() {
 
   const hasSpecialContent = Boolean(
     (projectSpecials?.internships && projectSpecials.internships.total > 0) ||
-      (projectSpecials?.mentors?.length ?? 0) > 0 ||
-      (projectSpecials?.reward_tiers?.length ?? 0) > 0 ||
-      (projectSpecials?.eurodesk_projects?.length ?? 0) > 0 ||
-      (projectSpecials?.kpd?.rooms?.length ?? 0) > 0,
+    (projectSpecials?.mentors?.length ?? 0) > 0 ||
+    (projectSpecials?.reward_tiers?.length ?? 0) > 0 ||
+    (projectSpecials?.eurodesk_projects?.length ?? 0) > 0 ||
+    (projectSpecials?.kpd?.rooms?.length ?? 0) > 0,
   );
 
   const formatDateTime = (value?: string | null) => {
@@ -636,14 +774,24 @@ export default function ProjectDetailPage() {
     }).format(new Date(value));
   };
 
-  const formatCalendarMonthLabel = (month: { label: string; year?: number; month?: number }) => {
+  const formatCalendarMonthLabel = (month: {
+    label: string;
+    year?: number;
+    month?: number;
+  }) => {
     if (typeof month.year === "number" && typeof month.month === "number") {
-      return new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric" }).format(new Date(month.year, month.month - 1, 1));
+      return new Intl.DateTimeFormat("tr-TR", {
+        month: "long",
+        year: "numeric",
+      }).format(new Date(month.year, month.month - 1, 1));
     }
     return month.label;
   };
 
-  const updateFormValue = (fieldId: string, value: string | string[] | File | null) => {
+  const updateFormValue = (
+    fieldId: string,
+    value: string | string[] | File | null,
+  ) => {
     setFormValues((current) => ({
       ...current,
       [fieldId]: value,
@@ -691,7 +839,10 @@ export default function ProjectDetailPage() {
       return (
         <div className="space-y-3">
           {(field.options ?? []).map((option) => (
-            <label key={option} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <label
+              key={option}
+              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+            >
               <input
                 type="radio"
                 name={fieldId}
@@ -713,14 +864,19 @@ export default function ProjectDetailPage() {
           {(field.options ?? []).map((option) => {
             const checked = currentValue.includes(option);
             return (
-              <label key={option} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <label
+                key={option}
+                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+              >
                 <input
                   type="checkbox"
                   checked={checked}
                   onChange={() =>
                     updateFormValue(
                       fieldId,
-                      checked ? currentValue.filter((item) => item !== option) : [...currentValue, option],
+                      checked
+                        ? currentValue.filter((item) => item !== option)
+                        : [...currentValue, option],
                     )
                   }
                 />
@@ -736,7 +892,9 @@ export default function ProjectDetailPage() {
       return (
         <input
           type="file"
-          onChange={(event) => updateFormValue(fieldId, event.target.files?.[0] ?? null)}
+          onChange={(event) =>
+            updateFormValue(fieldId, event.target.files?.[0] ?? null)
+          }
           className={commonClassName}
         />
       );
@@ -754,11 +912,16 @@ export default function ProjectDetailPage() {
   };
 
   const renderProgramCard = (program: PublicProgram) => (
-    <div key={program.id} className="kdm-public-magnetic-card rounded-[1.5rem] border border-white bg-white/90 p-4 shadow-[0_16px_40px_rgba(9,9,11,0.08)] transition duration-300 hover:-translate-y-1 hover:border-[#fd3a25]/30">
+    <div
+      key={program.id}
+      className="kdm-public-magnetic-card rounded-[1.5rem] border border-white bg-white/90 p-4 shadow-[0_16px_40px_rgba(9,9,11,0.08)] transition duration-300 hover:-translate-y-1 hover:border-[#fd3a25]/30"
+    >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="font-bold text-[#292c2e]">{program.title}</p>
-          {program.period?.name ? <p className="mt-1 text-xs text-[#71717a]">{program.period.name}</p> : null}
+          {program.period?.name ? (
+            <p className="mt-1 text-xs text-[#71717a]">{program.period.name}</p>
+          ) : null}
         </div>
         <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-orange-600">
           {programStatusLabel(program.status)}
@@ -776,7 +939,11 @@ export default function ProjectDetailPage() {
           </div>
         ) : null}
       </div>
-      {program.description ? <p className="mt-3 line-clamp-3 text-sm text-[#71717a]">{program.description}</p> : null}
+      {program.description ? (
+        <p className="mt-3 line-clamp-3 text-sm text-[#71717a]">
+          {program.description}
+        </p>
+      ) : null}
       {hasProgramCoordinates(program) ? (
         <div className="mt-4">
           <ProgramLocationMap
@@ -791,7 +958,9 @@ export default function ProjectDetailPage() {
           />
         </div>
       ) : null}
-      {project?.is_application_open && program.period?.id === project.active_period?.id && ["scheduled", "active"].includes(program.status) ? (
+      {project?.is_application_open &&
+      program.period?.id === project.active_period?.id &&
+      ["scheduled", "active"].includes(program.status) ? (
         <button
           type="button"
           onClick={() => void openApplicationForm(program.id)}
@@ -808,10 +977,24 @@ export default function ProjectDetailPage() {
 
   if (!project) return null;
 
-  const StudentCard = ({ student, alumni = false }: { student: PublicStudent | Alumni; alumni?: boolean }) => (
+  const StudentCard = ({
+    student,
+    alumni = false,
+  }: {
+    student: PublicStudent | Alumni;
+    alumni?: boolean;
+  }) => (
     <div className="flex items-center gap-4 rounded-[1.35rem] border border-white bg-white/72 p-4 shadow-[0_12px_36px_rgba(9,9,11,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-white">
       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[#f4f4f5]">
-        {student.image ? <Image src={student.image} alt={student.name} fill unoptimized className="object-cover" /> : null}
+        {student.image ? (
+          <Image
+            src={student.image}
+            alt={student.name}
+            fill
+            unoptimized
+            className="object-cover"
+          />
+        ) : null}
       </div>
       <div className="min-w-0">
         <p className="truncate font-bold text-[#292c2e]">{student.name}</p>
@@ -825,7 +1008,9 @@ export default function ProjectDetailPage() {
             Dönem: {student.period_name}
           </p>
         ) : null}
-        {alumni && "job" in student && student.job ? <p className="mt-1 text-[10px] text-orange-600">{student.job}</p> : null}
+        {alumni && "job" in student && student.job ? (
+          <p className="mt-1 text-[10px] text-orange-600">{student.job}</p>
+        ) : null}
       </div>
     </div>
   );
@@ -834,8 +1019,26 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="kdm-public-shell min-h-screen bg-[#edecec] pb-24">
-      <PageHero badge="KADEME projesi" title={project.name} description={project.short_description || project.shoet_description}><ThemeButton secondary href="/projects">Tüm projeler</ThemeButton><div className="theme-detail-meta"><span>{project.type}</span><span>{projectStatusLabel(project.status)}</span><span>{project.active_period?.name || "Aktif dönem yok"}</span><span>{project.is_application_open ? "Başvuru açık" : "Başvuru kapalı"}</span></div></PageHero>
-      <Reveal className="container theme-detail-cover"><ThemeImage src={project.cover_image} alt={project.name} priority /></Reveal>
+      <PageHero
+        badge="KADEME projesi"
+        title={project.name}
+        description={project.short_description || project.shoet_description}
+      >
+        <ThemeButton secondary href="/projects">
+          Tüm projeler
+        </ThemeButton>
+        <div className="theme-detail-meta">
+          <span>{project.type}</span>
+          <span>{projectStatusLabel(project.status)}</span>
+          <span>{project.active_period?.name || "Aktif dönem yok"}</span>
+          <span>
+            {project.is_application_open ? "Başvuru açık" : "Başvuru kapalı"}
+          </span>
+        </div>
+      </PageHero>
+      <Reveal className="container theme-detail-cover">
+        <ThemeImage src={project.cover_image} alt={project.name} priority />
+      </Reveal>
       <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-14 sm:px-6 lg:grid-cols-3 lg:gap-10 lg:py-20">
         <div className="space-y-10 lg:col-span-2">
           <section className="kdm-public-card rounded-[1.75rem] border border-white bg-white/90 p-6 shadow-[0_18px_60px_rgba(9,9,11,0.08)] backdrop-blur sm:p-8">
@@ -844,7 +1047,8 @@ export default function ProjectDetailPage() {
               Proje Hakkında
             </h2>
             <div className="leading-8 text-[#52525b]">
-              {project.description || "Bu proje için detaylı açıklama henüz eklenmemiş."}
+              {project.description ||
+                "Bu proje için detaylı açıklama henüz eklenmemiş."}
             </div>
           </section>
 
@@ -855,20 +1059,36 @@ export default function ProjectDetailPage() {
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="kdm-public-info-tile rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-orange-200 hover:bg-orange-50/40">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Durum</p>
-                <p className="mt-2 text-sm font-bold text-[#292c2e]">{projectStatusLabel(project.status)}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">
+                  Durum
+                </p>
+                <p className="mt-2 text-sm font-bold text-[#292c2e]">
+                  {projectStatusLabel(project.status)}
+                </p>
               </div>
               <div className="kdm-public-info-tile rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-orange-200 hover:bg-orange-50/40">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Aktif Dönem</p>
-                <p className="mt-2 text-sm font-bold text-[#292c2e]">{project.active_period?.name || "Yok"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">
+                  Aktif Dönem
+                </p>
+                <p className="mt-2 text-sm font-bold text-[#292c2e]">
+                  {project.active_period?.name || "Yok"}
+                </p>
               </div>
               <div className="kdm-public-info-tile rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-orange-200 hover:bg-orange-50/40">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Başvuru</p>
-                <p className="mt-2 text-sm font-bold text-[#292c2e]">{project.is_application_open ? "Açık" : "Kapalı"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">
+                  Başvuru
+                </p>
+                <p className="mt-2 text-sm font-bold text-[#292c2e]">
+                  {project.is_application_open ? "Açık" : "Kapalı"}
+                </p>
               </div>
               <div className="kdm-public-info-tile rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-orange-200 hover:bg-orange-50/40">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Akış</p>
-                <p className="mt-2 text-sm font-bold text-[#292c2e]">{project.has_interview ? "Mülakatlı" : "Mülakatsız"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">
+                  Akış
+                </p>
+                <p className="mt-2 text-sm font-bold text-[#292c2e]">
+                  {project.has_interview ? "Mülakatlı" : "Mülakatsız"}
+                </p>
               </div>
             </div>
           </section>
@@ -881,15 +1101,21 @@ export default function ProjectDetailPage() {
               </h2>
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="rounded-xl bg-slate-100/40 px-3 py-2">
-                  <p className="font-extrabold text-[#292c2e]">{programs?.summary.total ?? 0}</p>
+                  <p className="font-extrabold text-[#292c2e]">
+                    {programs?.summary.total ?? 0}
+                  </p>
                   <p className="text-[#71717a]">Toplam</p>
                 </div>
                 <div className="rounded-xl bg-slate-100/40 px-3 py-2">
-                  <p className="font-extrabold text-[#292c2e]">{programs?.summary.upcoming ?? 0}</p>
+                  <p className="font-extrabold text-[#292c2e]">
+                    {programs?.summary.upcoming ?? 0}
+                  </p>
                   <p className="text-[#71717a]">Yaklaşan</p>
                 </div>
                 <div className="rounded-xl bg-slate-100/40 px-3 py-2">
-                  <p className="font-extrabold text-[#292c2e]">{programs?.summary.completed ?? 0}</p>
+                  <p className="font-extrabold text-[#292c2e]">
+                    {programs?.summary.completed ?? 0}
+                  </p>
                   <p className="text-[#71717a]">Geçmiş</p>
                 </div>
               </div>
@@ -897,7 +1123,9 @@ export default function ProjectDetailPage() {
 
             {calendarMonths.length > 0 ? (
               <div className="mb-6 rounded-2xl border border-slate-200/60 bg-slate-100/20 p-4">
-                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Program yoğunluğu (ay)</p>
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#71717a]">
+                  Program yoğunluğu (ay)
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {calendarMonths.map((month) => (
                     <span
@@ -905,7 +1133,9 @@ export default function ProjectDetailPage() {
                       className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-[#292c2e] shadow-sm"
                     >
                       {formatCalendarMonthLabel(month)}
-                      <span className="rounded-full bg-orange-600/15 px-2 py-0.5 text-[10px] font-bold text-orange-600">{month.count}</span>
+                      <span className="rounded-full bg-orange-600/15 px-2 py-0.5 text-[10px] font-bold text-orange-600">
+                        {month.count}
+                      </span>
                     </span>
                   ))}
                 </div>
@@ -914,9 +1144,13 @@ export default function ProjectDetailPage() {
 
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
               <div>
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-[#71717a]">Yaklaşan Programlar</h3>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-[#71717a]">
+                  Yaklaşan Programlar
+                </h3>
                 {upcomingPrograms.length > 0 ? (
-                  <div className="space-y-3">{upcomingPrograms.map(renderProgramCard)}</div>
+                  <div className="space-y-3">
+                    {upcomingPrograms.map(renderProgramCard)}
+                  </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-[#71717a]">
                     Yaklaşan program henüz eklenmemiş.
@@ -924,9 +1158,13 @@ export default function ProjectDetailPage() {
                 )}
               </div>
               <div>
-                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-[#71717a]">Geçmiş Programlar</h3>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-[#71717a]">
+                  Geçmiş Programlar
+                </h3>
                 {completedPrograms.length > 0 ? (
-                  <div className="space-y-3">{completedPrograms.map(renderProgramCard)}</div>
+                  <div className="space-y-3">
+                    {completedPrograms.map(renderProgramCard)}
+                  </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-[#71717a]">
                     Geçmiş program henüz eklenmemiş.
@@ -953,15 +1191,22 @@ export default function ProjectDetailPage() {
                     <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
                       <div className="rounded-xl bg-white/60 p-3">
                         <p className="text-xs text-[#71717a]">Toplam</p>
-                        <p className="text-lg font-extrabold">{projectSpecials.internships.total}</p>
+                        <p className="text-lg font-extrabold">
+                          {projectSpecials.internships.total}
+                        </p>
                       </div>
                       <div className="rounded-xl bg-white/60 p-3">
                         <p className="text-xs text-[#71717a]">Aktif</p>
-                        <p className="text-lg font-extrabold">{projectSpecials.internships.active}</p>
+                        <p className="text-lg font-extrabold">
+                          {projectSpecials.internships.active}
+                        </p>
                       </div>
                       <div className="rounded-xl bg-white/60 p-3 md:col-span-2">
                         <p className="text-xs text-[#71717a]">Kurumlar</p>
-                        <p className="mt-1 text-sm font-semibold">{projectSpecials.internships.companies.join(", ") || "Belirtilmedi"}</p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {projectSpecials.internships.companies.join(", ") ||
+                            "Belirtilmedi"}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -975,14 +1220,35 @@ export default function ProjectDetailPage() {
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       {projectSpecials?.mentors?.map((mentor) => (
-                        <div key={mentor.id} className="flex gap-4 rounded-xl bg-white/60 p-4">
+                        <div
+                          key={mentor.id}
+                          className="flex gap-4 rounded-xl bg-white/60 p-4"
+                        >
                           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[#f4f4f5]">
-                            {mentor.photo ? <Image src={mentor.photo} alt={mentor.name} fill unoptimized className="object-cover" /> : null}
+                            {mentor.photo ? (
+                              <Image
+                                src={mentor.photo}
+                                alt={mentor.name}
+                                fill
+                                unoptimized
+                                className="object-cover"
+                              />
+                            ) : null}
                           </div>
                           <div>
-                            <p className="font-bold text-[#292c2e]">{mentor.name}</p>
-                            {mentor.expertise ? <p className="text-xs text-orange-600">{mentor.expertise}</p> : null}
-                            {mentor.bio ? <p className="mt-2 line-clamp-3 text-xs text-[#71717a]">{mentor.bio}</p> : null}
+                            <p className="font-bold text-[#292c2e]">
+                              {mentor.name}
+                            </p>
+                            {mentor.expertise ? (
+                              <p className="text-xs text-orange-600">
+                                {mentor.expertise}
+                              </p>
+                            ) : null}
+                            {mentor.bio ? (
+                              <p className="mt-2 line-clamp-3 text-xs text-[#71717a]">
+                                {mentor.bio}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       ))}
@@ -998,12 +1264,22 @@ export default function ProjectDetailPage() {
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {projectSpecials?.reward_tiers?.map((tier) => (
-                        <div key={tier.id} className="rounded-xl bg-white/60 p-4">
-                          <p className="font-bold text-[#292c2e]">{tier.name}</p>
-                          <p className="mt-1 text-xs text-[#71717a]">
-                            {tier.min_badges ?? 0} rozet / {tier.min_credits ?? 0} kredi
+                        <div
+                          key={tier.id}
+                          className="rounded-xl bg-white/60 p-4"
+                        >
+                          <p className="font-bold text-[#292c2e]">
+                            {tier.name}
                           </p>
-                          {tier.reward_description ? <p className="mt-3 text-sm text-orange-600">{tier.reward_description}</p> : null}
+                          <p className="mt-1 text-xs text-[#71717a]">
+                            {tier.min_badges ?? 0} rozet /{" "}
+                            {tier.min_credits ?? 0} kredi
+                          </p>
+                          {tier.reward_description ? (
+                            <p className="mt-3 text-sm text-orange-600">
+                              {tier.reward_description}
+                            </p>
+                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -1018,18 +1294,30 @@ export default function ProjectDetailPage() {
                     </div>
                     <div className="space-y-3">
                       {projectSpecials?.eurodesk_projects?.map((item) => (
-                        <div key={item.id} className="rounded-xl bg-white/60 p-4">
+                        <div
+                          key={item.id}
+                          className="rounded-xl bg-white/60 p-4"
+                        >
                           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                             <div>
-                              <p className="font-bold text-[#292c2e]">{item.title}</p>
+                              <p className="font-bold text-[#292c2e]">
+                                {item.title}
+                              </p>
                               <p className="mt-1 text-xs text-[#71717a]">
-                                {formatDate(item.start_date)} - {formatDate(item.end_date)}
+                                {formatDate(item.start_date)} -{" "}
+                                {formatDate(item.end_date)}
                               </p>
                             </div>
-                            {item.grant_status ? <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">{item.grant_status}</span> : null}
+                            {item.grant_status ? (
+                              <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">
+                                {item.grant_status}
+                              </span>
+                            ) : null}
                           </div>
                           {(item.partner_organizations?.length ?? 0) > 0 ? (
-                            <p className="mt-3 text-sm text-[#71717a]">{item.partner_organizations?.join(", ")}</p>
+                            <p className="mt-3 text-sm text-[#71717a]">
+                              {item.partner_organizations?.join(", ")}
+                            </p>
                           ) : null}
                         </div>
                       ))}
@@ -1045,9 +1333,18 @@ export default function ProjectDetailPage() {
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {projectSpecials?.kpd?.rooms.map((room) => (
-                        <div key={room.id} className="rounded-xl bg-white/60 p-4">
-                          <p className="font-bold text-[#292c2e]">{room.name}</p>
-                          {room.description ? <p className="mt-2 text-sm text-[#71717a]">{room.description}</p> : null}
+                        <div
+                          key={room.id}
+                          className="rounded-xl bg-white/60 p-4"
+                        >
+                          <p className="font-bold text-[#292c2e]">
+                            {room.name}
+                          </p>
+                          {room.description ? (
+                            <p className="mt-2 text-sm text-[#71717a]">
+                              {room.description}
+                            </p>
+                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -1070,7 +1367,9 @@ export default function ProjectDetailPage() {
               <div className="space-y-6">
                 {Object.entries(groupedGalleryItems).map(([group, items]) => (
                   <div key={group}>
-                    <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-[#71717a]">{group}</h3>
+                    <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-[#71717a]">
+                      {group}
+                    </h3>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                       {items.map((item, index) => (
                         <button
@@ -1079,9 +1378,21 @@ export default function ProjectDetailPage() {
                           onClick={() => setLightboxUrl(item.url)}
                           className="group relative h-32 overflow-hidden rounded-xl border border-transparent text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-orange-400 md:h-40"
                         >
-                          <Image src={item.url} alt={item.caption || `${project.name} galeri ${index + 1}`} fill unoptimized className="object-cover transition-transform group-hover:scale-110" />
+                          <Image
+                            src={item.url}
+                            alt={
+                              item.caption ||
+                              `${project.name} galeri ${index + 1}`
+                            }
+                            fill
+                            unoptimized
+                            className="object-cover transition-transform group-hover:scale-110"
+                          />
                           <span className="absolute inset-0 flex items-center justify-center bg-slate-950/0 transition-colors group-hover:bg-slate-950/40">
-                            <ZoomIn className="h-8 w-8 text-white opacity-0 drop-shadow-md transition-opacity group-hover:opacity-100" aria-hidden />
+                            <ZoomIn
+                              className="h-8 w-8 text-white opacity-0 drop-shadow-md transition-opacity group-hover:opacity-100"
+                              aria-hidden
+                            />
                           </span>
                           {item.caption ? (
                             <span className="absolute inset-x-0 bottom-0 bg-slate-950/70 px-3 py-2 text-xs font-semibold text-white">
@@ -1112,10 +1423,14 @@ export default function ProjectDetailPage() {
                   <div key={group.year}>
                     <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-2">
                       <h3 className="text-lg font-bold">{group.year}</h3>
-                      <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">{group.students.length} kişi</span>
+                      <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">
+                        {group.students.length} kişi
+                      </span>
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      {group.students.map((student) => <StudentCard key={student.id} student={student} />)}
+                      {group.students.map((student) => (
+                        <StudentCard key={student.id} student={student} />
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -1135,16 +1450,24 @@ export default function ProjectDetailPage() {
             {alumniGroups.length > 0 ? (
               <div className="space-y-8">
                 {alumniGroups.map((group) => (
-                    <div key={group.year}>
-                      <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-2">
-                        <h3 className="text-lg font-bold">{group.year}</h3>
-                        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">{group.students.length} mezun</span>
-                      </div>
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        {group.students.map((student) => <StudentCard key={student.id} student={student} alumni />)}
-                      </div>
+                  <div key={group.year}>
+                    <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-2">
+                      <h3 className="text-lg font-bold">{group.year}</h3>
+                      <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">
+                        {group.students.length} mezun
+                      </span>
                     </div>
-                  ))}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {group.students.map((student) => (
+                        <StudentCard
+                          key={student.id}
+                          student={student}
+                          alumni
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-[#71717a]">
@@ -1162,26 +1485,50 @@ export default function ProjectDetailPage() {
               <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <Calendar className="h-8 w-8 text-orange-600" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#71717a]">Aktif Dönem</p>
-                  <p className="font-bold">{project.active_period?.name || "Belirsiz"}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#71717a]">
+                    Aktif Dönem
+                  </p>
+                  <p className="font-bold">
+                    {project.active_period?.name || "Belirsiz"}
+                  </p>
                 </div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#71717a]">Başvuru Akışı</p>
-                <p className="mt-2 font-bold">{project.has_interview ? "Mülakatlı değerlendirme" : "Mülakatsız değerlendirme"}</p>
-                {project.quota ? <p className="mt-1 text-xs text-[#71717a]">Kontenjan: {project.quota}</p> : null}
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#71717a]">
+                  Başvuru Akışı
+                </p>
+                <p className="mt-2 font-bold">
+                  {project.has_interview
+                    ? "Mülakatlı değerlendirme"
+                    : "Mülakatsız değerlendirme"}
+                </p>
+                {project.quota ? (
+                  <p className="mt-1 text-xs text-[#71717a]">
+                    Kontenjan: {project.quota}
+                  </p>
+                ) : null}
               </div>
             </div>
 
-            {message ? <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-700 ">{message}</div> : null}
-            {errorMessage ? <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 ">{errorMessage}</div> : null}
+            {message ? (
+              <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-700 ">
+                {message}
+              </div>
+            ) : null}
+            {errorMessage ? (
+              <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 ">
+                {errorMessage}
+              </div>
+            ) : null}
 
             {guestApplySuccess && !isAuthenticated ? (
               <div className="space-y-4 rounded-2xl border border-green-500/30 bg-green-500/5 p-5">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-8 w-8 shrink-0 text-green-600" />
                   <div>
-                    <p className="font-bold text-[#292c2e]">Başvurunuz alındı</p>
+                    <p className="font-bold text-[#292c2e]">
+                      Başvurunuz alındı
+                    </p>
                     <p className="mt-2 text-sm text-[#71717a]">
                       {guestReceiptEmailSent === false
                         ? "Başvurunuz kaydedildi, ancak alındı e-postası gönderilemedi. Durumunuzu takip etmek için giriş yapın; henüz şifreniz yoksa aşağıdan belirleyin."
@@ -1207,37 +1554,58 @@ export default function ProjectDetailPage() {
             ) : project.is_application_open ? (
               <div className="space-y-5">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">Başvuruya hazır</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">
+                    Başvuruya hazır
+                  </p>
                   <p className="mt-2 text-sm leading-relaxed text-[#71717a]">
-                    Form, yalnızca başvuruya başladığınızda açılır. Bilgilerinizi tek ekranda kontrol edip gönderebilirsiniz.
+                    Form, yalnızca başvuruya başladığınızda açılır.
+                    Bilgilerinizi tek ekranda kontrol edip gönderebilirsiniz.
                   </p>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">1</div>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                      1
+                    </div>
                     <div>
-                      <p className="text-sm font-bold text-[#292c2e]">İletişim bilgileri</p>
+                      <p className="text-sm font-bold text-[#292c2e]">
+                        İletişim bilgileri
+                      </p>
                       <p className="mt-1 text-xs leading-relaxed text-[#71717a]">
-                        {!isAuthenticated ? "Ad, soyad ve e-posta bilgileri başvuru formunda alınır." : "Oturum bilgilerinizle başvuru yapılır."}
+                        {!isAuthenticated
+                          ? "Ad, soyad ve e-posta bilgileri başvuru formunda alınır."
+                          : "Oturum bilgilerinizle başvuru yapılır."}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">2</div>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                      2
+                    </div>
                     <div>
-                      <p className="text-sm font-bold text-[#292c2e]">Başvuru formu</p>
+                      <p className="text-sm font-bold text-[#292c2e]">
+                        Başvuru formu
+                      </p>
                       <p className="mt-1 text-xs leading-relaxed text-[#71717a]">
-                        {hasDynamicForm ? "Proje için tanımlanan özel sorular başvuru formunda gösterilir." : "Bu proje temel başvuru akışını kullanır."}
+                        {hasDynamicForm
+                          ? "Proje için tanımlanan özel sorular başvuru formunda gösterilir."
+                          : "Bu proje temel başvuru akışını kullanır."}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">3</div>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                      3
+                    </div>
                     <div>
-                      <p className="text-sm font-bold text-[#292c2e]">Değerlendirme</p>
+                      <p className="text-sm font-bold text-[#292c2e]">
+                        Değerlendirme
+                      </p>
                       <p className="mt-1 text-xs leading-relaxed text-[#71717a]">
-                        {project.has_interview ? "Başvuru sonrası mülakatlı değerlendirme süreci işletilir." : "Başvuru mülakatsız değerlendirme akışına alınır."}
+                        {project.has_interview
+                          ? "Başvuru sonrası mülakatlı değerlendirme süreci işletilir."
+                          : "Başvuru mülakatsız değerlendirme akışına alınır."}
                       </p>
                     </div>
                   </div>
@@ -1261,7 +1629,8 @@ export default function ProjectDetailPage() {
 
                 {!isAuthenticated ? (
                   <p className="text-center text-xs leading-relaxed text-[#71717a]">
-                    Üyelik zorunlu değildir; iletişim bilgilerinizi form açıldığında girebilirsiniz.
+                    Üyelik zorunlu değildir; iletişim bilgilerinizi form
+                    açıldığında girebilirsiniz.
                   </p>
                 ) : null}
               </div>
@@ -1274,10 +1643,14 @@ export default function ProjectDetailPage() {
                   <p className="text-center text-xs text-amber-600 ">
                     Bir sonraki başvuru tarihi:
                     <br />
-                    <strong className="text-amber-700 ">{formatDate(project.next_application_date)}</strong>
+                    <strong className="text-amber-700 ">
+                      {formatDate(project.next_application_date)}
+                    </strong>
                   </p>
                 ) : (
-                  <p className="text-center text-xs text-[#71717a]">Bir sonraki başvuru tarihi henüz belirtilmemiş.</p>
+                  <p className="text-center text-xs text-[#71717a]">
+                    Bir sonraki başvuru tarihi henüz belirtilmemiş.
+                  </p>
                 )}
               </div>
             )}
@@ -1287,7 +1660,13 @@ export default function ProjectDetailPage() {
 
       {showApplicationForm ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div
+            ref={applicationDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="application-dialog-title"
+            className="theme-application-dialog max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          >
             <div className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -1295,14 +1674,28 @@ export default function ProjectDetailPage() {
                     <FileText className="h-4 w-4" />
                     Başvuru Formu
                   </div>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-[#292c2e]">{project.name}</h2>
+                  <h2
+                    id="application-dialog-title"
+                    className="mt-2 text-2xl font-black tracking-tight text-[#292c2e]"
+                  >
+                    {project.name}
+                  </h2>
                   <p className="mt-2 text-sm leading-relaxed text-[#71717a]">
-                    Bilgilerinizi kontrol ederek başvurunuzu güvenli şekilde gönderebilirsiniz.
+                    Bilgilerinizi kontrol ederek başvurunuzu güvenli şekilde
+                    gönderebilirsiniz.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-[#71717a]">
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Dönem: {project.active_period?.name || "Belirsiz"}</span>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Akış: {project.has_interview ? "Mülakatlı" : "Mülakatsız"}</span>
-                    {selectedProgramTitle ? <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Program: {selectedProgramTitle}</span> : null}
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                      Dönem: {project.active_period?.name || "Belirsiz"}
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                      Akış: {project.has_interview ? "Mülakatlı" : "Mülakatsız"}
+                    </span>
+                    {selectedProgramTitle ? (
+                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                        Program: {selectedProgramTitle}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <button
@@ -1316,23 +1709,35 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            <div className="max-h-[calc(92vh-220px)] overflow-y-auto px-6 py-6 md:px-8">
+            <div className="theme-application-body max-h-[calc(92vh-220px)] overflow-y-auto px-6 py-6 md:px-8">
               <div className="space-y-6">
                 {!isAuthenticated ? (
                   <section className="rounded-2xl border border-slate-200 bg-white p-5">
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-bold text-[#292c2e]">1. Başvuru Sahibi</p>
-                        <p className="mt-1 text-xs text-[#71717a]">Sizinle iletişim kurabilmemiz için temel bilgileri doldurun.</p>
+                        <p className="text-sm font-bold text-[#292c2e]">
+                          1. Başvuru Sahibi
+                        </p>
+                        <p className="mt-1 text-xs text-[#71717a]">
+                          Sizinle iletişim kurabilmemiz için temel bilgileri
+                          doldurun.
+                        </p>
                       </div>
-                      <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-orange-600">Zorunlu</span>
+                      <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-orange-600">
+                        Zorunlu
+                      </span>
                     </div>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a]">
                         Ad
                         <input
                           value={guestApplicant.name}
-                          onChange={(event) => setGuestApplicant((current) => ({ ...current, name: event.target.value }))}
+                          onChange={(event) =>
+                            setGuestApplicant((current) => ({
+                              ...current,
+                              name: event.target.value,
+                            }))
+                          }
                           placeholder="Adınızı yazın"
                           autoComplete="given-name"
                           className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
@@ -1342,7 +1747,12 @@ export default function ProjectDetailPage() {
                         Soyad
                         <input
                           value={guestApplicant.surname}
-                          onChange={(event) => setGuestApplicant((current) => ({ ...current, surname: event.target.value }))}
+                          onChange={(event) =>
+                            setGuestApplicant((current) => ({
+                              ...current,
+                              surname: event.target.value,
+                            }))
+                          }
                           placeholder="Soyadınızı yazın"
                           autoComplete="family-name"
                           className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
@@ -1353,7 +1763,10 @@ export default function ProjectDetailPage() {
                         <input
                           value={guestApplicant.email}
                           onChange={(event) => {
-                            setGuestApplicant((current) => ({ ...current, email: event.target.value }));
+                            setGuestApplicant((current) => ({
+                              ...current,
+                              email: event.target.value,
+                            }));
                             setVerificationEmail(null);
                             setGuestVerificationCode("");
                           }}
@@ -1370,14 +1783,29 @@ export default function ProjectDetailPage() {
                           disabled={sendingVerification}
                           className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-2.5 text-sm font-bold text-orange-700 disabled:opacity-60"
                         >
-                          {sendingVerification ? "Kod gönderiliyor..." : verificationEmail ? "Kodu yeniden iste" : "E-postama kod gönder"}
+                          {sendingVerification
+                            ? "Kod gönderiliyor..."
+                            : verificationEmail
+                              ? "Kodu yeniden iste"
+                              : "E-postama kod gönder"}
                         </button>
-                        {verificationEmail ? <p className="text-xs text-green-700">{verificationEmail} adresinin gelen kutusunu kontrol edin. Kod 10 dakika geçerlidir.</p> : null}
+                        {verificationEmail ? (
+                          <p className="text-xs text-green-700">
+                            {verificationEmail} adresinin gelen kutusunu kontrol
+                            edin. Kod 10 dakika geçerlidir.
+                          </p>
+                        ) : null}
                         <label className="block space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a]">
                           E-posta doğrulama kodu
                           <input
                             value={guestVerificationCode}
-                            onChange={(event) => setGuestVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
+                            onChange={(event) =>
+                              setGuestVerificationCode(
+                                event.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 8),
+                              )
+                            }
                             inputMode="numeric"
                             autoComplete="one-time-code"
                             maxLength={8}
@@ -1390,7 +1818,12 @@ export default function ProjectDetailPage() {
                         Telefon
                         <input
                           value={guestApplicant.phone}
-                          onChange={(event) => setGuestApplicant((current) => ({ ...current, phone: event.target.value }))}
+                          onChange={(event) =>
+                            setGuestApplicant((current) => ({
+                              ...current,
+                              phone: event.target.value,
+                            }))
+                          }
                           placeholder="İsteğe bağlı"
                           type="tel"
                           autoComplete="tel"
@@ -1403,9 +1836,15 @@ export default function ProjectDetailPage() {
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
                   <div className="mb-4">
-                    <p className="text-sm font-bold text-[#292c2e]">{!isAuthenticated ? "2. Form Bilgileri" : "1. Form Bilgileri"}</p>
+                    <p className="text-sm font-bold text-[#292c2e]">
+                      {!isAuthenticated
+                        ? "2. Form Bilgileri"
+                        : "1. Form Bilgileri"}
+                    </p>
                     <p className="mt-1 text-xs text-[#71717a]">
-                      {hasDynamicForm ? "Proje için tanımlanan soruları eksiksiz doldurun." : "Bu proje için özel soru tanımlanmamış; temel başvuru akışı kullanılacak."}
+                      {hasDynamicForm
+                        ? "Proje için tanımlanan soruları eksiksiz doldurun."
+                        : "Bu proje için özel soru tanımlanmamış; temel başvuru akışı kullanılacak."}
                     </p>
                   </div>
                   {hasDynamicForm ? (
@@ -1416,7 +1855,9 @@ export default function ProjectDetailPage() {
                           <div key={fieldId} className="space-y-2">
                             <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#71717a]">
                               {field.label}
-                              {field.required ? <span className="text-red-500">*</span> : null}
+                              {field.required ? (
+                                <span className="text-red-500">*</span>
+                              ) : null}
                             </label>
                             {renderField(field)}
                           </div>
@@ -1425,26 +1866,35 @@ export default function ProjectDetailPage() {
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-[#71717a]">
-                      Başvurunuzu göndermek için iletişim bilgileri ve varsa onay alanı yeterlidir.
+                      Başvurunuzu göndermek için iletişim bilgileri ve varsa
+                      onay alanı yeterlidir.
                     </div>
                   )}
                 </section>
 
                 <section className="rounded-2xl border border-orange-200 bg-orange-50/70 p-5">
-                    <p className="mb-3 text-sm font-bold text-[#292c2e]">Onay</p>
-                    <label className="flex items-start gap-3 text-sm leading-relaxed text-[#292c2e]">
-                      <input
-                        type="checkbox"
-                        checked={consentAccepted}
-                        onChange={(event) => setConsentAccepted(event.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-slate-200 text-orange-600"
-                      />
-                      <span className="whitespace-pre-line">{applicationConsentText}</span>
-                    </label>
-                  </section>
+                  <p className="mb-3 text-sm font-bold text-[#292c2e]">Onay</p>
+                  <label className="flex items-start gap-3 text-sm leading-relaxed text-[#292c2e]">
+                    <input
+                      type="checkbox"
+                      checked={consentAccepted}
+                      onChange={(event) =>
+                        setConsentAccepted(event.target.checked)
+                      }
+                      className="mt-1 h-4 w-4 rounded border-slate-200 text-orange-600"
+                    />
+                    <span className="whitespace-pre-line">
+                      {applicationConsentText}
+                    </span>
+                  </label>
+                </section>
               </div>
 
-              {errorMessage ? <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 ">{errorMessage}</div> : null}
+              {errorMessage ? (
+                <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 ">
+                  {errorMessage}
+                </div>
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-slate-200 bg-white px-6 py-4 sm:flex-row md:px-8">
@@ -1461,7 +1911,11 @@ export default function ProjectDetailPage() {
                 disabled={applying}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 py-3 font-bold text-white shadow-md shadow-orange-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-600/30 disabled:opacity-70"
               >
-                {applying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Başvuruyu Gönder"}
+                {applying ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  "Başvuruyu Gönder"
+                )}
               </button>
             </div>
           </div>
@@ -1482,32 +1936,21 @@ export default function ProjectDetailPage() {
           >
             <X className="h-5 w-5" />
           </button>
-          <div className="relative h-[min(85vh,800px)] w-full max-w-5xl cursor-default" onClick={(event) => event.stopPropagation()}>
-            <Image src={lightboxUrl} alt="Galeri büyütülmüş" fill unoptimized className="object-contain" sizes="100vw" />
+          <div
+            className="relative h-[min(85vh,800px)] w-full max-w-5xl cursor-default"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Image
+              src={lightboxUrl}
+              alt="Galeri büyütülmüş"
+              fill
+              unoptimized
+              className="object-contain"
+              sizes="100vw"
+            />
           </div>
         </div>
       ) : null}
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

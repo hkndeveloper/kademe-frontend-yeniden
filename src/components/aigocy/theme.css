@@ -14,6 +14,31 @@
 .aigocy-site p {
   white-space: pre-line;
 }
+.aigocy-site .container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 12px;
+}
+@media (min-width: 576px) {
+  .aigocy-site .container {
+    max-width: 540px;
+  }
+}
+@media (min-width: 768px) {
+  .aigocy-site .container {
+    max-width: 720px;
+  }
+}
+@media (min-width: 992px) {
+  .aigocy-site .container {
+    max-width: 960px;
+  }
+}
+@media (min-width: 1200px) {
+  .aigocy-site .container {
+    max-width: 1140px;
+  }
+}
 .aigocy-site button,
 .aigocy-site input,
 .aigocy-site select,
@@ -513,6 +538,44 @@
   height: 60px;
   object-fit: contain;
 }
+.aigocy-site .theme-partner-strip {
+  display: block;
+  overflow: hidden;
+  min-width: 0;
+}
+.aigocy-site .theme-partner-track {
+  display: flex;
+  width: max-content;
+  animation: aigocy-marquee 32s linear infinite;
+}
+.aigocy-site .theme-partner-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 32px;
+  padding-right: 32px;
+  min-width: min(100vw, 960px);
+  flex-shrink: 0;
+}
+.aigocy-site .theme-partner-group a {
+  flex-shrink: 0;
+}
+.aigocy-site .theme-partner-strip:hover .theme-partner-track,
+.aigocy-site .theme-partner-strip:focus-within .theme-partner-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aigocy-site .theme-partner-group {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .aigocy-site .theme-partner-track {
+    width: auto;
+  }
+  .aigocy-site .theme-partner-group + .theme-partner-group {
+    display: none;
+  }
+}
 .aigocy-site .theme-tool-cloud {
   display: flex;
   flex-wrap: wrap;
@@ -781,13 +844,16 @@
 }
 .aigocy-site .theme-marquee-track {
   display: flex;
-  gap: 48px;
   width: max-content;
   animation: aigocy-marquee 24s linear infinite;
 }
 .aigocy-site .theme-marquee-group {
   display: flex;
   gap: 48px;
+  padding-right: 48px;
+  flex-shrink: 0;
+  min-width: 100vw;
+  justify-content: space-around;
 }
 .aigocy-site .theme-marquee-group > span {
   display: flex;
@@ -1057,7 +1123,7 @@
 }
 .aigocy-site .theme-footer-display {
   display: block;
-  font-size: clamp(120px, 26vw, 420px);
+  font-size: clamp(64px, 26vw, 420px);
   font-weight: 600;
   letter-spacing: -0.07em;
   line-height: 1;
@@ -1211,6 +1277,20 @@
   background: white !important;
   border: 1px solid #d4d4d8 !important;
   box-shadow: none !important;
+}
+.aigocy-site .kdm-public-shell input.pl-12 {
+  padding-left: 48px;
+}
+@media (max-width: 767px) {
+  .aigocy-site .theme-application-body {
+    padding: 16px;
+  }
+  .aigocy-site .theme-application-body section {
+    padding: 16px;
+  }
+  .aigocy-site .theme-application-body section > .flex {
+    flex-wrap: wrap;
+  }
 }
 .aigocy-site [class*="text-emerald"],
 .aigocy-site [class*="text-green"] {

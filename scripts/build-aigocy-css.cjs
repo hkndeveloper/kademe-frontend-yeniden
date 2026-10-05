@@ -29,4 +29,6 @@ const result = files.map(file => {
   });
   return root.toString();
 }).join('\n');
-fs.writeFileSync(path.join(base, 'src/components/aigocy/vendor.css'), result);
+// Tailwind utilities on existing application forms must outrank vendor resets.
+// Theme-specific adaptations remain unlayered in theme.css.
+fs.writeFileSync(path.join(base, 'src/components/aigocy/vendor.css'), `@layer components {\n${result}\n}\n`);

@@ -3,6 +3,42 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 
+test("template resets stay layered so existing application utilities remain effective", () => {
+  const vendor = readFileSync(
+    new URL("../src/components/aigocy/vendor.css", import.meta.url),
+    "utf8",
+  );
+  assert.match(vendor, /^@layer components\s*\{/);
+  const builder = readFileSync(
+    new URL("../scripts/build-aigocy-css.cjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(builder, /@layer components/);
+});
+
+test("continuous strips repeat equal groups without a half-gap jump", () => {
+  const css = readFileSync(
+    new URL("../src/components/aigocy/theme.css", import.meta.url),
+    "utf8",
+  );
+  const track = css.match(/\.theme-marquee-track\s*\{([^}]+)\}/)?.[1];
+  assert.ok(track);
+  assert.doesNotMatch(track, /\bgap:/);
+  assert.match(css, /\.theme-marquee-group\s*\{[^}]+padding-right:\s*48px/s);
+  assert.match(css, /\.theme-partner-group\s*\{[^}]+padding-right:\s*32px/s);
+  assert.match(css, /translateX\(-50%\)/);
+});
+
+test("smooth scrolling includes the new shell and respects reduced motion", () => {
+  const source = readFileSync(
+    new URL("../src/components/public/PublicSmoothScroll.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /\.aigocy-site, \.kdm-public-shell/);
+  assert.match(source, /prefers-reduced-motion: reduce/);
+  assert.match(source, /\[pathname\]/);
+});
+
 const defaultsUrl = new URL("../src/lib/aigocy-defaults.json", import.meta.url);
 const source = readFileSync(
   new URL("../src/lib/aigocy.ts", import.meta.url),
