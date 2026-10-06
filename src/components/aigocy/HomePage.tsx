@@ -7,7 +7,6 @@ import { Feedback } from "./Primitives";
 import {
   HomeHero,
   AboutSection,
-  ProjectsSection,
   ActivitiesSection,
   StatsSection,
   ExtraSection,
@@ -19,6 +18,7 @@ import {
   Newsletter,
 } from "./Sections";
 import { ContactSection } from "./ContactSection";
+import { FeaturedProjectShowcase } from "./HomeTemplateSections";
 
 export default function AigocyHome({ variant }: { variant?: "1" | "2" } = {}) {
   const {
@@ -56,7 +56,10 @@ export default function AigocyHome({ variant }: { variant?: "1" | "2" } = {}) {
     ),
     about: <AboutSection settings={settings} projects={projects} />,
     projects: (
-      <ProjectsSection settings={settings} projects={featuredProjects} />
+      <FeaturedProjectShowcase
+        settings={settings}
+        projects={featuredProjects}
+      />
     ),
     activities: (
       <ActivitiesSection settings={settings} activities={featuredActivities} />
@@ -102,6 +105,7 @@ export default function AigocyHome({ variant }: { variant?: "1" | "2" } = {}) {
               id={id as ThemeSectionId}
               settings={settings}
               projects={projects}
+              homeLayout
             />
           );
           const dark = ["team", "awards", "testimonials"].includes(id),

@@ -4,8 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { HeaderBrand } from "@/components/shared/HeaderBrand";
-import { useAuth } from "@/store/useAuth";
-import { homePathForUser } from "@/lib/role-home";
 import {
   getCachedSiteConfig,
   getCachedPublicProjects,
@@ -16,7 +14,6 @@ import type { ThemeProject } from "./usePublicContent";
 
 export function ThemeHeader() {
   const pathname = usePathname();
-  const { isAuthenticated, user } = useAuth();
   const [settings, setSettings] = useState(defaultSiteSettings);
   const [projects, setProjects] = useState<ThemeProject[]>([]);
   const [mobile, setMobile] = useState(false);
@@ -41,7 +38,9 @@ export function ThemeHeader() {
     else dialog.current?.close();
   }, [mobile]);
   const links = settings.navigation.header_links.filter(
-    (l) => l.href !== "/projects",
+    (l) =>
+      l.href !== "/projects" &&
+      !/^\/auth\/(login|register)(?:[/?#]|$)/.test(l.href),
   );
   const active = (href: string) =>
     pathname === href ||
@@ -134,17 +133,6 @@ export function ThemeHeader() {
           </ul>
         </nav>
         <div className="theme-header-actions">
-          <Link
-            className="theme-login"
-            href={isAuthenticated ? homePathForUser(user) : "/auth/login"}
-          >
-            {isAuthenticated
-              ? "Panelim"
-              : settings.navigation.header_login_label}
-          </Link>
-          <Link href="/auth/register" className="tf-btn theme-register">
-            {settings.navigation.header_register_label}
-          </Link>
           <button
             type="button"
             className="tf-btn theme-mobile-trigger"
@@ -203,19 +191,6 @@ export function ThemeHeader() {
                   </Link>
                 ))}
               </details>
-              <Link
-                href={isAuthenticated ? homePathForUser(user) : "/auth/login"}
-                onClick={() => setMobile(false)}
-              >
-                {isAuthenticated ? "Panelim" : "Giriş yap"}
-              </Link>
-              <Link
-                href="/auth/register"
-                className="tf-btn"
-                onClick={() => setMobile(false)}
-              >
-                Başvur
-              </Link>
             </nav>
           </div>
         </dialog>

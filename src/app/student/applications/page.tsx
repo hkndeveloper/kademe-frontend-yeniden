@@ -17,6 +17,7 @@ interface Application {
   program?: {
     title: string;
   } | null;
+  training?: { id: number; title: string } | null;
   status: string;
   created_at: string;
   interview_at?: string | null;
@@ -143,7 +144,7 @@ export default function StudentApplicationsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Başvurularım</h1>
-          <p className="text-sm text-muted-foreground">Yaptiginiz tüm program basvurularinin güncel durumu.</p>
+          <p className="text-sm text-muted-foreground">Proje ve eğitim başvurularınızın güncel durumu.</p>
         </div>
       </div>
 
@@ -173,6 +174,7 @@ export default function StudentApplicationsPage() {
                       {config.label.toUpperCase()}
                     </div>
                     <h2 className="text-xl font-extrabold text-foreground">{application.project.name}</h2>
+                    {application.training?.title && <p className="mt-2 text-sm font-semibold text-foreground">Eğitim: {application.training.title}</p>}
                     {application.program?.title ? (
                       <p className="mt-2 text-sm font-semibold text-foreground">Program: {application.program.title}</p>
                     ) : null}

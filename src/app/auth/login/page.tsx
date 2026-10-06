@@ -241,12 +241,12 @@ export default function LoginPage() {
                   </form>
 
                   <div className="mt-8 rounded-2xl bg-slate-50 p-4 text-center text-sm font-semibold text-slate-600">
-                    Hesabınız yok mu?{" "}
+                    Henüz kabul edilmediniz mi?{" "}
                     <Link
-                      href="/auth/register"
+                      href="/projects"
                       className="font-black text-orange-700 hover:underline"
                     >
-                      Hemen Başvurun
+                      Açık projeleri inceleyin
                     </Link>
                   </div>
                 </PublicCard>

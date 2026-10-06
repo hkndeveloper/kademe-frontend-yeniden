@@ -44,6 +44,7 @@ interface Application {
     id: number;
     name: string;
   } | null;
+  training?: { id: number; title: string } | null;
   program?: {
     id: number;
     title: string;
@@ -103,6 +104,7 @@ interface ApplicationApiItem {
     id: number;
     name: string;
   } | null;
+  training?: { id: number; title: string } | null;
   program?: {
     id: number;
     title: string;
@@ -280,6 +282,8 @@ export default function AdminApplicationsPage() {
     if (typeof window === "undefined") return "all";
     return new URLSearchParams(window.location.search).get("period_id") ?? "all";
   });
+  const [trainingFilter, setTrainingFilter] = useState("all");
+  const [trainings, setTrainings] = useState<Array<{ id: number; title: string; period_id: number }>>([]);
   const [statusFilter, setStatusFilter] = useState("pending");
   const [evaluationNote, setEvaluationNote] = useState<Record<number, string>>({});
   const [rejectionReason, setRejectionReason] = useState<Record<number, string>>({});
@@ -318,6 +322,15 @@ export default function AdminApplicationsPage() {
     void fetchManageableProjects();
   }, [hasPermission, canAccessProject, periodFilter, projectFilter]);
 
+  useEffect(() => {
+    let active = true;
+    const request = projectFilter === "all"
+      ? Promise.resolve([] as Array<{ id: number; title: string; period_id: number }>)
+      : api.get<{ trainings: Array<{ id: number; title: string; period_id: number }> }>(`/panel/projects/${projectFilter}/admissions`).then(response => response.data.trainings);
+    void request.then(items => { if (active) setTrainings(items); }).catch(() => { if (active) setTrainings([]); });
+    return () => { active = false; };
+  }, [projectFilter]);
+
   const fetchApplications = useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
@@ -329,6 +342,7 @@ export default function AdminApplicationsPage() {
           per_page: perPage,
           project_id: projectFilter !== "all" ? projectFilter : undefined,
           period_id: periodFilter !== "all" ? periodFilter : undefined,
+          training_id: trainingFilter !== "all" ? trainingFilter : undefined,
           status: statusFilter !== "all" ? statusFilter : undefined,
           search: searchTerm.trim() || undefined,
         },
@@ -353,7 +367,7 @@ export default function AdminApplicationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, periodFilter, projectFilter, searchTerm, statusFilter]);
+  }, [page, periodFilter, projectFilter, searchTerm, statusFilter, trainingFilter]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -628,6 +642,7 @@ export default function AdminApplicationsPage() {
             params={{
               project_id: projectFilter !== "all" ? projectFilter : undefined,
               period_id: periodFilter !== "all" ? periodFilter : undefined,
+          training_id: trainingFilter !== "all" ? trainingFilter : undefined,
               status: statusFilter !== "all" ? statusFilter : undefined,
               search: searchTerm.trim() || undefined,
             }}
@@ -654,7 +669,7 @@ export default function AdminApplicationsPage() {
               <Search className="panel-control-icon" />
               <input
                 type="text"
-                placeholder="Öğrenci, e-posta veya proje ara..."
+                placeholder="Aday, e-posta, proje veya eğitim ara..."
                 value={searchTerm}
                 onChange={(event) => {
                   setSearchTerm(event.target.value);
@@ -670,12 +685,14 @@ export default function AdminApplicationsPage() {
             selectedPeriodId={periodFilter}
             onProjectChange={(value) => {
               setProjectFilter(value);
+              setTrainingFilter("all");
               const project = projects.find((item) => String(item.id) === value);
               setPeriodFilter(value === "all" ? "all" : defaultPeriodIdForProject(project) || "all");
               setPage(1);
             }}
             onPeriodChange={(value) => {
               setPeriodFilter(value);
+              setTrainingFilter("all");
               setPage(1);
             }}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"
@@ -699,6 +716,14 @@ export default function AdminApplicationsPage() {
           </label>
         </div>
       </div>
+
+      {trainings.length > 0 && <label className="panel-field max-w-md">
+        <span className="panel-label">Eğitim</span>
+        <select className="panel-control" value={trainingFilter} onChange={event => { setTrainingFilter(event.target.value); setPage(1); }}>
+          <option value="all">Tüm eğitimler</option>
+          {trainings.filter(training => periodFilter === "all" || String(training.period_id) === periodFilter).map(training => <option key={training.id} value={training.id}>{training.title}</option>)}
+        </select>
+      </label>}
 
       {message && <div className="panel-notice panel-notice-success">{message}</div>}
       {errorMessage && <div className="panel-notice panel-notice-error">{errorMessage}</div>}
@@ -747,6 +772,7 @@ export default function AdminApplicationsPage() {
                         {application.period?.name && (
                           <span className="panel-chip">{application.period.name}</span>
                         )}
+                        {application.training?.title && <span className="panel-chip">Eğitim: {application.training.title}</span>}
                         {application.program?.title && (
                           <span className="panel-chip">Program: {application.program.title}</span>
                         )}

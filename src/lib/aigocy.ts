@@ -76,6 +76,13 @@ export function resolveTheme(value?: Partial<ThemeSettings>): ThemeSettings {
                 .filter((item) => item && typeof item.title === "string")
                 .map((item, index) => ({
                   ...item,
+                  // Migrate only the old built-in admissions copy; preserve custom CMS content.
+                  ...(section.id === "process" && [
+                    "Başvurusu açık projenin formunu doldur. Üyelik gerekliliği ve başvuru koşulları projeye göre değişebilir.",
+                    "Başvuru sonucunu ve katıldığın programları kişisel panelinden takip et.",
+                  ].includes(item.description || "")
+                    ? section.items.find(defaultItem => defaultItem.id === item.id)
+                    : {}),
                   id:
                     typeof item.id === "string"
                       ? item.id

@@ -40,6 +40,8 @@ import api from "@/lib/api/axios";
 import { ServiceAccordion } from "./ServiceAccordion";
 import { BenefitArtwork } from "./BenefitArtwork";
 import { ToolsSection } from "./ToolsSection";
+import { FeaturesHub, ProcessShowcase } from "./HomeTemplateSections";
+import { ApplicationEntry } from "./ApplicationEntry";
 
 export function HomeHero({ settings }: { settings: SiteSettingsPayload }) {
   const home = settings.homepage;
@@ -106,12 +108,8 @@ export function HomeHero({ settings }: { settings: SiteSettingsPayload }) {
           </h1>
           <p className="text">{home.hero_description}</p>
           <div className="bot-btns">
-            <ThemeButton href={home.hero_primary_href}>
-              {home.hero_primary_label}
-            </ThemeButton>
-            <ThemeButton secondary href={home.hero_secondary_href}>
-              {home.hero_secondary_label}
-            </ThemeButton>
+            <ApplicationEntry label="Başvur" />
+            <ThemeButton secondary href="/projects">Projeleri keşfet</ThemeButton>
           </div>
         </Reveal>
       </div>
@@ -449,10 +447,12 @@ export function ExtraSection({
   id,
   settings,
   projects,
+  homeLayout = false,
 }: {
   id: ThemeSectionId;
   settings: SiteSettingsPayload;
   projects: ThemeProject[];
+  homeLayout?: boolean;
 }) {
   const section = resolveTheme(settings.theme).sections.find(
     (s) => s.id === id,
@@ -480,6 +480,10 @@ export function ExtraSection({
       ? projectItems
       : [];
   if (!items.length) return null;
+  if (homeLayout && id === "process")
+    return <ProcessShowcase section={{ ...section, items }} />;
+  if (homeLayout && id === "features")
+    return <FeaturesHub section={{ ...section, items }} />;
   if (id === "services")
     return (
       <ServiceAccordion

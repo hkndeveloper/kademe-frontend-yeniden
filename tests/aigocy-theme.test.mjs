@@ -3,6 +3,15 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 
+test("public header has no account actions and filters CMS login/register links", () => {
+  const header = readFileSync(new URL("../src/components/aigocy/ThemeHeader.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(header, /theme-login|theme-register|useAuth|homePathForUser/);
+  assert.doesNotMatch(header, /href="\/auth\/(login|register)"/);
+  assert.ok(header.includes("(login|register)(?:[/?#]|$)"));
+  assert.match(header, /aria-label="Menüyü aç"/);
+  assert.match(header, /aria-label="Mobil menü"/);
+});
+
 test("template resets stay layered so existing application utilities remain effective", () => {
   const vendor = readFileSync(
     new URL("../src/components/aigocy/vendor.css", import.meta.url),
@@ -46,6 +55,28 @@ test("icon inputs retain their text inset above the generic input rule", () => {
   );
   assert.match(css, /input:not\(\[type="checkbox"\], \[type="radio"\], \[type="file"\]\)/);
   assert.match(css, /\.kdm-public-shell input\.pl-12\s*\{\s*padding-left:\s*48px/);
+});
+
+test("home uses the full original featured works and split process layouts", () => {
+  const home = readFileSync(new URL("../src/components/aigocy/HomePage.tsx", import.meta.url), "utf8");
+  const sections = readFileSync(new URL("../src/components/aigocy/HomeTemplateSections.tsx", import.meta.url), "utf8");
+  assert.match(home, /FeaturedProjectShowcase\s+settings=\{settings\}\s+projects=\{featuredProjects\}/);
+  assert.match(home, /homeLayout/);
+  for (const originalClass of ["featured-works-list", "grid-text", "process-heading", "process-slide", "nav-next-swiper"])
+    assert.ok(sections.includes(originalClass));
+  assert.match(sections, /project\.active_period\?\.name/);
+  assert.match(sections, /project\.is_application_open/);
+  assert.match(sections, /section\.items\.map/);
+  assert.match(sections, /prefers-reduced-motion: reduce/);
+});
+
+test("home features retain the original animated connectors and all CMS items", () => {
+  const source = readFileSync(new URL("../src/components/aigocy/HomeTemplateSections.tsx", import.meta.url), "utf8");
+  for (const originalClass of ["features-wrap", "features-col", "features-center", "side-line-main", "simu-electric"])
+    assert.ok(source.includes(originalClass));
+  assert.match(source, /section\.items\.slice\(0, middle\)/);
+  assert.match(source, /section\.items\.slice\(middle\)/);
+  assert.match(source, /kademe-logo-beyaz\.svg/);
 });
 
 const defaultsUrl = new URL("../src/lib/aigocy-defaults.json", import.meta.url);
@@ -170,4 +201,15 @@ test("integration map covers every purchased template page", () => {
   assert.equal(mapping.pages.length, 13);
   assert.equal(new Set(mapping.pages.map((page) => page.source)).size, 13);
   assert.ok(mapping.pages.some((page) => page.route === "/home-animated"));
+});
+test("application dialog uses one scroll region with a persistent submit action", () => {
+  const source = readFileSync(new URL("../src/app/projects/[slug]/page.tsx", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../src/components/aigocy/theme.css", import.meta.url), "utf8");
+  assert.ok(source.includes('id="candidate-application-form"'));
+  assert.ok(source.includes('type="submit" form="candidate-application-form"'));
+  assert.ok(source.includes('id="application-email" required type="email"'));
+  assert.ok(source.includes('autoComplete="one-time-code"'));
+  assert.ok(source.includes('project?.trainings?.find'));
+  assert.ok(css.includes('max-height:calc(100dvh - 48px)'));
+  assert.ok(css.includes('min-height:0; overflow-y:auto'));
 });

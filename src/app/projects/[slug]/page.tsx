@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PublicBrandLoader } from "@/components/public/PublicBrandLoader";
 import {
   PageHero,
@@ -96,6 +96,8 @@ interface ProjectDetail {
   cover_image: string | null;
   status: string;
   is_application_open: boolean;
+  application_scope?: "project" | "training";
+  trainings?: Array<{ id: number; title: string; description?: string; is_application_open: boolean }>;
   has_interview?: boolean;
   quota?: number | null;
   active_period: ActivePeriod | null;
@@ -302,7 +304,7 @@ export default function ProjectDetailPage() {
         previousFocus.focus({ preventScroll: true });
     };
   }, [showApplicationForm]);
-  const [selectedProgramId, setSelectedProgramId] = useState<number | null>(
+  const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(
     null,
   );
   const formRequestId = useRef(0);
@@ -321,6 +323,7 @@ export default function ProjectDetailPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [guestApplySuccess, setGuestApplySuccess] = useState(false);
+  const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
   const [guestReceiptEmailSent, setGuestReceiptEmailSent] = useState<
     boolean | null
   >(null);
@@ -340,7 +343,7 @@ export default function ProjectDetailPage() {
           response.data.application_consent_text ||
             fallbackApplicationConsentText,
         );
-        setSelectedProgramId(null);
+        setSelectedTrainingId(null);
         setShowApplicationForm(false);
         setPrograms(response.data.programs ?? null);
         setProjectSpecials(response.data.project_specials ?? null);
@@ -396,7 +399,7 @@ export default function ProjectDetailPage() {
         payload: {
           project_id: project?.id,
           period_id: project?.active_period?.id,
-          program_id: selectedProgramId,
+          training_id: selectedTrainingId,
           application_form_id: applicationForm?.id ?? 0,
           expected_consent_text: applicationConsentText,
           form_data: formValues,
@@ -416,7 +419,7 @@ export default function ProjectDetailPage() {
     const data = new FormData();
     data.append("project_id", String(project?.id ?? ""));
     data.append("period_id", String(project?.active_period?.id ?? ""));
-    if (selectedProgramId) data.append("program_id", String(selectedProgramId));
+    if (selectedTrainingId) data.append("training_id", String(selectedTrainingId));
     data.append("application_form_id", String(applicationForm?.id ?? 0));
     data.append("expected_consent_text", applicationConsentText);
     data.append("consent_accepted", consentAccepted ? "1" : "0");
@@ -510,7 +513,7 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const openApplicationForm = async (programId: number | null) => {
+  const openApplicationForm = useCallback(async (trainingId: number | null) => {
     applicationTrigger.current = document.activeElement as HTMLElement | null;
     if (!project) {
       return;
@@ -529,14 +532,14 @@ export default function ProjectDetailPage() {
     setApplicationForm(null);
     setFormValues({});
     setConsentAccepted(false);
-    setSelectedProgramId(programId);
+    setSelectedTrainingId(trainingId);
 
     try {
       const response = await api.get<{
         application_form: ApplicationFormData | null;
         application_consent_text?: string;
       }>(`/projects/${project.slug}/application-form`, {
-        params: { program_id: programId ?? undefined },
+        params: { training_id: trainingId ?? undefined },
       });
       if (requestId !== formRequestId.current) return;
 
@@ -567,7 +570,24 @@ export default function ProjectDetailPage() {
     } finally {
       if (requestId === formRequestId.current) setFormLoading(false);
     }
-  };
+  }, [project]);
+
+  const automaticApplication = useRef<string | null>(null);
+  useEffect(() => {
+    if (!project || automaticApplication.current === project.slug) return;
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("apply") !== "1") return;
+    const training = Number(query.get("training"));
+    if (project.application_scope === "training" && (!training || !project.trainings?.some(item => item.id === training && item.is_application_open))) {
+      return;
+    }
+    // Opening a deep-linked dialog waits until the navigation has painted so focus can move safely.
+    const frame = requestAnimationFrame(() => {
+      automaticApplication.current = project.slug;
+      void openApplicationForm(project.application_scope === "training" ? training : null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [project, openApplicationForm]);
 
   const handleApply = async () => {
     if (
@@ -613,7 +633,7 @@ export default function ProjectDetailPage() {
             : {
                 project_id: project.id,
                 period_id: project.active_period.id,
-                program_id: selectedProgramId,
+                training_id: selectedTrainingId,
                 application_form_id: applicationForm?.id ?? 0,
                 expected_consent_text: applicationConsentText,
                 form_data: formValues,
@@ -628,16 +648,18 @@ export default function ProjectDetailPage() {
       } else {
         const response = await api.post<{
           follow_up?: { applicant_email_sent?: boolean };
+          tracking_url?: string;
         }>("/applications/public", payload, config);
         setGuestReceiptEmailSent(
           response.data.follow_up?.applicant_email_sent ?? null,
         );
+        setTrackingUrl(response.data.tracking_url ?? null);
         setGuestApplySuccess(true);
         setShowApplicationForm(false);
         setMessage(
           response.data.follow_up?.applicant_email_sent === false
-            ? "E-posta adresiniz doğrulandı ve başvurunuz kaydedildi. Alındı e-postası gönderilemedi; durumunuzu giriş yaparak takip edebilirsiniz."
-            : "E-posta adresiniz doğrulandı ve başvurunuz alındı. Takip için giriş yapabilir veya şifrenizi belirleyebilirsiniz.",
+            ? "Başvurunuz kaydedildi. Alındı e-postası gönderilemedi; aşağıdaki takip bağlantısını saklayın."
+            : "Başvurunuz alındı. E-postanızdaki güvenli bağlantıyla takip edebilirsiniz. Hesabınız yalnız kabul sonrasında açılır.",
         );
       }
     } catch (error: unknown) {
@@ -738,13 +760,7 @@ export default function ProjectDetailPage() {
   );
   const calendarMonths = programs?.calendar_months ?? [];
 
-  const selectedProgramTitle = useMemo(() => {
-    if (!selectedProgramId) {
-      return null;
-    }
-    const combined = [...upcomingPrograms, ...completedPrograms];
-    return combined.find((p) => p.id === selectedProgramId)?.title ?? null;
-  }, [selectedProgramId, upcomingPrograms, completedPrograms]);
+  const selectedTrainingTitle = useMemo(() => project?.trainings?.find(training => training.id === selectedTrainingId)?.title ?? null, [project?.trainings, selectedTrainingId]);
 
   const hasSpecialContent = Boolean(
     (projectSpecials?.internships && projectSpecials.internships.total > 0) ||
@@ -803,12 +819,15 @@ export default function ProjectDetailPage() {
     if (!fieldId) return null;
 
     const commonClassName =
-      "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100";
+      "admission-control";
     const value = formValues[fieldId];
 
     if (field.type === "longtext") {
       return (
         <textarea
+          id={`application-field-${fieldId}`}
+          aria-label={field.label}
+          required={field.required}
           rows={4}
           value={typeof value === "string" ? value : ""}
           onChange={(event) => updateFormValue(fieldId, event.target.value)}
@@ -821,6 +840,9 @@ export default function ProjectDetailPage() {
     if (field.type === "select") {
       return (
         <select
+          id={`application-field-${fieldId}`}
+          aria-label={field.label}
+          required={field.required}
           value={typeof value === "string" ? value : ""}
           onChange={(event) => updateFormValue(fieldId, event.target.value)}
           className={commonClassName}
@@ -892,6 +914,9 @@ export default function ProjectDetailPage() {
       return (
         <input
           type="file"
+          id={`application-field-${fieldId}`}
+          aria-label={field.label}
+          required={field.required}
           onChange={(event) =>
             updateFormValue(fieldId, event.target.files?.[0] ?? null)
           }
@@ -903,6 +928,9 @@ export default function ProjectDetailPage() {
     return (
       <input
         type="text"
+          id={`application-field-${fieldId}`}
+          aria-label={field.label}
+          required={field.required}
         value={typeof value === "string" ? value : ""}
         onChange={(event) => updateFormValue(fieldId, event.target.value)}
         className={commonClassName}
@@ -958,18 +986,7 @@ export default function ProjectDetailPage() {
           />
         </div>
       ) : null}
-      {project?.is_application_open &&
-      program.period?.id === project.active_period?.id &&
-      ["scheduled", "active"].includes(program.status) ? (
-        <button
-          type="button"
-          onClick={() => void openApplicationForm(program.id)}
-          disabled={formLoading || applying}
-          className="kdm-public-btn-shine kdm-public-btn-brand mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-bold uppercase tracking-widest text-white transition hover:-translate-y-0.5"
-        >
-          Programa Başvur
-        </button>
-      ) : null}
+
     </div>
   );
 
@@ -1531,25 +1548,13 @@ export default function ProjectDetailPage() {
                     </p>
                     <p className="mt-2 text-sm text-[#71717a]">
                       {guestReceiptEmailSent === false
-                        ? "Başvurunuz kaydedildi, ancak alındı e-postası gönderilemedi. Durumunuzu takip etmek için giriş yapın; henüz şifreniz yoksa aşağıdan belirleyin."
-                        : "E-posta kutunuzu kontrol edin. Başvurunuzu takip etmek için giriş yapın; henüz şifreniz yoksa aşağıdan belirleyin."}
+                        ? "Başvurunuz kaydedildi, ancak alındı e-postası gönderilemedi. Takip bağlantısını saklayın. Hesabınız kabul sonrasında açılacaktır."
+                        : "E-posta kutunuzdaki güvenli takip bağlantısını kullanın. Başvuru sırasında hesap oluşturulmaz; kabul edildiğinizde aktivasyon bilgileri gönderilir."}
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Link
-                    href="/auth/forgot-password"
-                    className="inline-flex flex-1 items-center justify-center rounded-xl bg-orange-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:opacity-95"
-                  >
-                    Şifremi belirle
-                  </Link>
-                  <Link
-                    href="/auth/login"
-                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-bold text-[#292c2e] transition hover:bg-slate-100"
-                  >
-                    Giriş yap
-                  </Link>
-                </div>
+                {trackingUrl && <Link href={trackingUrl} className="tf-btn">Başvurumu takip et</Link>}
+
               </div>
             ) : project.is_application_open ? (
               <div className="space-y-5">
@@ -1611,6 +1616,11 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
 
+                {project.application_scope === "training" ? <div className="space-y-3">
+                  <h3 className="text-lg font-bold">Açık eğitimler</h3>
+                  {(project.trainings ?? []).filter(training => training.is_application_open).map(training => <button key={training.id} type="button" className="tf-btn w-full" disabled={formLoading || applying} onClick={() => void openApplicationForm(training.id)}>{training.title} · Başvur</button>)}
+                  {!project.trainings?.some(training => training.is_application_open) && <p>Şu anda başvurusu açık eğitim bulunmuyor.</p>}
+                </div> : (
                 <button
                   type="button"
                   onClick={() => void openApplicationForm(null)}
@@ -1625,7 +1635,7 @@ export default function ProjectDetailPage() {
                       Hemen Başvur
                     </>
                   )}
-                </button>
+                </button>)}
 
                 {!isAuthenticated ? (
                   <p className="text-center text-xs leading-relaxed text-[#71717a]">
@@ -1659,265 +1669,66 @@ export default function ProjectDetailPage() {
       </div>
 
       {showApplicationForm ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <div
-            ref={applicationDialog}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="application-dialog-title"
-            className="theme-application-dialog max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
-          >
-            <div className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-600">
-                    <FileText className="h-4 w-4" />
-                    Başvuru Formu
-                  </div>
-                  <h2
-                    id="application-dialog-title"
-                    className="mt-2 text-2xl font-black tracking-tight text-[#292c2e]"
-                  >
-                    {project.name}
-                  </h2>
-                  <p className="mt-2 text-sm leading-relaxed text-[#71717a]">
-                    Bilgilerinizi kontrol ederek başvurunuzu güvenli şekilde
-                    gönderebilirsiniz.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-[#71717a]">
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-                      Dönem: {project.active_period?.name || "Belirsiz"}
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-                      Akış: {project.has_interview ? "Mülakatlı" : "Mülakatsız"}
-                    </span>
-                    {selectedProgramTitle ? (
-                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-                        Program: {selectedProgramTitle}
-                      </span>
-                    ) : null}
-                  </div>
+        <div className="admission-form-overlay">
+          <div ref={applicationDialog} role="dialog" aria-modal="true" aria-labelledby="application-dialog-title" aria-describedby="application-dialog-description" className="admission-form-dialog">
+            <header className="admission-form-header">
+              <div>
+                <span className="admission-eyebrow"><FileText size={16} /> Başvuru formu</span>
+                <h2 id="application-dialog-title">{selectedTrainingTitle || project.name}</h2>
+                <p id="application-dialog-description">Hesap açmadan başvurun. Sonucu e-postanıza gelen bağlantıdan takip edin.</p>
+                <div className="admission-meta">
+                  {project.active_period?.name ? <span>{project.active_period.name}</span> : null}
+                  <span>{project.application_scope === "training" ? "Mülakatsız" : project.has_interview ? "Mülakatlı" : "Mülakatsız"}</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowApplicationForm(false)}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#71717a] transition-all duration-300 hover:bg-slate-100 hover:text-[#292c2e]"
-                  aria-label="Başvuru formunu kapat"
-                >
-                  <X className="h-4 w-4" />
-                </button>
               </div>
-            </div>
-
-            <div className="theme-application-body max-h-[calc(92vh-220px)] overflow-y-auto px-6 py-6 md:px-8">
-              <div className="space-y-6">
-                {!isAuthenticated ? (
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-bold text-[#292c2e]">
-                          1. Başvuru Sahibi
-                        </p>
-                        <p className="mt-1 text-xs text-[#71717a]">
-                          Sizinle iletişim kurabilmemiz için temel bilgileri
-                          doldurun.
-                        </p>
+              <button type="button" className="admission-close" onClick={() => setShowApplicationForm(false)} aria-label="Başvuru formunu kapat"><X size={20} /></button>
+            </header>
+            <form id="candidate-application-form" className="admission-form-body" onSubmit={(event) => { event.preventDefault(); void handleApply(); }}>
+              {!isAuthenticated ? (
+                <section className="admission-section">
+                  <h3>İletişim bilgileriniz</h3>
+                  <p className="admission-hint">Yıldızlı alanlar zorunludur.</p>
+                  <div className="admission-grid">
+                    <label>Adınız *<input required autoComplete="given-name" className="admission-control" value={guestApplicant.name} onChange={(event) => setGuestApplicant(current => ({ ...current, name: event.target.value }))} /></label>
+                    <label>Soyadınız *<input required autoComplete="family-name" className="admission-control" value={guestApplicant.surname} onChange={(event) => setGuestApplicant(current => ({ ...current, surname: event.target.value }))} /></label>
+                    <div className="admission-wide"><label htmlFor="application-email">E-posta adresiniz *</label>
+                      <div className="admission-email-row">
+                        <input id="application-email" required type="email" autoComplete="email" className="admission-control" placeholder="ornek@eposta.com" value={guestApplicant.email} onChange={(event) => { setGuestApplicant(current => ({ ...current, email: event.target.value })); setVerificationEmail(null); setGuestVerificationCode(""); }} />
+                        <button type="button" className="admission-code-button" disabled={sendingVerification || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestApplicant.email.trim())} onClick={() => void requestGuestVerification()}>{sendingVerification ? "Gönderiliyor…" : verificationEmail ? "Yeniden gönder" : "Kod gönder"}</button>
                       </div>
-                      <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-orange-600">
-                        Zorunlu
-                      </span>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a]">
-                        Ad
-                        <input
-                          value={guestApplicant.name}
-                          onChange={(event) =>
-                            setGuestApplicant((current) => ({
-                              ...current,
-                              name: event.target.value,
-                            }))
-                          }
-                          placeholder="Adınızı yazın"
-                          autoComplete="given-name"
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
-                        />
-                      </label>
-                      <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a]">
-                        Soyad
-                        <input
-                          value={guestApplicant.surname}
-                          onChange={(event) =>
-                            setGuestApplicant((current) => ({
-                              ...current,
-                              surname: event.target.value,
-                            }))
-                          }
-                          placeholder="Soyadınızı yazın"
-                          autoComplete="family-name"
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
-                        />
-                      </label>
-                      <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a] md:col-span-2">
-                        E-posta
-                        <input
-                          value={guestApplicant.email}
-                          onChange={(event) => {
-                            setGuestApplicant((current) => ({
-                              ...current,
-                              email: event.target.value,
-                            }));
-                            setVerificationEmail(null);
-                            setGuestVerificationCode("");
-                          }}
-                          placeholder="örnek@e-posta.com"
-                          type="email"
-                          autoComplete="email"
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
-                        />
-                      </label>
-                      <div className="space-y-2 md:col-span-2">
-                        <button
-                          type="button"
-                          onClick={() => void requestGuestVerification()}
-                          disabled={sendingVerification}
-                          className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-2.5 text-sm font-bold text-orange-700 disabled:opacity-60"
-                        >
-                          {sendingVerification
-                            ? "Kod gönderiliyor..."
-                            : verificationEmail
-                              ? "Kodu yeniden iste"
-                              : "E-postama kod gönder"}
-                        </button>
-                        {verificationEmail ? (
-                          <p className="text-xs text-green-700">
-                            {verificationEmail} adresinin gelen kutusunu kontrol
-                            edin. Kod 10 dakika geçerlidir.
-                          </p>
-                        ) : null}
-                        <label className="block space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a]">
-                          E-posta doğrulama kodu
-                          <input
-                            value={guestVerificationCode}
-                            onChange={(event) =>
-                              setGuestVerificationCode(
-                                event.target.value
-                                  .replace(/\D/g, "")
-                                  .slice(0, 8),
-                              )
-                            }
-                            inputMode="numeric"
-                            autoComplete="one-time-code"
-                            maxLength={8}
-                            placeholder="8 haneli kod"
-                            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
-                          />
-                        </label>
+                    {verificationEmail ? (
+                      <div className="admission-wide admission-verification">
+                        <p role="status">Kod {verificationEmail} adresine gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin.</p>
+                        <label>8 haneli doğrulama kodu *<input required pattern="[0-9]{8}" inputMode="numeric" autoComplete="one-time-code" maxLength={8} className="admission-control" placeholder="E-postanıza gelen kod" value={guestVerificationCode} onChange={(event) => setGuestVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 8))} /></label>
+                        <small>Kod 10 dakika geçerlidir.</small>
                       </div>
-                      <label className="space-y-1.5 text-xs font-bold uppercase tracking-widest text-[#71717a] md:col-span-2">
-                        Telefon
-                        <input
-                          value={guestApplicant.phone}
-                          onChange={(event) =>
-                            setGuestApplicant((current) => ({
-                              ...current,
-                              phone: event.target.value,
-                            }))
-                          }
-                          placeholder="İsteğe bağlı"
-                          type="tel"
-                          autoComplete="tel"
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm normal-case tracking-normal text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
-                        />
-                      </label>
-                    </div>
-                  </section>
-                ) : null}
-
-                <section className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <div className="mb-4">
-                    <p className="text-sm font-bold text-[#292c2e]">
-                      {!isAuthenticated
-                        ? "2. Form Bilgileri"
-                        : "1. Form Bilgileri"}
-                    </p>
-                    <p className="mt-1 text-xs text-[#71717a]">
-                      {hasDynamicForm
-                        ? "Proje için tanımlanan soruları eksiksiz doldurun."
-                        : "Bu proje için özel soru tanımlanmamış; temel başvuru akışı kullanılacak."}
-                    </p>
+                    ) : <p className="admission-wide admission-hint">E-posta adresinizi doğrulamak için “Kod gönder” düğmesine basın.</p>}
+                    <label className="admission-wide">Telefon <span className="admission-optional">(isteğe bağlı)</span><input type="tel" autoComplete="tel" className="admission-control" placeholder="05…" value={guestApplicant.phone} onChange={(event) => setGuestApplicant(current => ({ ...current, phone: event.target.value }))} /></label>
                   </div>
-                  {hasDynamicForm ? (
-                    <div className="space-y-5">
-                      {applicationForm?.fields.map((field) => {
-                        const fieldId = field.id ?? field.key;
-                        return (
-                          <div key={fieldId} className="space-y-2">
-                            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#71717a]">
-                              {field.label}
-                              {field.required ? (
-                                <span className="text-red-500">*</span>
-                              ) : null}
-                            </label>
-                            {renderField(field)}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-[#71717a]">
-                      Başvurunuzu göndermek için iletişim bilgileri ve varsa
-                      onay alanı yeterlidir.
-                    </div>
-                  )}
                 </section>
-
-                <section className="rounded-2xl border border-orange-200 bg-orange-50/70 p-5">
-                  <p className="mb-3 text-sm font-bold text-[#292c2e]">Onay</p>
-                  <label className="flex items-start gap-3 text-sm leading-relaxed text-[#292c2e]">
-                    <input
-                      type="checkbox"
-                      checked={consentAccepted}
-                      onChange={(event) =>
-                        setConsentAccepted(event.target.checked)
-                      }
-                      className="mt-1 h-4 w-4 rounded border-slate-200 text-orange-600"
-                    />
-                    <span className="whitespace-pre-line">
-                      {applicationConsentText}
-                    </span>
-                  </label>
-                </section>
-              </div>
-
-              {errorMessage ? (
-                <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 ">
-                  {errorMessage}
-                </div>
               ) : null}
-            </div>
-
-            <div className="flex flex-col gap-3 border-t border-slate-200 bg-white px-6 py-4 sm:flex-row md:px-8">
-              <button
-                type="button"
-                onClick={() => setShowApplicationForm(false)}
-                className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-[#71717a] transition-all duration-300 hover:bg-slate-100"
-              >
-                Vazgeç
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleApply()}
-                disabled={applying}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 py-3 font-bold text-white shadow-md shadow-orange-600/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-600/30 disabled:opacity-70"
-              >
-                {applying ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  "Başvuruyu Gönder"
-                )}
-              </button>
-            </div>
+              {hasDynamicForm ? (
+                <section className="admission-section">
+                  <h3>Başvuru soruları</h3>
+                  <div className="admission-questions">
+                    {applicationForm?.fields.map(field => {
+                      const fieldId = field.id ?? field.key;
+                      return <div key={fieldId} className="admission-question"><label htmlFor={`application-field-${fieldId}`}>{field.label}{field.required ? " *" : ""}</label>{renderField(field)}</div>;
+                    })}
+                  </div>
+                </section>
+              ) : null}
+              <section className="admission-consent">
+                <details><summary>Başvuru koşullarını okuyun</summary><p>{applicationConsentText}</p></details>
+                <label><input required type="checkbox" checked={consentAccepted} onChange={event => setConsentAccepted(event.target.checked)} /><span>Başvuru koşullarını okudum, kabul ediyorum.</span></label>
+              </section>
+            </form>
+            <footer className="admission-form-footer">
+              {errorMessage ? <p role="alert" className="admission-error">{errorMessage}</p> : null}
+              <div><button type="button" className="admission-cancel" onClick={() => setShowApplicationForm(false)}>Vazgeç</button>
+                <button type="submit" form="candidate-application-form" className="admission-submit" disabled={applying || formLoading}>{applying ? <><Loader2 size={18} className="animate-spin" /> Gönderiliyor…</> : "Başvuruyu gönder"}</button></div>
+            </footer>
           </div>
         </div>
       ) : null}

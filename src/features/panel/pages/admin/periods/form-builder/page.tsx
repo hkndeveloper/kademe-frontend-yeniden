@@ -50,6 +50,7 @@ interface ApplicationFormResponse {
   project: Project;
   periods: PeriodItem[];
   programs: ProgramItem[];
+  trainings?: ProgramItem[];
   application_form?: {
     id: number;
     period_id?: number | null;
@@ -91,6 +92,8 @@ export default function FormBuilderPage() {
   const initialProjectId = searchParams.get("project_id") ?? "";
   const initialPeriodId = searchParams.get("period_id") ?? "";
   const initialProgramId = searchParams.get("program_id") ?? "";
+  const [trainingId, setTrainingId] = useState(searchParams.get("training_id") ?? "");
+  const [trainings, setTrainings] = useState<ProgramItem[]>([]);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [periods, setPeriods] = useState<PeriodItem[]>([]);
@@ -177,7 +180,8 @@ export default function FormBuilderPage() {
         const response = await api.get<ApplicationFormResponse>(`/panel/projects/${projectId}/application-form`, {
           params: {
             period_id: periodId || undefined,
-            program_id: effectiveProgramId || undefined,
+            program_id: trainingId ? undefined : effectiveProgramId || undefined,
+            training_id: trainingId || undefined,
           },
         });
         const nextPeriods = response.data.periods ?? [];
@@ -187,6 +191,7 @@ export default function FormBuilderPage() {
 
         setPeriods(nextPeriods);
         setPrograms(nextPrograms);
+        setTrainings(response.data.trainings ?? []);
         setQuestions(nextQuestions);
         setConsentText(nextForm?.consent_text === legacyDefaultConsentText ? "" : nextForm?.consent_text || "");
         setAutoRejectRules((nextForm?.auto_reject_rules ?? []).map((rule) => ({ ...rule, reason: rule.reason ?? "", mode: rule.mode ?? "reject" })));
@@ -218,17 +223,18 @@ export default function FormBuilderPage() {
     };
 
     void loadApplicationForm();
-  }, [projectId, initialPeriodId, initialProgramId, periodId, effectiveProgramId, programId]);
+  }, [projectId, initialPeriodId, initialProgramId, periodId, effectiveProgramId, programId, trainingId]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
     if (projectId) url.searchParams.set("project_id", projectId); else url.searchParams.delete("project_id");
     if (periodId) url.searchParams.set("period_id", periodId); else url.searchParams.delete("period_id");
-    if (effectiveProgramId) url.searchParams.set("program_id", effectiveProgramId); else url.searchParams.delete("program_id");
+    if (trainingId) url.searchParams.set("training_id", trainingId); else url.searchParams.delete("training_id");
+    if (effectiveProgramId && !trainingId) url.searchParams.set("program_id", effectiveProgramId); else url.searchParams.delete("program_id");
     const nextUrl = `${url.pathname}${url.search}${url.hash}`;
     const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (nextUrl !== currentUrl) window.history.replaceState(null, "", nextUrl);
-  }, [effectiveProgramId, periodId, projectId]);
+  }, [effectiveProgramId, periodId, projectId, trainingId]);
 
   const addQuestion = (type: Question["type"]) => {
     if (!canEditForm) return;
@@ -336,7 +342,8 @@ export default function FormBuilderPage() {
     try {
       await api.put(`/panel/projects/${projectId}/application-form`, {
         period_id: periodId ? Number(periodId) : null,
-        program_id: effectiveProgramId ? Number(effectiveProgramId) : null,
+        program_id: !trainingId && effectiveProgramId ? Number(effectiveProgramId) : null,
+        training_id: trainingId ? Number(trainingId) : null,
         fields: questions.map((question) => ({
           id: question.id,
           type: question.type,
@@ -482,6 +489,7 @@ export default function FormBuilderPage() {
               setProjectId(event.target.value);
               setPeriodId("");
               setProgramId("");
+              setTrainingId("");
             }}
             className="panel-control"
           >
@@ -497,6 +505,7 @@ export default function FormBuilderPage() {
             onChange={(event) => {
               setPeriodId(event.target.value);
               setProgramId("");
+              setTrainingId("");
             }}
             disabled={!canEditForm}
             className="panel-control"
@@ -511,7 +520,7 @@ export default function FormBuilderPage() {
           <select
             value={effectiveProgramId}
             onChange={(event) => setProgramId(event.target.value)}
-            disabled={!canEditForm || filteredPrograms.length === 0}
+            disabled={!canEditForm || Boolean(trainingId) || filteredPrograms.length === 0}
             className="panel-control"
           >
             <option value="">Programa özel form yok</option>
@@ -521,6 +530,7 @@ export default function FormBuilderPage() {
               </option>
             ))}
           </select>
+          <label className="panel-field">Eğitime özel form<select className="panel-control" value={trainingId} disabled={!canEditForm} onChange={event => { setTrainingId(event.target.value); setProgramId(""); }}><option value="">Genel proje/dönem formu</option>{trainings.filter(training => !periodId || String(training.period_id) === periodId).map(training => <option key={training.id} value={training.id}>{training.title}</option>)}</select></label>
         </div>
         {selectedProject ? (
           <p className="mt-4 text-sm text-muted-foreground">

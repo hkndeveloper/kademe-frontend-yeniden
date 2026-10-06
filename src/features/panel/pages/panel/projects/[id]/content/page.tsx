@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { ProjectContentEditor } from "@/components/projects/ProjectContentEditor";
+import { AdmissionsEditor } from "@/components/projects/AdmissionsEditor";
 import { usePermissions } from "@/hooks/usePermissions";
 
 export default function PanelUnifiedProjectContentPage() {
@@ -21,5 +22,5 @@ export default function PanelUnifiedProjectContentPage() {
     (permission) => hasPermission(permission) && canAccessProject(permission, projectIdNumber),
   );
 
-  return <ProjectContentEditor projectId={projectId} panelBasePath="/panel" periodId={periodId} readOnly={!canEdit} />;
+  return <><AdmissionsEditor projectId={projectIdNumber} /><ProjectContentEditor projectId={projectId} panelBasePath="/panel" periodId={periodId} readOnly={!canEdit} /></>;
 }

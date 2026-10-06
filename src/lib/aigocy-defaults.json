@@ -58,7 +58,7 @@
         {
           "id": "apply",
           "title": "Başvurunu gönder",
-          "description": "Başvurusu açık projenin formunu doldur. Üyelik gerekliliği ve başvuru koşulları projeye göre değişebilir.",
+          "description": "Başvurusu açık proje veya eğitimin formunu doldur. Başvurmak için hesap oluşturman gerekmez.",
           "label": "Başvuru açık projeler",
           "href": "/projects",
           "icon": "users"
@@ -66,9 +66,9 @@
         {
           "id": "learn",
           "title": "Sürecini takip et",
-          "description": "Başvuru sonucunu ve katıldığın programları kişisel panelinden takip et.",
-          "label": "Panelime git",
-          "href": "/panel",
+          "description": "Başvurunu e-postana gelen güvenli bağlantıdan takip et. Kabul edildiğinde hesabın açılır ve eğitimlerine erişebilirsin.",
+          "label": "Süreç hakkında",
+          "href": "/faq",
           "icon": "award"
         }
       ]

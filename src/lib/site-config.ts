@@ -233,7 +233,7 @@ export const defaultSiteSettings: SiteSettingsPayload = {
     certificate_verify_cta_label: "Doğrulama Ekranına Git",
     certificate_verify_cta_href: "/certificates/verify",
     footer_description: "KADEME Kariyer Gelişim Merkezi. Geleceğin liderlerini bugünden yetiştiriyoruz.",
-    footer_copyright: "© 2026 KADEME YÖNETİM SİSTEMİ. TÜM HAKLARI SAKLIDIR.",
+    footer_copyright: "2026 KADEME",
     stats: [
       { label: "Aktif Öğrenci", value: "2,500+", icon: "users" },
       { label: "Tamamlanan Proje", value: "450+", icon: "trophy" },

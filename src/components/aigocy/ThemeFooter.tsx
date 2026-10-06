@@ -89,7 +89,7 @@ export function ThemeFooter() {
             ))}
           </ul>
           <p className="text-secondary coppy-rights text-center">
-            {settings.homepage.footer_copyright}
+            {/YÖNETİM SİSTEMİ|TÜM HAKLARI SAKLIDIR/i.test(settings.homepage.footer_copyright) ? "2026 KADEME" : settings.homepage.footer_copyright}
           </p>
           <a
             href="#"
